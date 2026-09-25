@@ -1,9 +1,8 @@
 name: Lint
 
+# Fork personnel : déclenchement manuel uniquement (builds coûteux sur dépôt privé). Voir ci.fork.yml.
 on:
-  push:
-    branches:
-      - '**'
+  workflow_dispatch:
 
 jobs:
   ts-format:

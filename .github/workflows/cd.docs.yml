@@ -1,13 +1,7 @@
 name: Docs
 
+# Fork personnel : déclenchement manuel uniquement (builds coûteux sur dépôt privé). Voir ci.fork.yml.
 on:
-  push:
-    branches:
-      - main
-      - develop
-    paths:
-      - 'docs/**'
-      - 'cd.docs.yml'
   workflow_dispatch:
 
 permissions:

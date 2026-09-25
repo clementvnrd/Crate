@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fork personnel — journal des modifications
+
+> Journal tenu en direct depuis l'audit du 25 septembre 2026. Chaque entrée cite l'identifiant du défaut corrigé (voir [suivi/REGISTRE-DEFAUTS.md](suivi/REGISTRE-DEFAUTS.md)) ; l'avancement global est dans [suivi/AVANCEMENT.md](suivi/AVANCEMENT.md). Les entrées les plus récentes sont en haut de chaque rubrique.
+
+#### Sécurité
+
+- **[C2]** Retrait de l'identifiant et du mot de passe Beatport écrits en dur dans `services/beatport/downloader.rs` et `client.rs`, **avant le premier commit** : le secret n'est jamais entré dans l'historique git. La configuration `beatportdl` conserve désormais les lignes `username`/`password` déjà présentes dans le fichier de l'utilisateur (sinon `beatportdl` utilise les jetons OAuth écrits à la connexion), et le fichier est écrit avec les droits `600`. Deux tests couvrent ces cas. _Le mot de passe lui-même doit encore être changé par le propriétaire._
+- **[C5]** Suppression des tests `test_sync_and_deduplicate_real_db` et `test_prune_missing_tracks_from_mik_db_real`, qui ouvraient la vraie base Crate (avec sa clé) et la vraie base Mixed In Key et y écrivaient à chaque `cargo test`.
+
+#### Documentation
+
+- **[L6]** Le README annonce désormais les 15 langues réellement livrées (au lieu de 11) et décrit le fork, les tests et le suivi.
+
+#### Outillage et suivi
+
+- Dépôt GitHub personnel privé, documents de suivi dans `suivi/` (avancement, registre, rapport, historique), `CLAUDE.md`, script `yarn suivi` qui recalcule la progression.
+- Workflows amont (`ci.build`, `ci.lint`, `cd.docs`) passés en déclenchement manuel : ils lançaient des builds macOS et Windows à chaque push, coûteux sur un dépôt privé et encore en échec (voir Q2 à Q5). Nouveau workflow `ci.fork.yml` : Vitest à chaque push.
+
+#### Travail du fork antérieur à l'audit (builds 36 à 57)
+
+Commité tel quel dans un instantané unique pour ne plus risquer de le perdre (**[C1]**) ; les défauts connus de ce code sont listés dans le registre.
+
+- Lecteur autonome et association des fichiers audio macOS (vue Player, fichiers récents)
+- Intégration Mixed In Key 11 : lecture de `Collection11.mikdb`, cues, énergie, watcher
+- Beatport Quality Upgrader : recherche, scoring, téléchargement FLAC via `beatportdl`
+- Crate Pulse : statistiques d'écoute multi-sources (Spotify, lecteur local, Mixed In Key, Rekordbox)
+- Duplicate Killer, vue albums, recherche plein texte FTS5, hot cues 1 à 8, mix harmonique, raccourcis DJ, export Rekordbox XML
+- Vitest, testing-library et jsdom ; 144 tests TypeScript
+
+### Amont (blackboxaudio)
+
 ### Added
 
 - Provisioned the mobile database encryption key through the iOS Keychain / Android Keystore behind a feature-gated `KeyProvider` abstraction, so the SQLCipher key is never written as a plaintext file on mobile (desktop keeps its existing key-file behavior)

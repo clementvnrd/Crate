@@ -1,13 +1,36 @@
 # Crate
 
-[![Build](https://github.com/blackboxaudio/crate/actions/workflows/ci.build.yml/badge.svg)](https://github.com/blackboxaudio/crate/actions/workflows/ci.build.yml)
-[![Lint](https://github.com/blackboxaudio/crate/actions/workflows/ci.lint.yml/badge.svg)](https://github.com/blackboxaudio/crate/actions/workflows/ci.lint.yml)
+[![CI fork](https://github.com/clementvnrd/Crate/actions/workflows/ci.fork.yml/badge.svg)](https://github.com/clementvnrd/Crate/actions/workflows/ci.fork.yml)
 
 > Cross-platform DJ library manager with music discovery, track analysis, and USB export
 
 <p align="center">
   <img src="assets/screenshot.png" alt="Crate — Discovery view showing label browsing with release preview playback" width="800" />
 </p>
+
+---
+
+## 🧰 Fork personnel
+
+Ce dépôt est un **fork personnel et privé** de [blackboxaudio/crate](https://github.com/blackboxaudio/crate) (remote `upstream`), utilisé sur un seul Mac avec Mixed In Key 11, Rekordbox 7 et Spotify. Il ajoute au socle amont :
+
+- **Player** : lecteur autonome, fichiers récents, association des fichiers audio macOS, hot cues 1 à 8, mix harmonique, raccourcis DJ
+- **Mixed In Key 11** : lecture de la base `Collection11.mikdb` (cues, énergie, tonalités)
+- **Crate Pulse** : statistiques d'écoute multi-sources (Spotify, lecteur local, Mixed In Key, sessions Rekordbox)
+- **Duplicate Killer**, vue albums, recherche plein texte FTS5, export Rekordbox XML
+- **Beatport Quality Upgrader** : remplacement MP3 → FLAC via l'outil tiers `beatportdl`
+
+> ⚠️ **État actuel : en cours de remise en état.** Un audit complet (25 septembre 2026) a relevé ~180 défauts, dont 15 critiques pouvant toucher aux données. Tant que les étapes 1 à 7 du plan ne sont pas cochées, garder des sauvegardes de `crate.db`, `db.key` et `Collection11.mikdb`.
+
+| Document | Contenu |
+| --- | --- |
+| [suivi/AVANCEMENT.md](suivi/AVANCEMENT.md) | Progression, cases à cocher par défaut, actions du propriétaire |
+| [CHANGELOG.md](CHANGELOG.md) | Journal détaillé des modifications |
+| [suivi/REGISTRE-DEFAUTS.md](suivi/REGISTRE-DEFAUTS.md) | Registre des défauts et correctifs prévus |
+| [suivi/RAPPORT-AUDIT.md](suivi/RAPPORT-AUDIT.md) | Rapport d'audit, vision et plan par phases |
+| [CLAUDE.md](CLAUDE.md) | Règles de travail pour les assistants de code |
+
+Le téléchargement Beatport passe par `beatportdl`, qui ne respecte pas les conditions d'utilisation de Beatport : cette partie ne doit jamais être publiée sur un dépôt public.
 
 ---
 
@@ -27,7 +50,7 @@ Crate is a cross-platform desktop application for managing DJ audio libraries. I
 - **Device sync** - Detect connected USB devices and sync library changes incrementally
 - **Metadata editing** - Edit track metadata in bulk or individually
 - **Customization** - Themes, accent colors, and font preferences
-- **Localization** - Available in 11 languages (EN, JA, NL, FR, DE, ES, IT, SV, KO, PT, ZH)
+- **Localization** - Available in 15 languages (EN, FR, DE, ES, IT, JA, KO, NL, PL, PT, RO, SV, TR, UK, ZH)
 - **Auto-updates** - Stay on the latest version with minimal effort
 
 ## 🚀 Getting Started
@@ -55,8 +78,9 @@ Or download the installer from https://strawberryperl.com/. Restart your termina
 Clone the repository:
 
 ```bash
-git clone https://github.com/blackboxaudio/crate.git
-cd crate
+git clone https://github.com/clementvnrd/Crate.git
+cd Crate
+git remote add upstream https://github.com/blackboxaudio/crate.git
 ```
 
 Install dependencies:
@@ -64,6 +88,15 @@ Install dependencies:
 ```bash
 yarn install
 ```
+
+### Tests
+
+```bash
+yarn test                                   # Vitest (TypeScript)
+cd src-tauri && cargo test --features desktop   # Rust
+```
+
+Les tests n'utilisent que des bases temporaires : ils ne touchent jamais la bibliothèque réelle.
 
 ### Development
 
@@ -97,9 +130,8 @@ Platform targets:
 
 ## 🔗 Links
 
-- [Website & Downloads](https://crate.bbx-audio.com)
-- [Issues](https://github.com/blackboxaudio/crate/issues)
-- [Releases](https://github.com/blackboxaudio/crate/releases)
+- [Projet amont](https://github.com/blackboxaudio/crate) · [Site officiel](https://crate.bbx-audio.com)
+- [Suivi du fork](suivi/README.md)
 
 ## ⚠️ Disclaimer
 
