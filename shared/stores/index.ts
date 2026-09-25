@@ -14,6 +14,8 @@ export {
 	playbackSpeed,
 	previewInfo,
 	previewTrackIndex,
+	currentCues,
+	currentWaveformBars,
 } from './player'
 export { tagsStore, allTags, getTagById, getCategoryById, computeTagStates } from './tags'
 export { playlistsStore, rootPlaylists, getPlaylistChildren, buildPlaylistTree } from './playlists'
@@ -68,3 +70,41 @@ export {
 	unmappedRootIds,
 	signingIn,
 } from './cloudSync'
+export { displaySettingsStore } from './displaySettings'
+export type { DisplaySettings, ColumnVisibility } from './displaySettings'
+export {
+	beatportStore,
+	beatportCart,
+	beatportCartCount,
+	beatportCartDuration,
+} from './beatport'
+export {
+	duplicateStore,
+	duplicateGroups,
+	duplicateGroupCount,
+	duplicateTrackCount,
+	duplicateTotalReclaimable,
+	isDuplicateLoading,
+	selectedDuplicateCount,
+	selectedDuplicateReclaimableBytes,
+} from './duplicate'
+export type { DuplicateState } from './duplicate'
+export {
+	statsStore,
+	statsSummary,
+	topTracks,
+	topArtists,
+	harmonicStats,
+	bpmStats,
+	listeningHeatmap,
+	recentListens,
+	spotifyAuth,
+	spotifyNowPlaying,
+	rekordboxDetected,
+	rekordboxSessions,
+	statsSelectedRange,
+	isStatsLoading,
+	isSyncingRekordbox,
+	isImportingSpotify,
+} from './stats'
+export type { StatsState } from './stats'

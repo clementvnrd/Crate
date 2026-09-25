@@ -61,7 +61,7 @@ const persistedFolderId = getStoredString('nav.selectedFolderId', '') || null
 const persistedSidebarView: SidebarView = persistedPlaylistId ? 'playlist' : persistedFolderId ? 'folder' : 'library'
 
 const initialState: UIState = {
-	activeView: getStoredString<ActiveView>('activeView', 'library', ['library', 'discovery']),
+	activeView: 'library',
 	selectedTrackIds: new Set(),
 	lastSelectedTrackId: null,
 	selectedReleaseIds: new Set(),
@@ -72,11 +72,17 @@ const initialState: UIState = {
 	viewFilters: {
 		library: { selectedTagIds: [], tagFilterMode: 'or' },
 		discovery: { selectedTagIds: [], tagFilterMode: 'or' },
+		beatport: { selectedTagIds: [], tagFilterMode: 'or' },
+		player: { selectedTagIds: [], tagFilterMode: 'or' },
+		stats: { selectedTagIds: [], tagFilterMode: 'or' },
 	},
 	recentlyToggledMixedTags: new Set(),
 	viewNavigationCache: {
 		library: { selectedPlaylistId: null, selectedFolderId: null, sidebarView: 'library', scrollOffset: 0 },
 		discovery: { selectedPlaylistId: null, selectedFolderId: null, sidebarView: 'library', scrollOffset: 0 },
+		beatport: { selectedPlaylistId: null, selectedFolderId: null, sidebarView: 'library', scrollOffset: 0 },
+		player: { selectedPlaylistId: null, selectedFolderId: null, sidebarView: 'library', scrollOffset: 0 },
+		stats: { selectedPlaylistId: null, selectedFolderId: null, sidebarView: 'library', scrollOffset: 0 },
 	},
 	isOnboarding: false,
 }

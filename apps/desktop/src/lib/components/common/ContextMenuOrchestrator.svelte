@@ -54,9 +54,11 @@
 		onTrackRevealInExplorer: (track: Track) => void
 		onTrackRemoveFromPlaylist: (tracks: Track[]) => void
 		onTrackRemoveFromLibrary: (tracks: Track[]) => void
+		onTrackDeleteTrackAndFile?: (tracks: Track[]) => void
 		onTrackRelocate: (track: Track) => void
 		onTrackSetColor: (color: TrackColor | null, tracks: Track[]) => void
 		onTrackAnalyze: (tracks: Track[]) => void
+		onTrackResyncMik?: (tracks: Track[]) => void
 
 		// Playlist callbacks
 		onPlaylistCreatePlaylist: (playlist: Playlist) => void
@@ -142,9 +144,11 @@
 		onTrackRevealInExplorer,
 		onTrackRemoveFromPlaylist,
 		onTrackRemoveFromLibrary,
+		onTrackDeleteTrackAndFile,
 		onTrackRelocate,
 		onTrackSetColor,
 		onTrackAnalyze,
+		onTrackResyncMik,
 		onPlaylistCreatePlaylist,
 		onPlaylistCreateSmartPlaylist,
 		onPlaylistCreateFolder,
@@ -414,6 +418,14 @@
 		}
 	}
 
+	function handleTrackDeleteTrackAndFile() {
+		if (activeMenu.type === 'track') {
+			const tracks = activeMenu.tracks
+			closeAll()
+			onTrackDeleteTrackAndFile?.(tracks)
+		}
+	}
+
 	function handleTrackRelocate(track: Track) {
 		closeAll()
 		onTrackRelocate(track)
@@ -432,6 +444,14 @@
 			const tracks = activeMenu.tracks
 			closeAll()
 			onTrackAnalyze(tracks)
+		}
+	}
+
+	function handleTrackResyncMik() {
+		if (activeMenu.type === 'track') {
+			const tracks = activeMenu.tracks
+			closeAll()
+			onTrackResyncMik?.(tracks)
 		}
 	}
 
@@ -710,9 +730,11 @@
 		onAddToPlaylist={handleTrackAddToPlaylist}
 		onRemoveFromPlaylist={handleTrackRemoveFromPlaylist}
 		onRemoveFromLibrary={handleTrackRemoveFromLibrary}
+		onDeleteTrackAndFile={handleTrackDeleteTrackAndFile}
 		onRelocate={handleTrackRelocate}
 		onSetColor={handleTrackSetColor}
 		onAnalyze={handleTrackAnalyze}
+		onResyncMik={handleTrackResyncMik}
 	/>
 {/if}
 

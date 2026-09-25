@@ -1,4 +1,6 @@
+import { get } from 'svelte/store'
 import { isInputFocused, isNativeDialogOpen } from '$shared/utils'
+import { activeView, currentTrack, standaloneTrack, playerStore, recentStandaloneTracks, playbackPosition } from '$lib/stores'
 
 // =============================================================================
 // Types
@@ -117,6 +119,18 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): () => 
 		// Space: toggle play/pause
 		if (e.code === 'Space' && !inputFocused) {
 			e.preventDefault()
+			if (get(activeView) === 'player') {
+				const active = get(currentTrack) || get(standaloneTrack)
+				if (active) {
+					playerStore.togglePlayPause()
+				} else {
+					const recents = get(recentStandaloneTracks)
+					if (recents.length > 0) {
+						playerStore.playStandalone(recents[0], recents[0].is_in_library)
+					}
+				}
+				return
+			}
 			onPlayPause()
 		}
 
@@ -197,6 +211,16 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): () => 
 			onPlaySelected()
 		}
 
+		// Number keys 1 to 8: Jump to Hot Cues (when not typing)
+		if (!inputFocused && !e.metaKey && !e.ctrlKey && !e.altKey) {
+			const num = parseInt(e.key, 10)
+			if (num >= 1 && num <= 8) {
+				e.preventDefault()
+				playerStore.jumpToCueIndex(num)
+				return
+			}
+		}
+
 		// Arrow keys (when not typing)
 		if (!inputFocused) {
 			// Cmd/Ctrl+Up: select previous track
@@ -227,17 +251,25 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): () => 
 				return
 			}
 
-			// Shift+Left: previous track
+			// Shift+Left: in player mode, seek backward 15s (32 beats / 8 bars phrase jump). Otherwise, previous track
 			if (e.shiftKey && e.key === 'ArrowLeft') {
 				e.preventDefault()
-				onPreviousTrack()
+				if (get(activeView) === 'player') {
+					playerStore.seek(Math.max(0, get(playbackPosition) - 15000))
+				} else {
+					onPreviousTrack()
+				}
 				return
 			}
 
-			// Shift+Right: next track
+			// Shift+Right: in player mode, seek forward 15s (32 beats / 8 bars phrase jump). Otherwise, next track
 			if (e.shiftKey && e.key === 'ArrowRight') {
 				e.preventDefault()
-				onNextTrack()
+				if (get(activeView) === 'player') {
+					playerStore.seek(get(playbackPosition) + 15000)
+				} else {
+					onNextTrack()
+				}
 				return
 			}
 

@@ -382,5 +382,188 @@ ALTER TABLE discovery_releases ADD COLUMN surfaced_at TEXT;
         r#"
 ALTER TABLE discovery_releases ADD COLUMN source_page_url TEXT;
 "#,
+        // Migration 7: Mixed In Key energy level support
+        r#"
+ALTER TABLE tracks ADD COLUMN energy INTEGER;
+CREATE INDEX IF NOT EXISTS idx_tracks_energy ON tracks(energy);
+"#,
+        // Migration 8: Reset false analysis_source on tracks without genuine MIK cues or energy
+        r#"
+UPDATE tracks
+SET analysis_source = NULL
+WHERE analysis_source = 'mixed_in_key'
+  AND energy IS NULL
+  AND id NOT IN (SELECT DISTINCT track_id FROM cues);
+"#,
+        // Migration 9: Ignored duplicate track pairs
+        r#"
+CREATE TABLE ignored_duplicate_pairs (
+    track_id_a TEXT NOT NULL,
+    track_id_b TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (track_id_a, track_id_b)
+);
+CREATE INDEX IF NOT EXISTS idx_ignored_duplicate_pairs_b ON ignored_duplicate_pairs(track_id_b);
+"#,
+        // Migration 10: Recent standalone tracks
+        r#"
+CREATE TABLE recent_standalone_tracks (
+    id TEXT PRIMARY KEY,
+    file_path TEXT NOT NULL UNIQUE,
+    title TEXT,
+    artist TEXT,
+    album TEXT,
+    duration_ms INTEGER NOT NULL,
+    format TEXT,
+    bitrate INTEGER,
+    sample_rate INTEGER,
+    bpm REAL,
+    key TEXT,
+    artwork_path TEXT,
+    last_played_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_recent_standalone_tracks_last_played ON recent_standalone_tracks(last_played_at DESC);
+"#,
+        // Migration 11: Ignored upgrade matches
+        r#"
+CREATE TABLE ignored_upgrade_matches (
+    track_id TEXT NOT NULL,
+    beatport_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (track_id, beatport_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ignored_upgrade_matches_bp ON ignored_upgrade_matches(beatport_id);
+"#,
+        // Migration 12: Beatport upgrade matches cache
+        r#"
+CREATE TABLE upgrade_matches_cache (
+    track_id TEXT PRIMARY KEY,
+    track_title TEXT NOT NULL,
+    track_artist TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    beatport_track_json TEXT NOT NULL,
+    confidence_score INTEGER NOT NULL,
+    score_breakdown_json TEXT NOT NULL,
+    scanned_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_upgrade_matches_cache_scanned_at ON upgrade_matches_cache(scanned_at);
+"#,
+        // Migration 13: Crate Pulse & Stats tables
+        r#"
+CREATE TABLE listen_events (
+    id TEXT PRIMARY KEY,
+    source TEXT NOT NULL, -- 'spotify', 'crate_local', 'crate_beatport', 'rekordbox'
+    track_id TEXT,
+    title TEXT NOT NULL,
+    artist TEXT NOT NULL,
+    album TEXT,
+    duration_ms INTEGER NOT NULL,
+    played_ms INTEGER NOT NULL,
+    bpm REAL,
+    key TEXT,
+    energy INTEGER,
+    format TEXT,
+    artwork_url TEXT,
+    played_at TEXT NOT NULL, -- ISO8601 UTC
+    session_id TEXT,
+    metadata_json TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_listen_events_source_played ON listen_events(source, played_at DESC);
+CREATE INDEX IF NOT EXISTS idx_listen_events_artist ON listen_events(artist, played_at DESC);
+CREATE INDEX IF NOT EXISTS idx_listen_events_played_at ON listen_events(played_at DESC);
+
+CREATE TABLE spotify_auth (
+    id TEXT PRIMARY KEY,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    user_id TEXT,
+    user_name TEXT,
+    is_connected INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE rekordbox_sessions (
+    id TEXT PRIMARY KEY,
+    session_name TEXT,
+    started_at TEXT NOT NULL,
+    ended_at TEXT,
+    total_tracks INTEGER DEFAULT 0,
+    total_played_ms INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_rekordbox_sessions_started ON rekordbox_sessions(started_at DESC);
+"#,
+        // Migration 14: Player Mode Album (album grid, tracks, covers)
+        r#"
+CREATE TABLE player_albums (
+    id TEXT PRIMARY KEY,
+    folder_path TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    artist TEXT NOT NULL,
+    year INTEGER,
+    genre TEXT,
+    artwork_path TEXT,
+    track_count INTEGER DEFAULT 0,
+    total_duration_ms INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_player_albums_created_at ON player_albums(created_at DESC);
+
+CREATE TABLE player_album_tracks (
+    id TEXT PRIMARY KEY,
+    album_id TEXT NOT NULL REFERENCES player_albums(id) ON DELETE CASCADE,
+    file_path TEXT NOT NULL UNIQUE,
+    track_number INTEGER,
+    title TEXT NOT NULL,
+    artist TEXT NOT NULL,
+    duration_ms INTEGER NOT NULL,
+    format TEXT,
+    bitrate INTEGER,
+    sample_rate INTEGER,
+    bpm REAL,
+    key TEXT,
+    energy INTEGER,
+    artwork_path TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_player_album_tracks_album ON player_album_tracks(album_id, track_number ASC);
+"#,
+        // Migration 15: Fast file path lookups for tracks and recent standalone tracks
+        r#"
+CREATE INDEX IF NOT EXISTS idx_tracks_file_path ON tracks(file_path);
+CREATE INDEX IF NOT EXISTS idx_recent_standalone_tracks_file_path ON recent_standalone_tracks(file_path);
+"#,
+        // Migration 16: SQLite FTS5 Full-Text Search for ultra-fast instant track search
+        r#"
+CREATE VIRTUAL TABLE IF NOT EXISTS tracks_fts USING fts5(
+    title,
+    artist,
+    album,
+    genre,
+    label,
+    content='tracks',
+    content_rowid='rowid',
+    tokenize='unicode61 remove_diacritics 2'
+);
+
+CREATE TRIGGER IF NOT EXISTS tracks_ai AFTER INSERT ON tracks BEGIN
+  INSERT INTO tracks_fts(rowid, title, artist, album, genre, label)
+  VALUES (new.rowid, new.title, new.artist, new.album, new.genre, new.label);
+END;
+
+CREATE TRIGGER IF NOT EXISTS tracks_ad AFTER DELETE ON tracks BEGIN
+  INSERT INTO tracks_fts(tracks_fts, rowid, title, artist, album, genre, label)
+  VALUES('delete', old.rowid, old.title, old.artist, old.album, old.genre, old.label);
+END;
+
+CREATE TRIGGER IF NOT EXISTS tracks_au AFTER UPDATE ON tracks BEGIN
+  INSERT INTO tracks_fts(tracks_fts, rowid, title, artist, album, genre, label)
+  VALUES('delete', old.rowid, old.title, old.artist, old.album, old.genre, old.label);
+  INSERT INTO tracks_fts(rowid, title, artist, album, genre, label)
+  VALUES (new.rowid, new.title, new.artist, new.album, new.genre, new.label);
+END;
+
+INSERT INTO tracks_fts(rowid, title, artist, album, genre, label)
+SELECT rowid, title, artist, album, genre, label FROM tracks;
+"#,
     ]
 }
+

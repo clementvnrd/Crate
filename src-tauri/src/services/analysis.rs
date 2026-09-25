@@ -215,6 +215,7 @@ impl AnalysisService {
                         error: None,
                     },
                 );
+                let _ = app.emit("duplicates-updated", ());
             }
             Ok(Err(e)) => {
                 let _ = app.emit(
@@ -274,6 +275,41 @@ impl AnalysisService {
         // Check cancellation before starting heavy work
         if cancel_token.is_cancelled() {
             return Err(CrateError::Analysis("Cancelled".to_string()));
+        }
+
+        // Check if track is already analyzed by Mixed In Key
+        if track.analysis_source.as_deref() == Some("mixed_in_key") && track.bpm.is_some() && track.key.is_some() {
+            log::info!("Track {} already analyzed by Mixed In Key, skipping stratum-dsp analysis", track_id);
+            return Ok((
+                AnalysisResult {
+                    track_id: track_id.to_string(),
+                    bpm: track.bpm,
+                    key: track.key.clone(),
+                    success: true,
+                    error: None,
+                },
+                Some(track),
+            ));
+        }
+
+        // Check if audio file has Mixed In Key / file tag analysis on disk
+        if let Some(tf) = crate::services::library::MikService::read_metadata_lenient(file_path) {
+            let mik_data = crate::services::library::MikService::extract_analysis_data(&tf, track_id);
+            if mik_data.is_mik && (mik_data.bpm.is_some() || mik_data.key.is_some()) {
+                let conn_guard = conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+                let updated = crate::services::library::MikService::sync_track_from_file(&conn_guard, &track)?;
+                log::info!("Track {} synced with Mixed In Key tags from file", track_id);
+                return Ok((
+                    AnalysisResult {
+                        track_id: track_id.to_string(),
+                        bpm: updated.bpm,
+                        key: updated.key.clone(),
+                        success: true,
+                        error: None,
+                    },
+                    Some(updated),
+                ));
+            }
         }
 
         // Analyze the audio file with cancellation checks
@@ -470,7 +506,7 @@ impl AnalysisService {
             r#"
             SELECT id, file_path, file_hash,
                    title, artist, album, year, genre, label, catalog_number,
-                   duration_ms, bpm, key, bitrate, sample_rate, format,
+                   duration_ms, bpm, key, energy, bitrate, sample_rate, format,
                    analysis_source, waveform_data,
                    rating, play_count,
                    date_added, date_modified, last_played,
@@ -496,22 +532,23 @@ impl AnalysisService {
                 duration_ms: row.get(10)?,
                 bpm: row.get(11)?,
                 key: row.get(12)?,
-                bitrate: row.get(13)?,
-                sample_rate: row.get(14)?,
-                format: row.get(15)?,
-                analysis_source: row.get(16)?,
-                waveform_data: row.get(17)?,
-                rating: row.get(18)?,
-                play_count: row.get(19)?,
-                date_added: row.get(20)?,
-                date_modified: row.get(21)?,
-                last_played: row.get(22)?,
-                rekordbox_id: row.get(23)?,
-                artwork_path: row.get(24)?,
-                artwork_source: row.get(25)?,
-                color: row.get(26)?,
-                library_root_id: row.get(27)?,
-                relative_path: row.get(28)?,
+                energy: row.get(13)?,
+                bitrate: row.get(14)?,
+                sample_rate: row.get(15)?,
+                format: row.get(16)?,
+                analysis_source: row.get(17)?,
+                waveform_data: row.get(18)?,
+                rating: row.get(19)?,
+                play_count: row.get(20)?,
+                date_added: row.get(21)?,
+                date_modified: row.get(22)?,
+                last_played: row.get(23)?,
+                rekordbox_id: row.get(24)?,
+                artwork_path: row.get(25)?,
+                artwork_source: row.get(26)?,
+                color: row.get(27)?,
+                library_root_id: row.get(28)?,
+                relative_path: row.get(29)?,
                 tags: Vec::new(),
             })
         })?;
@@ -561,7 +598,7 @@ impl AnalysisService {
             r#"
             SELECT id, file_path, file_hash,
                    title, artist, album, year, genre, label, catalog_number,
-                   duration_ms, bpm, key, bitrate, sample_rate, format,
+                   duration_ms, bpm, key, energy, bitrate, sample_rate, format,
                    analysis_source, waveform_data,
                    rating, play_count,
                    date_added, date_modified, last_played,
@@ -587,22 +624,23 @@ impl AnalysisService {
                 duration_ms: row.get(10)?,
                 bpm: row.get(11)?,
                 key: row.get(12)?,
-                bitrate: row.get(13)?,
-                sample_rate: row.get(14)?,
-                format: row.get(15)?,
-                analysis_source: row.get(16)?,
-                waveform_data: row.get(17)?,
-                rating: row.get(18)?,
-                play_count: row.get(19)?,
-                date_added: row.get(20)?,
-                date_modified: row.get(21)?,
-                last_played: row.get(22)?,
-                rekordbox_id: row.get(23)?,
-                artwork_path: row.get(24)?,
-                artwork_source: row.get(25)?,
-                color: row.get(26)?,
-                library_root_id: row.get(27)?,
-                relative_path: row.get(28)?,
+                energy: row.get(13)?,
+                bitrate: row.get(14)?,
+                sample_rate: row.get(15)?,
+                format: row.get(16)?,
+                analysis_source: row.get(17)?,
+                waveform_data: row.get(18)?,
+                rating: row.get(19)?,
+                play_count: row.get(20)?,
+                date_added: row.get(21)?,
+                date_modified: row.get(22)?,
+                last_played: row.get(23)?,
+                rekordbox_id: row.get(24)?,
+                artwork_path: row.get(25)?,
+                artwork_source: row.get(26)?,
+                color: row.get(27)?,
+                library_root_id: row.get(28)?,
+                relative_path: row.get(29)?,
                 tags: Vec::new(),
             })
         })?;

@@ -46,6 +46,13 @@ export async function deleteTracks(ids: string[]): Promise<void> {
 }
 
 /**
+ * Delete tracks from Crate DB and move their audio files to macOS Trash
+ */
+export async function deleteTracksAndFiles(ids: string[]): Promise<void> {
+	return invoke<void>('delete_tracks_and_files', { ids })
+}
+
+/**
  * Search tracks by query string
  */
 export async function searchTracks(query: string): Promise<Track[]> {
@@ -153,3 +160,48 @@ export async function importTracksWithDuplicates(paths: string[]): Promise<Impor
 export async function resolveDuplicate(resolution: DuplicateResolution): Promise<Track | null> {
 	return invoke<Track | null>('resolve_duplicate', { resolution })
 }
+
+/**
+ * Resync Mixed In Key metadata (Key, BPM, Energy, Cues) from audio file tags
+ */
+export async function resyncMixedInKeyTracks(trackIds?: string[]): Promise<RescanResult> {
+	return invoke<RescanResult>('resync_mixed_in_key_tracks', { trackIds: trackIds ?? null })
+}
+
+/**
+ * Get status of connection to Mixed In Key's CoreData SQLite database
+ */
+export async function getMikDatabaseStatus(): Promise<import('../types').MikDatabaseStatus> {
+	return invoke<import('../types').MikDatabaseStatus>('get_mik_database_status')
+}
+
+/**
+ * Full synchronization directly with Mixed In Key 11 database (Collection11.mikdb)
+ */
+export async function syncFromMikDatabase(): Promise<import('../types').MikSyncResult> {
+	return invoke<import('../types').MikSyncResult>('sync_from_mik_database')
+}
+
+/**
+ * Prune ghost tracks from Crate DB whose physical audio files no longer exist on disk
+ */
+export async function pruneMissingTracks(): Promise<number> {
+	return invoke<number>('prune_missing_tracks')
+}
+
+/**
+ * Load waveform data on demand for a single track
+ */
+export async function getTrackWaveform(trackId: string): Promise<number[] | null> {
+	return invoke<number[] | null>('get_track_waveform', { trackId })
+}
+
+/**
+ * Load cues for a track (from Crate cues table or fallback to MIK DB)
+ */
+export async function getTrackCues(trackId: string): Promise<import('../types').Cue[]> {
+	return invoke<import('../types').Cue[]>('get_track_cues', { trackId })
+}
+
+
+

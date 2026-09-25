@@ -8,11 +8,13 @@
 	import { translate } from '$shared/i18n'
 	import {
 		GeneralTab,
+		DisplayOptionsTab,
 		LibraryTab,
 		DiscoveryTab,
 		AppearanceTab,
 		SoundTab,
 		CloudSyncTab,
+		BeatportTab,
 		DiagnosticsTab,
 		AboutTab,
 	} from './tabs'
@@ -31,11 +33,13 @@
 
 	const allTabs: { page: SettingsPage; icon: string; fill?: boolean; requireSync?: boolean }[] = [
 		{ page: 'general', icon: 'sliders-horizontal' },
+		{ page: 'displayOptions', icon: 'eye' },
 		{ page: 'appearance', icon: 'palette' },
 		{ page: 'discovery', icon: 'globe' },
 		{ page: 'library', icon: 'library' },
 		{ page: 'sound', icon: 'volume-full', fill: true },
 		{ page: 'cloudSync', icon: 'cloud', requireSync: true },
+		{ page: 'beatport', icon: 'beatport' },
 		{ page: 'diagnostics', icon: 'terminal' },
 		{ page: 'about', icon: 'info' },
 	]
@@ -104,6 +108,8 @@
 		<div bind:this={contentEl} class="flex-1 overflow-auto p-6">
 			{#if activePage === 'general'}
 				<GeneralTab />
+			{:else if activePage === 'displayOptions'}
+				<DisplayOptionsTab />
 			{:else if activePage === 'appearance'}
 				<AppearanceTab />
 			{:else if activePage === 'discovery'}
@@ -114,6 +120,8 @@
 				<SoundTab />
 			{:else if activePage === 'cloudSync'}
 				<CloudSyncTab />
+			{:else if activePage === 'beatport'}
+				<BeatportTab />
 			{:else if activePage === 'diagnostics'}
 				<DiagnosticsTab />
 			{:else if activePage === 'about'}

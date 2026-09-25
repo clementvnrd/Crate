@@ -1,9 +1,16 @@
 mod artwork;
 mod duplicates;
 mod import;
+pub mod macos_bookmark;
+pub mod mik;
+pub mod mik_db;
 mod query;
 mod relocation;
 mod update;
+
+pub use macos_bookmark::*;
+pub use mik::*;
+pub use mik_db::*;
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -29,6 +36,26 @@ impl LibraryService {
             conn,
             artwork_service: ArtworkService::new(app_data_dir),
         }
+    }
+
+    pub fn prune_missing_tracks(&self) -> Result<usize> {
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        MikDatabaseService::prune_missing_tracks(&conn, Some(&self.artwork_service))
+    }
+
+    pub fn prune_missing_tracks_from_mik_db(&self) -> Result<usize> {
+        MikDatabaseService::prune_missing_tracks_from_mik_db()
+    }
+
+    pub fn get_mik_database_status(&self) -> Result<MikDatabaseStatus> {
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        Ok(MikDatabaseService::get_status(&conn))
+    }
+
+    pub fn sync_from_mik_database(&self) -> Result<MikSyncResult> {
+        let _ = MikDatabaseService::prune_missing_tracks_from_mik_db();
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        MikDatabaseService::sync_all_from_mik_db(&conn, Some(&self.artwork_service))
     }
 }
 

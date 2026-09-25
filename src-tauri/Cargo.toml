@@ -101,6 +101,7 @@ log = "0.4.29"
 env_logger = "0.11.8"
 walkdir = { version = "2.5.0", optional = true }
 sysinfo = { version = "0.37.2", optional = true }
+unicode-normalization = "0.1"
 
 # Random
 rand = "0.9"
@@ -128,4 +129,8 @@ security-framework = "3.7"
 [target.'cfg(target_os = "android")'.dependencies]
 keyring = { version = "3.6", default-features = false }
 android-keyring = { version = "0.2", features = ["ndk-context"] }
+
+# macOS CoreFoundation for native URL Bookmark resolution/creation
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.10"
 

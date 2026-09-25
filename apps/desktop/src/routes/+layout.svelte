@@ -9,7 +9,6 @@
 	import { WizardTour } from '$lib/components/wizard'
 	import { onMount } from 'svelte'
 	import { get } from 'svelte/store'
-	// @ts-expect-error — PUBLIC_APP_VERSION is set dynamically by vite.config.ts
 	import { PUBLIC_APP_VERSION } from '$env/static/public'
 	import { isDev } from '$lib/stores/app'
 	import { settingsStore, hasCompletedOnboarding, hasCompletedWizard } from '$shared/stores/settings'
@@ -34,11 +33,18 @@
 		sortedReleases,
 		displayedTracks,
 		pageActions,
+		libraryStore,
 	} from '$lib/stores'
 	import { discoveryPlaylistStore } from '$shared/stores/discoveryPlaylist'
+	import { duplicateStore } from '$shared/stores/duplicate'
+	import { upgraderStore } from '$shared/stores/upgrader'
 	import { listen } from '@tauri-apps/api/event'
 	import { setMenuItemEnabled, setOnboardingItemsEnabled } from '$shared/api/app'
 	import { computeDiscoveryTagStates } from '$shared/utils/tagComputation'
+	import * as libraryApi from '$shared/api/library'
+	import * as standaloneApi from '$shared/api/standalone'
+	import { toastStore } from '$shared/stores/toast'
+	import { playerStore, recentTracksStore } from '$lib/stores'
 
 	interface Props {
 		children: Snippet
@@ -237,10 +243,19 @@
 
 	onMount(() => {
 		async function init() {
-			const cachedLanguage = localStorage.getItem('crate-language') as Language | null
-			await initializeI18n(cachedLanguage)
-			i18nReady = true
-			await settingsStore.load()
+			try {
+				const cachedLanguage = localStorage.getItem('crate-language') as Language | null
+				await initializeI18n(cachedLanguage)
+			} catch (err) {
+				console.warn('i18n initialization warning:', err)
+			} finally {
+				i18nReady = true
+			}
+			try {
+				await settingsStore.load()
+			} catch (err) {
+				console.warn('settingsStore.load warning:', err)
+			}
 		}
 		init()
 
@@ -281,9 +296,96 @@
 			unlistenMenuAction = unlisten
 		})
 
+		// Real-time live sync with Mixed In Key database
+		let unlistenMikSync: (() => void) | null = null
+		listen('mik-database-synced', () => {
+			libraryStore.loadTracks()
+		}).then((unlisten) => {
+			unlistenMikSync = unlisten
+		})
+
+		// Real-time duplicate count updates
+		let unlistenDuplicates: (() => void) | null = null
+		listen('duplicates-updated', () => {
+			duplicateStore.loadCount()
+		}).then((unlisten) => {
+			unlistenDuplicates = unlisten
+		})
+
+		// Initial duplicate count load
+		duplicateStore.loadCount()
+
+		// Real-time upgrader count updates
+		let unlistenUpgrades: (() => void) | null = null
+		listen('upgrades-updated', () => {
+			upgraderStore.loadCount()
+		}).then((unlisten) => {
+			unlistenUpgrades = unlisten
+		})
+
+		// Initial upgrader count load
+		upgraderStore.loadCount()
+
+		// Initial automatic sync from Mixed In Key in background (non-blocking)
+		const runMikSync = async () => {
+			try {
+				const res = await libraryApi.syncFromMikDatabase()
+				if (res.added > 0 || res.updated > 0 || res.removed > 0) {
+					await libraryStore.loadTracks()
+				}
+			} catch (err) {
+				// Quietly ignore background sync errors
+			}
+		}
+
+		setTimeout(runMikSync, 1000)
+
+		// Auto-sync whenever user returns to Crate from Mixed In Key
+		const focusHandler = () => {
+			runMikSync()
+		}
+		window.addEventListener('focus', focusHandler)
+
+		// Standalone file opener (macOS Open With / Cold Start / Hot Event)
+		async function handleOpenFile(filePath: string) {
+			try {
+				const track = await standaloneApi.readStandaloneTrack(filePath)
+				uiStore.setActiveView('player')
+				await playerStore.playStandalone(track, track.is_in_library)
+				if (!track.is_in_library) {
+					await recentTracksStore.addTrack(track)
+				}
+			} catch (err) {
+				console.error('Error opening standalone file:', err)
+				toastStore.error(`Impossible d'ouvrir le fichier audio : ${filePath.split('/').pop()}`)
+			}
+		}
+
+		// Cold start check
+		standaloneApi.getStartupFile().then((path) => {
+			if (path) {
+				handleOpenFile(path)
+			}
+		})
+
+		// Live open-file listener
+		let unlistenOpenFile: (() => void) | null = null
+		listen<string>('open-file', (event) => {
+			if (event.payload) {
+				handleOpenFile(event.payload)
+			}
+		}).then((unlisten) => {
+			unlistenOpenFile = unlisten
+		})
+
 		return () => {
 			cleanupErrorHandler()
 			unlistenMenuAction?.()
+			unlistenMikSync?.()
+			unlistenDuplicates?.()
+			unlistenUpgrades?.()
+			unlistenOpenFile?.()
+			window.removeEventListener('focus', focusHandler)
 			window.removeEventListener('dragover', dragoverHandler)
 			window.removeEventListener('drop', dropHandler)
 			document.removeEventListener('contextmenu', contextMenuHandler)
@@ -319,6 +421,12 @@
 						style="-webkit-mask-image: url('/crate-logo.svg'); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; mask-image: url('/crate-logo.svg'); mask-size: contain; mask-repeat: no-repeat; mask-position: center;"
 					></div>
 					<Text variant="header-1" as="span" weight="bold">Crate</Text>
+					<span
+						class="rounded bg-brand-primary/20 border border-brand-primary/40 px-1.5 py-0.5 text-[11px] font-mono font-bold text-brand-primary tracking-wide"
+						title="App Build Number"
+					>
+						Build 57
+					</span>
 					{#if $isDev}
 						<span class="rounded bg-amber-500/20 px-1.5 py-0.5 text-xs font-medium text-amber-500">DEV</span>
 					{/if}
@@ -328,93 +436,111 @@
 				<div class="pointer-events-none absolute inset-0 flex items-center justify-center">
 					<div
 						id="wizard-view-switcher"
-						class="pointer-events-auto relative inline-grid grid-cols-2 items-center rounded-lg bg-surface-2 p-0.5"
+						class="pointer-events-auto relative inline-grid grid-cols-3 items-center rounded-lg bg-surface-2 p-0.5"
 					>
 						<div
-							class="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-md bg-surface-0 shadow-sm transition-transform duration-200 ease-out motion-reduce:transition-none"
-							style="transform: translateX({$activeView === 'library' ? '100%' : '0%'})"
+							class="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(33.333%-2px)] rounded-md bg-surface-0 shadow-sm transition-transform duration-200 ease-out motion-reduce:transition-none"
+							style="transform: translateX({$activeView === 'player' ? '0%' : $activeView === 'library' ? '100%' : '200%'})"
 						></div>
 						<button
 							type="button"
-							class="relative z-10 rounded-md px-3 py-1 text-center text-xs font-medium transition-colors {$activeView ===
-							'discovery'
-								? 'text-text-primary'
+							class="relative z-10 flex items-center justify-center gap-1.5 rounded-md px-3 py-1 text-center text-xs font-medium transition-colors {$activeView ===
+							'player'
+								? 'text-cyan-400 font-semibold'
 								: 'text-text-tertiary hover:cursor-pointer hover:text-text-secondary'}"
-							onclick={() => $pageActions?.handleViewChange('discovery')}
+							onclick={() => $pageActions?.handleViewChange('player')}
 						>
-							{$translate('nav.discovery')}
+							<Icon name="disc" class="h-3 w-3 {$activeView === 'player' ? 'text-cyan-400' : 'text-text-tertiary'}" />
+							<span>Player</span>
 						</button>
 						<button
 							type="button"
 							class="relative z-10 rounded-md px-3 py-1 text-center text-xs font-medium transition-colors {$activeView ===
 							'library'
-								? 'text-text-primary'
+								? 'text-text-primary font-semibold'
 								: 'text-text-tertiary hover:cursor-pointer hover:text-text-secondary'}"
 							onclick={() => $pageActions?.handleViewChange('library')}
 						>
 							{$translate('nav.library')}
 						</button>
+						<button
+							type="button"
+							class="relative z-10 flex items-center justify-center gap-1.5 rounded-md px-3 py-1 text-center text-xs font-medium transition-colors {$activeView ===
+							'beatport'
+								? 'text-emerald-500 dark:text-emerald-400 font-semibold'
+								: 'text-text-tertiary hover:cursor-pointer hover:text-text-secondary'}"
+							onclick={() => $pageActions?.handleViewChange('beatport')}
+						>
+							<Icon name="beatport" class="h-3 w-3 {$activeView === 'beatport' ? 'text-emerald-500 dark:text-emerald-400' : 'text-text-tertiary'}" />
+							<span>Beatport</span>
+						</button>
 					</div>
 				</div>
 
 				<Toolbar
+					activeView={$activeView}
+					onViewChange={(v) => $pageActions?.handleViewChange(v)}
 					onImport={$activeView === 'library' ? () => $pageActions?.trackController.handleImport() : undefined}
 					onAddRelease={$activeView === 'discovery' ? () => $pageActions?.openAddReleaseModal() : undefined}
 					onSettings={() => $pageActions?.getModalOrchestrator()?.openSettingsModal()}
 					onCloudSync={() => $pageActions?.getModalOrchestrator()?.openSettingsModal('cloudSync')}
 					onDevTools={() => $pageActions?.handleToggleDevTools()}
+					onOpenDuplicates={() => $pageActions?.getModalOrchestrator()?.openDuplicateManagerModal()}
+					onOpenUpgrader={() => $pageActions?.getModalOrchestrator()?.openBeatportUpgraderModal()}
 				/>
 			</div>
 
 			<div class="relative flex flex-1 overflow-hidden bg-surface-1">
-				<!-- Left: Sidebar -->
-				<div class="flex-shrink-0" style="width: {sidebarWidth}px">
-					<Sidebar
-						playlists={contextPlaylists}
-						{tagCategories}
-						{devices}
-						{selectedPlaylistId}
-						{selectedFolderId}
-						contextMenuPlaylistId={$uiLayoutStore.contextMenuPlaylistId}
-						{selectedTagIds}
-						selectedTrackIds={$activeView === 'discovery' ? $selectedReleaseIds : $selectedTrackIds}
-						selectedTreeIds={$uiLayoutStore.selectedTreeIds}
-						{tagStates}
-						{tagCounts}
-						trackCount={$activeView === 'discovery' ? $releaseCount : $trackCount}
-						showHeader={false}
-						onLibraryClick={() => {
-							uiLayoutStore.clearSelectedTreeIds()
-							$pageActions?.playlistController.handleLibraryClick()
-						}}
-						onPlaylistSelect={(p) => $pageActions?.playlistController.handlePlaylistSelect(p)}
-						onPlaylistItemClick={handlePlaylistItemClick}
-						onPlaylistContextMenu={handlePlaylistContextMenu}
-						onPlaylistMultiContextMenu={handlePlaylistMultiContextMenu}
-						onPlaylistTreeContextMenu={(e) => $pageActions?.getContextMenuOrchestrator()?.openPlaylistTreeMenu(e)}
-						onDeviceContextMenu={handleDeviceContextMenu}
-						onCancelExport={() => $pageActions?.exportController.handleExportCancel()}
-						onTagSelect={(tagId) => $pageActions?.tagController.selectTag(tagId)}
-						onTagToggle={(tagId, state) => $pageActions?.tagController.toggleTagOnTracks(tagId, state)}
-						onTagContextMenu={handleTagContextMenu}
-						onCategoryContextMenu={handleCategoryContextMenu}
-						onCreatePlaylist={() => $pageActions?.playlistController.handleCreatePlaylist()}
-						onCreateSmartPlaylist={() => $pageActions?.playlistController.handleCreateSmartPlaylist($activeView)}
-						onCreateFolder={() => $pageActions?.playlistController.handleCreateFolder()}
-						onCreateCategory={() => $pageActions?.getModalOrchestrator()?.openCreateCategoryModal()}
-						onCreateTag={(categoryId) => $pageActions?.getModalOrchestrator()?.openCreateTagModal(categoryId)}
-						onTagsWhitespaceContextMenu={(e) => $pageActions?.getContextMenuOrchestrator()?.openTagsSidebarMenu(e)}
-						onTracksDrop={(playlistId, trackIds) =>
-							$pageActions?.trackController.handleTracksDropOnPlaylist(playlistId, trackIds)}
-						onPlaylistMove={(playlistId, targetFolderId) =>
-							$pageActions?.playlistController.handlePlaylistDragMove(playlistId, targetFolderId)}
-					/>
-				</div>
+				{#if $activeView !== 'beatport' && $activeView !== 'player' && $activeView !== 'stats'}
+					<!-- Left: Sidebar -->
+					<div class="flex-shrink-0" style="width: {sidebarWidth}px">
+						<Sidebar
+							playlists={contextPlaylists}
+							{tagCategories}
+							{devices}
+							{selectedPlaylistId}
+							{selectedFolderId}
+							contextMenuPlaylistId={$uiLayoutStore.contextMenuPlaylistId}
+							{selectedTagIds}
+							selectedTrackIds={$activeView === 'discovery' ? $selectedReleaseIds : $selectedTrackIds}
+							selectedTreeIds={$uiLayoutStore.selectedTreeIds}
+							{tagStates}
+							{tagCounts}
+							trackCount={$activeView === 'discovery' ? $releaseCount : $trackCount}
+							showHeader={false}
+							onLibraryClick={() => {
+								uiLayoutStore.clearSelectedTreeIds()
+								$pageActions?.playlistController.handleLibraryClick()
+							}}
+							onPlaylistSelect={(p) => $pageActions?.playlistController.handlePlaylistSelect(p)}
+							onPlaylistItemClick={handlePlaylistItemClick}
+							onPlaylistContextMenu={handlePlaylistContextMenu}
+							onPlaylistMultiContextMenu={handlePlaylistMultiContextMenu}
+							onPlaylistTreeContextMenu={(e) => $pageActions?.getContextMenuOrchestrator()?.openPlaylistTreeMenu(e)}
+							onDeviceContextMenu={handleDeviceContextMenu}
+							onCancelExport={() => $pageActions?.exportController.handleExportCancel()}
+							onTagSelect={(tagId) => $pageActions?.tagController.selectTag(tagId)}
+							onTagToggle={(tagId, state) => $pageActions?.tagController.toggleTagOnTracks(tagId, state)}
+							onTagContextMenu={handleTagContextMenu}
+							onCategoryContextMenu={handleCategoryContextMenu}
+							onCreatePlaylist={() => $pageActions?.playlistController.handleCreatePlaylist()}
+							onCreateSmartPlaylist={() => $pageActions?.playlistController.handleCreateSmartPlaylist($activeView)}
+							onCreateFolder={() => $pageActions?.playlistController.handleCreateFolder()}
+							onCreateCategory={() => $pageActions?.getModalOrchestrator()?.openCreateCategoryModal()}
+							onCreateTag={(categoryId) => $pageActions?.getModalOrchestrator()?.openCreateTagModal(categoryId)}
+							onTagsWhitespaceContextMenu={(e) => $pageActions?.getContextMenuOrchestrator()?.openTagsSidebarMenu(e)}
+							onTracksDrop={(playlistId, trackIds) =>
+								$pageActions?.trackController.handleTracksDropOnPlaylist(playlistId, trackIds)}
+							onPlaylistMove={(playlistId, targetFolderId) =>
+								$pageActions?.playlistController.handlePlaylistDragMove(playlistId, targetFolderId)}
+						/>
+					</div>
 
-				<ResizeHandle onResize={handleSidebarResize} />
+					<ResizeHandle onResize={handleSidebarResize} />
+				{/if}
 
 				<!-- Right: Main Content -->
-				<div class="flex flex-1 overflow-hidden rounded-tl-md border-t border-l border-stroke">
+				<div class="flex flex-1 overflow-hidden {$activeView !== 'beatport' && $activeView !== 'player' && $activeView !== 'stats' ? 'rounded-tl-md border-t border-l border-stroke' : ''}">
 					{@render children()}
 				</div>
 			</div>

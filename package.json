@@ -36,6 +36,10 @@
 		"prepare:husky": "husky install",
 		"preview": "yarn workspace @bbx-audio/crate-desktop preview",
 		"tauri": "tauri",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"suivi": "node scripts/suivi.mjs",
 		"bump": "node scripts/version.js",
 		"changelog:prepare": "node scripts/changelog.js prepare",
 		"changelog:graduate": "node scripts/changelog.js graduate"
@@ -46,6 +50,8 @@
 		"@eslint/eslintrc": "3.3.3",
 		"@eslint/js": "9.39.2",
 		"@tauri-apps/cli": "2",
+		"@testing-library/jest-dom": "^7.0.1",
+		"@testing-library/svelte": "^5.4.2",
 		"@types/node": "22.19.3",
 		"cross-env": "10.1.0",
 		"eslint": "9.39.2",
@@ -54,12 +60,14 @@
 		"eslint-plugin-svelte": "3.13.1",
 		"globals": "16.5.0",
 		"husky": "8.0.3",
+		"jsdom": "^30.0.1",
 		"lint-staged": "16.2.7",
 		"prettier": "3.7.4",
 		"prettier-plugin-svelte": "3.4.1",
 		"prettier-plugin-tailwindcss": "0.7.2",
 		"typescript": "5.9.3",
-		"typescript-eslint": "8.50.0"
+		"typescript-eslint": "8.50.0",
+		"vitest": "^4.1.11"
 	},
 	"lint-staged": {
 		"**/*.{ts,js,svelte,json,css}": "yarn format:fix",

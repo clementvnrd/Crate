@@ -55,9 +55,13 @@
 
 	import { translate } from '$shared/i18n'
 	import { toastStore } from '$shared/stores/toast'
+	import { dismissSplash } from '$lib/stores/splash'
 	import { RightSidebar, OrchestratorLayer } from '$lib/components/layout'
 	import { LibraryView } from '$lib/components/library'
 	import { DiscoveryView, DiscoveryEditor } from '$lib/components/discovery'
+	import BeatportView from '$lib/components/beatport/BeatportView.svelte'
+	import PlayerView from '$lib/components/player/PlayerView.svelte'
+	import StatsView from '$lib/components/stats/StatsView.svelte'
 	import { TrackEditor } from '$lib/components/editor'
 	import { openUrl } from '@tauri-apps/plugin-opener'
 	import { PlaylistView, FolderView } from '$lib/components/playlists'
@@ -218,9 +222,14 @@
 	// =============================================================================
 
 	onMount(() => {
-		onMountSetup().then((cleanupFn) => {
-			cleanupOnMount = cleanupFn
-		})
+		onMountSetup()
+			.then((cleanupFn) => {
+				cleanupOnMount = cleanupFn
+			})
+			.catch((err) => {
+				console.error('onMountSetup error:', err)
+				dismissSplash()
+			})
 	})
 
 	onDestroy(() => {
@@ -304,6 +313,10 @@
 			} else {
 				toastStore.warning(get(translate)('player.trackNotFound'))
 			}
+		} else if (source === 'beatport') {
+			uiStore.setActiveView('beatport')
+		} else if (source === 'standalone') {
+			uiStore.setActiveView('player')
 		} else {
 			const track = get(currentTrack)
 			if (!track) return
@@ -319,11 +332,23 @@
 				}
 			}
 
-			// Not found in current view — fall back to main library list
-			await navigateToMainView('library')
+			// Switch to library view if not already on it
+			if (currentView !== 'library') {
+				uiStore.setActiveView('library')
+			}
 
 			const tracks = get(displayedTracks)
 			if (tracks.some((t) => t.id === track.id)) {
+				uiStore.setSelectedTracks(new Set([track.id]))
+				locateStore.scrollToTrack(track.id)
+				return
+			}
+
+			// Not found in current displayed list — fallback to main library
+			await navigateToMainView('library')
+
+			const mainTracks = get(displayedTracks)
+			if (mainTracks.some((t) => t.id === track.id)) {
 				uiStore.setSelectedTracks(new Set([track.id]))
 				locateStore.scrollToTrack(track.id)
 			} else {
@@ -734,6 +759,12 @@
 			scrollOffset={$scrollOffset}
 			onScrollChange={(offset) => uiStore.setScrollOffset(offset)}
 		/>
+	{:else if $activeView === 'beatport'}
+		<BeatportView />
+	{:else if $activeView === 'player'}
+		<PlayerView />
+	{:else if $activeView === 'stats'}
+		<StatsView />
 	{:else}
 		<LibraryView
 			tracks={$displayedTracks}

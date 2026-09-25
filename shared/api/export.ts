@@ -49,3 +49,16 @@ export async function deleteCheckpoint(checkpointId: string): Promise<void> {
 export async function resumeExport(deviceId: string, mountPoint: string): Promise<ExportResult> {
 	return invoke('resume_export', { deviceId, mountPoint })
 }
+
+/**
+ * Export library or playlists to Pioneer Rekordbox XML format
+ */
+export async function exportRekordboxXml(
+	targetPath: string,
+	playlistIds?: string[]
+): Promise<number> {
+	return invoke<number>('export_rekordbox_xml', {
+		targetPath,
+		playlistIds: playlistIds ?? null,
+	})
+}

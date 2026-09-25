@@ -70,6 +70,34 @@ impl ArtworkService {
         None
     }
 
+    /// Extracts album art from tagged audio file, or falls back to sibling cover image in same folder.
+    #[cfg(feature = "desktop")]
+    pub fn extract_from_tagged_file_or_folder(&self, tagged_file: &TaggedFile, file_path: &std::path::Path, track_id: &str) -> Option<String> {
+        if let Some(art) = self.extract_and_save(tagged_file, track_id) {
+            return Some(art);
+        }
+
+        if let Some(parent) = file_path.parent() {
+            let candidates = [
+                "cover.jpg", "cover.png", "cover.jpeg", "cover.webp",
+                "folder.jpg", "folder.png", "folder.jpeg",
+                "front.jpg", "front.png", "front.jpeg",
+                "albumart.jpg", "album.jpg", "art.jpg",
+                "Cover.jpg", "Cover.png", "Folder.jpg", "Front.jpg"
+            ];
+            for candidate in candidates {
+                let img_path = parent.join(candidate);
+                if img_path.exists() {
+                    if let Some(saved) = self.save_from_file(&img_path, track_id) {
+                        return Some(saved);
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
     /// Extracts a picture from a single tag and saves it.
     #[cfg(feature = "desktop")]
     fn extract_from_tag(&self, tag: &Tag, track_id: &str) -> Option<String> {

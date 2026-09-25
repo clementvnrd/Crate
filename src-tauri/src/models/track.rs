@@ -22,6 +22,7 @@ pub struct Track {
     pub duration_ms: i64,
     pub bpm: Option<f64>,
     pub key: Option<String>,
+    pub energy: Option<i32>,
     pub bitrate: Option<i32>,
     pub sample_rate: Option<i32>,
     pub format: String,
@@ -78,6 +79,7 @@ impl Track {
             duration_ms,
             bpm: None,
             key: None,
+            energy: None,
             bitrate: None,
             sample_rate: None,
             format,
@@ -109,6 +111,9 @@ pub struct TrackFilter {
     pub bpm_min: Option<f64>,
     pub bpm_max: Option<f64>,
     pub key: Option<String>,
+    pub keys: Option<Vec<String>>,
+    pub energy_min: Option<i32>,
+    pub energy_max: Option<i32>,
 }
 
 #[cfg(feature = "desktop")]
@@ -122,6 +127,7 @@ pub struct TrackUpdate {
     pub label: Option<String>,
     pub bpm: Option<f64>,
     pub key: Option<String>,
+    pub energy: Option<i32>,
     pub rating: Option<i32>,
 }
 

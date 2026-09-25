@@ -35,6 +35,31 @@
     "active": true,
     "targets": "all",
     "createUpdaterArtifacts": "v1Compatible",
+    "fileAssociations": [
+      {
+        "ext": ["mp3", "flac", "wav", "aif", "aiff", "m4a", "aac", "ogg", "alac", "wma", "opus", "oga", "caf", "weba"],
+        "name": "Audio File",
+        "role": "Viewer",
+        "rank": "Default",
+        "mimeType": "audio/*",
+        "contentTypes": [
+          "public.audio",
+          "public.mp3",
+          "public.wave-format",
+          "com.microsoft.waveform-audio",
+          "public.aiff-audio",
+          "public.aifc-audio",
+          "org.xiph.flac",
+          "public.flac-audio",
+          "com.apple.m4a-audio",
+          "public.aac-audio",
+          "org.xiph.ogg-audio",
+          "org.xiph.ogg",
+          "com.apple.coreaudio-format",
+          "com.microsoft.windows-media-wma"
+        ]
+      }
+    ],
     "icon": [
       "icons/prod/32x32.png",
       "icons/prod/128x128.png",

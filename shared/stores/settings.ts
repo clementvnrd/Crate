@@ -49,6 +49,9 @@ interface SettingsState {
 	lastBackupType: string | null
 	hasCompletedOnboarding: boolean
 	hasCompletedWizard: boolean
+	beatportDownloadDestination: string | null
+	beatportAudioQuality: string | null
+	beatportAutoSyncMik: boolean
 	loading: boolean
 	error: string | null
 }
@@ -81,6 +84,9 @@ const initialState: SettingsState = {
 	lastBackupType: null,
 	hasCompletedOnboarding: false,
 	hasCompletedWizard: false,
+	beatportDownloadDestination: '~/Music/My Library/FLAC',
+	beatportAudioQuality: 'flac',
+	beatportAutoSyncMik: true,
 	loading: false,
 	error: null,
 }
@@ -308,6 +314,9 @@ function createSettingsStore() {
 					lastBackupType: settings.lastBackupType ?? null,
 					hasCompletedOnboarding: settings.hasCompletedOnboarding,
 					hasCompletedWizard: settings.hasCompletedWizard,
+					beatportDownloadDestination: settings.beatportDownloadDestination ?? '~/Music/My Library/FLAC',
+					beatportAudioQuality: settings.beatportAudioQuality ?? 'flac',
+					beatportAutoSyncMik: settings.beatportAutoSyncMik ?? true,
 					resolvedTheme,
 					loading: false,
 				}))
@@ -659,6 +668,33 @@ function createSettingsStore() {
 			}
 		},
 
+		async setBeatportDownloadDestination(destination: string) {
+			update((s) => ({ ...s, beatportDownloadDestination: destination }))
+			try {
+				await settingsApi.setSetting('beatport_download_destination', destination)
+			} catch (error) {
+				console.error('Failed to save beatport download destination setting:', error)
+			}
+		},
+
+		async setBeatportAudioQuality(quality: string) {
+			update((s) => ({ ...s, beatportAudioQuality: quality }))
+			try {
+				await settingsApi.setSetting('beatport_audio_quality', quality)
+			} catch (error) {
+				console.error('Failed to save beatport audio quality setting:', error)
+			}
+		},
+
+		async setBeatportAutoSyncMik(enabled: boolean) {
+			update((s) => ({ ...s, beatportAutoSyncMik: enabled }))
+			try {
+				await settingsApi.setSetting('beatport_auto_sync_mik', enabled ? 'true' : 'false')
+			} catch (error) {
+				console.error('Failed to save beatport auto sync mik setting:', error)
+			}
+		},
+
 		/**
 		 * Reset store to initial state
 		 */
@@ -727,5 +763,11 @@ export const lastBackupType = derived(settingsStore, ($s) => $s.lastBackupType)
 export const hasCompletedOnboarding = derived(settingsStore, ($s) => $s.hasCompletedOnboarding)
 
 export const hasCompletedWizard = derived(settingsStore, ($s) => $s.hasCompletedWizard)
+
+export const beatportDownloadDestination = derived(settingsStore, ($s) => $s.beatportDownloadDestination)
+
+export const beatportAudioQuality = derived(settingsStore, ($s) => $s.beatportAudioQuality)
+
+export const beatportAutoSyncMik = derived(settingsStore, ($s) => $s.beatportAutoSyncMik)
 
 export const settingsLoading = derived(settingsStore, ($s) => $s.loading)

@@ -49,15 +49,19 @@ function createLibraryStore() {
 		 * Load all tracks from the backend
 		 */
 		async loadTracks(filter?: TrackFilter) {
-			update((state) => ({ ...state, loading: true, error: null }))
+			let activeFilter: TrackFilter = {}
+			update((state) => {
+				activeFilter = filter ?? state.filter
+				return { ...state, loading: true, error: null }
+			})
 
 			try {
-				const tracks = await libraryApi.getTracks(filter)
+				const tracks = await libraryApi.getTracks(activeFilter)
 				update((state) => ({
 					...state,
 					tracks,
 					loading: false,
-					filter: filter ?? {},
+					filter: activeFilter,
 				}))
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : 'Failed to load tracks'

@@ -119,6 +119,7 @@
 
 	function handleTrackContextMenu(track: Track, e: MouseEvent) {
 		e.preventDefault()
+		e.stopPropagation()
 
 		// If track not selected, select it
 		if (!selectedIds.has(track.id)) {

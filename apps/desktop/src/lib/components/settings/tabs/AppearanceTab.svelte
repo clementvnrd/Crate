@@ -28,6 +28,8 @@
 
 	// Font options
 	const fontOptions: { value: Font; label: string; style: string }[] = [
+		{ value: 'jost', label: 'Jost (Mixed In Key)', style: "font-family: 'Jost', sans-serif" },
+		{ value: 'dm-sans', label: 'DM Sans', style: "font-family: 'DM Sans', sans-serif" },
 		{ value: 'inter', label: 'Inter', style: "font-family: 'Inter', sans-serif" },
 		{ value: 'nunito', label: 'Nunito', style: "font-family: 'Nunito', sans-serif" },
 		{ value: 'open-sans', label: 'Open Sans', style: "font-family: 'Open Sans', sans-serif" },

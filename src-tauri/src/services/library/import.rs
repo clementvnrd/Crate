@@ -5,10 +5,12 @@ use lofty::config::{ParseOptions, ParsingMode};
 use lofty::file::{AudioFile, TaggedFile};
 use lofty::prelude::*;
 use lofty::probe::Probe;
+use lofty::tag::Tag;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::probe::Hint;
 
 use super::*;
+use crate::models::Cue;
 use crate::services::cloud_sync::pipeline::{buckets, dirty};
 use crate::services::cloud_sync::resolution;
 
@@ -77,12 +79,21 @@ impl LibraryService {
                 track.album = tag.album().map(|s| s.to_string());
                 track.year = tag.year().map(|y| y as i32);
                 track.genre = tag.genre().map(|s| s.to_string());
+            }
 
-                // Try to get BPM from various tag formats
-                track.bpm = self.extract_bpm(tag);
-
-                // Try to get key
-                track.key = self.extract_key(tag);
+            // Extract Mixed In Key & audio analysis metadata (BPM, Key, Energy, Cues)
+            let mik_data = MikService::extract_analysis_data(&tagged_file, &track.id);
+            if let Some(bpm) = mik_data.bpm {
+                track.bpm = Some(bpm);
+            }
+            if let Some(ref key) = mik_data.key {
+                track.key = Some(key.clone());
+            }
+            if let Some(energy) = mik_data.energy {
+                track.energy = Some(energy);
+            }
+            if mik_data.is_mik {
+                track.analysis_source = Some("mixed_in_key".to_string());
             }
 
             // Extract album artwork
@@ -92,6 +103,14 @@ impl LibraryService {
             {
                 track.artwork_path = Some(artwork_path);
                 track.artwork_source = Some("extracted".to_string());
+            }
+
+            // Insert into database
+            self.insert_track(&track)?;
+
+            // Insert any extracted hot cues
+            if !mik_data.cues.is_empty() {
+                self.insert_cues(&mik_data.cues)?;
             }
         } else {
             // Lofty failed completely, use symphonia fallback
@@ -104,15 +123,15 @@ impl LibraryService {
             track.duration_ms = dur;
             track.sample_rate = sr;
             track.bitrate = br;
+
+            // Insert into database
+            self.insert_track(&track)?;
         }
 
         // Compute file hash for future relocation matching
         if let Ok(hash) = compute_audio_hash(path) {
             track.file_hash = Some(hash);
         }
-
-        // Insert into database
-        self.insert_track(&track)?;
 
         Ok(track)
     }
@@ -155,8 +174,21 @@ impl LibraryService {
                 track.album = tag.album().map(|s| s.to_string());
                 track.year = tag.year().map(|y| y as i32);
                 track.genre = tag.genre().map(|s| s.to_string());
-                track.bpm = self.extract_bpm(tag);
-                track.key = self.extract_key(tag);
+            }
+
+            // Extract Mixed In Key & audio analysis metadata (BPM, Key, Energy, Cues)
+            let mik_data = MikService::extract_analysis_data(&tagged_file, &track.id);
+            if let Some(bpm) = mik_data.bpm {
+                track.bpm = Some(bpm);
+            }
+            if let Some(ref key) = mik_data.key {
+                track.key = Some(key.clone());
+            }
+            if let Some(energy) = mik_data.energy {
+                track.energy = Some(energy);
+            }
+            if mik_data.is_mik {
+                track.analysis_source = Some("mixed_in_key".to_string());
             }
 
             // Extract album artwork
@@ -166,6 +198,14 @@ impl LibraryService {
             {
                 track.artwork_path = Some(artwork_path);
                 track.artwork_source = Some("extracted".to_string());
+            }
+
+            // Insert into database
+            self.insert_track(&track)?;
+
+            // Insert any extracted hot cues
+            if !mik_data.cues.is_empty() {
+                self.insert_cues(&mik_data.cues)?;
             }
         } else {
             // Lofty failed completely, use symphonia fallback
@@ -178,10 +218,10 @@ impl LibraryService {
             track.duration_ms = dur;
             track.sample_rate = sr;
             track.bitrate = br;
-        }
 
-        // Insert into database
-        self.insert_track(&track)?;
+            // Insert into database
+            self.insert_track(&track)?;
+        }
 
         Ok(track)
     }
@@ -303,7 +343,10 @@ impl LibraryService {
         };
 
         let sample_rate = params.sample_rate.map(|s| s as i32);
-        let bitrate = params.bits_per_sample.map(|b| b as i32);
+        let channels = params.channels.map(|c| c.count() as i32).unwrap_or(2);
+        let bits = params.bits_per_sample.unwrap_or(16) as i32;
+        let sr = sample_rate.unwrap_or(44100);
+        let bitrate = Some((sr * channels * bits + 500) / 1000);
 
         Ok((duration_ms, sample_rate, bitrate))
     }
@@ -320,7 +363,7 @@ impl LibraryService {
             INSERT INTO tracks (
                 id, file_path, file_hash,
                 title, artist, album, year, genre, label, catalog_number,
-                duration_ms, bpm, key, bitrate, sample_rate, format,
+                duration_ms, bpm, key, energy, bitrate, sample_rate, format,
                 analysis_source, waveform_data,
                 rating, play_count,
                 date_added, date_modified, last_played,
@@ -329,12 +372,12 @@ impl LibraryService {
             ) VALUES (
                 ?1, ?2, ?3,
                 ?4, ?5, ?6, ?7, ?8, ?9, ?10,
-                ?11, ?12, ?13, ?14, ?15, ?16,
-                ?17, ?18,
-                ?19, ?20,
-                ?21, ?22, ?23,
-                ?24, ?25, ?26, ?27,
-                ?28, ?29, ?30
+                ?11, ?12, ?13, ?14, ?15, ?16, ?17,
+                ?18, ?19,
+                ?20, ?21,
+                ?22, ?23, ?24,
+                ?25, ?26, ?27, ?28,
+                ?29, ?30, ?31
             )
             ON CONFLICT(file_path) DO UPDATE SET
                 title = excluded.title,
@@ -342,6 +385,10 @@ impl LibraryService {
                 album = excluded.album,
                 year = excluded.year,
                 genre = excluded.genre,
+                bpm = COALESCE(excluded.bpm, tracks.bpm),
+                key = COALESCE(excluded.key, tracks.key),
+                energy = COALESCE(excluded.energy, tracks.energy),
+                analysis_source = COALESCE(excluded.analysis_source, tracks.analysis_source),
                 artwork_path = excluded.artwork_path,
                 artwork_source = excluded.artwork_source,
                 date_modified = excluded.date_modified,
@@ -363,6 +410,7 @@ impl LibraryService {
                 track.duration_ms,
                 track.bpm,
                 track.key,
+                track.energy,
                 track.bitrate,
                 track.sample_rate,
                 track.format,
@@ -384,17 +432,54 @@ impl LibraryService {
         )?;
 
         dirty::mark_dirty(&conn, &buckets::bucket_for_track_id(&track.id))?;
+        drop(conn);
 
         Ok(())
     }
 
-    fn extract_bpm(&self, _tag: &dyn Accessor) -> Option<f64> {
-        // BPM is often stored as a text field
-        None // Will be populated by Rekordbox import or analysis
+    fn insert_cues(&self, cues: &[Cue]) -> Result<()> {
+        if cues.is_empty() {
+            return Ok(());
+        }
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+
+        for cue in cues {
+            let cue_hlc = dirty::next_hlc(&conn)?;
+            conn.execute(
+                r#"
+                INSERT INTO cues (id, track_id, position_ms, type, loop_end_ms, hot_cue_index, name, color, _hlc)
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+                ON CONFLICT(id) DO UPDATE SET
+                    position_ms = excluded.position_ms,
+                    type = excluded.type,
+                    loop_end_ms = excluded.loop_end_ms,
+                    hot_cue_index = excluded.hot_cue_index,
+                    name = excluded.name,
+                    color = excluded.color,
+                    _hlc = excluded._hlc
+                "#,
+                rusqlite::params![
+                    cue.id,
+                    cue.track_id,
+                    cue.position_ms,
+                    cue.cue_type.to_string(),
+                    cue.loop_end_ms,
+                    cue.hot_cue_index,
+                    cue.name,
+                    cue.color,
+                    cue_hlc,
+                ],
+            )?;
+        }
+        dirty::mark_dirty(&conn, buckets::CUES)?;
+        Ok(())
     }
 
-    fn extract_key(&self, _tag: &dyn Accessor) -> Option<String> {
-        // Key is often stored in a custom tag
-        None // Will be populated by Rekordbox import or analysis
+    fn extract_bpm(&self, tag: &Tag) -> Option<f64> {
+        MikService::extract_bpm(tag)
+    }
+
+    fn extract_key(&self, tag: &Tag) -> Option<String> {
+        MikService::extract_key(tag)
     }
 }

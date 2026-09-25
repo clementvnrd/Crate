@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use tauri::State;
+use tauri::{Emitter, State};
 
 use crate::error::Result;
 use crate::models::{
@@ -12,11 +12,16 @@ use crate::services::LibraryService;
 
 #[tauri::command]
 pub async fn import_tracks(
+    app: tauri::AppHandle,
     paths: Vec<String>,
     library: State<'_, LibraryService>,
 ) -> Result<ImportResult> {
     let pathbufs: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
-    library.import_tracks(pathbufs)
+    let res = library.import_tracks(pathbufs)?;
+    if !res.tracks.is_empty() {
+        let _ = app.emit("duplicates-updated", ());
+    }
+    Ok(res)
 }
 
 #[tauri::command]
@@ -34,16 +39,36 @@ pub async fn get_track(id: String, library: State<'_, LibraryService>) -> Result
 
 #[tauri::command]
 pub async fn update_track(
+    app: tauri::AppHandle,
     id: String,
     update: TrackUpdate,
     library: State<'_, LibraryService>,
 ) -> Result<Track> {
-    library.update_track(&id, update)
+    let res = library.update_track(&id, update)?;
+    let _ = app.emit("duplicates-updated", ());
+    Ok(res)
 }
 
 #[tauri::command]
-pub async fn delete_tracks(ids: Vec<String>, library: State<'_, LibraryService>) -> Result<()> {
-    library.delete_tracks(ids)
+pub async fn delete_tracks(
+    app: tauri::AppHandle,
+    ids: Vec<String>,
+    library: State<'_, LibraryService>,
+) -> Result<()> {
+    let res = library.delete_tracks(ids)?;
+    let _ = app.emit("duplicates-updated", ());
+    Ok(res)
+}
+
+#[tauri::command]
+pub async fn delete_tracks_and_files(
+    app: tauri::AppHandle,
+    ids: Vec<String>,
+    library: State<'_, LibraryService>,
+) -> Result<()> {
+    let res = library.delete_tracks_and_files(ids)?;
+    let _ = app.emit("duplicates-updated", ());
+    Ok(res)
 }
 
 #[tauri::command]
@@ -106,11 +131,14 @@ pub async fn set_track_colors(
 
 #[tauri::command]
 pub async fn update_tracks(
+    app: tauri::AppHandle,
     ids: Vec<String>,
     update: TrackUpdate,
     library: State<'_, LibraryService>,
 ) -> Result<Vec<Track>> {
-    library.update_tracks(ids, update)
+    let res = library.update_tracks(ids, update)?;
+    let _ = app.emit("duplicates-updated", ());
+    Ok(res)
 }
 
 #[tauri::command]
@@ -148,17 +176,85 @@ pub async fn compare_track_artworks(
 
 #[tauri::command]
 pub async fn import_tracks_with_duplicates(
+    app: tauri::AppHandle,
     paths: Vec<String>,
     library: State<'_, LibraryService>,
 ) -> Result<ImportResultWithDuplicates> {
     let pathbufs: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
-    library.import_tracks_with_duplicate_detection(pathbufs)
+    let res = library.import_tracks_with_duplicate_detection(pathbufs)?;
+    if !res.tracks.is_empty() {
+        let _ = app.emit("duplicates-updated", ());
+    }
+    Ok(res)
 }
 
 #[tauri::command]
 pub async fn resolve_duplicate(
+    app: tauri::AppHandle,
     resolution: DuplicateResolution,
     library: State<'_, LibraryService>,
 ) -> Result<Option<Track>> {
-    library.resolve_duplicate(resolution)
+    let res = library.resolve_duplicate(resolution)?;
+    let _ = app.emit("duplicates-updated", ());
+    Ok(res)
+}
+
+#[tauri::command]
+pub async fn resync_mixed_in_key_tracks(
+    app: tauri::AppHandle,
+    track_ids: Option<Vec<String>>,
+    library: State<'_, LibraryService>,
+) -> Result<RescanResult> {
+    let res = library.resync_mixed_in_key_tracks(track_ids)?;
+    if res.updated_count > 0 {
+        let _ = app.emit("duplicates-updated", ());
+    }
+    Ok(res)
+}
+
+#[tauri::command]
+pub async fn get_mik_database_status(
+    library: State<'_, LibraryService>,
+) -> Result<crate::services::library::MikDatabaseStatus> {
+    library.get_mik_database_status()
+}
+
+#[tauri::command]
+pub async fn sync_from_mik_database(
+    app: tauri::AppHandle,
+    library: State<'_, LibraryService>,
+) -> Result<crate::services::library::MikSyncResult> {
+    let res = library.sync_from_mik_database()?;
+    if res.added > 0 || res.updated > 0 || res.removed > 0 {
+        let _ = app.emit("duplicates-updated", ());
+    }
+    Ok(res)
+}
+
+#[tauri::command]
+pub async fn prune_missing_tracks(
+    app: tauri::AppHandle,
+    library: State<'_, LibraryService>,
+) -> Result<usize> {
+    let res = library.prune_missing_tracks()?;
+    if res > 0 {
+        let _ = app.emit("duplicates-updated", ());
+    }
+    Ok(res)
+}
+
+#[tauri::command]
+pub async fn get_track_waveform(
+    track_id: String,
+    library: State<'_, LibraryService>,
+) -> Result<Option<Vec<u8>>> {
+    library.get_track_waveform(&track_id)
+}
+
+#[tauri::command]
+pub async fn get_track_cues(
+    track_id: String,
+    library: State<'_, LibraryService>,
+) -> Result<Vec<crate::models::Cue>> {
+    library.get_track_cues(&track_id)
 }

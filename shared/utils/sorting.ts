@@ -43,6 +43,8 @@ function getTrackSortValue(track: Track, field: TrackSortField): string | number
 			return track.bpm
 		case 'key':
 			return track.key
+		case 'energy':
+			return track.energy ?? 0
 		case 'duration_ms':
 			return track.duration_ms
 		case 'date_added':
@@ -53,6 +55,20 @@ function getTrackSortValue(track: Track, field: TrackSortField): string | number
 			// No color goes to end (use 999), otherwise use ROYGBIV order
 			if (!track.color) return 999
 			return COLOR_SORT_ORDER[track.color as TrackColor] ?? 999
+		case 'bitrate':
+			return track.bitrate ?? 0
+		case 'format':
+			return track.format?.toLowerCase() ?? ''
+		case 'genre':
+			return track.genre?.toLowerCase() ?? null
+		case 'label':
+			return track.label?.toLowerCase() ?? null
+		case 'year':
+			return track.year ?? null
+		case 'file_path':
+			return track.file_path.toLowerCase()
+		case 'sample_rate':
+			return track.sample_rate ?? 0
 		default:
 			return null
 	}

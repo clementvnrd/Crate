@@ -9,6 +9,9 @@
 		volume,
 		playbackSpeed,
 		previewInfo,
+		beatportTrack,
+		standaloneTrack,
+		playbackSource,
 		discoveryStore,
 	} from '$lib/stores'
 	import PlaybackControls from './PlaybackControls.svelte'
@@ -25,7 +28,12 @@
 
 	let { onNext, onPrevious, onLocateTrack }: Props = $props()
 
-	const hasTrack = $derived($currentTrack !== null || $previewInfo !== null)
+	const hasTrack = $derived(
+		$currentTrack !== null ||
+			$previewInfo !== null ||
+			$beatportTrack !== null ||
+			$standaloneTrack !== null
+	)
 
 	function handlePlayPause() {
 		playerStore.togglePlayPause()
@@ -65,6 +73,9 @@
 		<TrackInfo
 			track={$currentTrack}
 			previewInfo={$previewInfo}
+			beatportTrack={$beatportTrack}
+			standaloneTrack={$standaloneTrack}
+			playbackSource={$playbackSource}
 			onLocate={onLocateTrack}
 			onLikeToggle={handleLikeToggle}
 		/>

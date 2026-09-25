@@ -18,13 +18,18 @@ function getAudio(): HTMLAudioElement {
 		audio.preservesPitch = false
 		audio.addEventListener('ended', () => _onEnded?.())
 		audio.addEventListener('timeupdate', () => {
-			_onTimeUpdate?.(Math.round(audio!.currentTime * 1000))
-		})
-		audio.addEventListener('durationchange', () => {
-			if (audio!.duration && isFinite(audio!.duration)) {
-				_onDurationChange?.(Math.round(audio!.duration * 1000))
+			if (audio) {
+				_onTimeUpdate?.(Math.round(audio.currentTime * 1000))
 			}
 		})
+		const handleDuration = () => {
+			if (audio && audio.duration && isFinite(audio.duration)) {
+				_onDurationChange?.(Math.round(audio.duration * 1000))
+			}
+		}
+		audio.addEventListener('durationchange', handleDuration)
+		audio.addEventListener('loadedmetadata', handleDuration)
+		audio.addEventListener('canplay', handleDuration)
 		audio.addEventListener('error', () => {
 			const msg = audio?.error?.message || 'Preview playback error'
 			_onError?.(msg)
@@ -38,6 +43,10 @@ function getAudio(): HTMLAudioElement {
 export function play(url: string) {
 	const el = getAudio()
 	el.src = url
+	el.currentTime = 0
+	if (el.duration && isFinite(el.duration)) {
+		_onDurationChange?.(Math.round(el.duration * 1000))
+	}
 	el.play().catch((e) => {
 		_onError?.(e.message || 'Failed to play preview')
 	})

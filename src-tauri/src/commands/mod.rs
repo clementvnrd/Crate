@@ -1,14 +1,19 @@
 // Command modules wrapping desktop-only services are gated behind the `desktop` feature.
 #[cfg(feature = "desktop")]
+pub mod album;
+#[cfg(feature = "desktop")]
 pub mod analysis;
 pub mod app;
 pub mod backup;
+pub mod beatport;
 pub mod cloud_sync;
 #[cfg(feature = "desktop")]
 pub mod device;
 #[cfg(feature = "desktop")]
 pub mod diagnostics;
 pub mod discovery;
+#[cfg(feature = "desktop")]
+pub mod duplicate;
 #[cfg(feature = "desktop")]
 pub mod export;
 pub mod follow;
@@ -21,5 +26,12 @@ pub mod playback;
 pub mod playlist;
 pub mod settings;
 #[cfg(feature = "desktop")]
+pub mod standalone;
+pub mod stats;
+#[cfg(feature = "desktop")]
 pub mod sync;
 pub mod tag;
+#[cfg(feature = "desktop")]
+pub mod upgrader;
+
+

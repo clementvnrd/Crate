@@ -10,7 +10,11 @@
 
 	let { onSearchChange, placeholder, initialValue = '' }: Props = $props()
 
-	let inputValue = $derived(initialValue)
+	let inputValue = $state(initialValue)
+
+	$effect(() => {
+		inputValue = initialValue
+	})
 
 	// Debounced search
 	let debounceTimer: ReturnType<typeof setTimeout>

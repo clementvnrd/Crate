@@ -109,6 +109,7 @@ export interface Track {
 	duration_ms: number
 	bpm: number | null
 	key: string | null
+	energy: number | null
 	bitrate: number | null
 	sample_rate: number | null
 	format: string
@@ -152,6 +153,9 @@ export interface TrackFilter {
 	bpm_min?: number
 	bpm_max?: number
 	key?: string
+	keys?: string[]
+	energy_min?: number
+	energy_max?: number
 }
 
 export interface TrackUpdate {
@@ -163,6 +167,7 @@ export interface TrackUpdate {
 	label?: string
 	bpm?: number
 	key?: string
+	energy?: number
 	rating?: number
 }
 
@@ -171,6 +176,24 @@ export interface ImportResult {
 	failed_count: number
 	errors: string[]
 }
+
+export interface MikDatabaseStatus {
+	is_connected: boolean
+	db_path: string | null
+	total_songs: number
+	total_cues: number
+	total_synced_in_crate: number
+	last_sync_time: string | null
+}
+
+export interface MikSyncResult {
+	added: number
+	updated: number
+	removed: number
+	total: number
+	errors?: string[]
+}
+
 
 // =============================================================================
 // Duplicate Track Detection Types
@@ -222,6 +245,7 @@ export interface BulkTrackInfo {
 	label: BulkEditValue<string>
 	bpm: BulkEditValue<number>
 	key: BulkEditValue<string>
+	energy: BulkEditValue<number>
 	rating: BulkEditValue<number>
 	artworkPath: BulkEditValue<string>
 	artworkSource: BulkEditValue<ArtworkSource>
@@ -369,10 +393,18 @@ export type TrackSortField =
 	| 'album'
 	| 'bpm'
 	| 'key'
+	| 'energy'
 	| 'duration_ms'
 	| 'date_added'
 	| 'rating'
 	| 'color'
+	| 'bitrate'
+	| 'format'
+	| 'genre'
+	| 'label'
+	| 'year'
+	| 'file_path'
+	| 'sample_rate'
 
 export interface SortConfig {
 	field: TrackSortField
@@ -423,7 +455,7 @@ export interface BreadcrumbItem {
 // Sidebar View Types
 // =============================================================================
 
-export type ActiveView = 'discovery' | 'library'
+export type ActiveView = 'discovery' | 'library' | 'beatport' | 'player' | 'stats'
 
 export type SidebarView = 'library' | 'playlist' | 'tag' | 'folder'
 
@@ -469,7 +501,7 @@ export type AccentColor =
 	| 'emerald'
 	| 'teal'
 
-export type Font = 'inter' | 'nunito' | 'open-sans' | 'fira-code' | 'ibm-plex-mono' | 'source-code-pro'
+export type Font = 'jost' | 'dm-sans' | 'inter' | 'nunito' | 'open-sans' | 'fira-code' | 'ibm-plex-mono' | 'source-code-pro'
 
 export type Language =
 	| 'en'
@@ -498,11 +530,13 @@ export type BackupFrequency = 'daily' | 'weekly' | 'monthly' | 'never'
 
 export type SettingsPage =
 	| 'general'
+	| 'displayOptions'
 	| 'appearance'
 	| 'discovery'
 	| 'library'
 	| 'sound'
 	| 'cloudSync'
+	| 'beatport'
 	| 'diagnostics'
 	| 'about'
 
@@ -535,6 +569,9 @@ export interface AppSettings {
 	lastBackupType: string | null
 	hasCompletedOnboarding: boolean
 	hasCompletedWizard: boolean
+	beatportDownloadDestination?: string | null
+	beatportAudioQuality?: 'flac' | 'aac' | 'mp3' | string | null
+	beatportAutoSyncMik?: boolean
 }
 
 export interface AudioDevice {
@@ -937,3 +974,28 @@ export interface LibraryRoot {
 	name: string
 	local_path: string | null
 }
+
+export interface StandaloneTrack {
+	id: string
+	file_path: string
+	title?: string | null
+	artist?: string | null
+	album?: string | null
+	duration_ms: number
+	format: string
+	bitrate?: number | null
+	sample_rate?: number | null
+	bpm?: number | null
+	key?: string | null
+	energy?: number | null
+	artwork_path?: string | null
+	is_in_library: boolean
+	last_played_at?: string | null
+}
+
+export * from './beatport'
+export * from './duplicate'
+export * from './upgrader'
+export * from './stats'
+export * from './album'
+

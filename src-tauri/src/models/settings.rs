@@ -396,6 +396,9 @@ pub struct AppSettings {
     pub last_backup_type: Option<String>,
     pub has_completed_onboarding: bool,
     pub has_completed_wizard: bool,
+    pub beatport_download_destination: Option<String>,
+    pub beatport_audio_quality: Option<String>,
+    pub beatport_auto_sync_mik: bool,
 }
 
 impl Default for AppSettings {
@@ -425,6 +428,9 @@ impl Default for AppSettings {
             last_backup_type: None,
             has_completed_onboarding: false,
             has_completed_wizard: false,
+            beatport_download_destination: Some("~/Music/My Library/FLAC".to_string()),
+            beatport_audio_quality: Some("flac".to_string()),
+            beatport_auto_sync_mik: true,
         }
     }
 }

@@ -6,7 +6,7 @@
 	type Props = {
 		open: boolean
 		title?: string
-		size?: 'sm' | 'md' | 'lg' | 'xl'
+		size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl'
 		flush?: boolean
 		onClose: () => void
 		onSubmit?: () => void
@@ -21,6 +21,9 @@
 		md: 'max-w-md',
 		lg: 'max-w-xl',
 		xl: 'max-w-2xl',
+		'2xl': 'max-w-4xl',
+		'3xl': 'max-w-5xl',
+		'4xl': 'max-w-6xl',
 	}
 
 	let dialogEl: HTMLDialogElement | undefined = $state()
@@ -114,7 +117,7 @@
 				</div>
 			{/if}
 
-			<div class="min-h-0 {flush ? '' : 'overflow-y-auto px-4 py-4'}">
+			<div class="min-h-0 {flush ? 'flex-1 flex flex-col min-h-0 overflow-hidden h-full' : 'overflow-y-auto px-4 py-4'}">
 				{@render children()}
 			</div>
 

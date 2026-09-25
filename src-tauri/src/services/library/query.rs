@@ -1,4 +1,5 @@
 use super::*;
+use crate::models::{Cue, CueType};
 
 impl LibraryService {
     pub fn get_tracks(&self, filter: Option<TrackFilter>) -> Result<Vec<Track>> {
@@ -9,8 +10,8 @@ impl LibraryService {
             SELECT
                 t.id, t.file_path, t.file_hash,
                 t.title, t.artist, t.album, t.year, t.genre, t.label, t.catalog_number,
-                t.duration_ms, t.bpm, t.key, t.bitrate, t.sample_rate, t.format,
-                t.analysis_source, t.waveform_data,
+                t.duration_ms, t.bpm, t.key, t.energy, t.bitrate, t.sample_rate, t.format,
+                t.analysis_source, NULL as waveform_data,
                 t.rating, t.play_count,
                 t.date_added, t.date_modified, t.last_played,
                 t.rekordbox_id, t.artwork_path, t.artwork_source, t.color,
@@ -24,13 +25,30 @@ impl LibraryService {
 
         if let Some(ref filter) = filter {
             if let Some(ref search) = filter.search {
-                let escaped = search.replace('%', "\\%").replace('_', "\\_");
-                let search_param = format!("%{escaped}%");
-                conditions.push(
-                    "(t.title LIKE ?1 ESCAPE '\\' OR t.artist LIKE ?1 ESCAPE '\\' OR t.album LIKE ?1 ESCAPE '\\')"
-                        .to_string(),
-                );
-                params.push(Box::new(search_param));
+                let trimmed = search.trim();
+                if !trimmed.is_empty() {
+                    let sanitized_terms: Vec<String> = trimmed
+                        .split_whitespace()
+                        .map(|word| {
+                            let clean: String = word.chars().filter(|c| c.is_alphanumeric()).collect();
+                            if clean.is_empty() {
+                                String::new()
+                            } else {
+                                format!("{clean}*")
+                            }
+                        })
+                        .filter(|s| !s.is_empty())
+                        .collect();
+
+                    if !sanitized_terms.is_empty() {
+                        let fts_match = sanitized_terms.join(" ");
+                        let p_idx = params.len() + 1;
+                        conditions.push(format!(
+                            "t.rowid IN (SELECT rowid FROM tracks_fts WHERE tracks_fts MATCH ?{p_idx})"
+                        ));
+                        params.push(Box::new(fts_match));
+                    }
+                }
             }
 
             if let Some(ref tag_ids) = filter.tag_ids {
@@ -87,9 +105,31 @@ impl LibraryService {
                 params.push(Box::new(bpm_max));
             }
 
-            if let Some(ref key) = filter.key {
+            if let Some(ref keys) = filter.keys {
+                if !keys.is_empty() {
+                    let placeholders: Vec<String> = keys
+                        .iter()
+                        .enumerate()
+                        .map(|(i, _)| format!("?{}", params.len() + i + 1))
+                        .collect();
+                    conditions.push(format!("t.key IN ({})", placeholders.join(", ")));
+                    for k in keys {
+                        params.push(Box::new(k.clone()));
+                    }
+                }
+            } else if let Some(ref key) = filter.key {
                 conditions.push(format!("t.key = ?{}", params.len() + 1));
                 params.push(Box::new(key.clone()));
+            }
+
+            if let Some(energy_min) = filter.energy_min {
+                conditions.push(format!("t.energy >= ?{}", params.len() + 1));
+                params.push(Box::new(energy_min));
+            }
+
+            if let Some(energy_max) = filter.energy_max {
+                conditions.push(format!("t.energy <= ?{}", params.len() + 1));
+                params.push(Box::new(energy_max));
             }
         }
 
@@ -119,22 +159,23 @@ impl LibraryService {
                     duration_ms: row.get(10)?,
                     bpm: row.get(11)?,
                     key: row.get(12)?,
-                    bitrate: row.get(13)?,
-                    sample_rate: row.get(14)?,
-                    format: row.get(15)?,
-                    analysis_source: row.get(16)?,
-                    waveform_data: row.get(17)?,
-                    rating: row.get(18)?,
-                    play_count: row.get(19)?,
-                    date_added: row.get(20)?,
-                    date_modified: row.get(21)?,
-                    last_played: row.get(22)?,
-                    rekordbox_id: row.get(23)?,
-                    artwork_path: row.get(24)?,
-                    artwork_source: row.get(25)?,
-                    color: row.get(26)?,
-                    library_root_id: row.get(27)?,
-                    relative_path: row.get(28)?,
+                    energy: row.get(13)?,
+                    bitrate: row.get(14)?,
+                    sample_rate: row.get(15)?,
+                    format: row.get(16)?,
+                    analysis_source: row.get(17)?,
+                    waveform_data: row.get(18)?,
+                    rating: row.get(19)?,
+                    play_count: row.get(20)?,
+                    date_added: row.get(21)?,
+                    date_modified: row.get(22)?,
+                    last_played: row.get(23)?,
+                    rekordbox_id: row.get(24)?,
+                    artwork_path: row.get(25)?,
+                    artwork_source: row.get(26)?,
+                    color: row.get(27)?,
+                    library_root_id: row.get(28)?,
+                    relative_path: row.get(29)?,
                     tags: Vec::new(),
                 })
             })?
@@ -155,49 +196,52 @@ impl LibraryService {
             return Ok(tracks);
         }
 
-        let track_ids: Vec<String> = tracks.iter().map(|t| t.id.clone()).collect();
-        let placeholders: Vec<String> = track_ids
-            .iter()
-            .enumerate()
-            .map(|(i, _)| format!("?{}", i + 1))
-            .collect();
-
-        let sql = format!(
-            r#"
-            SELECT tt.track_id, t.id, t.category_id, t.name, t.color, t.sort_order
-            FROM track_tags tt
-            JOIN tags t ON tt.tag_id = t.id
-            WHERE tt.track_id IN ({})
-            "#,
-            placeholders.join(", ")
-        );
-
-        let params_refs: Vec<&dyn rusqlite::ToSql> = track_ids
-            .iter()
-            .map(|s| s as &dyn rusqlite::ToSql)
-            .collect();
-
-        let mut stmt = conn.prepare(&sql)?;
-        let tag_rows = stmt
-            .query_map(params_refs.as_slice(), |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    Tag {
-                        id: row.get(1)?,
-                        category_id: row.get(2)?,
-                        name: row.get(3)?,
-                        color: row.get(4)?,
-                        sort_order: row.get(5)?,
-                    },
-                ))
-            })?
-            .collect::<std::result::Result<Vec<_>, _>>()?;
-
-        // Group tags by track_id
         let mut tags_by_track: std::collections::HashMap<String, Vec<Tag>> =
             std::collections::HashMap::new();
-        for (track_id, tag) in tag_rows {
-            tags_by_track.entry(track_id).or_default().push(tag);
+
+        // Chunk track IDs in batches of 400 to prevent SQLITE_MAX_VARIABLE_NUMBER limit exceeded
+        for chunk in tracks.chunks(400) {
+            let track_ids: Vec<String> = chunk.iter().map(|t| t.id.clone()).collect();
+            let placeholders: Vec<String> = track_ids
+                .iter()
+                .enumerate()
+                .map(|(i, _)| format!("?{}", i + 1))
+                .collect();
+
+            let sql = format!(
+                r#"
+                SELECT tt.track_id, t.id, t.category_id, t.name, t.color, t.sort_order
+                FROM track_tags tt
+                JOIN tags t ON tt.tag_id = t.id
+                WHERE tt.track_id IN ({})
+                "#,
+                placeholders.join(", ")
+            );
+
+            let params_refs: Vec<&dyn rusqlite::ToSql> = track_ids
+                .iter()
+                .map(|s| s as &dyn rusqlite::ToSql)
+                .collect();
+
+            let mut stmt = conn.prepare(&sql)?;
+            let tag_rows = stmt
+                .query_map(params_refs.as_slice(), |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        Tag {
+                            id: row.get(1)?,
+                            category_id: row.get(2)?,
+                            name: row.get(3)?,
+                            color: row.get(4)?,
+                            sort_order: row.get(5)?,
+                        },
+                    ))
+                })?
+                .collect::<std::result::Result<Vec<_>, _>>()?;
+
+            for (track_id, tag) in tag_rows {
+                tags_by_track.entry(track_id).or_default().push(tag);
+            }
         }
 
         // Assign tags to tracks
@@ -210,6 +254,95 @@ impl LibraryService {
         Ok(tracks)
     }
 
+    /// Load full waveform data on demand when playing/previewing a track
+    pub fn get_track_waveform(&self, track_id: &str) -> Result<Option<Vec<u8>>> {
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        let waveform: Option<Vec<u8>> = conn
+            .query_row(
+                "SELECT waveform_data FROM tracks WHERE id = ?1",
+                rusqlite::params![track_id],
+                |r| r.get(0),
+            )
+            .ok()
+            .flatten();
+        Ok(waveform)
+    }
+
+    /// Retrieve Hot Cues and Memory Cues for a track (both from Crate DB and Mixed In Key)
+    pub fn get_track_cues(&self, track_id_or_path: &str) -> Result<Vec<Cue>> {
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        let mut stmt = conn.prepare(
+            r#"
+            SELECT id, track_id, position_ms, type, loop_end_ms, hot_cue_index, name, color
+            FROM cues
+            WHERE track_id = ?1
+            ORDER BY position_ms ASC
+            "#,
+        )?;
+
+        let rows = stmt.query_map([track_id_or_path], |row| {
+            let cue_type_str: String = row.get(3)?;
+            let cue_type = cue_type_str.parse().unwrap_or(CueType::Memory);
+            Ok(Cue {
+                id: row.get(0)?,
+                track_id: row.get(1)?,
+                position_ms: row.get(2)?,
+                cue_type,
+                loop_end_ms: row.get(4)?,
+                hot_cue_index: row.get(5)?,
+                name: row.get(6)?,
+                color: row.get(7)?,
+            })
+        })?;
+
+        let mut cues: Vec<Cue> = rows.flatten().collect();
+
+        // If cues are empty or if track_id_or_path is a path, check Mixed In Key database directly
+        if cues.is_empty() {
+            let target_path_buf = if let Ok(fp) = conn.query_row(
+                "SELECT file_path FROM tracks WHERE id = ?1",
+                rusqlite::params![track_id_or_path],
+                |r| r.get::<_, String>(0),
+            ) {
+                Some(std::path::PathBuf::from(fp))
+            } else {
+                let p = std::path::PathBuf::from(track_id_or_path);
+                if p.exists() {
+                    Some(p)
+                } else {
+                    None
+                }
+            };
+
+            if let Some(target_path) = target_path_buf {
+                if let Ok(mik_songs) = crate::services::library::MikDatabaseService::read_all_songs() {
+                    for song in mik_songs {
+                        if let Some(ref sp) = song.file_path {
+                            if sp == &target_path {
+                                for (idx, mc) in song.cues.into_iter().enumerate() {
+                                    let hot_idx = (idx as i32) + 1;
+                                    cues.push(Cue {
+                                        id: format!("mik-{}-{}", song.z_pk, mc.z_pk),
+                                        track_id: track_id_or_path.to_string(),
+                                        position_ms: (mc.time_secs * 1000.0).round() as i64,
+                                        cue_type: CueType::Hot,
+                                        loop_end_ms: None,
+                                        hot_cue_index: Some(hot_idx),
+                                        name: mc.name.or_else(|| Some(format!("Hot Cue {hot_idx}"))),
+                                        color: None,
+                                    });
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(cues)
+    }
+
     pub fn get_track(&self, id: &str) -> Result<Track> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
@@ -218,7 +351,7 @@ impl LibraryService {
             SELECT
                 id, file_path, file_hash,
                 title, artist, album, year, genre, label, catalog_number,
-                duration_ms, bpm, key, bitrate, sample_rate, format,
+                duration_ms, bpm, key, energy, bitrate, sample_rate, format,
                 analysis_source, waveform_data,
                 rating, play_count,
                 date_added, date_modified, last_played,
@@ -242,22 +375,23 @@ impl LibraryService {
                     duration_ms: row.get(10)?,
                     bpm: row.get(11)?,
                     key: row.get(12)?,
-                    bitrate: row.get(13)?,
-                    sample_rate: row.get(14)?,
-                    format: row.get(15)?,
-                    analysis_source: row.get(16)?,
-                    waveform_data: row.get(17)?,
-                    rating: row.get(18)?,
-                    play_count: row.get(19)?,
-                    date_added: row.get(20)?,
-                    date_modified: row.get(21)?,
-                    last_played: row.get(22)?,
-                    rekordbox_id: row.get(23)?,
-                    artwork_path: row.get(24)?,
-                    artwork_source: row.get(25)?,
-                    color: row.get(26)?,
-                    library_root_id: row.get(27)?,
-                    relative_path: row.get(28)?,
+                    energy: row.get(13)?,
+                    bitrate: row.get(14)?,
+                    sample_rate: row.get(15)?,
+                    format: row.get(16)?,
+                    analysis_source: row.get(17)?,
+                    waveform_data: row.get(18)?,
+                    rating: row.get(19)?,
+                    play_count: row.get(20)?,
+                    date_added: row.get(21)?,
+                    date_modified: row.get(22)?,
+                    last_played: row.get(23)?,
+                    rekordbox_id: row.get(24)?,
+                    artwork_path: row.get(25)?,
+                    artwork_source: row.get(26)?,
+                    color: row.get(27)?,
+                    library_root_id: row.get(28)?,
+                    relative_path: row.get(29)?,
                     tags: Vec::new(),
                 })
             },
@@ -280,7 +414,7 @@ impl LibraryService {
             SELECT
                 id, file_path, file_hash,
                 title, artist, album, year, genre, label, catalog_number,
-                duration_ms, bpm, key, bitrate, sample_rate, format,
+                duration_ms, bpm, key, energy, bitrate, sample_rate, format,
                 analysis_source, waveform_data,
                 rating, play_count,
                 date_added, date_modified, last_played,
@@ -304,22 +438,23 @@ impl LibraryService {
                     duration_ms: row.get(10)?,
                     bpm: row.get(11)?,
                     key: row.get(12)?,
-                    bitrate: row.get(13)?,
-                    sample_rate: row.get(14)?,
-                    format: row.get(15)?,
-                    analysis_source: row.get(16)?,
-                    waveform_data: row.get(17)?,
-                    rating: row.get(18)?,
-                    play_count: row.get(19)?,
-                    date_added: row.get(20)?,
-                    date_modified: row.get(21)?,
-                    last_played: row.get(22)?,
-                    rekordbox_id: row.get(23)?,
-                    artwork_path: row.get(24)?,
-                    artwork_source: row.get(25)?,
-                    color: row.get(26)?,
-                    library_root_id: row.get(27)?,
-                    relative_path: row.get(28)?,
+                    energy: row.get(13)?,
+                    bitrate: row.get(14)?,
+                    sample_rate: row.get(15)?,
+                    format: row.get(16)?,
+                    analysis_source: row.get(17)?,
+                    waveform_data: row.get(18)?,
+                    rating: row.get(19)?,
+                    play_count: row.get(20)?,
+                    date_added: row.get(21)?,
+                    date_modified: row.get(22)?,
+                    last_played: row.get(23)?,
+                    rekordbox_id: row.get(24)?,
+                    artwork_path: row.get(25)?,
+                    artwork_source: row.get(26)?,
+                    color: row.get(27)?,
+                    library_root_id: row.get(28)?,
+                    relative_path: row.get(29)?,
                     tags: Vec::new(),
                 })
             },

@@ -37,6 +37,7 @@
 	import { openUrl } from '@tauri-apps/plugin-opener'
 	import * as discoveryApi from '$shared/api/discovery'
 	import * as playlistsApi from '$shared/api/playlists'
+	import * as libraryApi from '$shared/api/library'
 
 	import { ContextMenuOrchestrator, ModalOrchestrator, DragPreview, UpdateModal } from '$lib/components/common'
 	import { AddReleaseModal, MergeReleasesModal, PurchaseReleaseModal } from '$lib/components/discovery'
@@ -113,6 +114,17 @@
 		} catch (error) {
 			console.error('Analysis failed:', error)
 			toastStore.error(get(translate)('errors.analysisFailed'))
+		}
+	}
+
+	async function handleTrackResyncMik(tracks: Track[]) {
+		try {
+			const res = await libraryApi.syncFromMikDatabase()
+			await libraryStore.loadTracks()
+			toastStore.success(`Synchronisé avec Mixed In Key (${res.updated} morceau${res.updated > 1 ? 'x' : ''} mis à jour)`)
+		} catch (error) {
+			console.error('Mixed In Key resync failed:', error)
+			toastStore.error('Erreur lors de la synchronisation Mixed In Key')
 		}
 	}
 
@@ -204,9 +216,11 @@
 	onTrackRevealInExplorer={trackController.revealInExplorer}
 	onTrackRemoveFromPlaylist={trackController.removeFromPlaylistClick}
 	onTrackRemoveFromLibrary={trackController.removeFromLibraryClick}
+	onTrackDeleteTrackAndFile={trackController.deleteTrackAndFileClick}
 	onTrackRelocate={(track) => modalOrchestrator.openRelocateModal(track)}
 	onTrackSetColor={trackController.setColorFromContextMenu}
 	onTrackAnalyze={handleTrackAnalyze}
+	onTrackResyncMik={handleTrackResyncMik}
 	onPlaylistCreatePlaylist={(p) => modalOrchestrator.openCreatePlaylistModal(p.id)}
 	onPlaylistCreateSmartPlaylist={(p) => modalOrchestrator.openCreateSmartPlaylistModal(p.id, p.context)}
 	onPlaylistCreateFolder={(p) => modalOrchestrator.openCreateFolderModal(p.id)}
@@ -423,6 +437,22 @@
 		await playlistsStore.load()
 		const count = trackIds.length
 		toastStore.success(count === 1 ? '1 track removed from library' : `${count} tracks removed from library`)
+	}}
+	onDeleteTrackAndFile={async (trackIds) => {
+		try {
+			await libraryApi.deleteTracksAndFiles(trackIds)
+			libraryStore.removeTracksFromState(trackIds)
+			uiStore.clearSelection()
+			if (selectedPlaylistId) {
+				await libraryStore.loadPlaylistTracks(selectedPlaylistId)
+			}
+			await playlistsStore.load()
+			const count = trackIds.length
+			toastStore.success(count === 1 ? '1 morceau supprimé (mis à la corbeille)' : `${count} morceaux supprimés (mis à la corbeille)`)
+		} catch (err) {
+			console.error('Failed to delete track and file:', err)
+			toastStore.error(err instanceof Error ? err.message : 'Échec de la suppression')
+		}
 	}}
 	onMoveConflictOverwrite={async (movingItemId, targetParentId) => {
 		const result = await playlistsStore.moveWithResolution(movingItemId, targetParentId, 'overwrite')

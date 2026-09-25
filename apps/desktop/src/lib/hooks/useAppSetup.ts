@@ -35,7 +35,14 @@ import {
 	discoveryStore,
 	updaterStore,
 	previewInfo,
+	standaloneTrack,
+	recentStandaloneTracks,
+	recentTracksStore,
+	playbackSource,
+	beatportTrack,
+	albumsStore,
 } from '$lib/stores'
+import { beatportStore } from '$shared/stores/beatport'
 import { tagFilterMode } from '$shared/stores/ui'
 import { recentlyToggledMixedTags } from '$shared/stores/ui'
 import { syncStore } from '$lib/stores/sync'
@@ -89,6 +96,7 @@ interface ModalOrchestratorRef {
 	openRelocateModal: (track: Track) => void
 	openRemoveFromPlaylistModal: (trackIds: string[], playlistId: string) => void
 	openRemoveFromLibraryModal: (trackIds: string[]) => void
+	openDeleteTrackAndFileModal: (trackIds: string[]) => void
 	openRemoveDiscoveryReleasesModal: (releaseIds: string[]) => void
 	openRemoveDiscoveryReleasesFromPlaylistModal: (releaseIds: string[], playlistId: string) => void
 	openDuplicateTrackModal: (
@@ -168,6 +176,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			openRemoveFromPlaylistModal: (trackIds, playlistId) =>
 				getModalOrchestrator()?.openRemoveFromPlaylistModal(trackIds, playlistId),
 			openRemoveFromLibraryModal: (trackIds) => getModalOrchestrator()?.openRemoveFromLibraryModal(trackIds),
+			openDeleteTrackAndFileModal: (trackIds) => getModalOrchestrator()?.openDeleteTrackAndFileModal(trackIds),
 			openDuplicateTrackModal: (duplicates, onComplete) =>
 				getModalOrchestrator()?.openDuplicateTrackModal(duplicates, onComplete),
 		}
@@ -396,66 +405,106 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 	}
 
 	function playNextTrack() {
-		const preview = get(previewInfo)
-		if (preview) {
-			if (get(shuffleEnabled)) {
-				const releases = getDiscoveryQueue()
-				const currentKey = discoveryTrackKey(preview.releaseId, preview.trackIndex)
+		const source = get(playbackSource)
 
-				if (discoveryShufflePos < discoveryShuffleHistory.length - 1) {
-					const fwd = discoveryShuffleHistory[discoveryShufflePos + 1]
-					const fwdRelease = releases.find((r) => r.id === fwd.releaseId)
-					if (fwdRelease && trackCanPlay(fwdRelease, fwd.trackIndex)) {
-						discoveryShufflePos++
-						playerStore.playPreview(fwdRelease, fwd.trackIndex)
+		// 1. Discovery / Preview playback
+		if (source === 'preview' || get(previewInfo)) {
+			const preview = get(previewInfo)
+			if (preview) {
+				if (get(shuffleEnabled)) {
+					const releases = getDiscoveryQueue()
+					const currentKey = discoveryTrackKey(preview.releaseId, preview.trackIndex)
+
+					if (discoveryShufflePos < discoveryShuffleHistory.length - 1) {
+						const fwd = discoveryShuffleHistory[discoveryShufflePos + 1]
+						const fwdRelease = releases.find((r) => r.id === fwd.releaseId)
+						if (fwdRelease && trackCanPlay(fwdRelease, fwd.trackIndex)) {
+							discoveryShufflePos++
+							playerStore.playPreview(fwdRelease, fwd.trackIndex)
+							return
+						}
+					}
+
+					let pool = buildDiscoveryTrackPool(releases, discoveryShufflePlayed)
+					if (pool.length === 0) {
+						discoveryShufflePlayed = new Set([currentKey])
+						pool = buildDiscoveryTrackPool(releases, discoveryShufflePlayed)
+					}
+					if (pool.length === 0) return
+					const pick = pool[Math.floor(Math.random() * pool.length)]
+					discoveryShufflePlayed.add(pick.key)
+					discoveryShuffleHistory.push({ releaseId: pick.release.id, trackIndex: pick.trackIndex })
+					discoveryShufflePos = discoveryShuffleHistory.length - 1
+					playerStore.playPreview(pick.release, pick.trackIndex)
+					return
+				}
+
+				// Non-shuffle: next track in release, then next release
+				let nextIndex = preview.trackIndex + 1
+				while (nextIndex < preview.release.tracks.length && !trackCanPlay(preview.release, nextIndex)) {
+					nextIndex++
+				}
+				if (nextIndex < preview.release.tracks.length) {
+					playerStore.playPreview(preview.release, nextIndex)
+					return
+				}
+
+				const releases = getDiscoveryQueue()
+				const releaseIdx = releases.findIndex((r) => r.id === preview.releaseId)
+				if (releaseIdx === -1 || releases.length === 0) return
+
+				for (let i = 1; i <= releases.length; i++) {
+					const nextRelease = releases[(releaseIdx + i) % releases.length]
+					const trackIdx = findPreviewableTrackIndex(nextRelease, 'first')
+					if (trackIdx !== -1) {
+						playerStore.playPreview(nextRelease, trackIdx)
 						return
 					}
 				}
-
-				let pool = buildDiscoveryTrackPool(releases, discoveryShufflePlayed)
-				if (pool.length === 0) {
-					discoveryShufflePlayed = new Set([currentKey])
-					pool = buildDiscoveryTrackPool(releases, discoveryShufflePlayed)
-				}
-				if (pool.length === 0) return
-				const pick = pool[Math.floor(Math.random() * pool.length)]
-				discoveryShufflePlayed.add(pick.key)
-				discoveryShuffleHistory.push({ releaseId: pick.release.id, trackIndex: pick.trackIndex })
-				discoveryShufflePos = discoveryShuffleHistory.length - 1
-				playerStore.playPreview(pick.release, pick.trackIndex)
 				return
 			}
-
-			// Non-shuffle: next track in release, then next release
-			let nextIndex = preview.trackIndex + 1
-			while (nextIndex < preview.release.tracks.length && !trackCanPlay(preview.release, nextIndex)) {
-				nextIndex++
-			}
-			if (nextIndex < preview.release.tracks.length) {
-				playerStore.playPreview(preview.release, nextIndex)
-				return
-			}
-
-			const releases = getDiscoveryQueue()
-			const releaseIdx = releases.findIndex((r) => r.id === preview.releaseId)
-			if (releaseIdx === -1 || releases.length === 0) return
-
-			for (let i = 1; i <= releases.length; i++) {
-				const nextRelease = releases[(releaseIdx + i) % releases.length]
-				const trackIdx = findPreviewableTrackIndex(nextRelease, 'first')
-				if (trackIdx !== -1) {
-					playerStore.playPreview(nextRelease, trackIdx)
-					return
-				}
-			}
-			return
 		}
+
+		// 2. Beatport playback
+		if (source === 'beatport') {
+			const bpState = get(beatportStore)
+			const tracks = bpState.searchQuery.trim() ? bpState.searchResults : bpState.currentSectionTracks
+			if (tracks.length > 0) {
+				const current = get(beatportTrack)
+				const idx = tracks.findIndex((t) => String(t.id) === String(current?.id))
+				const nextIdx = idx >= 0 ? (idx + 1) % tracks.length : 0
+				playerStore.playBeatport(tracks[nextIdx])
+				return
+			}
+		}
+
+		// 3. Standalone files & Player Albums
+		if (source === 'standalone' || (!get(currentTrack) && get(standaloneTrack))) {
+			const albState = get(albumsStore)
+			if (albState.isPlayingAlbum && albState.selectedAlbum && albState.selectedAlbumTracks.length > 0) {
+				albumsStore.playNextAlbumTrack()
+				return
+			}
+
+			const recents = get(recentStandaloneTracks)
+			if (recents.length > 0) {
+				const current = get(standaloneTrack)
+				const idx = recents.findIndex((t) => t.file_path === current?.file_path || t.id === current?.id)
+				const nextIdx = idx >= 0 ? (idx + 1) % recents.length : 0
+				playerStore.playStandalone(recents[nextIdx], recents[nextIdx].is_in_library)
+				return
+			}
+		}
+
+		// 4. Library playback
 		const id = get(currentTrack)?.id
-		if (!id) return
-		const tracks = getLibraryQueue()
+		let tracks = getLibraryQueue()
+		if (tracks.length === 0) {
+			tracks = get(sortedTracks)
+		}
 		if (tracks.length === 0) return
 
-		if (get(shuffleEnabled)) {
+		if (get(shuffleEnabled) && id) {
 			// Replay forward through history if the user previously went back.
 			if (shufflePos < shuffleHistory.length - 1) {
 				const fwd = tracks.find((t) => t.id === shuffleHistory[shufflePos + 1])
@@ -481,54 +530,95 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			return
 		}
 
-		const idx = tracks.findIndex((t) => t.id === id)
-		if (idx >= 0) playerStore.play(tracks[(idx + 1) % tracks.length])
+		const idx = id ? tracks.findIndex((t) => t.id === id) : -1
+		const nextIdx = idx >= 0 ? (idx + 1) % tracks.length : 0
+		playerStore.play(tracks[nextIdx])
 	}
 
 	function playPreviousTrack() {
-		const preview = get(previewInfo)
-		if (preview) {
-			if (get(shuffleEnabled)) {
-				if (discoveryShufflePos > 0) {
-					const prev = discoveryShuffleHistory[discoveryShufflePos - 1]
-					const releases = getDiscoveryQueue()
-					const prevRelease = releases.find((r) => r.id === prev.releaseId)
-					if (prevRelease && trackCanPlay(prevRelease, prev.trackIndex)) {
-						discoveryShufflePos--
-						playerStore.playPreview(prevRelease, prev.trackIndex)
+		const source = get(playbackSource)
+
+		// 1. Discovery / Preview playback
+		if (source === 'preview' || get(previewInfo)) {
+			const preview = get(previewInfo)
+			if (preview) {
+				if (get(shuffleEnabled)) {
+					if (discoveryShufflePos > 0) {
+						const prev = discoveryShuffleHistory[discoveryShufflePos - 1]
+						const releases = getDiscoveryQueue()
+						const prevRelease = releases.find((r) => r.id === prev.releaseId)
+						if (prevRelease && trackCanPlay(prevRelease, prev.trackIndex)) {
+							discoveryShufflePos--
+							playerStore.playPreview(prevRelease, prev.trackIndex)
+							return
+						}
+					}
+					return
+				}
+
+				// Non-shuffle: previous track in release, then previous release
+				let prevIndex = preview.trackIndex - 1
+				while (prevIndex >= 0 && !trackCanPlay(preview.release, prevIndex)) {
+					prevIndex--
+				}
+				if (prevIndex >= 0) {
+					playerStore.playPreview(preview.release, prevIndex)
+					return
+				}
+
+				const releases = getDiscoveryQueue()
+				const releaseIdx = releases.findIndex((r) => r.id === preview.releaseId)
+				if (releaseIdx === -1 || releases.length === 0) return
+
+				for (let i = 1; i <= releases.length; i++) {
+					const prevRelease = releases[(releaseIdx - i + releases.length) % releases.length]
+					const trackIdx = findPreviewableTrackIndex(prevRelease, 'last')
+					if (trackIdx !== -1) {
+						playerStore.playPreview(prevRelease, trackIdx)
 						return
 					}
 				}
 				return
 			}
+		}
 
-			// Non-shuffle: previous track in release, then previous release
-			let prevIndex = preview.trackIndex - 1
-			while (prevIndex >= 0 && !trackCanPlay(preview.release, prevIndex)) {
-				prevIndex--
+		// 2. Beatport playback
+		if (source === 'beatport') {
+			const bpState = get(beatportStore)
+			const tracks = bpState.searchQuery.trim() ? bpState.searchResults : bpState.currentSectionTracks
+			if (tracks.length > 0) {
+				const current = get(beatportTrack)
+				const idx = tracks.findIndex((t) => String(t.id) === String(current?.id))
+				const prevIdx = idx >= 0 ? (idx - 1 + tracks.length) % tracks.length : tracks.length - 1
+				playerStore.playBeatport(tracks[prevIdx])
+				return
 			}
-			if (prevIndex >= 0) {
-				playerStore.playPreview(preview.release, prevIndex)
+		}
+
+		// 3. Standalone files & Player Albums
+		if (source === 'standalone' || (!get(currentTrack) && get(standaloneTrack))) {
+			const albState = get(albumsStore)
+			if (albState.isPlayingAlbum && albState.selectedAlbum && albState.selectedAlbumTracks.length > 0) {
+				albumsStore.playPreviousAlbumTrack()
 				return
 			}
 
-			const releases = getDiscoveryQueue()
-			const releaseIdx = releases.findIndex((r) => r.id === preview.releaseId)
-			if (releaseIdx === -1 || releases.length === 0) return
-
-			for (let i = 1; i <= releases.length; i++) {
-				const prevRelease = releases[(releaseIdx - i + releases.length) % releases.length]
-				const trackIdx = findPreviewableTrackIndex(prevRelease, 'last')
-				if (trackIdx !== -1) {
-					playerStore.playPreview(prevRelease, trackIdx)
-					return
-				}
+			const recents = get(recentStandaloneTracks)
+			if (recents.length > 0) {
+				const current = get(standaloneTrack)
+				const idx = recents.findIndex((t) => t.file_path === current?.file_path || t.id === current?.id)
+				const prevIdx = idx >= 0 ? (idx - 1 + recents.length) % recents.length : recents.length - 1
+				playerStore.playStandalone(recents[prevIdx], recents[prevIdx].is_in_library)
+				return
 			}
-			return
 		}
+
+		// 4. Library playback
 		const id = get(currentTrack)?.id
-		if (!id) return
-		const tracks = getLibraryQueue()
+		let tracks = getLibraryQueue()
+		if (tracks.length === 0) {
+			tracks = get(sortedTracks)
+		}
 		if (tracks.length === 0) return
 
 		if (get(shuffleEnabled)) {
@@ -544,8 +634,9 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			return
 		}
 
-		const idx = tracks.findIndex((t) => t.id === id)
-		if (idx >= 0) playerStore.play(tracks[(idx - 1 + tracks.length) % tracks.length])
+		const idx = id ? tracks.findIndex((t) => t.id === id) : -1
+		const prevIdx = idx >= 0 ? (idx - 1 + tracks.length) % tracks.length : tracks.length - 1
+		playerStore.play(tracks[prevIdx])
 	}
 
 	// =========================================================================
@@ -554,11 +645,25 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 
 	const handlers = {
 		playPause: () => {
+			if (get(activeView) === 'player') {
+				const active = get(currentTrack) || get(standaloneTrack)
+				if (active) {
+					playerStore.togglePlayPause()
+					return
+				}
+				const recents = get(recentStandaloneTracks)
+				if (recents.length > 0) {
+					playerStore.playStandalone(recents[0], recents[0].is_in_library)
+					return
+				}
+			}
+
 			const state = get(currentTrack)
+			const standalone = get(standaloneTrack)
 			const preview = get(previewInfo)
 
 			// If a track or preview is loaded, toggle normally
-			if (state || preview) {
+			if (state || standalone || preview) {
 				playerStore.togglePlayPause()
 				return
 			}
@@ -644,268 +749,305 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 	// Mount Setup
 	// =========================================================================
 
-	async function onMountSetup(): Promise<() => void> {
-		const splashStartTime = Date.now()
-		const minDisplayTime = 1000
-
-		await exportStore.startListening()
-
-		const cleanupApp = await useAppInitialization({
-			stores: {
-				appStore,
-				libraryStore,
-				tagsStore,
-				playlistsStore,
-				settingsStore,
-				devicesStore,
-				syncStore,
-				discoveryStore,
-			},
-			toastStore,
-			onExternalFileDrop: trackController.handleExternalFileDrop,
-			onDragStateChange: (dragOver) => setIsDragOver(dragOver),
+	function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+		let timer: ReturnType<typeof setTimeout>
+		const timeoutPromise = new Promise<T>((resolve) => {
+			timer = setTimeout(() => resolve(fallback), ms)
 		})
+		return Promise.race([
+			promise.then((res) => {
+				clearTimeout(timer)
+				return res
+			}).catch((err) => {
+				clearTimeout(timer)
+				console.warn('Timed promise caught error:', err)
+				return fallback
+			}),
+			timeoutPromise,
+		])
+	}
 
-		// Wire shared stores to their desktop-only collaborators. The player and playlists stores
-		// live in shared/ and expose handlers instead of importing the desktop-only missingTracks
-		// and USB sync stores directly.
-		playerStore.setTrackMissingHandler((id) => missingTracksStore.markMissing(id))
-		playlistsStore.setPlaylistsChangedHandler((ids) => syncStore.notifyPlaylistChanges(ids))
+	async function onMountSetup(): Promise<() => void> {
+		let cleanupApp: () => void = () => {}
+		let cleanupKeyboard: () => void = () => {}
+		let cleanupMenu: () => void = () => {}
+		let cleanupMediaKeys: () => void = () => {}
+		let updateInterval: ReturnType<typeof setInterval> | null = null
 
-		// Restore last-playing track/preview from localStorage now that stores are loaded
-		playerStore.restoreTrack(get(libraryStore).tracks)
-		await playerStore.restorePreview()
+		try {
+			await withTimeout(exportStore.startListening(), 1500, undefined)
 
-		// Restore persisted navigation state (playlist/folder selection)
-		const restoredState = get(uiStore)
-		if (restoredState.selectedPlaylistId) {
-			const playlist = getPlaylists().find((p) => p.id === restoredState.selectedPlaylistId)
-			if (playlist) {
-				await playlistController.handlePlaylistSelect(playlist)
-			} else {
-				// Persisted playlist was deleted — clear and fall back to library
-				uiStore.selectPlaylist(null)
+			cleanupApp = await withTimeout(
+				useAppInitialization({
+					stores: {
+						appStore,
+						libraryStore,
+						tagsStore,
+						playlistsStore,
+						settingsStore,
+						devicesStore,
+						syncStore,
+						discoveryStore,
+					},
+					toastStore,
+					onExternalFileDrop: trackController.handleExternalFileDrop,
+					onDragStateChange: (dragOver) => setIsDragOver(dragOver),
+				}),
+				2500,
+				() => {}
+			)
+
+			// Wire shared stores to their desktop-only collaborators
+			playerStore.setTrackMissingHandler((id) => missingTracksStore.markMissing(id))
+			playlistsStore.setPlaylistsChangedHandler((ids) => syncStore.notifyPlaylistChanges(ids))
+
+			// Restore last-playing track/preview from localStorage now that stores are loaded
+			try {
+				playerStore.restoreTrack(get(libraryStore).tracks)
+				await withTimeout(playerStore.restorePreview(), 1500, undefined)
+			} catch (err) {
+				console.warn('Failed to restore track/preview:', err)
 			}
-		} else if (restoredState.selectedFolderId) {
-			const folder = getPlaylists().find((p) => p.id === restoredState.selectedFolderId)
-			if (!folder) {
-				// Persisted folder was deleted — clear and fall back to library
-				uiStore.selectFolder(null)
-			}
-		}
 
-		const cleanupKeyboard = useKeyboardShortcuts({
-			isModalOpen: () => getModalOrchestrator()?.isModalOpen() ?? false,
-			onPlayPause: handlers.playPause,
-			onFocusSearch: () => {
-				const searchInput = document.querySelector('input[type="search"]') as HTMLInputElement
-				searchInput?.focus()
-			},
-			onClearSelection: () => uiStore.clearSelection(),
-			onSelectAll: handlers.selectAll,
-			onOpenSettings: handlers.openSettings,
-			onNewPlaylist: () => playlistController.handleCreatePlaylist(),
-			onNewFolder: () => playlistController.handleCreateFolder(),
-			onImport: handlers.import,
-			onDeleteSelected: () => {
-				const treeIds = get(uiLayoutStore).selectedTreeIds
-				if (treeIds.size > 1) {
-					const selected = getPlaylists().filter((p) => treeIds.has(p.id))
-					if (selected.length > 0) {
-						getModalOrchestrator()?.openDeletePlaylistBulkModal(selected)
+			// Restore persisted navigation state (playlist/folder selection)
+			try {
+				const restoredState = get(uiStore)
+				if (restoredState.selectedPlaylistId) {
+					const playlist = getPlaylists().find((p) => p.id === restoredState.selectedPlaylistId)
+					if (playlist) {
+						await playlistController.handlePlaylistSelect(playlist)
+					} else {
+						uiStore.selectPlaylist(null)
 					}
-					return true
+				} else if (restoredState.selectedFolderId) {
+					const folder = getPlaylists().find((p) => p.id === restoredState.selectedFolderId)
+					if (!folder) {
+						uiStore.selectFolder(null)
+					}
 				}
+			} catch (err) {
+				console.warn('Failed to restore navigation state:', err)
+			}
 
-				const playlistId = getSelectedPlaylistId()
-				const playlists = getPlaylists()
-				const currentPlaylist = playlistId ? playlists.find((p) => p.id === playlistId) : null
-
-				if (get(activeView) === 'discovery') {
-					const releaseIds = get(selectedReleaseIds)
-					if (releaseIds.size > 0) {
-						if (playlistId && !currentPlaylist?.is_smart) {
-							getModalOrchestrator()?.openRemoveDiscoveryReleasesFromPlaylistModal(Array.from(releaseIds), playlistId)
-						} else {
-							getModalOrchestrator()?.openRemoveDiscoveryReleasesModal(Array.from(releaseIds))
+			cleanupKeyboard = useKeyboardShortcuts({
+				isModalOpen: () => getModalOrchestrator()?.isModalOpen() ?? false,
+				onPlayPause: handlers.playPause,
+				onFocusSearch: () => {
+					const searchInput = document.querySelector('input[type="search"]') as HTMLInputElement
+					searchInput?.focus()
+				},
+				onClearSelection: () => uiStore.clearSelection(),
+				onSelectAll: handlers.selectAll,
+				onOpenSettings: handlers.openSettings,
+				onNewPlaylist: () => playlistController.handleCreatePlaylist(),
+				onNewFolder: () => playlistController.handleCreateFolder(),
+				onImport: handlers.import,
+				onDeleteSelected: () => {
+					const treeIds = get(uiLayoutStore).selectedTreeIds
+					if (treeIds.size > 1) {
+						const selected = getPlaylists().filter((p) => treeIds.has(p.id))
+						if (selected.length > 0) {
+							getModalOrchestrator()?.openDeletePlaylistBulkModal(selected)
 						}
 						return true
 					}
-				}
 
-				const ids = [...get(selectedTrackIds)]
-				if (ids.length > 0) {
-					if (playlistId && !currentPlaylist?.is_smart) {
-						getModalOrchestrator()?.openRemoveFromPlaylistModal(ids, playlistId)
+					const playlistId = getSelectedPlaylistId()
+					const playlists = getPlaylists()
+					const currentPlaylist = playlistId ? playlists.find((p) => p.id === playlistId) : null
+
+					if (get(activeView) === 'discovery') {
+						const releaseIds = get(selectedReleaseIds)
+						if (releaseIds.size > 0) {
+							if (playlistId && !currentPlaylist?.is_smart) {
+								getModalOrchestrator()?.openRemoveDiscoveryReleasesFromPlaylistModal(Array.from(releaseIds), playlistId)
+							} else {
+								getModalOrchestrator()?.openRemoveDiscoveryReleasesModal(Array.from(releaseIds))
+							}
+							return true
+						}
+					}
+
+					const ids = [...get(selectedTrackIds)]
+					if (ids.length > 0) {
+						if (playlistId && !currentPlaylist?.is_smart) {
+							getModalOrchestrator()?.openRemoveFromPlaylistModal(ids, playlistId)
+						} else {
+							getModalOrchestrator()?.openRemoveFromLibraryModal(ids)
+						}
+					} else if (playlistId) {
+						if (currentPlaylist) playlistController.handlePlaylistDelete(currentPlaylist)
 					} else {
-						getModalOrchestrator()?.openRemoveFromLibraryModal(ids)
+						const folderId = getSelectedFolderId()
+						if (folderId) {
+							const folder = playlists.find((p) => p.id === folderId)
+							if (folder) playlistController.handlePlaylistDelete(folder)
+						}
 					}
-				} else if (playlistId) {
-					if (currentPlaylist) playlistController.handlePlaylistDelete(currentPlaylist)
-				} else {
-					const folderId = getSelectedFolderId()
-					if (folderId) {
-						const folder = playlists.find((p) => p.id === folderId)
-						if (folder) playlistController.handlePlaylistDelete(folder)
+					return true
+				},
+				onPlaySelected: () => {
+					if (get(activeView) === 'discovery') {
+						const releaseIds = get(selectedReleaseIds)
+						if (releaseIds.size > 0) {
+							const releases = get(displayedReleases)
+							expandedReleaseIds.toggleSelection(
+								[...releaseIds],
+								(id) => (releases.find((r) => r.id === id)?.tracks.length ?? 0) > 0
+							)
+						}
+						return
 					}
-				}
-				return true
-			},
-			onPlaySelected: () => {
-				if (get(activeView) === 'discovery') {
-					const releaseIds = get(selectedReleaseIds)
-					if (releaseIds.size > 0) {
+					const selectedIds = get(selectedTrackIds)
+					if (selectedIds.size > 0) {
+						const firstSelectedId = [...selectedIds][0]
+						const track = get(displayedTracks).find((t) => t.id === firstSelectedId)
+						if (track) trackController.play(track)
+					}
+				},
+				onSeekBackward: handlers.seekBackward,
+				onSeekForward: handlers.seekForward,
+				onFineSeekBackward: handlers.fineSeekBackward,
+				onFineSeekForward: handlers.fineSeekForward,
+				onPreviousTrack: playPreviousTrack,
+				onNextTrack: playNextTrack,
+				onVolumeUp: handlers.volumeUp,
+				onVolumeDown: handlers.volumeDown,
+				onToggleMute: handlers.toggleMute,
+				onSelectPreviousTrack: () => {
+					if (get(activeView) === 'discovery') {
 						const releases = get(displayedReleases)
-						expandedReleaseIds.toggleSelection(
-							[...releaseIds],
-							(id) => (releases.find((r) => r.id === id)?.tracks.length ?? 0) > 0
-						)
+						if (releases.length === 0) return
+						const ids = get(selectedReleaseIds)
+						if (ids.size === 0) {
+							uiStore.selectRelease(releases[releases.length - 1].id)
+						} else {
+							const firstId = [...ids][0]
+							const idx = releases.findIndex((r) => r.id === firstId)
+							if (idx > 0) uiStore.selectRelease(releases[idx - 1].id)
+						}
+						return
 					}
-					return
-				}
-				const selectedIds = get(selectedTrackIds)
-				if (selectedIds.size > 0) {
-					const firstSelectedId = [...selectedIds][0]
-					const track = get(displayedTracks).find((t) => t.id === firstSelectedId)
-					if (track) trackController.play(track)
-				}
-			},
-			onSeekBackward: handlers.seekBackward,
-			onSeekForward: handlers.seekForward,
-			onFineSeekBackward: handlers.fineSeekBackward,
-			onFineSeekForward: handlers.fineSeekForward,
-			onPreviousTrack: playPreviousTrack,
-			onNextTrack: playNextTrack,
-			onVolumeUp: handlers.volumeUp,
-			onVolumeDown: handlers.volumeDown,
-			onToggleMute: handlers.toggleMute,
-			onSelectPreviousTrack: () => {
-				if (get(activeView) === 'discovery') {
-					const releases = get(displayedReleases)
-					if (releases.length === 0) return
-					const ids = get(selectedReleaseIds)
+					const tracks = get(displayedTracks)
+					if (tracks.length === 0) return
+					const ids = get(selectedTrackIds)
 					if (ids.size === 0) {
-						uiStore.selectRelease(releases[releases.length - 1].id)
+						uiStore.selectTrack(tracks[tracks.length - 1].id)
 					} else {
 						const firstId = [...ids][0]
-						const idx = releases.findIndex((r) => r.id === firstId)
-						if (idx > 0) uiStore.selectRelease(releases[idx - 1].id)
+						const idx = tracks.findIndex((t) => t.id === firstId)
+						if (idx > 0) uiStore.selectTrack(tracks[idx - 1].id)
 					}
-					return
-				}
-				const tracks = get(displayedTracks)
-				if (tracks.length === 0) return
-				const ids = get(selectedTrackIds)
-				if (ids.size === 0) {
-					uiStore.selectTrack(tracks[tracks.length - 1].id)
-				} else {
-					const firstId = [...ids][0]
-					const idx = tracks.findIndex((t) => t.id === firstId)
-					if (idx > 0) uiStore.selectTrack(tracks[idx - 1].id)
-				}
-			},
-			onSelectNextTrack: () => {
-				if (get(activeView) === 'discovery') {
-					const releases = get(displayedReleases)
-					if (releases.length === 0) return
-					const ids = get(selectedReleaseIds)
+				},
+				onSelectNextTrack: () => {
+					if (get(activeView) === 'discovery') {
+						const releases = get(displayedReleases)
+						if (releases.length === 0) return
+						const ids = get(selectedReleaseIds)
+						if (ids.size === 0) {
+							uiStore.selectRelease(releases[0].id)
+						} else {
+							const lastId = [...ids].pop()
+							const idx = releases.findIndex((r) => r.id === lastId)
+							if (idx >= 0 && idx < releases.length - 1) uiStore.selectRelease(releases[idx + 1].id)
+						}
+						return
+					}
+					const tracks = get(displayedTracks)
+					if (tracks.length === 0) return
+					const ids = get(selectedTrackIds)
 					if (ids.size === 0) {
-						uiStore.selectRelease(releases[0].id)
+						uiStore.selectTrack(tracks[0].id)
 					} else {
 						const lastId = [...ids].pop()
-						const idx = releases.findIndex((r) => r.id === lastId)
-						if (idx >= 0 && idx < releases.length - 1) uiStore.selectRelease(releases[idx + 1].id)
+						const idx = tracks.findIndex((t) => t.id === lastId)
+						if (idx >= 0 && idx < tracks.length - 1) uiStore.selectTrack(tracks[idx + 1].id)
 					}
-					return
-				}
-				const tracks = get(displayedTracks)
-				if (tracks.length === 0) return
-				const ids = get(selectedTrackIds)
-				if (ids.size === 0) {
-					uiStore.selectTrack(tracks[0].id)
-				} else {
-					const lastId = [...ids].pop()
-					const idx = tracks.findIndex((t) => t.id === lastId)
-					if (idx >= 0 && idx < tracks.length - 1) uiStore.selectTrack(tracks[idx + 1].id)
-				}
-			},
-			onQuickExport: handlers.quickExport,
-			onJumpToPlayingTrack: handlers.jumpToPlayingTrack,
-			onToggleView: handlers.toggleView,
-			onAddRelease: handlers.addRelease,
-			onRefreshMetadata: handlers.refreshMetadata,
-		})
+				},
+				onQuickExport: handlers.quickExport,
+				onJumpToPlayingTrack: handlers.jumpToPlayingTrack,
+				onToggleView: handlers.toggleView,
+				onAddRelease: handlers.addRelease,
+				onRefreshMetadata: handlers.refreshMetadata,
+			})
 
-		const cleanupMenu = await useMenuActions({
-			onImport: handlers.import,
-			onAddRelease: handlers.addRelease,
-			onCreatePlaylist: playlistController.handleCreatePlaylist,
-			onCreateFolder: playlistController.handleCreateFolder,
-			onSelectAll: handlers.selectAll,
-			onPlayPause: handlers.playPause,
-			onStop: handlers.stop,
-			onNextTrack: playNextTrack,
-			onPreviousTrack: playPreviousTrack,
-			onSeekForward: handlers.seekForward,
-			onSeekBackward: handlers.seekBackward,
-			onFineSeekForward: handlers.fineSeekForward,
-			onFineSeekBackward: handlers.fineSeekBackward,
-			onVolumeUp: handlers.volumeUp,
-			onVolumeDown: handlers.volumeDown,
-			onToggleMute: handlers.toggleMute,
-			onOpenSettings: handlers.openSettings,
-			onQuickExport: handlers.quickExport,
-			onJumpToPlayingTrack: handlers.jumpToPlayingTrack,
-			onToggleView: handlers.toggleView,
-			onToggleEditor: () => uiLayoutStore.toggleRightSidebar(),
-			onExpandAllReleases: () => {
-				const releases = get(displayedReleases)
-				expandedReleaseIds.expandAll(releases.filter((r) => r.tracks.length > 0).map((r) => r.id))
-			},
-			onCollapseAllReleases: () => expandedReleaseIds.collapseAll(),
-			onRefreshMetadata: handlers.refreshMetadata,
-		})
+			cleanupMenu = await withTimeout(
+				useMenuActions({
+					onImport: handlers.import,
+					onAddRelease: handlers.addRelease,
+					onCreatePlaylist: playlistController.handleCreatePlaylist,
+					onCreateFolder: playlistController.handleCreateFolder,
+					onSelectAll: handlers.selectAll,
+					onPlayPause: handlers.playPause,
+					onStop: handlers.stop,
+					onNextTrack: playNextTrack,
+					onPreviousTrack: playPreviousTrack,
+					onSeekForward: handlers.seekForward,
+					onSeekBackward: handlers.seekBackward,
+					onFineSeekForward: handlers.fineSeekForward,
+					onFineSeekBackward: handlers.fineSeekBackward,
+					onVolumeUp: handlers.volumeUp,
+					onVolumeDown: handlers.volumeDown,
+					onToggleMute: handlers.toggleMute,
+					onOpenSettings: handlers.openSettings,
+					onQuickExport: handlers.quickExport,
+					onJumpToPlayingTrack: handlers.jumpToPlayingTrack,
+					onToggleView: handlers.toggleView,
+					onToggleEditor: () => uiLayoutStore.toggleRightSidebar(),
+					onExpandAllReleases: () => {
+						const releases = get(displayedReleases)
+						expandedReleaseIds.expandAll(releases.filter((r) => r.tracks.length > 0).map((r) => r.id))
+					},
+					onCollapseAllReleases: () => expandedReleaseIds.collapseAll(),
+					onRefreshMetadata: handlers.refreshMetadata,
+				}),
+				1500,
+				() => {}
+			)
 
-		const cleanupMediaKeys = await useMediaKeys({
-			onPlayPause: handlers.playPause,
-			onNextTrack: playNextTrack,
-			onPreviousTrack: playPreviousTrack,
-		})
+			cleanupMediaKeys = await withTimeout(
+				useMediaKeys({
+					onPlayPause: handlers.playPause,
+					onNextTrack: playNextTrack,
+					onPreviousTrack: playPreviousTrack,
+				}),
+				1500,
+				() => {}
+			)
 
-		// Register Media Session API handlers for next/previous so that media keys
-		// work during preview playback. WKWebView's HTML5 Audio element creates its
-		// own media session that takes priority over souvlaki — without these
-		// handlers, next/previous keys are silently consumed by the webview.
-		if ('mediaSession' in navigator) {
-			navigator.mediaSession.setActionHandler('nexttrack', playNextTrack)
-			navigator.mediaSession.setActionHandler('previoustrack', playPreviousTrack)
-		}
-
-		playerStore.onTrackEnd(() => {
-			if (get(continuousPlayback)) {
-				playNextTrack()
+			if ('mediaSession' in navigator) {
+				navigator.mediaSession.setActionHandler('nexttrack', playNextTrack)
+				navigator.mediaSession.setActionHandler('previoustrack', playPreviousTrack)
 			}
-		})
 
-		const elapsed = Date.now() - splashStartTime
-		if (elapsed < minDisplayTime) {
-			await new Promise((r) => setTimeout(r, minDisplayTime - elapsed))
+			playerStore.onTrackEnd(() => {
+				if (get(continuousPlayback)) {
+					playNextTrack()
+				}
+			})
+
+			if (get(activeView) === 'discovery') {
+				discoveryStore.loadReleases().catch(() => {})
+			}
+
+			updaterStore.check(true).catch(() => {})
+			updateInterval = setInterval(() => updaterStore.check(true), 60 * 60 * 1000)
+
+			cloudSyncStore.load().catch(() => {})
+			cloudSyncStore.startPolling()
+			cloudSyncStore.startOverrideListener()
+		} catch (err) {
+			console.warn('Initialization error:', err)
+		} finally {
+			// Instant splash dismissal - no artificial delay
+			dismissSplash()
+
+			// Background preloading - non-blocking
+			setTimeout(() => {
+				recentTracksStore.load().catch(() => {})
+				beatportStore.loadInitialData().catch(() => {})
+			}, 100)
 		}
-
-		if (get(activeView) === 'discovery') {
-			await discoveryStore.loadReleases()
-		}
-
-		updaterStore.check(true)
-		const updateInterval = setInterval(() => updaterStore.check(true), 60 * 60 * 1000)
-
-		// Cloud sync: load initial status + poll for updates so the indicator stays current,
-		// and listen for override-conflict toasts.
-		await cloudSyncStore.load()
-		cloudSyncStore.startPolling()
-		cloudSyncStore.startOverrideListener()
-
-		dismissSplash()
 
 		return () => {
 			cleanupApp()
@@ -920,7 +1062,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			exportStore.stopListening()
 			cloudSyncStore.stopPolling()
 			cloudSyncStore.stopOverrideListener()
-			clearInterval(updateInterval)
+			if (updateInterval) clearInterval(updateInterval)
 		}
 	}
 

@@ -111,7 +111,7 @@ impl Clone for Database {
 /// transaction, so an interrupted run (e.g. the process is killed mid-migration)
 /// rolls back cleanly and is retried from scratch on the next launch — never
 /// leaving a half-applied schema. Migrations run in order, each exactly once.
-fn run_migrations(conn: &Connection) -> Result<()> {
+pub fn run_migrations(conn: &Connection) -> Result<()> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)",
         [],

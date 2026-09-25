@@ -225,6 +225,7 @@ mod tests {
             duration_ms: 180000,
             bpm: Some(120.0),
             key: None,
+            energy: None,
             bitrate: Some(320),
             sample_rate: Some(44100),
             format: "mp3".to_string(),

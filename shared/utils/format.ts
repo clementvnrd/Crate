@@ -74,18 +74,84 @@ const STANDARD_TO_CAMELOT: Record<string, string> = {
 	Dm: '7A',
 }
 
+const CAMELOT_TO_STANDARD: Record<string, string> = {
+	'1A': 'Abm',
+	'1B': 'B',
+	'2A': 'Ebm',
+	'2B': 'F#',
+	'3A': 'Bbm',
+	'3B': 'Db',
+	'4A': 'Fm',
+	'4B': 'Ab',
+	'5A': 'Cm',
+	'5B': 'Eb',
+	'6A': 'Gm',
+	'6B': 'Bb',
+	'7A': 'Dm',
+	'7B': 'F',
+	'8A': 'Am',
+	'8B': 'C',
+	'9A': 'Em',
+	'9B': 'G',
+	'10A': 'Bm',
+	'10B': 'D',
+	'11A': 'F#m',
+	'11B': 'A',
+	'12A': 'C#m',
+	'12B': 'E',
+}
+
 /**
  * Format key for display based on notation format preference
- * Keys are stored in Standard notation and converted to Camelot when that format is selected
+ * Handles both Standard and Camelot inputs seamlessly
  */
 export function formatKey(key: string | null, format: 'standard' | 'camelot' = 'camelot'): string {
 	if (!key) return '-'
 
+	const clean = key.trim()
+	const upper = clean.toUpperCase()
+
 	if (format === 'camelot') {
-		return STANDARD_TO_CAMELOT[key] ?? key
+		return STANDARD_TO_CAMELOT[clean] ?? STANDARD_TO_CAMELOT[upper] ?? clean
 	}
 
-	return key
+	return CAMELOT_TO_STANDARD[upper] ?? clean
+}
+
+/**
+ * Format energy level (1-10)
+ */
+export function formatEnergy(energy: number | null | undefined): string {
+	if (energy === null || energy === undefined) return '-'
+	return `${energy}`
+}
+
+/**
+ * Format bitrate for display (e.g. 320 kbps, 807 kbps, 1411 kbps, 2117 kbps)
+ * Automatically normalizes raw bps values and handles PCM WAV/AIFF bitrates
+ */
+export function formatBitrate(
+	bitrate: number | null | undefined,
+	format?: string,
+	sampleRate?: number | null
+): string {
+	const fmt = (format || '').toLowerCase()
+	if (bitrate === null || bitrate === undefined || bitrate <= 0) {
+		if (fmt === 'wav' || fmt === 'aiff') {
+			const sr = sampleRate || 44100
+			return `${Math.round((sr * 2 * 24) / 1000)} kbps`
+		}
+		return format ? format.toUpperCase() : '-'
+	}
+
+	let kbps = bitrate
+	if (bitrate <= 10 && (fmt === 'wav' || fmt === 'aiff' || fmt === 'flac')) {
+		const sr = sampleRate || 44100
+		kbps = Math.round((sr * 2 * 24) / 1000)
+	} else if (bitrate > 10000) {
+		kbps = Math.round(bitrate / 1000)
+	}
+	return `${kbps} kbps`
 }
 
 /**
@@ -206,14 +272,6 @@ export function formatRelativeDate(dateStr: string, t: TranslateFn): string {
 	if (diffDays < 365) return t('dates.monthsAgo', { values: { count: months } })
 	const years = Math.floor(diffDays / 365)
 	return t('dates.yearsAgo', { values: { count: years } })
-}
-
-/**
- * Format bitrate for display
- */
-export function formatBitrate(bitrate: number | null): string {
-	if (bitrate === null) return '-'
-	return `${bitrate} kbps`
 }
 
 /**

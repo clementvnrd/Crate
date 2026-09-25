@@ -10,6 +10,7 @@ mod copy;
 mod generation;
 mod helpers;
 mod orchestration;
+pub mod rekordbox_xml;
 mod state;
 mod validation;
 

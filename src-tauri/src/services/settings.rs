@@ -150,6 +150,19 @@ impl SettingsService {
                     > 0
             });
 
+        let beatport_download_destination = self
+            .get_setting_value(&conn, "beatport_download_destination")?
+            .or_else(|| Some("~/Music/My Library/FLAC".to_string()));
+
+        let beatport_audio_quality = self
+            .get_setting_value(&conn, "beatport_audio_quality")?
+            .or_else(|| Some("flac".to_string()));
+
+        let beatport_auto_sync_mik = self
+            .get_setting_value(&conn, "beatport_auto_sync_mik")?
+            .map(|v| v != "false")
+            .unwrap_or(true);
+
         Ok(AppSettings {
             theme,
             accent_color,
@@ -175,6 +188,9 @@ impl SettingsService {
             last_backup_type,
             has_completed_onboarding,
             has_completed_wizard,
+            beatport_download_destination,
+            beatport_audio_quality,
+            beatport_auto_sync_mik,
         })
     }
 

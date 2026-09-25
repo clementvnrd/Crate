@@ -1,0 +1,88 @@
+<script lang="ts">
+	import type { HarmonicStatsItem } from '$shared/types'
+	import { getCamelotColor, formatCamelotKey } from '$shared/utils/camelot'
+	import Icon from '$lib/components/common/Icon.svelte'
+
+	type Props = {
+		harmonicStats: HarmonicStatsItem[]
+		isLoading: boolean
+	}
+
+	let { harmonicStats, isLoading }: Props = $props()
+
+	let sortedItems = $derived(
+		[...harmonicStats].sort((a, b) => b.plays - a.plays)
+	)
+
+	let maxPlays = $derived(
+		Math.max(...harmonicStats.map((item) => item.plays), 1)
+	)
+</script>
+
+<div class="flex flex-col h-full rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
+	<div class="mb-4 flex items-center justify-between">
+		<div class="flex items-center gap-2">
+			<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-400">
+				<Icon name="disc" class="h-4 w-4" />
+			</div>
+			<div>
+				<h3 class="text-sm font-bold text-text-primary">Roue Harmonique & Tonalités</h3>
+				<p class="text-[11px] text-text-tertiary">Distribution des clés Camelot & Mixed In Key</p>
+			</div>
+		</div>
+		<span class="rounded-full bg-surface-2 border border-stroke px-2 py-0.5 text-[10px] font-mono font-medium text-text-secondary">
+			{harmonicStats.length} tonalités
+		</span>
+	</div>
+
+	{#if isLoading && harmonicStats.length === 0}
+		<div class="space-y-3 py-4">
+			{#each Array(4) as _}
+				<div class="h-8 rounded-lg bg-surface-3 animate-pulse"></div>
+			{/each}
+		</div>
+	{:else if harmonicStats.length === 0}
+		<div class="flex flex-1 items-center justify-center py-10 text-center text-xs text-text-tertiary">
+			Aucune donnée harmonique disponible pour cette période.
+		</div>
+	{:else}
+		<div class="flex-1 overflow-y-auto max-h-[360px] pr-1 space-y-2.5">
+			{#each sortedItems as item (item.key)}
+				{@const colorInfo = getCamelotColor(item.key)}
+				{@const fillPercent = Math.min(100, Math.round((item.plays / maxPlays) * 100))}
+				<div class="group rounded-xl border border-stroke/40 bg-surface-2/40 p-2.5 transition-all hover:bg-surface-2/80 hover:border-stroke">
+					<div class="flex items-center justify-between mb-1.5">
+						<div class="flex items-center gap-2">
+							<span
+								class="min-w-[36px] text-center rounded px-2 py-0.5 text-xs font-mono font-bold border shadow-xs"
+								style={colorInfo
+									? `background-color: ${colorInfo.bg}; color: ${colorInfo.text}; border-color: ${colorInfo.border};`
+									: 'background-color: #3b82f6; color: white;'}
+							>
+								{formatCamelotKey(item.key)}
+							</span>
+							{#if colorInfo?.name}
+								<span class="text-xs font-medium text-text-secondary truncate max-w-[150px]">
+									{colorInfo.name}
+								</span>
+							{/if}
+						</div>
+
+						<div class="flex items-center gap-2 font-mono text-xs">
+							<span class="font-bold text-text-primary">{item.plays} plays</span>
+							<span class="text-text-tertiary text-[11px]">({item.percentage.toFixed(1)}%)</span>
+						</div>
+					</div>
+
+					<!-- Progress bar matching key color -->
+					<div class="relative h-2 w-full overflow-hidden rounded-full bg-surface-3">
+						<div
+							class="h-full rounded-full transition-all duration-500"
+							style="width: {fillPercent}%; background-color: {colorInfo?.dot ?? '#3b82f6'};"
+						></div>
+					</div>
+				</div>
+			{/each}
+		</div>
+	{/if}
+</div>

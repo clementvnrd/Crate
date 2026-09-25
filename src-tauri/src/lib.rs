@@ -64,15 +64,26 @@ impl PrefetchTracker {
     }
 }
 
+/// Stores cold-start file opened from macOS Finder / Open With.
+pub(crate) struct StartupFile(pub Arc<std::sync::Mutex<Option<String>>>);
+
+impl StartupFile {
+    pub fn new() -> Self {
+        Self(Arc::new(std::sync::Mutex::new(None)))
+    }
+}
+
 use services::{
     discovery::n_transform::NsigSolverState, BackupService, DiscoveryService, FollowService,
-    PlaylistService, SettingsService, TagService,
+    MikTrackerService, PlayerTrackerService, PlaylistService, RekordboxTrackerService, SettingsService,
+    SpotifyTrackerService, StatsRecorderService, TagService,
 };
 // Desktop-only services and their backing crates are excluded from the mobile build.
 #[cfg(feature = "desktop")]
 use services::{
-    export::CheckpointService, AnalysisService, AudioService, DeviceService, DiagnosticsService,
-    ExportService, LibraryService, MediaControlsService, SyncService,
+    export::CheckpointService, AlbumService, AnalysisService, AudioService, BeatportUpgraderService,
+    DeviceService, DiagnosticsService, DuplicateService, ExportService, LibraryService,
+    MediaControlsService, StandaloneService, SyncService,
 };
 use tauri::Manager;
 
@@ -142,6 +153,8 @@ pub fn run() {
             #[cfg(feature = "desktop")]
             commands::library::delete_tracks,
             #[cfg(feature = "desktop")]
+            commands::library::delete_tracks_and_files,
+            #[cfg(feature = "desktop")]
             commands::library::search_tracks,
             #[cfg(feature = "desktop")]
             commands::library::rescan_artwork,
@@ -169,6 +182,25 @@ pub fn run() {
             commands::library::import_tracks_with_duplicates,
             #[cfg(feature = "desktop")]
             commands::library::resolve_duplicate,
+            #[cfg(feature = "desktop")]
+            commands::library::resync_mixed_in_key_tracks,
+            #[cfg(feature = "desktop")]
+            commands::library::get_mik_database_status,
+            #[cfg(feature = "desktop")]
+            commands::library::sync_from_mik_database,
+            #[cfg(feature = "desktop")]
+            commands::library::prune_missing_tracks,
+            commands::library::get_track_waveform,
+            commands::library::get_track_cues,
+            // Duplicate commands (desktop-only)
+            #[cfg(feature = "desktop")]
+            commands::duplicate::get_duplicate_groups,
+            #[cfg(feature = "desktop")]
+            commands::duplicate::get_duplicate_count,
+            #[cfg(feature = "desktop")]
+            commands::duplicate::ignore_duplicate_group,
+            #[cfg(feature = "desktop")]
+            commands::duplicate::unignore_duplicate_group,
             // Playback commands (desktop-only)
             #[cfg(feature = "desktop")]
             commands::playback::play_track,
@@ -190,6 +222,32 @@ pub fn run() {
             commands::playback::get_audio_devices,
             #[cfg(feature = "desktop")]
             commands::playback::set_audio_device,
+            // Standalone audio commands (desktop-only)
+            #[cfg(feature = "desktop")]
+            commands::standalone::read_standalone_track,
+            #[cfg(feature = "desktop")]
+            commands::standalone::get_recent_standalone_tracks,
+            #[cfg(feature = "desktop")]
+            commands::standalone::add_recent_standalone_track,
+            #[cfg(feature = "desktop")]
+            commands::standalone::remove_recent_standalone_track,
+            #[cfg(feature = "desktop")]
+            commands::standalone::clear_recent_standalone_tracks,
+            #[cfg(feature = "desktop")]
+            commands::standalone::get_startup_file,
+            #[cfg(feature = "desktop")]
+            commands::standalone::play_standalone_track,
+            #[cfg(feature = "desktop")]
+            commands::standalone::set_as_default_audio_player,
+            // Album commands (desktop-only)
+            #[cfg(feature = "desktop")]
+            commands::album::add_player_album,
+            #[cfg(feature = "desktop")]
+            commands::album::get_player_albums,
+            #[cfg(feature = "desktop")]
+            commands::album::get_player_album_tracks,
+            #[cfg(feature = "desktop")]
+            commands::album::remove_player_album,
             // Tag commands
             commands::tag::get_tag_categories,
             commands::tag::create_tag_category,
@@ -245,6 +303,8 @@ pub fn run() {
             commands::export::delete_checkpoint,
             #[cfg(feature = "desktop")]
             commands::export::resume_export,
+            #[cfg(feature = "desktop")]
+            commands::export::export_rekordbox_xml,
             // Sync commands (desktop-only)
             #[cfg(feature = "desktop")]
             commands::sync::sync_device,
@@ -355,7 +415,67 @@ pub fn run() {
             commands::cloud_sync::suggest_library_roots,
             #[cfg(feature = "desktop")]
             commands::cloud_sync::locate_track,
+            // Beatport commands
+            commands::beatport::beatport_get_pkce_auth_url,
+            commands::beatport::beatport_get_persisted_auth,
+            commands::beatport::beatport_save_persisted_auth,
+            commands::beatport::beatport_clear_persisted_auth,
+            commands::beatport::beatport_login_pkce,
+            commands::beatport::beatport_auto_detect_session,
+            commands::beatport::beatport_validate_token,
+            commands::beatport::beatport_refresh_token,
+            commands::beatport::beatport_get_genres,
+            commands::beatport::beatport_get_featured_charts,
+            commands::beatport::beatport_get_top_tracks,
+            commands::beatport::beatport_get_chart_tracks,
+            commands::beatport::beatport_get_artist_tracks,
+            commands::beatport::beatport_get_artist_detail,
+            commands::beatport::beatport_search,
+            commands::beatport::beatport_get_user_playlists,
+            commands::beatport::beatport_get_playlist_tracks,
+            commands::beatport::beatport_get_user_favorites,
+            commands::beatport::beatport_get_user_purchases,
+            commands::beatport::beatport_download_tracks,
+            // Beatport Upgrader commands (desktop-only)
+            #[cfg(feature = "desktop")]
+            commands::upgrader::get_upgrade_matches,
+            #[cfg(feature = "desktop")]
+            commands::upgrader::get_upgrade_count,
+            #[cfg(feature = "desktop")]
+            commands::upgrader::ignore_upgrade_match,
+            #[cfg(feature = "desktop")]
+            commands::upgrader::unignore_upgrade_match,
+            #[cfg(feature = "desktop")]
+            commands::upgrader::execute_upgrade_replacements,
+            // Stats, Spotify & Rekordbox commands
+            commands::stats::get_stats_summary,
+            commands::stats::get_top_tracks,
+            commands::stats::get_top_artists,
+            commands::stats::get_harmonic_stats,
+            commands::stats::get_bpm_stats,
+            commands::stats::get_listening_heatmap,
+            commands::stats::get_recent_listens,
+            commands::stats::record_listen_event,
+            commands::stats::set_spotify_client_id,
+            commands::stats::spotify_set_client_id,
+            commands::stats::spotify_get_client_id,
+            commands::stats::set_spotify_client_secret,
+            commands::stats::spotify_set_client_secret,
+            commands::stats::spotify_get_client_secret,
+            commands::stats::spotify_get_auth_url,
+            commands::stats::spotify_exchange_code,
+            commands::stats::spotify_disconnect,
+            commands::stats::spotify_get_auth_state,
+            commands::stats::spotify_get_now_playing,
+            commands::stats::spotify_import_history,
+            commands::stats::sync_spotify_recently_played,
+            commands::stats::rekordbox_detect_status,
+            commands::stats::rekordbox_sync_history,
+            commands::stats::rekordbox_import_history_xml,
+            commands::stats::rekordbox_get_sessions,
+            commands::stats::mik_detect_status,
         ])
+
         .setup(|app| {
             // Get Tauri's app data directory
             let app_data_dir = app
@@ -395,6 +515,14 @@ pub fn run() {
             let diagnostics_service = DiagnosticsService::new(app_data_dir.clone());
             #[cfg(feature = "desktop")]
             let analysis_service = AnalysisService::new(conn.clone());
+            #[cfg(feature = "desktop")]
+            let duplicate_service = DuplicateService::new(conn.clone());
+            #[cfg(feature = "desktop")]
+            let upgrader_service = BeatportUpgraderService::new(conn.clone());
+            #[cfg(feature = "desktop")]
+            let standalone_service = StandaloneService::new(conn.clone(), app_data_dir.clone());
+            #[cfg(feature = "desktop")]
+            let album_service = AlbumService::new(conn.clone(), app_data_dir.clone());
             let backup_service = BackupService::new(conn.clone());
             let discovery_service = DiscoveryService::new(conn.clone(), app_data_dir.clone());
             let follow_service = FollowService::new(conn.clone(), app_data_dir.clone());
@@ -449,8 +577,74 @@ pub fn run() {
             app.manage(diagnostics_service);
             #[cfg(feature = "desktop")]
             app.manage(analysis_service);
+            #[cfg(feature = "desktop")]
+            app.manage(duplicate_service);
+            #[cfg(feature = "desktop")]
+            app.manage(upgrader_service);
+            #[cfg(feature = "desktop")]
+            app.manage(standalone_service);
+            #[cfg(feature = "desktop")]
+            app.manage(album_service);
+            app.manage(StartupFile::new());
             app.manage(discovery_service);
             app.manage(follow_service);
+
+            // Crate Pulse & Stats services
+            let stats_recorder = Arc::new(StatsRecorderService::new(conn.clone()));
+            let spotify_tracker = Arc::new(SpotifyTrackerService::new(conn.clone(), stats_recorder.clone()));
+            let rekordbox_tracker = RekordboxTrackerService::new(conn.clone(), stats_recorder.clone());
+            let mik_tracker = Arc::new(MikTrackerService::new(stats_recorder.clone()));
+            let player_tracker = PlayerTrackerService::new(stats_recorder.clone());
+
+            app.manage(StatsRecorderService::new(conn.clone()));
+            app.manage((*spotify_tracker).clone());
+            app.manage(rekordbox_tracker);
+            app.manage(MikTrackerService::new(stats_recorder.clone()));
+            app.manage(player_tracker);
+
+            // Repair historical Spotify listen events with full track durations
+            if let Err(e) = stats_recorder.repair_spotify_historical_durations() {
+                log::warn!("Failed to repair historical Spotify durations: {e}");
+            }
+
+            // Automatic Spotify OAuth2 loopback server (listens on 127.0.0.1:8888 for OAuth callbacks)
+            spotify_tracker.clone().start_loopback_server(app.handle().clone());
+
+            // Background Spotify polling worker (monitors live playback across devices and syncs recently played)
+            {
+                let spotify_svc = spotify_tracker.clone();
+                tauri::async_runtime::spawn(async move {
+                    // Initial sync on startup to capture any offline / sleep plays
+                    let _ = spotify_svc.sync_recently_played().await;
+
+                    let mut tick_counter: u64 = 0;
+                    loop {
+                        tokio::time::sleep(std::time::Duration::from_secs(4)).await;
+                        if let Err(e) = spotify_svc.poll_tick().await {
+                            log::debug!("Spotify background poll tick: {e}");
+                        }
+                        tick_counter += 1;
+                        // Every 15 ticks (~60s), sync recently played in background to catch offline/mobile listens
+                        if tick_counter % 15 == 0 {
+                            let _ = spotify_svc.sync_recently_played().await;
+                        }
+                    }
+                });
+            }
+
+            // Background Mixed In Key 11 polling worker (monitors audio loaded in MIK)
+            {
+                let mik_svc = mik_tracker.clone();
+                tauri::async_runtime::spawn(async move {
+                    loop {
+                        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                        if let Err(e) = mik_svc.poll_tick().await {
+                            log::debug!("Mixed In Key background poll tick: {e}");
+                        }
+                    }
+                });
+            }
+
             // Background watch loop: poll followed sources on the configured cadence.
             // No-ops (and makes no network requests) when nothing is followed.
             crate::services::follow::watch::start_watching(
@@ -469,6 +663,7 @@ pub fn run() {
             app.manage(ScanEnrichmentCache::new());
             app.manage(EnrichmentSkipIds::new());
             app.manage(AvatarCache::new());
+
 
             // Cloud sync: build the Firebase backend if a config file is present
             // (degrades gracefully to "unavailable" when it isn't), manage the runtime
@@ -592,6 +787,105 @@ pub fn run() {
                 device_service.start_monitoring(app.handle().clone());
             }
 
+            // Automatic initial sync & background watcher for Mixed In Key database (desktop-only)
+            #[cfg(feature = "desktop")]
+            {
+                let app_handle = app.handle().clone();
+                let mik_conn_arc = conn.clone();
+                let artwork_svc = app_data_dir.clone();
+
+                tauri::async_runtime::spawn(async move {
+                    use tauri::Emitter;
+
+                    // Delay 600ms so initial frontend stores load instantly without lock contention
+                    tokio::time::sleep(std::time::Duration::from_millis(600)).await;
+
+                    if let Ok(guard) = mik_conn_arc.lock() {
+                        let art_svc = crate::services::ArtworkService::new(artwork_svc.clone());
+                        let _ = crate::services::library::MikDatabaseService::prune_missing_tracks_from_mik_db();
+                        let _ = crate::services::library::MikDatabaseService::prune_missing_tracks(&guard, Some(&art_svc));
+                        if let Ok(res) = crate::services::library::MikDatabaseService::sync_all_from_mik_db(&guard, Some(&art_svc)) {
+                            if res.added > 0 || res.updated > 0 || res.removed > 0 {
+                                log::info!("Initial MIK sync found updates, notifying frontend...");
+                                let _ = app_handle.emit("mik-database-synced", ());
+                                let _ = app_handle.emit("duplicates-updated", ());
+                            }
+                        }
+                    }
+
+                    fn get_latest_mik_mtime(db_path: &std::path::Path) -> Option<std::time::SystemTime> {
+                        let wal_path = std::path::PathBuf::from(format!("{}-wal", db_path.to_string_lossy()));
+                        let shm_path = std::path::PathBuf::from(format!("{}-shm", db_path.to_string_lossy()));
+
+                        let paths = [db_path, wal_path.as_path(), shm_path.as_path()];
+                        let mut latest: Option<std::time::SystemTime> = None;
+
+                        for p in paths {
+                            if let Ok(meta) = std::fs::metadata(p) {
+                                if let Ok(mtime) = meta.modified() {
+                                    latest = Some(match latest {
+                                        Some(prev) => prev.max(mtime),
+                                        None => mtime,
+                                    });
+                                }
+                            }
+                        }
+                        latest
+                    }
+
+                    let mut last_synced_mtime: Option<std::time::SystemTime> = crate::services::library::MikDatabaseService::find_mik_db_path()
+                        .and_then(|p| get_latest_mik_mtime(&p));
+
+                    let mut pending_change = false;
+                    let mut detected_mtime: Option<std::time::SystemTime> = None;
+                    let mut last_activity_time = tokio::time::Instant::now();
+
+                    loop {
+                        tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+
+                        if let Some(mik_path) = crate::services::library::MikDatabaseService::find_mik_db_path() {
+                            if let Some(current_mtime) = get_latest_mik_mtime(&mik_path) {
+                                let is_newer = last_synced_mtime.map_or(true, |last| current_mtime > last);
+                                if is_newer {
+                                    if detected_mtime != Some(current_mtime) {
+                                        detected_mtime = Some(current_mtime);
+                                        last_activity_time = tokio::time::Instant::now();
+                                        pending_change = true;
+                                    }
+                                }
+                            }
+
+                            if pending_change && last_activity_time.elapsed() >= std::time::Duration::from_millis(500) {
+                                log::info!("Debounce window passed (500ms inactivity). Executing live Mixed In Key sync...");
+                                if let Ok(guard) = mik_conn_arc.lock() {
+                                    let art_svc = crate::services::ArtworkService::new(artwork_svc.clone());
+                                    match crate::services::library::MikDatabaseService::sync_all_from_mik_db(&guard, Some(&art_svc)) {
+                                        Ok(res) => {
+                                            log::info!(
+                                                "Live MIK sync completed: {} added, {} updated, {} removed (total: {})",
+                                                res.added,
+                                                res.updated,
+                                                res.removed,
+                                                res.total
+                                            );
+                                            let _ = app_handle.emit("mik-database-synced", ());
+                                            let _ = app_handle.emit("duplicates-updated", ());
+                                        }
+                                        Err(e) => {
+                                            log::warn!("Live MIK sync failed: {e}");
+                                        }
+                                    }
+                                }
+                                last_synced_mtime = crate::services::library::MikDatabaseService::find_mik_db_path()
+                                    .and_then(|p| get_latest_mik_mtime(&p))
+                                    .or(detected_mtime);
+                                pending_change = false;
+                            }
+                        }
+                    }
+                });
+            }
+
             // Build and set the application menu (desktop-only: no native menu on mobile)
             #[cfg(feature = "desktop")]
             {
@@ -686,8 +980,31 @@ pub fn run() {
         }
     });
 
-    builder.run(tauri::generate_context!()).unwrap_or_else(|e| {
-        log::error!("Fatal: failed to run Tauri application: {e}");
-        std::process::exit(1);
+    let app = builder
+        .build(tauri::generate_context!())
+        .unwrap_or_else(|e| {
+            log::error!("Fatal: failed to build Tauri application: {e}");
+            std::process::exit(1);
+        });
+
+    app.run(move |app_handle, event| match event {
+        tauri::RunEvent::Opened { urls } => {
+            use tauri::Emitter;
+            for url in urls {
+                let file_path = if let Ok(path) = url.to_file_path() {
+                    path.to_string_lossy().to_string()
+                } else {
+                    url.path().to_string()
+                };
+
+                if let Some(startup_file) = app_handle.try_state::<StartupFile>() {
+                    if let Ok(mut lock) = startup_file.0.lock() {
+                        *lock = Some(file_path.clone());
+                    }
+                }
+                let _ = app_handle.emit("open-file", file_path);
+            }
+        }
+        _ => {}
     });
 }

@@ -33,6 +33,7 @@
 		| { type: 'deleteCategory'; category: TagCategory }
 		| { type: 'removeFromPlaylist'; trackIds: string[]; playlistId: string }
 		| { type: 'removeFromLibrary'; trackIds: string[] }
+		| { type: 'deleteTrackAndFile'; trackIds: string[] }
 		| { type: 'removeDiscoveryReleases'; releaseIds: string[] }
 		| { type: 'removeDiscoveryReleasesFromPlaylist'; releaseIds: string[]; playlistId: string }
 		// Feature modals
@@ -46,6 +47,8 @@
 				targetParentId: string | null
 		  }
 		| { type: 'settings'; initialTab?: SettingsPage }
+		| { type: 'duplicateManager' }
+		| { type: 'beatportUpgrader' }
 		| {
 				type: 'duplicateTrack'
 				duplicates: DuplicateTrack[]
@@ -89,6 +92,8 @@
 	import { DeviceInfoModal, ReformatDeviceModal } from '$lib/components/devices'
 	import { SettingsModal } from '$lib/components/settings'
 	import { RelocateTrackModal } from '$lib/components/library'
+	import { DuplicateManagerModal } from '$lib/components/duplicates'
+	import { BeatportUpgraderModal } from '$lib/components/upgrader'
 	import { SmartPlaylistModal } from '$lib/components/playlists'
 	import { ExportModal, ExportFailureModal, QuickExportModal } from '$lib/components/export'
 	import { toastStore } from '$shared/stores/toast'
@@ -124,6 +129,7 @@
 		onDeleteCategory: (id: string) => Promise<void>
 		onRemoveFromPlaylist: (trackIds: string[], playlistId: string, deleteFromCollection: boolean) => Promise<void>
 		onRemoveFromLibrary: (trackIds: string[]) => Promise<void>
+		onDeleteTrackAndFile: (trackIds: string[]) => Promise<void>
 		onRemoveDiscoveryReleases: (releaseIds: string[]) => Promise<void>
 		onRemoveDiscoveryReleasesFromPlaylist: (
 			releaseIds: string[],
@@ -180,6 +186,7 @@
 		onDeleteCategory,
 		onRemoveFromPlaylist,
 		onRemoveFromLibrary,
+		onDeleteTrackAndFile,
 		onRemoveDiscoveryReleases,
 		onRemoveDiscoveryReleasesFromPlaylist,
 		onMoveConflictOverwrite,
@@ -287,6 +294,10 @@
 		activeModal = { type: 'removeFromLibrary', trackIds }
 	}
 
+	export function openDeleteTrackAndFileModal(trackIds: string[]) {
+		activeModal = { type: 'deleteTrackAndFile', trackIds }
+	}
+
 	export function openRemoveDiscoveryReleasesModal(releaseIds: string[]) {
 		activeModal = { type: 'removeDiscoveryReleases', releaseIds }
 	}
@@ -310,6 +321,14 @@
 
 	export function openSettingsModal(initialTab?: SettingsPage) {
 		activeModal = { type: 'settings', initialTab }
+	}
+
+	export function openDuplicateManagerModal() {
+		activeModal = { type: 'duplicateManager' }
+	}
+
+	export function openBeatportUpgraderModal() {
+		activeModal = { type: 'beatportUpgrader' }
 	}
 
 	export function openDuplicateTrackModal(
@@ -469,6 +488,14 @@
 			const trackIds = activeModal.trackIds
 			closeAll()
 			await onRemoveFromLibrary(trackIds)
+		}
+	}
+
+	async function handleDeleteTrackAndFileConfirm() {
+		if (activeModal.type === 'deleteTrackAndFile') {
+			const trackIds = activeModal.trackIds
+			closeAll()
+			await onDeleteTrackAndFile(trackIds)
 		}
 	}
 
@@ -921,9 +948,23 @@
 		title={$translate('modals.confirm.removeFromLibraryTitle')}
 		message={$translate('modals.confirm.removeFromLibraryMessage', { values: { count: activeModal.trackIds.length } })}
 		warnings={[$translate('modals.confirm.removeFromLibraryWarning')]}
-		confirmLabel={$translate('common.remove')}
+		confirmLabel={$translate('common.delete')}
 		destructive={true}
 		onConfirm={handleRemoveFromLibraryConfirm}
+		onCancel={closeAll}
+	/>
+{/if}
+
+<!-- Delete Track and File to Trash Confirmation -->
+{#if activeModal.type === 'deleteTrackAndFile'}
+	<ConfirmModal
+		open={true}
+		title={$translate('modals.confirm.deleteTrackAndFileTitle')}
+		message={$translate('modals.confirm.deleteTrackAndFileMessage', { values: { count: activeModal.trackIds.length } })}
+		warnings={[$translate('modals.confirm.deleteTrackAndFileWarning')]}
+		confirmLabel={$translate('common.delete')}
+		destructive={true}
+		onConfirm={handleDeleteTrackAndFileConfirm}
 		onCancel={closeAll}
 	/>
 {/if}
@@ -992,6 +1033,16 @@
 <!-- Settings Modal -->
 {#if activeModal.type === 'settings'}
 	<SettingsModal open={true} initialTab={activeModal.initialTab} onClose={closeAll} />
+{/if}
+
+<!-- Duplicate Manager Modal (Duplicate Killer) -->
+{#if activeModal.type === 'duplicateManager'}
+	<DuplicateManagerModal open={true} onClose={closeAll} />
+{/if}
+
+<!-- Beatport Quality Upgrader Modal -->
+{#if activeModal.type === 'beatportUpgrader'}
+	<BeatportUpgraderModal open={true} onClose={closeAll} />
 {/if}
 
 <!-- Duplicate Track Modal -->

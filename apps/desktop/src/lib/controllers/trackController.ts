@@ -33,6 +33,7 @@ export interface TrackControllerModalActions {
 	openRelocateModal: (track: Track) => void
 	openRemoveFromPlaylistModal: (trackIds: string[], playlistId: string) => void
 	openRemoveFromLibraryModal: (trackIds: string[]) => void
+	openDeleteTrackAndFileModal: (trackIds: string[]) => void
 	openDuplicateTrackModal: (
 		duplicates: DuplicateTrack[],
 		onComplete: (updatedTracks: Track[], newTracks: Track[], replacedTrackIds: string[]) => void
@@ -58,6 +59,7 @@ export interface TrackController {
 	// Removal operations
 	removeFromPlaylistClick: (tracks: Track[]) => void
 	removeFromLibraryClick: (tracks: Track[]) => void
+	deleteTrackAndFileClick: (tracks: Track[]) => void
 
 	// Color operations
 	setColor: (trackIds: string[], color: TrackColor | null) => Promise<void>
@@ -352,6 +354,18 @@ export function createTrackController(
 	}
 
 	/**
+	 * Open the delete track and move to trash confirmation modal
+	 */
+	function deleteTrackAndFileClick(tracks: Track[]): void {
+		if (modalActions) {
+			const trackIds = tracks.map((t) => t.id)
+			modalActions.openDeleteTrackAndFileModal(trackIds)
+		} else {
+			console.warn('TrackController: modalActions not provided, cannot open delete modal')
+		}
+	}
+
+	/**
 	 * Set color for tracks
 	 */
 	async function setColor(trackIds: string[], color: TrackColor | null): Promise<void> {
@@ -376,6 +390,7 @@ export function createTrackController(
 		handleExternalFileDrop,
 		removeFromPlaylistClick,
 		removeFromLibraryClick,
+		deleteTrackAndFileClick,
 		setColor,
 		setColorFromContextMenu,
 	}

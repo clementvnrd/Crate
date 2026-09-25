@@ -8,13 +8,19 @@ export {
 	playbackPosition,
 	playbackDuration,
 	volume,
+	isMuted,
 	playbackProgress,
 	shuffleEnabled,
 	playbackSource,
 	playbackSpeed,
 	previewInfo,
 	previewTrackIndex,
+	beatportTrack,
+	standaloneTrack,
+	currentCues,
+	currentWaveformBars,
 } from '$shared/stores/player'
+export { recentTracksStore, recentStandaloneTracks, recentTracksLoading } from './recentTracks'
 export { tagsStore, allTags, getTagById, getCategoryById, computeTagStates } from '$shared/stores/tags'
 export { playlistsStore, rootPlaylists, getPlaylistChildren, buildPlaylistTree } from '$shared/stores/playlists'
 export type { PlaylistTreeNode } from '$shared/stores/playlists'
@@ -111,3 +117,41 @@ export {
 	unmappedRootIds,
 	signingIn,
 } from '$shared/stores/cloudSync'
+export {
+	duplicateStore,
+	duplicateGroups,
+	duplicateGroupCount,
+	duplicateTrackCount,
+	duplicateTotalReclaimable,
+	isDuplicateLoading,
+	selectedDuplicateCount,
+	selectedDuplicateReclaimableBytes,
+} from '$shared/stores/duplicate'
+export {
+	statsStore,
+	statsSummary,
+	topTracks,
+	topArtists,
+	harmonicStats,
+	bpmStats,
+	listeningHeatmap,
+	recentListens,
+	spotifyAuth,
+	spotifyNowPlaying,
+	rekordboxDetected,
+	rekordboxSessions,
+	statsSelectedRange,
+	isStatsLoading,
+	isSyncingRekordbox,
+	isImportingSpotify,
+} from '$shared/stores/stats'
+export type { StatsState } from '$shared/stores/stats'
+export {
+	albumsStore,
+	playerAlbums,
+	selectedAlbum,
+	selectedAlbumTracks,
+	albumsLoading,
+	albumsAdding,
+} from '$shared/stores/albums'
+

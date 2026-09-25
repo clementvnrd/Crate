@@ -109,13 +109,21 @@ impl AudioService {
             .map_err(|e| CrateError::Audio(format!("Failed to receive response: {e}")))
     }
 
-    pub fn play_track(&self, track_id: String, file_path: PathBuf) -> Result<PlaybackState> {
+    pub fn play_track(
+        &self,
+        track_id: String,
+        file_path: PathBuf,
+        known_duration_ms: Option<u64>,
+    ) -> Result<PlaybackState> {
         if !file_path.exists() {
             return Err(CrateError::FileNotFound(file_path));
         }
 
-        // Get duration using lenient parsing, with symphonia fallback
-        let duration_ms = self.get_track_duration(&file_path)?;
+        // Use known duration if available (>0) to avoid slow file re-opening and frame decoding
+        let duration_ms = match known_duration_ms {
+            Some(d) if d > 0 => d,
+            _ => self.get_track_duration(&file_path)?,
+        };
 
         match self.send_command(AudioCommand::Play {
             track_id,
@@ -325,7 +333,6 @@ impl Clone for AudioService {
 }
 
 struct AudioPlayer {
-    _stream: OutputStream,
     sink: Sink,
     state: PlaybackState,
     fade_state: Arc<AtomicU8>,
@@ -353,6 +360,7 @@ impl AudioPlayer {
 
 fn audio_thread(command_rx: Receiver<AudioCommand>, response_tx: Sender<AudioResponse>) {
     let mut player: Option<AudioPlayer> = None;
+    let mut output_stream: Option<(OutputStream, Option<String>)> = None;
     let mut current_volume: f32 = 1.0;
     let mut current_speed: f32 = 1.0;
     let mut selected_device: Option<String> = None;
@@ -363,13 +371,14 @@ fn audio_thread(command_rx: Receiver<AudioCommand>, response_tx: Sender<AudioRes
                 let response = handle_command(
                     cmd,
                     &mut player,
+                    &mut output_stream,
                     &mut current_volume,
                     &mut current_speed,
                     &mut selected_device,
                 );
 
                 // Check if we should shutdown
-                if matches!(response, AudioResponse::Ok) && player.is_none() {
+                if matches!(response, AudioResponse::Ok) && player.is_none() && output_stream.is_none() {
                     // This was a shutdown command - but we'll keep running
                 }
 
@@ -415,8 +424,24 @@ fn create_output_stream(
         .map_err(|e| format!("Failed to create audio output: {e}"))
 }
 
+fn get_or_create_stream<'a>(
+    output_stream: &'a mut Option<(OutputStream, Option<String>)>,
+    selected_device: &Option<String>,
+) -> std::result::Result<&'a OutputStream, String> {
+    let needs_recreate = match output_stream {
+        Some((_, ref dev)) => dev != selected_device,
+        None => true,
+    };
+    if needs_recreate {
+        let stream = create_output_stream(selected_device)?;
+        *output_stream = Some((stream, selected_device.clone()));
+    }
+    Ok(&output_stream.as_ref().unwrap().0)
+}
+
 #[allow(clippy::too_many_arguments)]
 fn create_player(
+    stream: &OutputStream,
     track_id: String,
     file_path: &str,
     duration_ms: u64,
@@ -424,9 +449,7 @@ fn create_player(
     is_playing: bool,
     volume: f32,
     speed: f32,
-    selected_device: &Option<String>,
 ) -> std::result::Result<AudioPlayer, String> {
-    let stream = create_output_stream(selected_device)?;
     let sink = Sink::connect_new(stream.mixer());
 
     let file = File::open(file_path).map_err(|e| format!("Failed to open file: {e}"))?;
@@ -460,7 +483,6 @@ fn create_player(
     };
 
     Ok(AudioPlayer {
-        _stream: stream,
         sink,
         state,
         fade_state,
@@ -492,6 +514,7 @@ fn wait_for_fade_state(fade_state: &AtomicU8, target: FadeState, timeout: Durati
 fn handle_command(
     cmd: AudioCommand,
     player: &mut Option<AudioPlayer>,
+    output_stream: &mut Option<(OutputStream, Option<String>)>,
     current_volume: &mut f32,
     current_speed: &mut f32,
     selected_device: &mut Option<String>,
@@ -504,7 +527,13 @@ fn handle_command(
         } => {
             *player = None;
 
+            let stream = match get_or_create_stream(output_stream, selected_device) {
+                Ok(s) => s,
+                Err(e) => return AudioResponse::Error(e),
+            };
+
             match create_player(
+                stream,
                 track_id,
                 &file_path.to_string_lossy(),
                 duration_ms,
@@ -512,7 +541,6 @@ fn handle_command(
                 true,
                 *current_volume,
                 *current_speed,
-                selected_device,
             ) {
                 Ok(p) => {
                     let state = p.state.clone();
@@ -577,8 +605,9 @@ fn handle_command(
 
         AudioCommand::Seek(position_ms) => {
             if let Some(ref mut p) = player {
+                let was_playing = !p.sink.is_paused() && !p.sink.empty();
                 // Fade out before seeking to avoid audio click from sample discontinuity
-                if !p.sink.is_paused() {
+                if was_playing {
                     p.fade_state
                         .store(FadeState::FadingOut as u8, Ordering::Relaxed);
                     if !wait_for_fade_state(
@@ -594,28 +623,40 @@ fn handle_command(
                     Ok(()) => {
                         p.state.position_ms = position_ms;
                         p.started_position_ms = position_ms;
-                        if !p.sink.is_paused() {
+                        if was_playing {
+                            p.fade_state
+                                .store(FadeState::FadingIn as u8, Ordering::Relaxed);
                             p.started_at = Some(Instant::now());
+                        } else {
+                            p.fade_state
+                                .store(FadeState::Playing as u8, Ordering::Relaxed);
                         }
                         AudioResponse::State(p.state.clone())
                     }
                     Err(e) => {
-                        log::warn!("Seek failed ({e}), rebuilding player at {position_ms}ms");
+                        log::warn!("Seek failed ({e}), rebuilding sink at {position_ms}ms");
 
                         let track_id = p.state.current_track_id.clone().unwrap_or_default();
                         let file_path = p.state.current_track_path.clone().unwrap_or_default();
                         let duration_ms = p.state.duration_ms;
-                        let is_playing = !p.sink.is_paused() && !p.sink.empty();
+
+                        let stream = match get_or_create_stream(output_stream, selected_device) {
+                            Ok(s) => s,
+                            Err(stream_err) => {
+                                log::error!("Failed to get output stream for seek rebuild: {stream_err}");
+                                return AudioResponse::Error(stream_err);
+                            }
+                        };
 
                         match create_player(
+                            stream,
                             track_id,
                             &file_path,
                             duration_ms,
                             position_ms,
-                            is_playing,
+                            was_playing,
                             *current_volume,
                             *current_speed,
-                            selected_device,
                         ) {
                             Ok(new_player) => {
                                 let state = new_player.state.clone();
@@ -678,7 +719,12 @@ fn handle_command(
         }
 
         AudioCommand::SetDevice(device_name) => {
+            let changed = *selected_device != device_name;
             *selected_device = device_name;
+
+            if changed {
+                *output_stream = None;
+            }
 
             if let Some(ref p) = player {
                 let is_playing = !p.sink.is_paused() && !p.sink.empty();
@@ -690,21 +736,28 @@ fn handle_command(
                 if let (Some(id), Some(path)) = (track_id, track_path) {
                     *player = None;
 
-                    match create_player(
-                        id,
-                        &path,
-                        duration_ms,
-                        current_pos,
-                        is_playing,
-                        *current_volume,
-                        *current_speed,
-                        selected_device,
-                    ) {
-                        Ok(new_player) => {
-                            *player = Some(new_player);
+                    match get_or_create_stream(output_stream, selected_device) {
+                        Ok(stream) => {
+                            match create_player(
+                                stream,
+                                id,
+                                &path,
+                                duration_ms,
+                                current_pos,
+                                is_playing,
+                                *current_volume,
+                                *current_speed,
+                            ) {
+                                Ok(new_player) => {
+                                    *player = Some(new_player);
+                                }
+                                Err(e) => {
+                                    log::warn!("Failed to switch device: {e}");
+                                }
+                            }
                         }
                         Err(e) => {
-                            log::warn!("Failed to switch device: {e}");
+                            log::warn!("Failed to create stream for device: {e}");
                         }
                     }
                 }
@@ -716,6 +769,7 @@ fn handle_command(
         AudioCommand::GetState => {
             if let Some(ref p) = player {
                 let mut state = p.state.clone();
+                state.position_ms = p.get_current_position_ms();
                 state.is_playing = !p.sink.is_paused() && !p.sink.empty();
                 AudioResponse::State(state)
             } else {
@@ -729,6 +783,7 @@ fn handle_command(
 
         AudioCommand::Shutdown => {
             *player = None;
+            *output_stream = None;
             AudioResponse::Ok
         }
     }

@@ -269,7 +269,7 @@
 				onblur={handleSave}
 			/>
 
-			<div class="grid grid-cols-2 gap-3">
+			<div class="grid grid-cols-3 gap-3">
 				<EditorField
 					label={$translate('editor.bpm')}
 					type="number"
@@ -284,6 +284,15 @@
 					value={formData.key ?? bulkInfo.key.value}
 					mixed={bulkInfo.key.mixed && formData.key === undefined}
 					onchange={handleFieldChange('key')}
+					onsubmit={handleSave}
+					onblur={handleSave}
+				/>
+				<EditorField
+					label="Energy (1-10)"
+					type="number"
+					value={formData.energy ?? bulkInfo.energy.value}
+					mixed={bulkInfo.energy.mixed && formData.energy === undefined}
+					onchange={handleFieldChange('energy')}
 					onsubmit={handleSave}
 					onblur={handleSave}
 				/>

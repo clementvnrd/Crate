@@ -13,8 +13,19 @@ export function getArtworkUrl(
 	dataDir: string | null | undefined
 ): string | undefined {
 	if (!artworkPath) return undefined
+	const trimmed = artworkPath.trim()
+	if (
+		trimmed.startsWith('http://') ||
+		trimmed.startsWith('https://') ||
+		trimmed.startsWith('asset://') ||
+		trimmed.startsWith('data:') ||
+		trimmed.startsWith('blob:')
+	) {
+		return trimmed
+	}
 	if (!dataDir) return undefined
 
-	const fullPath = `${dataDir}/${artworkPath}`
+	const fullPath = trimmed.startsWith('/') ? trimmed : `${dataDir}/${trimmed}`
 	return convertFileSrc(fullPath)
 }
+

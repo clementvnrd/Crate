@@ -2,6 +2,7 @@
 	import { scale } from 'svelte/transition'
 	import { cubicOut } from 'svelte/easing'
 	import { onMount } from 'svelte'
+	import { dismissSplash } from '$lib/stores/splash'
 	import Text from './Text.svelte'
 
 	type Props = {
@@ -21,6 +22,11 @@
 		s.removeProperty('--surface-0')
 		s.removeProperty('--text-primary')
 		s.removeProperty('--text-tertiary')
+
+		const fallback = setTimeout(() => {
+			dismissSplash()
+		}, 2000)
+		return () => clearTimeout(fallback)
 	})
 </script>
 

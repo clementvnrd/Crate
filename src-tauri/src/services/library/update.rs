@@ -52,6 +52,11 @@ impl LibraryService {
             params.push(Box::new(key.clone()));
             param_idx += 1;
         }
+        if let Some(energy) = update.energy {
+            updates.push(format!("energy = ?{param_idx}"));
+            params.push(Box::new(energy));
+            param_idx += 1;
+        }
         if let Some(rating) = update.rating {
             updates.push(format!("rating = ?{param_idx}"));
             params.push(Box::new(rating));
@@ -135,6 +140,11 @@ impl LibraryService {
             params.push(Box::new(key.clone()));
             param_idx += 1;
         }
+        if let Some(energy) = update.energy {
+            updates.push(format!("energy = ?{param_idx}"));
+            params.push(Box::new(energy));
+            param_idx += 1;
+        }
         if let Some(rating) = update.rating {
             updates.push(format!("rating = ?{param_idx}"));
             params.push(Box::new(rating));
@@ -146,16 +156,12 @@ impl LibraryService {
         params.push(Box::new(hlc));
         param_idx += 1;
 
-        // Build placeholders for track IDs
+        // Build IN clause for IDs
         let placeholders: Vec<String> = ids
             .iter()
             .enumerate()
             .map(|(i, _)| format!("?{}", param_idx + i))
             .collect();
-
-        for id in &ids {
-            params.push(Box::new(id.clone()));
-        }
 
         let sql = format!(
             "UPDATE tracks SET {} WHERE id IN ({})",
@@ -163,12 +169,18 @@ impl LibraryService {
             placeholders.join(", ")
         );
 
+        for id in &ids {
+            params.push(Box::new(id.clone()));
+        }
+
         let params_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+
         conn.execute(&sql, params_refs.as_slice())?;
+        dirty::mark_dirty_track_shards(&conn, &ids)?;
 
         drop(conn);
 
-        // Return all updated tracks
+        // Fetch and return updated tracks
         let mut updated_tracks = Vec::new();
         for id in ids {
             if let Ok(track) = self.get_track(&id) {
@@ -177,6 +189,40 @@ impl LibraryService {
         }
 
         Ok(updated_tracks)
+    }
+
+    /// Set rating for a track
+    pub fn set_track_rating(&self, id: &str, rating: i32) -> Result<Track> {
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+
+        let now = chrono::Utc::now().to_rfc3339();
+        let hlc = dirty::next_hlc(&conn)?;
+
+        conn.execute(
+            "UPDATE tracks SET rating = ?1, date_modified = ?2, _hlc = ?3 WHERE id = ?4",
+            rusqlite::params![rating, now, hlc, id],
+        )?;
+        dirty::mark_dirty(&conn, &buckets::bucket_for_track_id(id))?;
+
+        drop(conn);
+        self.get_track(id)
+    }
+
+    /// Set color for a track
+    pub fn set_track_color(&self, id: &str, color: Option<String>) -> Result<Track> {
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+
+        let now = chrono::Utc::now().to_rfc3339();
+        let hlc = dirty::next_hlc(&conn)?;
+
+        conn.execute(
+            "UPDATE tracks SET color = ?1, date_modified = ?2, _hlc = ?3 WHERE id = ?4",
+            rusqlite::params![color, now, hlc, id],
+        )?;
+        dirty::mark_dirty(&conn, &buckets::bucket_for_track_id(id))?;
+
+        drop(conn);
+        self.get_track(id)
     }
 
     /// Set color for multiple tracks (bulk operation)
@@ -215,6 +261,45 @@ impl LibraryService {
         Ok(())
     }
 
+    /// Re-synchronize Mixed In Key metadata (Key, BPM, Energy, Hot Cues) for given track IDs or all tracks
+    pub fn resync_mixed_in_key_tracks(
+        &self,
+        track_ids: Option<Vec<String>>,
+    ) -> Result<RescanResult> {
+        let tracks_to_sync = match track_ids {
+            Some(ids) => {
+                let mut tracks = Vec::new();
+                for id in ids {
+                    if let Ok(track) = self.get_track(&id) {
+                        tracks.push(track);
+                    }
+                }
+                tracks
+            }
+            None => self.get_tracks(None)?,
+        };
+
+        let mut updated_count = 0;
+        let mut failed_count = 0;
+
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+
+        for track in tracks_to_sync {
+            match MikService::sync_track_from_file(&conn, &track) {
+                Ok(_) => updated_count += 1,
+                Err(e) => {
+                    log::warn!("Failed to resync MIK metadata for track {}: {e}", track.id);
+                    failed_count += 1;
+                }
+            }
+        }
+
+        Ok(RescanResult {
+            updated_count,
+            failed_count,
+        })
+    }
+
     pub fn delete_tracks(&self, ids: Vec<String>) -> Result<()> {
         // Delete artwork files for each track
         for id in &ids {
@@ -244,6 +329,15 @@ impl LibraryService {
 
         conn.execute(&sql, params_refs.as_slice())?;
 
+        // Invalidate deleted tracks from upgrade matches cache
+        let _ = conn.execute(
+            &format!(
+                "DELETE FROM upgrade_matches_cache WHERE track_id IN ({})",
+                placeholders.join(", ")
+            ),
+            params_refs.as_slice(),
+        );
+
         // The deleted tracks' shards, plus the cascade-deleted child buckets
         // (playlist memberships, tag links, cues).
         dirty::mark_dirty_track_shards(&conn, &ids)?;
@@ -252,5 +346,62 @@ impl LibraryService {
         dirty::mark_dirty(&conn, buckets::CUES)?;
 
         Ok(())
+    }
+
+    /// Delete tracks from Crate DB and move their audio files to the macOS Trash
+    pub fn delete_tracks_and_files(&self, ids: Vec<String>) -> Result<()> {
+        // 1. Fetch file paths for all tracks to delete
+        let mut file_paths = Vec::new();
+        {
+            let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+            let placeholders: Vec<String> = ids
+                .iter()
+                .enumerate()
+                .map(|(i, _)| format!("?{}", i + 1))
+                .collect();
+            let sql = format!(
+                "SELECT file_path FROM tracks WHERE id IN ({})",
+                placeholders.join(", ")
+            );
+            let params_refs: Vec<&dyn rusqlite::ToSql> =
+                ids.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
+            let mut stmt = conn.prepare(&sql)?;
+            let rows = stmt.query_map(params_refs.as_slice(), |row| row.get::<_, String>(0))?;
+            for row in rows.flatten() {
+                file_paths.push(row);
+            }
+        }
+
+        let path_bufs: Vec<std::path::PathBuf> = file_paths.iter().map(std::path::PathBuf::from).collect();
+
+        // 2. Cascade-purge from Mixed In Key 11 database immediately
+        if let Err(e) = MikDatabaseService::purge_tracks_by_path(&path_bufs) {
+            log::warn!("Failed to cascade purge tracks from Mixed In Key DB: {e}");
+        }
+
+        // 3. Move audio files to macOS Trash Bin (or delete on other platforms)
+        for path_str in file_paths {
+            let path = std::path::Path::new(&path_str);
+            if path.exists() {
+                #[cfg(target_os = "macos")]
+                {
+                    let script = format!(
+                        "tell application \"Finder\" to delete POSIX file \"{}\"",
+                        path_str.replace('"', "\\\"")
+                    );
+                    let _ = std::process::Command::new("osascript")
+                        .arg("-e")
+                        .arg(&script)
+                        .output();
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    let _ = std::fs::remove_file(path);
+                }
+            }
+        }
+
+        // 3. Delete from Crate DB
+        self.delete_tracks(ids)
     }
 }

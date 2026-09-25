@@ -28,6 +28,7 @@ fn library_field_column(field: &str) -> Result<&'static str> {
         "color" => Ok("t.color"),
         "format" => Ok("t.format"),
         "key" => Ok("t.key"),
+        "energy" => Ok("t.energy"),
         _ => Err(CrateError::InvalidOperation(format!(
             "Invalid library field: {field}"
         ))),
@@ -58,6 +59,7 @@ fn library_sort_column(field: &str) -> Result<&'static str> {
         "rating" => Ok("t.rating"),
         "play_count" => Ok("t.play_count"),
         "bpm" => Ok("t.bpm"),
+        "energy" => Ok("t.energy"),
         "title" => Ok("t.title"),
         "artist" => Ok("t.artist"),
         "random" => Ok("RANDOM()"),

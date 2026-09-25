@@ -99,3 +99,13 @@ pub async fn resume_export(
 
     Ok(result)
 }
+
+/// Export library or specific playlists to Pioneer rekordbox.xml format
+#[tauri::command]
+pub async fn export_rekordbox_xml(
+    target_path: String,
+    playlist_ids: Option<Vec<String>>,
+    export_service: State<'_, Arc<ExportService>>,
+) -> Result<usize> {
+    export_service.export_rekordbox_xml(std::path::Path::new(&target_path), playlist_ids)
+}

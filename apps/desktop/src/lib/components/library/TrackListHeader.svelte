@@ -3,6 +3,7 @@
 	import { getNextSortConfig } from '$shared/utils'
 	import { translate } from '$shared/i18n'
 	import Icon from '$lib/components/common/Icon.svelte'
+	import { displaySettingsStore, type ColumnVisibility } from '$shared/stores/displaySettings'
 	import { fade } from 'svelte/transition'
 
 	type Props = {
@@ -12,41 +13,63 @@
 
 	let { sortConfig, onSort }: Props = $props()
 
+	type ExtendedTrackSortField = TrackSortField | 'tags'
+
+	type ColumnDef = {
+		key: keyof ColumnVisibility
+		field: ExtendedTrackSortField | null
+		labelKey: string
+		width: string
+	}
+
+	const allColumns: ColumnDef[] = [
+		{ key: 'color', field: 'color', labelKey: '', width: '24px' },
+		{ key: 'artwork', field: null, labelKey: '', width: '40px' },
+		{ key: 'title', field: 'title', labelKey: 'library.columns.title', width: 'minmax(140px, 1.3fr)' },
+		{ key: 'artist', field: 'artist', labelKey: 'library.columns.artist', width: 'minmax(110px, 1fr)' },
+		{ key: 'album', field: 'album', labelKey: 'library.columns.album', width: 'minmax(110px, 1fr)' },
+		{ key: 'bpm', field: 'bpm', labelKey: 'library.columns.bpm', width: '65px' },
+		{ key: 'key', field: 'key', labelKey: 'library.columns.key', width: '55px' },
+		{ key: 'energy', field: 'energy', labelKey: 'library.columns.energy', width: '65px' },
+		{ key: 'format', field: 'format', labelKey: 'library.columns.format', width: '60px' },
+		{ key: 'bitrate', field: 'bitrate', labelKey: 'library.columns.bitrate', width: '75px' },
+		{ key: 'duration_ms', field: 'duration_ms', labelKey: 'library.columns.time', width: '60px' },
+		{ key: 'tags', field: 'tags', labelKey: 'library.columns.tags', width: 'minmax(110px, 1fr)' },
+		{ key: 'date_added', field: 'date_added', labelKey: 'library.columns.dateAdded', width: '85px' },
+		{ key: 'rating', field: 'rating', labelKey: 'library.columns.rating', width: '70px' },
+		{ key: 'genre', field: 'genre', labelKey: 'library.columns.genre', width: '85px' },
+		{ key: 'label', field: 'label', labelKey: 'library.columns.label', width: '85px' },
+		{ key: 'year', field: 'year', labelKey: 'library.columns.year', width: '55px' },
+		{ key: 'file_size', field: null, labelKey: 'library.columns.fileSize', width: '70px' },
+		{ key: 'sample_rate', field: 'sample_rate', labelKey: 'library.columns.sampleRate', width: '70px' },
+		{ key: 'file_path', field: 'file_path', labelKey: 'library.columns.filePath', width: 'minmax(140px, 1.5fr)' },
+	]
+
+	const activeColumns = $derived(
+		allColumns.filter((col) => $displaySettingsStore.columns[col.key] ?? false)
+	)
+
+	const gridTemplateColumns = $derived(
+		activeColumns.map((col) => col.width).join(' ')
+	)
+
 	function handleSort(field: ExtendedTrackSortField) {
 		if (field !== 'tags') {
 			const newConfig = getNextSortConfig(sortConfig, field)
 			onSort?.(newConfig)
 		}
 	}
-
-	type ExtendedTrackSortField = TrackSortField | 'tags'
-
-	type Column = {
-		field: ExtendedTrackSortField | null
-		labelKey: string
-		align: 'left' | 'center' | 'right'
-	}
-
-	const columns: Column[] = [
-		{ field: 'color', labelKey: '', align: 'center' }, // Color column (sortable)
-		{ field: null, labelKey: '', align: 'center' }, // Artwork column (non-sortable)
-		{ field: 'title', labelKey: 'library.columns.title', align: 'left' },
-		{ field: 'artist', labelKey: 'library.columns.artist', align: 'left' },
-		{ field: 'bpm', labelKey: 'library.columns.bpm', align: 'left' },
-		{ field: 'key', labelKey: 'library.columns.key', align: 'left' },
-		{ field: 'duration_ms', labelKey: 'library.columns.time', align: 'left' },
-		{ field: 'tags', labelKey: 'library.columns.tags', align: 'left' },
-	]
 </script>
 
 <div
-	class="sticky top-0 z-10 grid grid-cols-[24px_40px_1fr_1fr_80px_60px_80px_1fr] justify-items-start gap-2 border-b border-stroke bg-surface-1/50 px-3 py-2 text-xs font-medium tracking-wider text-text-tertiary uppercase backdrop-blur-sm"
+	class="sticky top-0 z-10 grid justify-items-start gap-2 border-b border-stroke bg-surface-1/50 px-3 py-2 text-xs font-medium tracking-wider text-text-tertiary uppercase backdrop-blur-sm"
+	style="grid-template-columns: {gridTemplateColumns};"
 >
-	{#each columns as column, index (index)}
+	{#each activeColumns as column (column.key)}
 		{#if column.field}
 			<button
 				type="button"
-				class="w-full text-left transition-colors hover:text-text-secondary"
+				class="w-full text-left transition-colors hover:text-text-secondary truncate"
 				onclick={() => column.field && handleSort(column.field)}
 			>
 				{column.labelKey ? $translate(column.labelKey) : ''}
@@ -62,7 +85,7 @@
 				{/if}
 			</button>
 		{:else}
-			<div></div>
+			<div>{column.labelKey ? $translate(column.labelKey) : ''}</div>
 		{/if}
 	{/each}
 </div>

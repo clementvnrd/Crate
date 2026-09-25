@@ -44,6 +44,7 @@ export function computeBulkTrackInfo(tracks: Track[]): BulkTrackInfo {
 		label: computeBulkValue(tracks, (t) => t.label),
 		bpm: computeBulkValue(tracks, (t) => t.bpm),
 		key: computeBulkValue(tracks, (t) => t.key),
+		energy: computeBulkValue(tracks, (t) => t.energy),
 		rating: computeBulkValue(tracks, (t) => t.rating),
 		artworkPath: computeBulkValue(tracks, (t) => t.artwork_path),
 		artworkSource: computeBulkValue(tracks, (t) => t.artwork_source as ArtworkSource | null),

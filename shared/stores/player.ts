@@ -1,7 +1,10 @@
 import { writable, derived, get } from 'svelte/store'
-import type { Track, PlaybackState, PreviewInfo, DiscoveryRelease } from '../types'
+import type { Track, PlaybackState, PreviewInfo, DiscoveryRelease, StandaloneTrack, Cue } from '../types'
+import type { BeatportTrack } from '../types/beatport'
 import * as playerApi from '../api/player'
 import * as discoveryApi from '../api/discovery'
+import * as standaloneApi from '../api/standalone'
+import * as libraryApi from '../api/library'
 import * as previewPlayer from '../services/previewPlayer'
 import { toastStore } from './toast'
 import { translate } from '../i18n'
@@ -18,7 +21,7 @@ import {
 // State
 // =============================================================================
 
-type PlaybackSource = 'library' | 'preview'
+type PlaybackSource = 'library' | 'preview' | 'beatport' | 'standalone'
 
 interface PlayerState {
 	currentTrack: Track | null
@@ -31,6 +34,10 @@ interface PlayerState {
 	previewInfo: PreviewInfo | null
 	previewTrackIndex: number
 	previewLoadingReleaseId: string | null
+	beatportTrack: BeatportTrack | null
+	standaloneTrack: StandaloneTrack | null
+	currentCues: Cue[]
+	waveformBars: number[]
 }
 
 const initialPlaybackState: PlaybackState = {
@@ -47,6 +54,8 @@ const restoredTrackId = getStoredString('player.trackId', '')
 const restoredPlaybackSource = getStoredString<PlaybackSource>('player.playbackSource', 'library', [
 	'library',
 	'preview',
+	'beatport',
+	'standalone',
 ])
 const restoredPreviewReleaseId = getStoredString('player.previewReleaseId', '')
 const restoredPreviewTrackIndex = getStoredNumber('player.previewTrackIndex', 0)
@@ -62,6 +71,10 @@ const initialState: PlayerState = {
 	previewInfo: null,
 	previewTrackIndex: 0,
 	previewLoadingReleaseId: null,
+	beatportTrack: null,
+	standaloneTrack: null,
+	currentCues: [],
+	waveformBars: [],
 }
 
 // =============================================================================
@@ -103,9 +116,36 @@ function createPlayerStore() {
 		return state
 	}
 
+	let trackingTicks = 0
 	function startPositionTracking() {
 		stopPositionTracking()
-		positionInterval = setInterval(() => {
+		trackingTicks = 0
+		positionInterval = setInterval(async () => {
+			trackingTicks++
+			// Every ~1 second, sync with true backend audio hardware position
+			if (trackingTicks % 10 === 0) {
+				const s = getState()
+				if (s.playbackState.is_playing && (s.playbackSource === 'library' || s.playbackSource === 'standalone')) {
+					try {
+						const backendState = await playerApi.getPlaybackState()
+						if (backendState && typeof backendState.position_ms === 'number') {
+							update((prev) => ({
+								...prev,
+								playbackState: {
+									...prev.playbackState,
+									position_ms: backendState.position_ms,
+									is_playing: backendState.is_playing,
+								},
+							}))
+							persistPosition(backendState.position_ms)
+							return
+						}
+					} catch {
+						// Fallback to client interpolation
+					}
+				}
+			}
+
 			update((state) => {
 				if (state.playbackState.is_playing) {
 					const speed = state.playbackState.speed ?? 1.0
@@ -139,6 +179,47 @@ function createPlayerStore() {
 				return state
 			})
 		}, 100)
+	}
+
+	async function loadTrackCuesAndWaveform(trackId: string) {
+		try {
+			const [cues, waveform] = await Promise.all([
+				libraryApi.getTrackCues(trackId).catch(() => [] as Cue[]),
+				libraryApi.getTrackWaveform(trackId).catch(() => null),
+			])
+
+			let computedBars: number[] = []
+			if (waveform && waveform.length > 0) {
+				const numBars = 64
+				const step = Math.max(1, Math.floor(waveform.length / numBars))
+				for (let i = 0; i < numBars; i++) {
+					let maxVal = 0
+					const startIdx = i * step
+					const endIdx = Math.min(startIdx + step, waveform.length)
+					for (let j = startIdx; j < endIdx; j++) {
+						if (waveform[j] > maxVal) maxVal = waveform[j]
+					}
+					computedBars.push(Math.max(15, Math.min(100, Math.round((maxVal / 255) * 100))))
+				}
+			}
+
+			update((s) => {
+				const matches =
+					s.currentTrack?.id === trackId ||
+					s.standaloneTrack?.id === trackId ||
+					s.currentTrack?.file_path === trackId ||
+					s.standaloneTrack?.file_path === trackId
+				if (!matches) return s
+				return {
+					...s,
+					currentCues: cues || [],
+					waveformBars: computedBars.length > 0 ? computedBars : s.waveformBars,
+					currentTrack: s.currentTrack ? { ...s.currentTrack, waveform_data: waveform } : null,
+				}
+			})
+		} catch (e) {
+			console.warn('Could not load track cues or waveform:', e)
+		}
 	}
 
 	function stopPositionTracking() {
@@ -178,6 +259,14 @@ function createPlayerStore() {
 		})
 		previewPlayer.setOnDurationChange((durationMs: number) => {
 			update((state) => {
+				// For Beatport streams, ALWAYS accept the exact audio preview duration (e.g. 30s, 1m30, 2min)
+				if (state.playbackSource === 'beatport') {
+					return {
+						...state,
+						playbackState: { ...state.playbackState, duration_ms: durationMs },
+					}
+				}
+
 				const metadataDuration = state.playbackState.duration_ms
 				// When we have a metadata duration from the API, only accept the Audio
 				// element's duration if it's within 10% of the known value. Proxied
@@ -271,13 +360,13 @@ function createPlayerStore() {
 		subscribe,
 
 		/**
-		 * Play a library track. If preview is active, stop it first.
+		 * Play a library track. If preview or beatport is active, stop it first.
 		 */
 		async play(track: Track) {
 			const state = getState()
 
-			// Stop preview if active
-			if (state.playbackSource === 'preview') {
+			// Stop preview / beatport if active
+			if (state.playbackSource === 'preview' || state.playbackSource === 'beatport') {
 				stopPreviewInternal()
 				clearPreviewEvents()
 				// Sync speed to backend since preview speed changes are frontend-only
@@ -299,18 +388,80 @@ function createPlayerStore() {
 				update((s) => ({
 					...s,
 					currentTrack: track,
+					beatportTrack: null,
+					standaloneTrack: null,
 					playbackState,
 					error: null,
 					playbackSource: 'library',
 					previewInfo: null,
 					previewTrackIndex: 0,
+					currentCues: [],
 				}))
 				startPositionTracking()
+				loadTrackCuesAndWaveform(track.id)
 			} catch (error) {
 				const errorMsg = error instanceof Error ? error.message : 'Failed to play track'
 				if (errorMsg.toLowerCase().includes('file not found') || errorMsg.toLowerCase().includes('filenotfound')) {
 					onTrackMissing?.(track.id)
 				}
+				update((s) => ({ ...s, error: errorMsg }))
+			}
+		},
+
+		/**
+		 * Play a standalone track (or library track routed through standalone player).
+		 */
+		async playStandalone(track: StandaloneTrack, isLibraryTrack?: boolean) {
+			const state = getState()
+
+			// Stop preview / beatport if active
+			if (state.playbackSource === 'preview' || state.playbackSource === 'beatport') {
+				stopPreviewInternal()
+				clearPreviewEvents()
+				try {
+					await playerApi.setSpeed(state.playbackState.speed)
+				} catch {
+					// Best effort
+				}
+			}
+
+			try {
+				const playbackState = await standaloneApi.playStandaloneTrack(track.file_path, track.id, track.duration_ms)
+				isRestoredFromStorage = false
+				setStoredString('player.playbackSource', 'standalone')
+				setStoredString('player.trackId', track.id)
+				setStoredString('player.previewReleaseId', '')
+				setStoredNumber('player.durationMs', playbackState.duration_ms)
+				persistPositionImmediate(0)
+
+				update((s) => ({
+					...s,
+					currentTrack: isLibraryTrack || track.is_in_library ? (s.currentTrack?.id === track.id ? s.currentTrack : null) : null,
+					standaloneTrack: track,
+					beatportTrack: null,
+					playbackState,
+					error: null,
+					playbackSource: 'standalone',
+					previewInfo: null,
+					previewTrackIndex: 0,
+					currentCues: [],
+				}))
+				startPositionTracking()
+				loadTrackCuesAndWaveform(track.id)
+
+				// If not in library, save to recent standalone history
+				if (!track.is_in_library && !isLibraryTrack) {
+					try {
+						await standaloneApi.addRecentStandaloneTrack({
+							...track,
+							last_played_at: new Date().toISOString(),
+						})
+					} catch (e) {
+						console.error('Failed to add to recent standalone history', e)
+					}
+				}
+			} catch (error) {
+				const errorMsg = error instanceof Error ? error.message : 'Failed to play track'
 				update((s) => ({ ...s, error: errorMsg }))
 			}
 		},
@@ -324,8 +475,7 @@ function createPlayerStore() {
 			const track = release.tracks[trackIndex]
 			if (!track) return
 
-			// Clear stale preview events before the async gap to prevent the old
-			// error handler from firing when audio.src='' triggers an error event
+			// Clear stale preview events before the async gap
 			clearPreviewEvents()
 
 			// Stop library audio if playing
@@ -360,6 +510,8 @@ function createPlayerStore() {
 				update((s) => ({
 					...s,
 					currentTrack: null,
+					beatportTrack: null,
+					standaloneTrack: null,
 					playbackState: {
 						...s.playbackState,
 						is_playing: true,
@@ -382,12 +534,84 @@ function createPlayerStore() {
 		},
 
 		/**
+		 * Play a Beatport streaming preview track.
+		 */
+		async playBeatport(track: BeatportTrack) {
+			const state = getState()
+
+			// If already playing this track, toggle play/pause
+			if (state.playbackSource === 'beatport' && String(state.beatportTrack?.id) === String(track.id)) {
+				if (state.playbackState.is_playing) {
+					await this.pause()
+				} else {
+					await this.resume()
+				}
+				return
+			}
+
+			// Clear stale preview events
+			clearPreviewEvents()
+
+			// Stop library audio if playing
+			if (state.playbackSource === 'library' && state.playbackState.is_playing) {
+				try {
+					await playerApi.stop()
+				} catch {
+					// Best effort
+				}
+			}
+
+			stopPositionTracking()
+
+			if (!track.preview_url) {
+				toastStore.warning('Aucun flux audio de préécoute disponible pour ce titre.')
+				return
+			}
+
+			try {
+				wirePreviewEvents()
+				previewPlayer.play(track.preview_url)
+				const currentVolume = state.isMuted ? 0 : state.playbackState.volume
+				previewPlayer.setVolume(currentVolume)
+				previewPlayer.setPlaybackRate(state.playbackState.speed)
+
+				isRestoredFromStorage = false
+				setStoredString('player.playbackSource', 'beatport')
+				setStoredString('player.trackId', String(track.id))
+				setStoredString('player.previewReleaseId', '')
+				setStoredNumber('player.durationMs', 120_000)
+				persistPositionImmediate(0)
+
+				update((s) => ({
+					...s,
+					currentTrack: null,
+					previewInfo: null,
+					beatportTrack: track,
+					standaloneTrack: null,
+					playbackSource: 'beatport',
+					error: null,
+					playbackState: {
+						...s.playbackState,
+						is_playing: true,
+						position_ms: 0,
+						duration_ms: 120_000,
+						current_track_id: String(track.id),
+						current_track_path: null,
+					},
+				}))
+			} catch (error) {
+				const errorMsg = error instanceof Error ? error.message : 'Erreur lecture Beatport'
+				update((s) => ({ ...s, error: errorMsg }))
+			}
+		},
+
+		/**
 		 * Pause playback (source-aware)
 		 */
 		async pause() {
 			const state = getState()
 
-			if (state.playbackSource === 'preview') {
+			if (state.playbackSource === 'preview' || state.playbackSource === 'beatport') {
 				previewPlayer.pause()
 				persistPositionImmediate(state.playbackState.position_ms)
 				update((s) => ({
@@ -416,6 +640,17 @@ function createPlayerStore() {
 		 */
 		async resume() {
 			const state = getState()
+
+			if (state.playbackSource === 'beatport') {
+				previewPlayer.setPlaybackRate(state.playbackState.speed)
+				previewPlayer.resume()
+				update((s) => ({
+					...s,
+					playbackState: { ...s.playbackState, is_playing: true },
+					error: null,
+				}))
+				return
+			}
 
 			if (state.playbackSource === 'preview') {
 				// If restored from storage, the audio element has no source — load the stream
@@ -500,11 +735,31 @@ function createPlayerStore() {
 		},
 
 		/**
-		 * Stop playback (source-aware). Preview mode resets to library source.
+		 * Stop playback (source-aware). Preview or Beatport mode resets to library source.
 		 */
 		async stop() {
 			const state = getState()
 			previewRetryAttempted = false
+
+			if (state.playbackSource === 'beatport') {
+				stopPreviewInternal()
+				clearPreviewEvents()
+				isRestoredFromStorage = false
+				setStoredString('player.playbackSource', 'library')
+				setStoredString('player.trackId', '')
+				setStoredNumber('player.positionMs', 0)
+				setStoredNumber('player.durationMs', 0)
+				update((s) => ({
+					...s,
+					currentTrack: null,
+					beatportTrack: null,
+					standaloneTrack: null,
+					playbackState: { ...initialPlaybackState, volume: s.playbackState.volume, speed: s.playbackState.speed },
+					error: null,
+					playbackSource: 'library',
+				}))
+				return
+			}
 
 			if (state.playbackSource === 'preview') {
 				stopPreviewInternal()
@@ -517,6 +772,8 @@ function createPlayerStore() {
 				update((s) => ({
 					...s,
 					currentTrack: null,
+					beatportTrack: null,
+					standaloneTrack: null,
 					playbackState: { ...initialPlaybackState, volume: s.playbackState.volume, speed: s.playbackState.speed },
 					error: null,
 					playbackSource: 'library',
@@ -536,6 +793,8 @@ function createPlayerStore() {
 				update((s) => ({
 					...s,
 					currentTrack: null,
+					beatportTrack: null,
+					standaloneTrack: null,
 					playbackState,
 					error: null,
 				}))
@@ -554,7 +813,7 @@ function createPlayerStore() {
 		async seek(positionMs: number) {
 			const state = getState()
 
-			if (state.playbackSource === 'preview') {
+			if (state.playbackSource === 'preview' || state.playbackSource === 'beatport') {
 				previewPlayer.seek(positionMs)
 				update((s) => ({
 					...s,
@@ -587,7 +846,7 @@ function createPlayerStore() {
 			const state = getState()
 			setStoredNumber('player.volume', volume)
 
-			if (state.playbackSource === 'preview') {
+			if (state.playbackSource === 'preview' || state.playbackSource === 'beatport') {
 				previewPlayer.setVolume(volume)
 				update((s) => ({
 					...s,
@@ -747,6 +1006,10 @@ function createPlayerStore() {
 			onTrackEndCallback = callback
 		},
 
+		setOnTrackEnd(callback: (() => void) | null) {
+			onTrackEndCallback = callback
+		},
+
 		/**
 		 * Register a handler called when playback fails because the track file is missing.
 		 * Desktop wires this to the missingTracks store; mobile can leave it unset.
@@ -786,11 +1049,13 @@ function createPlayerStore() {
 			update((s) => ({
 				...s,
 				currentTrack: track,
+				standaloneTrack: null,
 				playbackState: {
 					...s.playbackState,
 					duration_ms: track.duration_ms || s.playbackState.duration_ms,
 				},
 			}))
+			loadTrackCuesAndWaveform(track.id)
 		},
 
 		/**
@@ -807,6 +1072,7 @@ function createPlayerStore() {
 				update((s) => ({
 					...s,
 					currentTrack: null,
+					standaloneTrack: null,
 					playbackState: {
 						...s.playbackState,
 						duration_ms: track.duration_ms || s.playbackState.duration_ms,
@@ -837,6 +1103,31 @@ function createPlayerStore() {
 			setStoredNumber('player.positionMs', 0)
 			setStoredNumber('player.durationMs', 0)
 			set(initialState)
+		},
+
+		/**
+		 * Jump directly to a Hot Cue or Memory Cue
+		 */
+		async jumpToCue(cue: Cue) {
+			if (cue && typeof cue.position_ms === 'number') {
+				await this.seek(cue.position_ms)
+			}
+		},
+
+		/**
+		 * Jump directly to Hot Cue 1-8
+		 */
+		async jumpToCueIndex(index: number) {
+			const state = getState()
+			const cue = state.currentCues.find(
+				(c) =>
+					c.hot_cue_index === index ||
+					c.hot_cue_index === index - 1 ||
+					c.hot_cue_index === index + 1
+			) || state.currentCues[index] || state.currentCues[index - 1]
+			if (cue && typeof cue.position_ms === 'number') {
+				await this.seek(cue.position_ms)
+			}
 		},
 	}
 }
@@ -876,3 +1167,11 @@ export const previewTrackIndex = derived(playerStore, ($player) => $player.previ
 export const previewLoadingReleaseId = derived(playerStore, ($player) => $player.previewLoadingReleaseId)
 
 export const playbackSpeed = derived(playerStore, ($player) => $player.playbackState.speed)
+
+export const beatportTrack = derived(playerStore, ($player) => $player.beatportTrack)
+
+export const standaloneTrack = derived(playerStore, ($player) => $player.standaloneTrack)
+
+export const currentCues = derived(playerStore, ($player) => $player.currentCues)
+
+export const currentWaveformBars = derived(playerStore, ($player) => $player.waveformBars)

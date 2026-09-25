@@ -1,4 +1,6 @@
-import { register, init, getLocaleFromNavigator, locale, waitLocale, _ } from 'svelte-i18n'
+import { register, init, addMessages, getLocaleFromNavigator, locale, waitLocale, _ } from 'svelte-i18n'
+import en from './locales/en.json'
+import fr from './locales/fr.json'
 
 export type Language =
 	| 'en'
@@ -35,11 +37,15 @@ export const SUPPORTED_LANGUAGES: { value: Language; label: string; nativeLabel:
 	{ value: 'tr', label: 'Turkish', nativeLabel: 'Türkçe' },
 ]
 
-// Register locale files - lazy loaded
-register('en', () => import('./locales/en.json'))
+// Add synchronous fallback locales so formatting never fails at startup
+addMessages('en', en)
+addMessages('fr', fr)
+
+// Register locale files - lazy loaded for other languages
+register('en', () => Promise.resolve(en))
+register('fr', () => Promise.resolve(fr))
 register('ja', () => import('./locales/ja.json'))
 register('nl', () => import('./locales/nl.json'))
-register('fr', () => import('./locales/fr.json'))
 register('de', () => import('./locales/de.json'))
 register('es', () => import('./locales/es.json'))
 register('it', () => import('./locales/it.json'))
