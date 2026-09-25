@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **[C2]** Retrait de l'identifiant et du mot de passe Beatport écrits en dur dans `services/beatport/downloader.rs` et `client.rs`, **avant le premier commit** : le secret n'est jamais entré dans l'historique git. La configuration `beatportdl` conserve désormais les lignes `username`/`password` déjà présentes dans le fichier de l'utilisateur (sinon `beatportdl` utilise les jetons OAuth écrits à la connexion), et le fichier est écrit avec les droits `600`. Deux tests couvrent ces cas. _Le mot de passe lui-même doit encore être changé par le propriétaire._
 - **[C5]** Suppression des tests `test_sync_and_deduplicate_real_db` et `test_prune_missing_tracks_from_mik_db_real`, qui ouvraient la vraie base Crate (avec sa clé) et la vraie base Mixed In Key et y écrivaient à chaque `cargo test`.
 
+#### Corrigé — protection des données
+
+- **[C3]** La synchronisation Mixed In Key ne supprime plus les titres Crate absents de Mixed In Key (« purge stricte » retirée) : Mixed In Key enrichit la bibliothèque, il n'en décide plus le contenu. Un volume démonté ou un titre non analysé ne fait plus disparaître de titres, de tags ni de playlists.
+- **[C4]** Crate n'ouvre plus jamais `Collection11.mikdb` en écriture : suppression des purges en cascade (`purge_tracks_by_pks`, `purge_tracks_by_path`, `prune_missing_tracks_from_mik_db`, `wal_checkpoint(TRUNCATE)`), y compris lors de la suppression d'un titre et après un upgrade FLAC.
+- **[B5]** Plus de suppression au démarrage des titres dont le fichier a disparu (un dossier renommé suffisait à les effacer). La commande reste disponible manuellement.
+- **[B2]** Le rattachement d'un titre Mixed In Key par titre et artiste n'a lieu que s'il existe une seule correspondance dont le fichier a disparu (fichier déplacé) ; il ne supprime plus les autres titres homonymes (version originale, extended…). Les doublons d'un même fichier transfèrent leurs tags et playlists avant d'être fusionnés.
+- **[F6]** Suppression de la synchronisation Mixed In Key complète et du rechargement de la bibliothèque à chaque retour sur la fenêtre : la synchro backend (démarrage + surveillance du fichier) suffit.
+- **[Q1]** `tauri.prod.conf.json` restauré comme en amont (artefacts de mise à jour) ; le build personnel sans signature passe par `yarn build:local` et `tauri.local.conf.json`.
+- Tests : trois nouveaux tests de synchronisation sur base en mémoire et fichiers temporaires (titre absent conservé, homonymes jamais fusionnés, fichier déplacé qui garde son identité) ; le test de nettoyage n'utilise plus un chemin personnel.
+
 #### Documentation
 
 - **[L6]** Le README annonce désormais les 15 langues réellement livrées (au lieu de 11) et décrit le fork, les tests et le suivi.

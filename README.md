@@ -116,6 +116,12 @@ Build for production:
 yarn build
 ```
 
+Build a personal, unsigned `.app` (no updater artifacts, no DMG):
+
+```bash
+yarn build:local
+```
+
 Build for staging (with devtools):
 
 ```bash

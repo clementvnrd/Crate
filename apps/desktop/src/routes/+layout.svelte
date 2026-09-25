@@ -41,7 +41,6 @@
 	import { listen } from '@tauri-apps/api/event'
 	import { setMenuItemEnabled, setOnboardingItemsEnabled } from '$shared/api/app'
 	import { computeDiscoveryTagStates } from '$shared/utils/tagComputation'
-	import * as libraryApi from '$shared/api/library'
 	import * as standaloneApi from '$shared/api/standalone'
 	import { toastStore } from '$shared/stores/toast'
 	import { playerStore, recentTracksStore } from '$lib/stores'
@@ -326,25 +325,8 @@
 		// Initial upgrader count load
 		upgraderStore.loadCount()
 
-		// Initial automatic sync from Mixed In Key in background (non-blocking)
-		const runMikSync = async () => {
-			try {
-				const res = await libraryApi.syncFromMikDatabase()
-				if (res.added > 0 || res.updated > 0 || res.removed > 0) {
-					await libraryStore.loadTracks()
-				}
-			} catch (err) {
-				// Quietly ignore background sync errors
-			}
-		}
-
-		setTimeout(runMikSync, 1000)
-
-		// Auto-sync whenever user returns to Crate from Mixed In Key
-		const focusHandler = () => {
-			runMikSync()
-		}
-		window.addEventListener('focus', focusHandler)
+		// Mixed In Key sync runs in the backend (startup + file watcher) and emits
+		// `mik-database-synced`, handled above: no extra sync on focus.
 
 		// Standalone file opener (macOS Open With / Cold Start / Hot Event)
 		async function handleOpenFile(filePath: string) {
@@ -385,7 +367,6 @@
 			unlistenDuplicates?.()
 			unlistenUpgrades?.()
 			unlistenOpenFile?.()
-			window.removeEventListener('focus', focusHandler)
 			window.removeEventListener('dragover', dragoverHandler)
 			window.removeEventListener('drop', dropHandler)
 			document.removeEventListener('contextmenu', contextMenuHandler)

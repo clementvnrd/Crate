@@ -802,8 +802,6 @@ pub fn run() {
 
                     if let Ok(guard) = mik_conn_arc.lock() {
                         let art_svc = crate::services::ArtworkService::new(artwork_svc.clone());
-                        let _ = crate::services::library::MikDatabaseService::prune_missing_tracks_from_mik_db();
-                        let _ = crate::services::library::MikDatabaseService::prune_missing_tracks(&guard, Some(&art_svc));
                         if let Ok(res) = crate::services::library::MikDatabaseService::sync_all_from_mik_db(&guard, Some(&art_svc)) {
                             if res.added > 0 || res.updated > 0 || res.removed > 0 {
                                 log::info!("Initial MIK sync found updates, notifying frontend...");

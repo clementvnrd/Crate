@@ -372,12 +372,7 @@ impl LibraryService {
             }
         }
 
-        let path_bufs: Vec<std::path::PathBuf> = file_paths.iter().map(std::path::PathBuf::from).collect();
-
-        // 2. Cascade-purge from Mixed In Key 11 database immediately
-        if let Err(e) = MikDatabaseService::purge_tracks_by_path(&path_bufs) {
-            log::warn!("Failed to cascade purge tracks from Mixed In Key DB: {e}");
-        }
+        // 2. Mixed In Key is read-only for Crate: its own library is left untouched.
 
         // 3. Move audio files to macOS Trash Bin (or delete on other platforms)
         for path_str in file_paths {

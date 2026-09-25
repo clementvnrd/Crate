@@ -5,15 +5,15 @@ Ce fichier est **la** source de vérité du suivi : chaque défaut du [registre]
 Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ = précision ou reste à faire. Le tableau de progression se recalcule avec `yarn suivi`.
 
 <!-- progression:start -->
-**Progression globale : 3 / 106 défauts corrigés (3 %)**
+**Progression globale : 10 / 106 défauts corrigés (9 %)**
 
 | Étape | Corrigés | Progression |
 | --- | --- | --- |
-| Étape 1 — Mise en sûreté | 1 / 2 | █████░░░░░ |
-| Étape 2 — Couper les opérations destructives | 1 / 6 | ██░░░░░░░░ |
+| Étape 1 — Mise en sûreté | 2 / 2 | ██████████ |
+| Étape 2 — Couper les opérations destructives | 6 / 6 | ██████████ |
 | Étape 3 — Secrets et authentification | 0 / 4 | ░░░░░░░░░░ |
 | Étape 4 — Upgrader sûr | 0 / 9 | ░░░░░░░░░░ |
-| Étape 5 — Mixed In Key propre | 0 / 8 | ░░░░░░░░░░ |
+| Étape 5 — Mixed In Key propre | 1 / 8 | █░░░░░░░░░ |
 | Étape 6 — Statistiques justes | 0 / 10 | ░░░░░░░░░░ |
 | Étape 7 — Fonctions DJ exactes | 0 / 18 | ░░░░░░░░░░ |
 | Étape 8 — Frontend robuste | 0 / 17 | ░░░░░░░░░░ |
@@ -47,19 +47,19 @@ Les mineurs et smells (environ 90, non numérotés) sont traités au passage dan
 
 _Critère de sortie : Sauvegardes, commit instantané, secret retiré avant tout push._
 
-- [ ] **C1** — 27 800 lignes de travail dans aucun commit, ni branche, ni stash
+- [x] **C1** — 27 800 lignes de travail dans aucun commit, ni branche, ni stash
 - [x] **C2** — Identifiant et mot de passe Beatport en clair dans le code, réécrits dans… — _Code nettoyé (rotation du mot de passe à faire par le propriétaire)_
 
 ### Étape 2 — Couper les opérations destructives
 
 _Critère de sortie : Aucune suppression automatique, aucun test sur vraies bases._
 
-- [ ] **C3** — Purge stricte automatique : tout titre Crate absent de Mixed In Key est supprimé, avec propagation cloud
-- [ ] **C4** — Écritures destructives dans `Collection11.mikdb` (DELETE en cascade sur les tables Core Data,…
+- [x] **C3** — Purge stricte automatique : tout titre Crate absent de Mixed In Key est supprimé, avec propagation cloud
+- [x] **C4** — Écritures destructives dans `Collection11.mikdb` (DELETE en cascade sur les tables Core Data,…
 - [x] **C5** — Deux tests `cargo test` ouvrent vos vraies bases Crate (avec la clé) et Mixed In Key et y écrivent
-- [ ] **B5** — `prune_missing_tracks` supprime au démarrage les titres d'un dossier simplement renommé
-- [ ] **F6** — Synchro Mixed In Key complète et rechargement de toute la bibliothèque à chaque focus de fenêtre
-- [ ] **Q1** — `tauri.prod.conf.json` modifié pour un build local (`targets: ["app"]`, artefacts de mise à jour…
+- [x] **B5** — `prune_missing_tracks` supprime au démarrage les titres d'un dossier simplement renommé — _le nettoyage des fichiers disparus reste disponible, mais uniquement sur action manuelle_
+- [x] **F6** — Synchro Mixed In Key complète et rechargement de toute la bibliothèque à chaque focus de fenêtre
+- [x] **Q1** — `tauri.prod.conf.json` modifié pour un build local (`targets: ["app"]`, artefacts de mise à jour… — _build personnel : `yarn build:local`_
 
 ### Étape 3 — Secrets et authentification
 
@@ -89,7 +89,7 @@ _Critère de sortie : Aucun fichier voisin touché, cues et tags conservés._
 _Critère de sortie : Une seule synchro, incrémentale, en lecture seule._
 
 - [ ] **B1** — La synchro se redéclenche en rafale : 4 passages en 14 s observés au démarrage, chacun réécrit les 276…
-- [ ] **B2** — Rattachement par titre et artiste puis réécriture du `file_path` d'un autre titre
+- [x] **B2** — Rattachement par titre et artiste puis réécriture du `file_path` d'un autre titre — _rattachement par titre/artiste limité à une correspondance unique dont le fichier a disparu ; rattachement par hash non fait_
 - [ ] **B3** — Les cues MIK sont recréés avec de nouveaux UUID à chaque synchro, sans tombstones ; les cues utilisateur…
 - [ ] **B4** — `get_track_cues` scanne toute la base MIK et résout tous les signets à chaque lecture, sous le verrou global
 - [ ] **B6** — Signets macOS résolus sans `WithoutMounting` ni `WithoutUI`, fuite de `CFError`
@@ -214,3 +214,4 @@ _Critère de sortie : App en anglais : aucune chaîne française._
 | --- | --- | --- |
 | 2026-09-25 | Audit complet : rapport, registre de ~180 défauts, harnais navigateur | — |
 | 2026-09-26 | Sauvegardes, secrets retirés, commit de base, dépôt GitHub, documents de suivi | 1 |
+| 2026-09-26 | Plus aucune suppression automatique ni écriture dans Mixed In Key ; config prod restaurée | 2 |

@@ -15,7 +15,6 @@ use crate::models::{
 use crate::services::beatport::client::{BeatportClient, BeatportTrack};
 use crate::services::beatport::downloader::BeatportDownloader;
 use crate::services::duplicate::{artists_match, keys_match, normalize_artist, normalize_title};
-use crate::services::library::mik_db::MikDatabaseService;
 use crate::services::library::LibraryService;
 
 static FEAT_PAREN_RE: LazyLock<Regex> = LazyLock::new(|| {
@@ -880,10 +879,7 @@ impl BeatportUpgraderService {
                 }
             }
 
-            // 3. Cascade purge in Mixed In Key 11 database
-            if let Err(e) = MikDatabaseService::purge_tracks_by_path(&[PathBuf::from(&old_file_path_str)]) {
-                log::warn!("MIK DB purge warning for '{}': {e}", old_file_path_str);
-            }
+            // 3. Mixed In Key is read-only for Crate: its library is not modified here.
 
             // 4. Delete old MP3 track from Crate and import new FLAC with MIK sync
             if let Some(lib) = library {

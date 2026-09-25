@@ -14,6 +14,7 @@
 		"dev:android": "tauri android dev -f mobile",
 		"build": "yarn build:production",
 		"build:production": "cross-env CRATE_ENV=production tauri build --config src-tauri/tauri.prod.conf.json -- --features desktop",
+		"build:local": "cross-env CRATE_ENV=production tauri build --config src-tauri/tauri.prod.conf.json --config src-tauri/tauri.local.conf.json -- --features desktop",
 		"build:staging": "cross-env CRATE_ENV=staging tauri build --config src-tauri/tauri.staging.conf.json -- --features devtools,desktop",
 		"build:vite": "yarn workspace @bbx-audio/crate-desktop build:vite",
 		"build:ios": "tauri ios build -f mobile",
