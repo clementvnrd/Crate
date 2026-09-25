@@ -37,6 +37,7 @@
 		"prepare:husky": "husky install",
 		"preview": "yarn workspace @bbx-audio/crate-desktop preview",
 		"tauri": "tauri",
+		"pretest": "yarn workspace @bbx-audio/crate-desktop sync",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
