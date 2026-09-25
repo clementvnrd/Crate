@@ -38,6 +38,7 @@
 	import { discoveryPlaylistStore } from '$shared/stores/discoveryPlaylist'
 	import { duplicateStore } from '$shared/stores/duplicate'
 	import { upgraderStore } from '$shared/stores/upgrader'
+	import { beatportStore } from '$shared/stores/beatport'
 	import { listen } from '@tauri-apps/api/event'
 	import { setMenuItemEnabled, setOnboardingItemsEnabled } from '$shared/api/app'
 	import { computeDiscoveryTagStates } from '$shared/utils/tagComputation'
@@ -324,6 +325,9 @@
 
 		// Initial upgrader count load
 		upgraderStore.loadCount()
+
+		// Restore the Beatport session saved in the Keychain (settings and upgrader read it)
+		beatportStore.restoreSession()
 
 		// Mixed In Key sync runs in the backend (startup + file watcher) and emits
 		// `mik-database-synced`, handled above: no extra sync on focus.

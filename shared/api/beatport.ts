@@ -17,10 +17,6 @@ export async function loginBeatportPkce(code: string): Promise<BeatportAuthState
 	return invoke<BeatportAuthState>('beatport_login_pkce', { code })
 }
 
-export async function autoDetectBeatportSession(): Promise<BeatportAuthState> {
-	return invoke<BeatportAuthState>('beatport_auto_detect_session')
-}
-
 export async function validateBeatportToken(token: string, refreshToken?: string | null): Promise<BeatportAuthState> {
 	return invoke<BeatportAuthState>('beatport_validate_token', {
 		token,

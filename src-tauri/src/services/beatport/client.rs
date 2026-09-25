@@ -277,49 +277,6 @@ impl BeatportClient {
         Ok(state)
     }
 
-    /// Auto-detects and imports an active Beatport session from local DJ.Studio configurations
-    pub async fn auto_detect_local_session(&self) -> Result<BeatportAuthState, String> {
-        let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
-        let djstudio_config = std::path::PathBuf::from(&home)
-            .join("Library/Application Support/DJ.Studio/config.json");
-
-        if djstudio_config.exists() {
-            if let Ok(content) = std::fs::read_to_string(&djstudio_config) {
-                if let Ok(root_json) = serde_json::from_str::<serde_json::Value>(&content) {
-                    if let Some(local_storage) = root_json.get("localStorage").and_then(|l| l.as_object()) {
-                        if let Some(oauth_raw) = local_storage.get("oAuthSettings").and_then(|o| o.as_str()) {
-                            if let Ok(oauth) = serde_json::from_str::<serde_json::Value>(oauth_raw) {
-                                if let Some(token) = oauth.get("beatbaseStoreToken").and_then(|t| t.as_str()) {
-                                    if !token.is_empty() {
-                                        let mut username = "Beatport User".to_string();
-                                        if let Some(user_profile_raw) = local_storage.get("userProfile").and_then(|u| u.as_str()) {
-                                            if let Ok(profile) = serde_json::from_str::<serde_json::Value>(user_profile_raw) {
-                                                if let Some(name) = profile.get("name").and_then(|n| n.as_str()) {
-                                                    username = name.to_string();
-                                                }
-                                            }
-                                        }
-
-                                        return Ok(BeatportAuthState {
-                                            is_authenticated: true,
-                                            username: Some(username),
-                                            token: Some(token.to_string()),
-                                            refresh_token: None,
-                                            has_subscription: true,
-                                            subscription_tier: Some("Beatport Streaming Professional".to_string()),
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Err("Aucune session Beatport locale active détectée sur votre Mac.".to_string())
-    }
-
     /// Validates an existing access token or manual token paste
     pub async fn validate_token(&self, token: &str, refresh_token: Option<&str>) -> Result<BeatportAuthState, String> {
         let mut access_token = token.trim().to_string();
@@ -336,12 +293,13 @@ impl BeatportClient {
             }
         }
 
-        let user_info = self.get_my_account(&access_token).await.ok();
-        let username = user_info.and_then(|u| {
-            u.get("username").and_then(|v| v.as_str())
-                .or_else(|| u.get("first_name").and_then(|v| v.as_str()))
-                .map(|s| s.to_string())
-        }).unwrap_or_else(|| "Beatport User".to_string());
+        // A token is only accepted if Beatport's account endpoint accepts it.
+        let user_info = self.get_my_account(&access_token).await
+            .map_err(|e| format!("Jeton Beatport refusé : {e}"))?;
+        let username = user_info.get("username").and_then(|v| v.as_str())
+            .or_else(|| user_info.get("first_name").and_then(|v| v.as_str()))
+            .unwrap_or("Beatport User")
+            .to_string();
 
         let state = BeatportAuthState {
             is_authenticated: true,
@@ -355,77 +313,19 @@ impl BeatportClient {
         Ok(state)
     }
 
-    /// Saves the authentication state permanently to disk
+    /// Saves the session (Keychain on macOS) and the credentials file needed by beatportdl
     pub fn save_persisted_auth(auth: &BeatportAuthState) {
-        if let Ok(home) = std::env::var("HOME") {
-            let crate_config_dir = std::path::PathBuf::from(&home).join(".config/crate");
-            let _ = std::fs::create_dir_all(&crate_config_dir);
-            let auth_file = crate_config_dir.join("beatport_auth.json");
-            if let Ok(json_str) = serde_json::to_string_pretty(auth) {
-                let _ = std::fs::write(&auth_file, json_str);
-            }
-
-            // Also write beatportdl-credentials.json
-            if let (Some(ref token), Some(ref refresh_token)) = (&auth.token, &auth.refresh_token) {
-                let bpdl_dir = std::path::PathBuf::from(&home).join(".config/beatportdl");
-                let _ = std::fs::create_dir_all(&bpdl_dir);
-                let bpdl_file = bpdl_dir.join("beatportdl-credentials.json");
-                let creds = serde_json::json!({
-                    "access_token": token,
-                    "refresh_token": refresh_token,
-                    "expires_in": 36000,
-                    "token_type": "Bearer",
-                    "scope": "app:locker user:dj"
-                });
-                let _ = std::fs::write(&bpdl_file, creds.to_string());
-            }
-        }
+        super::auth_store::save(auth);
     }
 
-    /// Loads the authentication state from disk
+    /// Loads the saved session, migrating a legacy plaintext file if present
     pub fn load_persisted_auth() -> Option<BeatportAuthState> {
-        if let Ok(home) = std::env::var("HOME") {
-            let auth_file = std::path::PathBuf::from(&home).join(".config/crate/beatport_auth.json");
-            if auth_file.exists() {
-                if let Ok(content) = std::fs::read_to_string(&auth_file) {
-                    if let Ok(auth) = serde_json::from_str::<BeatportAuthState>(&content) {
-                        if auth.is_authenticated && (auth.token.is_some() || auth.refresh_token.is_some()) {
-                            return Some(auth);
-                        }
-                    }
-                }
-            }
-
-            // Fallback: check beatportdl-credentials.json
-            let bpdl_file = std::path::PathBuf::from(&home).join(".config/beatportdl/beatportdl-credentials.json");
-            if bpdl_file.exists() {
-                if let Ok(content) = std::fs::read_to_string(&bpdl_file) {
-                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(&content) {
-                        let token = v.get("access_token").and_then(|t| t.as_str()).map(|s| s.to_string());
-                        let refresh_token = v.get("refresh_token").and_then(|t| t.as_str()).map(|s| s.to_string());
-                        if token.is_some() || refresh_token.is_some() {
-                            return Some(BeatportAuthState {
-                                is_authenticated: true,
-                                username: None,
-                                token,
-                                refresh_token,
-                                has_subscription: true,
-                                subscription_tier: Some("Beatport Streaming Pro".to_string()),
-                            });
-                        }
-                    }
-                }
-            }
-        }
-        None
+        super::auth_store::load()
     }
 
-    /// Clears the persisted authentication state from disk
+    /// Signs out: removes the saved session and beatportdl's credentials file
     pub fn clear_persisted_auth() {
-        if let Ok(home) = std::env::var("HOME") {
-            let auth_file = std::path::PathBuf::from(&home).join(".config/crate/beatport_auth.json");
-            let _ = std::fs::remove_file(auth_file);
-        }
+        super::auth_store::clear();
     }
 
     /// Fetches user profile account from /v4/my/account/

@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 #### Sécurité
 
 - **[C2]** Retrait de l'identifiant et du mot de passe Beatport écrits en dur dans `services/beatport/downloader.rs` et `client.rs`, **avant le premier commit** : le secret n'est jamais entré dans l'historique git. La configuration `beatportdl` conserve désormais les lignes `username`/`password` déjà présentes dans le fichier de l'utilisateur (sinon `beatportdl` utilise les jetons OAuth écrits à la connexion), et le fichier est écrit avec les droits `600`. Deux tests couvrent ces cas. _Le mot de passe lui-même doit encore être changé par le propriétaire._
+- **[B19]** La session Beatport (jetons OAuth) est stockée dans le **Trousseau macOS** au lieu d'un fichier JSON en clair (`~/.config/crate/beatport_auth.json`) et du `localStorage` du webview. L'ancien fichier est migré puis supprimé au premier lancement, l'ancienne copie `localStorage` est effacée. Seul `beatportdl-credentials.json`, indispensable à `beatportdl`, reste sur disque : droits `600`, supprimé à la déconnexion.
+- **[B20]** Suppression de la récupération du jeton Beatport dans la configuration locale de DJ.Studio (commande `beatport_auto_detect_session`).
+- **[B21]** Un jeton Beatport collé à la main n'est plus accepté sans vérification : il doit être validé par l'API compte de Beatport.
+- **[I6]** Suppression des commandes Spotify en double (`spotify_set_client_id`, `spotify_set_client_secret`) ; le secret client Spotify n'est plus jamais renvoyé au webview (`spotify_has_client_secret` indique seulement s'il existe, le champ reste vide pour le conserver).
+- **[I5]** Suppression de la commande `record_listen_event`, jamais appelée, qui permettait au webview d'injecter des écoutes arbitraires dans les statistiques.
 - **[C5]** Suppression des tests `test_sync_and_deduplicate_real_db` et `test_prune_missing_tracks_from_mik_db_real`, qui ouvraient la vraie base Crate (avec sa clé) et la vraie base Mixed In Key et y écrivaient à chaque `cargo test`.
 
 #### Corrigé — protection des données

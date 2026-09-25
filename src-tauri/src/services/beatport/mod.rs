@@ -1,3 +1,4 @@
+pub mod auth_store;
 pub mod client;
 pub mod downloader;
 pub mod upgrader;

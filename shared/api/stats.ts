@@ -46,10 +46,6 @@ export async function getRecentListens(limit: number = 50): Promise<ListenEvent[
 	return invoke<ListenEvent[]>('get_recent_listens', { limit })
 }
 
-export async function recordListenEvent(event: ListenEvent): Promise<boolean> {
-	return invoke<boolean>('record_listen_event', { event })
-}
-
 // ==========================================
 // Spotify Tracker API
 // ==========================================
@@ -66,8 +62,9 @@ export async function setSpotifyClientSecret(clientSecret: string): Promise<void
 	return invoke<void>('set_spotify_client_secret', { clientSecret })
 }
 
-export async function getSpotifyClientSecret(): Promise<string | null> {
-	return invoke<string | null>('spotify_get_client_secret')
+/** Whether a client secret is stored (the secret itself never reaches the webview). */
+export async function hasSpotifyClientSecret(): Promise<boolean> {
+	return invoke<boolean>('spotify_has_client_secret')
 }
 
 export async function getSpotifyAuthState(): Promise<SpotifyAuthState> {

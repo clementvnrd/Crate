@@ -5,18 +5,18 @@ Ce fichier est **la** source de vérité du suivi : chaque défaut du [registre]
 Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ = précision ou reste à faire. Le tableau de progression se recalcule avec `yarn suivi`.
 
 <!-- progression:start -->
-**Progression globale : 10 / 106 défauts corrigés (9 %)**
+**Progression globale : 15 / 106 défauts corrigés (14 %)**
 
 | Étape | Corrigés | Progression |
 | --- | --- | --- |
 | Étape 1 — Mise en sûreté | 2 / 2 | ██████████ |
 | Étape 2 — Couper les opérations destructives | 6 / 6 | ██████████ |
-| Étape 3 — Secrets et authentification | 0 / 4 | ░░░░░░░░░░ |
+| Étape 3 — Secrets et authentification | 4 / 4 | ██████████ |
 | Étape 4 — Upgrader sûr | 0 / 9 | ░░░░░░░░░░ |
 | Étape 5 — Mixed In Key propre | 1 / 8 | █░░░░░░░░░ |
 | Étape 6 — Statistiques justes | 0 / 10 | ░░░░░░░░░░ |
 | Étape 7 — Fonctions DJ exactes | 0 / 18 | ░░░░░░░░░░ |
-| Étape 8 — Frontend robuste | 0 / 17 | ░░░░░░░░░░ |
+| Étape 8 — Frontend robuste | 1 / 17 | █░░░░░░░░░ |
 | Étape 9 — Hygiène et outillage | 0 / 14 | ░░░░░░░░░░ |
 | Étape 10 — Fondations visuelles | 0 / 5 | ░░░░░░░░░░ |
 | Étape 11 — Conformité vue par vue | 0 / 7 | ░░░░░░░░░░ |
@@ -65,10 +65,10 @@ _Critère de sortie : Aucune suppression automatique, aucun test sur vraies base
 
 _Critère de sortie : Plus aucun identifiant en clair, une seule source de vérité._
 
-- [ ] **B19** — Jetons Beatport en clair dans `~/.config/crate/beatport_auth.json`, copiés dans le dossier de `beatportdl`…
-- [ ] **B20** — Récupération du jeton stocké par DJ.Studio dans sa configuration locale
-- [ ] **B21** — `validate_token` ne valide rien et persiste un état « authentifié » fictif
-- [ ] **I6** — Doublons de commandes `spotify_set_client_id` et `spotify_set_client_secret` ; le secret Spotify est…
+- [x] **B19** — Jetons Beatport en clair dans `~/.config/crate/beatport_auth.json`, copiés dans le dossier de `beatportdl`… — _`beatportdl-credentials.json` reste nécessaire à beatportdl : écrit en `600` et supprimé à la déconnexion_
+- [x] **B20** — Récupération du jeton stocké par DJ.Studio dans sa configuration locale
+- [x] **B21** — `validate_token` ne valide rien et persiste un état « authentifié » fictif
+- [x] **I6** — Doublons de commandes `spotify_set_client_id` et `spotify_set_client_secret` ; le secret Spotify est…
 
 ### Étape 4 — Upgrader sûr
 
@@ -152,7 +152,7 @@ _Critère de sortie : Erreurs backend visibles, pas d'appel IPC superflu._
 - [ ] **I1** — Messages d'erreur backend perdus : Tauri rejette avec une chaîne, et les nouveaux stores testent…
 - [ ] **I2** — Deux réglages Beatport sans effet : le téléchargeur force `lossless` et lance toujours la synchro Mixed In Key
 - [ ] **I4** — `BeatportAuthState` porte deux conventions (camelCase côté TS, snake\_case côté Rust) ; la cohérence…
-- [ ] **I5** — `record_listen_event` accepte un événement complet depuis le webview mais n'est appelé nulle part
+- [x] **I5** — `record_listen_event` accepte un événement complet depuis le webview mais n'est appelé nulle part
 - [ ] **I7** — `library-updated` émis sans écouteur ; paramètre `searchType` de la recherche Beatport ignoré
 - [ ] **I8** — Une vingtaine de champs `Option<T>` Rust typés `?: T` côté TS alors que la valeur réelle est `null`
 - [ ] **I9** — Options d'affichage stockées uniquement dans `localStorage` : ni sauvegarde, ni synchro
@@ -215,3 +215,4 @@ _Critère de sortie : App en anglais : aucune chaîne française._
 | 2026-09-25 | Audit complet : rapport, registre de ~180 défauts, harnais navigateur | — |
 | 2026-09-26 | Sauvegardes, secrets retirés, commit de base, dépôt GitHub, documents de suivi | 1 |
 | 2026-09-26 | Plus aucune suppression automatique ni écriture dans Mixed In Key ; config prod restaurée | 2 |
+| 2026-09-26 | Session Beatport dans le Trousseau, fin du scraping DJ.Studio, secret Spotify jamais renvoyé au webview | 3 |

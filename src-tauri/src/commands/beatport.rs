@@ -36,12 +36,6 @@ pub async fn beatport_login_pkce(code: String) -> Result<BeatportAuthState, Stri
 }
 
 #[tauri::command]
-pub async fn beatport_auto_detect_session() -> Result<BeatportAuthState, String> {
-    let client = BeatportClient::new();
-    client.auto_detect_local_session().await
-}
-
-#[tauri::command]
 pub async fn beatport_validate_token(token: String, refresh_token: Option<String>) -> Result<BeatportAuthState, String> {
     let client = BeatportClient::new();
     client.validate_token(&token, refresh_token.as_deref()).await

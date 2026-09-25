@@ -45,7 +45,7 @@ vi.mock('../api/stats', () => ({
 	setSpotifyClientId: vi.fn(),
 	getSpotifyClientId: vi.fn(),
 	setSpotifyClientSecret: vi.fn(),
-	getSpotifyClientSecret: vi.fn(),
+	hasSpotifyClientSecret: vi.fn(),
 	syncSpotifyRecentlyPlayed: vi.fn().mockResolvedValue(0),
 }))
 

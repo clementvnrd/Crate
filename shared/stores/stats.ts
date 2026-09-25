@@ -169,7 +169,8 @@ function createStatsStore() {
 				if (clientId && clientId.trim().length > 0) {
 					await statsApi.setSpotifyClientId(clientId.trim())
 				}
-				if (clientSecret !== undefined) {
+				// An empty field keeps the stored secret (it is never sent back to the UI to prefill).
+				if (clientSecret && clientSecret.trim().length > 0) {
 					await statsApi.setSpotifyClientSecret(clientSecret.trim())
 				}
 				const authUrl = await statsApi.getSpotifyAuthUrl(clientId, redirectUri)

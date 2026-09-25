@@ -133,4 +133,6 @@ android-keyring = { version = "0.2", features = ["ndk-context"] }
 # macOS CoreFoundation for native URL Bookmark resolution/creation
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.10"
+# macOS Keychain storage of third-party sessions (Beatport)
+security-framework = "3.7"
 

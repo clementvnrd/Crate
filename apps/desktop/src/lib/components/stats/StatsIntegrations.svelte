@@ -23,6 +23,7 @@
 	let showSpotifyModal = $state(false)
 	let spotifyClientIdInput = $state('')
 	let spotifyClientSecretInput = $state('')
+	let hasStoredSpotifySecret = $state(false)
 	let isCopiedRedirectUri = $state(false)
 	let showManualCodeFallback = $state(false)
 	let manualCodeInput = $state('')
@@ -70,10 +71,8 @@
 			if (storedId && storedId !== 'crate-pulse-spotify') {
 				spotifyClientIdInput = storedId
 			}
-			const storedSecret = await statsApi.getSpotifyClientSecret()
-			if (storedSecret) {
-				spotifyClientSecretInput = storedSecret
-			}
+			hasStoredSpotifySecret = await statsApi.hasSpotifyClientSecret()
+			spotifyClientSecretInput = ''
 		} catch (err) {
 			console.error('Error fetching Spotify credentials:', err)
 		}
@@ -488,7 +487,7 @@
 							id="spotify-client-secret"
 							type="password"
 							bind:value={spotifyClientSecretInput}
-							placeholder="Ex: 8f7e6d5c4b3a210987654321fedcba09"
+							placeholder={hasStoredSpotifySecret ? 'Secret enregistré — laisser vide pour le conserver' : 'Ex: 8f7e6d5c4b3a210987654321fedcba09'}
 							class="w-full rounded-xl border border-stroke bg-surface-1/90 px-4 py-2.5 font-mono text-xs text-white placeholder-text-tertiary focus:border-[#1DB954] focus:outline-none focus:ring-2 focus:ring-[#1DB954]/20"
 							onkeydown={(e) => {
 								if (e.key === 'Enter') handleConfirmSpotifyConnect()

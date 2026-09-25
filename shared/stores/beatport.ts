@@ -64,7 +64,7 @@ interface BeatportState {
 }
 
 const CART_STORAGE_KEY = 'crate-beatport-cart'
-const AUTH_STORAGE_KEY = 'crate-beatport-auth'
+const LEGACY_AUTH_STORAGE_KEY = 'crate-beatport-auth'
 
 function loadStoredCart(): BeatportTrack[] {
 	if (typeof window === 'undefined') return []
@@ -77,8 +77,8 @@ function loadStoredCart(): BeatportTrack[] {
 	return []
 }
 
-function loadStoredAuth(): BeatportAuthState {
-	const defaultAuth: BeatportAuthState = {
+function defaultAuth(): BeatportAuthState {
+	return {
 		isAuthenticated: false,
 		username: null,
 		token: null,
@@ -87,14 +87,17 @@ function loadStoredAuth(): BeatportAuthState {
 		is_authenticated: false,
 		has_subscription: false,
 	}
-	if (typeof window === 'undefined') return defaultAuth
+}
+
+// Tokens are never kept in localStorage: the backend stores the session in the macOS Keychain.
+// Remove the copy written by earlier builds.
+function purgeLegacyStoredAuth() {
+	if (typeof window === 'undefined') return
 	try {
-		const stored = localStorage.getItem(AUTH_STORAGE_KEY)
-		if (stored) return { ...defaultAuth, ...JSON.parse(stored) }
-	} catch (e) {
-		console.warn('Failed to load auth from storage:', e)
+		localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY)
+	} catch {
+		// Storage unavailable: nothing to purge
 	}
-	return defaultAuth
 }
 
 function isJwtExpired(token: string | null | undefined): boolean {
@@ -114,7 +117,8 @@ function isJwtExpired(token: string | null | undefined): boolean {
 	return false
 }
 
-const initialAuth = loadStoredAuth()
+purgeLegacyStoredAuth()
+const initialAuth = defaultAuth()
 
 const initialState: BeatportState = {
 	auth: initialAuth,
@@ -193,13 +197,6 @@ function createBeatportStore() {
 	}
 
 	function saveAuth(auth: BeatportAuthState) {
-		if (typeof window !== 'undefined') {
-			try {
-				localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth))
-			} catch (e) {
-				console.warn('Failed to save auth to localStorage:', e)
-			}
-		}
 		beatportApi.saveBeatportPersistedAuth(auth).catch((e) => {
 			console.warn('Failed to persist auth to disk:', e)
 		})
@@ -237,27 +234,6 @@ function createBeatportStore() {
 			} catch (e: any) {
 				console.error('Failed to open Beatport Auth URL:', e)
 				toastStore.error(`Impossible d'ouvrir le navigateur : ${e?.message || e}`)
-			}
-		},
-
-		async autoDetectLocalSession() {
-			update((s) => ({ ...s, loading: true, error: null }))
-			try {
-				const auth = await beatportApi.autoDetectBeatportSession()
-				const formattedAuth: BeatportAuthState = {
-					...auth,
-					isAuthenticated: true,
-					hasSubscription: true,
-					is_authenticated: true,
-					has_subscription: true,
-				}
-				saveAuth(formattedAuth)
-				toastStore.success(`Session Beatport synchronisée (${formattedAuth.username})`)
-				update((s) => ({ ...s, auth: formattedAuth, showLoginModal: false, loading: false }))
-				await this.loadInitialData()
-			} catch (e: any) {
-				toastStore.info(`Aucune session locale détectée : ${e?.message || e}`)
-				update((s) => ({ ...s, loading: false }))
 			}
 		},
 
@@ -373,6 +349,27 @@ function createBeatportStore() {
 			return state.auth.token
 		},
 
+		/** Loads the session saved by the backend (Keychain) if the store has none yet. */
+		async restoreSession() {
+			const current = get({ subscribe })
+			if (current.auth.isAuthenticated && current.auth.token) return
+			try {
+				const persisted = await beatportApi.getBeatportPersistedAuth()
+				if (persisted && persisted.is_authenticated && (persisted.token || persisted.refresh_token)) {
+					const formattedAuth: BeatportAuthState = {
+						...persisted,
+						isAuthenticated: true,
+						hasSubscription: true,
+						is_authenticated: true,
+						has_subscription: true,
+					}
+					update((s) => ({ ...s, auth: formattedAuth }))
+				}
+			} catch (e) {
+				console.warn('Failed to restore the Beatport session:', e)
+			}
+		},
+
 		async loadInitialData(forceRefresh = false) {
 			const currentSettings = get(settingsStore)
 			if (currentSettings.beatportDownloadDestination) {
@@ -382,25 +379,8 @@ function createBeatportStore() {
 				}))
 			}
 
-			let state = get({ subscribe })
-			if (!state.auth.isAuthenticated || !state.auth.token) {
-				try {
-					const persisted = await beatportApi.getBeatportPersistedAuth()
-					if (persisted && persisted.is_authenticated && (persisted.token || persisted.refresh_token)) {
-						const formattedAuth: BeatportAuthState = {
-							...persisted,
-							isAuthenticated: true,
-							hasSubscription: true,
-							is_authenticated: true,
-							has_subscription: true,
-						}
-						update((s) => ({ ...s, auth: formattedAuth }))
-						state = get({ subscribe })
-					}
-				} catch (e) {
-					console.warn('Failed to load persisted auth from disk:', e)
-				}
-			}
+			await this.restoreSession()
+			const state = get({ subscribe })
 
 			if (!state.auth.isAuthenticated) {
 				update((s) => ({

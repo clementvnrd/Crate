@@ -72,28 +72,12 @@ pub async fn get_recent_listens(
     stats.get_recent_listens(limit.unwrap_or(50))
 }
 
-#[tauri::command]
-pub async fn record_listen_event(
-    event: ListenEvent,
-    stats: State<'_, StatsRecorderService>,
-) -> Result<bool> {
-    stats.record_listen_event(&event)
-}
-
 // ==========================================
 // Spotify Tracker Commands
 // ==========================================
 
 #[tauri::command]
 pub async fn set_spotify_client_id(
-    client_id: String,
-    spotify: State<'_, SpotifyTrackerService>,
-) -> Result<()> {
-    spotify.set_client_id(&client_id)
-}
-
-#[tauri::command]
-pub async fn spotify_set_client_id(
     client_id: String,
     spotify: State<'_, SpotifyTrackerService>,
 ) -> Result<()> {
@@ -115,19 +99,12 @@ pub async fn set_spotify_client_secret(
     spotify.set_client_secret(&client_secret)
 }
 
+/// Tells the UI whether a client secret is stored, without ever sending it back to the webview.
 #[tauri::command]
-pub async fn spotify_set_client_secret(
-    client_secret: String,
+pub async fn spotify_has_client_secret(
     spotify: State<'_, SpotifyTrackerService>,
-) -> Result<()> {
-    spotify.set_client_secret(&client_secret)
-}
-
-#[tauri::command]
-pub async fn spotify_get_client_secret(
-    spotify: State<'_, SpotifyTrackerService>,
-) -> Result<Option<String>> {
-    Ok(spotify.get_client_secret())
+) -> Result<bool> {
+    Ok(spotify.get_client_secret().is_some())
 }
 
 #[tauri::command]
