@@ -12,6 +12,9 @@ jobs:
   frontend:
     name: Frontend (format, lint, types, tests)
     runs-on: ubuntu-latest
+    env:
+      # Normally set by vite.config.ts / the untracked apps/desktop/.env; `$env/static/public` needs it
+      PUBLIC_APP_VERSION: ci
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

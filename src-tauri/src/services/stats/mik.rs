@@ -112,6 +112,7 @@ impl MikTrackerService {
             return Vec::new();
         }
 
+        #[cfg_attr(not(target_os = "macos"), allow(unused_mut))]
         let mut files = Vec::new();
 
         #[cfg(target_os = "macos")]
