@@ -121,6 +121,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **[Q13]** `yarn dev` compile l'app en debug (reconstructions rapides) avec des dépendances optimisées (`[profile.dev.package."*"]`) pour garder un décodage audio fluide.
 - **[B10]** Migrations : libellés alignés sur leur position réelle (6 à 15) et règle « on ajoute, on ne renumérote jamais » documentée ; l'ordre n'est pas modifié car la base locale les a déjà appliquées.
 - **[Q11]** Script `set_default_player.swift` supprimé ; la synthèse de l'assistant précédent est archivée dans `suivi/historique/`.
+- **[Q10]** Documentation : page des raccourcis clavier corrigée (flèches ±10 s, Cmd+flèches ±1 s, Shift+flèches selon la vue, hot cues 1–8, Shift+Tab).
+- **[Q7]** Chemins à risque couverts par des tests sur base et dossiers temporaires : remplacement de fichier, synchro Mixed In Key, trackers d'écoute, import, export, corbeille ; plus aucun test ne lit la vraie base Mixed In Key.
 - **[Q12]** `CLAUDE.md` en place depuis le début du fork (règles de suivi et règles techniques).
 
 #### Documentation

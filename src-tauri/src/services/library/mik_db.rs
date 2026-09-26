@@ -866,30 +866,6 @@ impl MikDatabaseService {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_find_mik_db_path() {
-        let path = MikDatabaseService::find_mik_db_path();
-        if let Some(ref p) = path {
-            assert!(p.exists());
-            assert!(
-                p.to_string_lossy().contains("Collection11.mikdb")
-                    || p.to_string_lossy().contains("Collection10.mikdb")
-            );
-        }
-    }
-
-    #[test]
-    fn test_read_mik_database() {
-        if let Ok(songs) = MikDatabaseService::read_all_songs() {
-            assert!(
-                !songs.is_empty(),
-                "Should read songs from Mixed In Key database"
-            );
-            let song = &songs[0];
-            assert!(song.tempo.is_some() || song.key.is_some() || song.name.is_some());
-        }
-    }
-
     fn temp_library(suffix: &str) -> PathBuf {
         let dir =
             std::env::temp_dir().join(format!("crate_mik_sync_{suffix}_{}", std::process::id()));

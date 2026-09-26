@@ -27,10 +27,24 @@ These shortcuts work from anywhere in the application (when not typing in a text
 |--------|-------|---------------|
 | Play/Pause | `Space` | `Space` |
 | Play Selected Track | `Enter` | `Enter` |
-| Previous Track | `Shift + Left Arrow` | `Shift + Left Arrow` |
-| Next Track | `Shift + Right Arrow` | `Shift + Right Arrow` |
-| Seek Backward (5s) | `Left Arrow` | `Left Arrow` |
-| Seek Forward (5s) | `Right Arrow` | `Right Arrow` |
+| Previous / Next Track (Library) | `Shift + Left/Right Arrow` | `Shift + Left/Right Arrow` |
+| Phrase jump ±15 s (Player view) | `Shift + Left/Right Arrow` | `Shift + Left/Right Arrow` |
+| Seek Backward / Forward (10 s) | `Left/Right Arrow` | `Left/Right Arrow` |
+| Fine Seek Backward / Forward (1 s) | `Cmd + Left/Right Arrow` | `Ctrl + Left/Right Arrow` |
+
+## Hot Cues
+
+Available in the Player and Library views when a track is loaded (never while typing).
+
+| Action | macOS | Windows/Linux |
+|--------|-------|---------------|
+| Jump to Hot Cue A–H | `1` … `8` | `1` … `8` |
+
+## Views
+
+| Action | macOS | Windows/Linux |
+|--------|-------|---------------|
+| Toggle Library / Discovery | `Shift + Tab` | `Shift + Tab` |
 
 ## Volume
 
