@@ -88,7 +88,7 @@
 				<h1 class="text-base font-bold text-text-primary">Beatport Streaming</h1>
 			</div>
 
-			{#if $beatportStore.auth.isAuthenticated}
+			{#if $beatportStore.auth.is_authenticated}
 				<!-- Search Bar -->
 				<form onsubmit={handleSearchSubmit} class="flex items-center gap-2">
 					<div class="relative flex items-center h-8">
@@ -144,7 +144,7 @@
 
 		<div class="p-6">
 			<!-- Unauthenticated State: Connection Gateway -->
-			{#if !$beatportStore.auth.isAuthenticated}
+			{#if !$beatportStore.auth.is_authenticated}
 				<div class="mx-auto max-w-3xl space-y-8 py-8">
 					<div class="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-[#0e1713] to-[#121418] p-8 shadow-2xl shadow-emerald-950/20 text-center space-y-6">
 						<div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 shadow-inner">
@@ -270,7 +270,7 @@
 									<button
 										type="button"
 										class="group flex flex-col items-center p-3 rounded-xl border border-stroke/60 bg-surface-1 hover:border-[#00FF96]/60 hover:bg-surface-2 transition-all text-center space-y-2 cursor-pointer"
-										onclick={() => beatportStore.setNavArtist(artist.id, artist.name, artist.image_url)}
+										onclick={() => beatportStore.setNavArtist(artist.id, artist.name, artist.image_url ?? undefined)}
 									>
 										<div class="relative h-16 w-16 overflow-hidden rounded-full border border-stroke group-hover:border-[#00FF96] transition-colors shadow-md bg-surface-3">
 											{#if artist.image_url}
@@ -425,7 +425,7 @@
 	</div>
 
 	<!-- Cart / Selection Slide-over Drawer -->
-	{#if $beatportStore.auth.isAuthenticated}
+	{#if $beatportStore.auth.is_authenticated}
 		<BeatportCartDrawer bind:isOpen={isCartOpen} onClose={() => (isCartOpen = false)} />
 	{/if}
 

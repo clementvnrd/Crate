@@ -59,7 +59,7 @@
 			<div class="flex items-center gap-3 min-w-0">
 				<Icon name="beatport" class="h-4 w-4 text-text-primary flex-shrink-0" />
 				<div class="flex items-center gap-2 min-w-0">
-					{#if $beatportStore.auth.isAuthenticated}
+					{#if $beatportStore.auth.is_authenticated}
 						<span class="truncate text-xs font-semibold text-text-primary">{$beatportStore.auth.username}</span>
 						<span class="h-1.5 w-1.5 rounded-full bg-emerald-500 flex-shrink-0" title="Connecté"></span>
 					{:else}
@@ -69,7 +69,7 @@
 			</div>
 
 			<div>
-				{#if $beatportStore.auth.isAuthenticated}
+				{#if $beatportStore.auth.is_authenticated}
 					<button
 						type="button"
 						onclick={handleLogout}

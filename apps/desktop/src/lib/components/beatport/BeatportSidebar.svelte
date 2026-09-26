@@ -116,7 +116,7 @@
 			<div class="space-y-0.5">
 				{#if $beatportStore.userPlaylists.length === 0}
 					<div class="px-2.5 py-2 text-[11px] text-text-tertiary">
-						{#if $beatportStore.auth.isAuthenticated}
+						{#if $beatportStore.auth.is_authenticated}
 							Aucune playlist Beatport
 						{:else}
 							Connectez-vous pour voir vos playlists
@@ -143,7 +143,7 @@
 	</div>
 
 	<!-- Bottom Status Line -->
-	{#if $beatportStore.auth.isAuthenticated}
+	{#if $beatportStore.auth.is_authenticated}
 		<div class="flex items-center justify-between border-t border-stroke/60 pt-2.5 pb-1 px-1">
 			<div
 				class="h-3.5 w-16 bg-text-secondary"

@@ -119,8 +119,12 @@ function createPlayerStore() {
 	}
 
 	let trackingTicks = 0
+	// Bumped on every seek / start / stop: a backend position that was requested before such an
+	// action is stale and must not move the playhead back.
+	let positionEpoch = 0
 	function startPositionTracking() {
 		stopPositionTracking()
+		positionEpoch++
 		trackingTicks = 0
 		positionInterval = setInterval(async () => {
 			trackingTicks++
@@ -128,8 +132,14 @@ function createPlayerStore() {
 			if (trackingTicks % 10 === 0) {
 				const s = getState()
 				if (s.playbackState.is_playing && (s.playbackSource === 'library' || s.playbackSource === 'standalone')) {
+					const requestEpoch = positionEpoch
+					const expectedTrackId = s.playbackState.current_track_id
 					try {
 						const backendState = await playerApi.getPlaybackState()
+						const stale =
+							requestEpoch !== positionEpoch ||
+							(expectedTrackId != null && backendState?.current_track_id !== expectedTrackId)
+						if (stale) return
 						if (backendState && typeof backendState.position_ms === 'number') {
 							update((prev) => ({
 								...prev,
@@ -227,6 +237,7 @@ function createPlayerStore() {
 	}
 
 	function stopPositionTracking() {
+		positionEpoch++
 		if (positionInterval) {
 			clearInterval(positionInterval)
 			positionInterval = null
@@ -820,6 +831,7 @@ function createPlayerStore() {
 		 */
 		async seek(positionMs: number) {
 			const state = getState()
+			positionEpoch++
 
 			if (state.playbackSource === 'preview' || state.playbackSource === 'beatport') {
 				previewPlayer.seek(positionMs)

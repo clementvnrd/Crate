@@ -572,6 +572,8 @@ export interface AppSettings {
 	beatportDownloadDestination?: string | null
 	beatportAudioQuality?: 'flac' | 'aac' | 'mp3' | string | null
 	beatportAutoSyncMik?: boolean
+	/** JSON of the library display options (see displaySettings store) */
+	displayOptions?: string | null
 }
 
 export interface AudioDevice {

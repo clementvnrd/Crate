@@ -399,6 +399,9 @@ pub struct AppSettings {
     pub beatport_download_destination: Option<String>,
     pub beatport_audio_quality: Option<String>,
     pub beatport_auto_sync_mik: bool,
+    /// Library display options (visible columns, Camelot padding…) as JSON, owned by the UI.
+    #[serde(default)]
+    pub display_options: Option<String>,
 }
 
 impl Default for AppSettings {
@@ -431,6 +434,7 @@ impl Default for AppSettings {
             beatport_download_destination: Some("~/Music/My Library/FLAC".to_string()),
             beatport_audio_quality: Some("flac".to_string()),
             beatport_auto_sync_mik: true,
+            display_options: None,
         }
     }
 }

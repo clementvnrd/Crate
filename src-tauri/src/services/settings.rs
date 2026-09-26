@@ -158,6 +158,8 @@ impl SettingsService {
             .get_setting_value(&conn, "beatport_audio_quality")?
             .or_else(|| Some("flac".to_string()));
 
+        let display_options = self.get_setting_value(&conn, "display_options")?;
+
         let beatport_auto_sync_mik = self
             .get_setting_value(&conn, "beatport_auto_sync_mik")?
             .map(|v| v != "false")
@@ -191,6 +193,7 @@ impl SettingsService {
             beatport_download_destination,
             beatport_audio_quality,
             beatport_auto_sync_mik,
+            display_options,
         })
     }
 

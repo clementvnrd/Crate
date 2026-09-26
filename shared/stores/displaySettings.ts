@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store'
+import * as settingsApi from '../api/settings'
 
 export interface ColumnVisibility {
 	color: boolean
@@ -62,20 +63,25 @@ const defaultSettings: DisplaySettings = {
 	},
 }
 
+function mergeWithDefaults(parsed: Partial<DisplaySettings>): DisplaySettings {
+	return {
+		...defaultSettings,
+		...parsed,
+		columns: {
+			...defaultSettings.columns,
+			...(parsed.columns || {}),
+		},
+	}
+}
+
 function loadInitialSettings(): DisplaySettings {
 	if (typeof window === 'undefined') return defaultSettings
 	try {
+		// Fast first paint from the local cache; the database copy (backed up, restored with the
+		// library) is applied by `hydrate` once settings are loaded.
 		const stored = localStorage.getItem(STORAGE_KEY)
 		if (stored) {
-			const parsed = JSON.parse(stored)
-			return {
-				...defaultSettings,
-				...parsed,
-				columns: {
-					...defaultSettings.columns,
-					...(parsed.columns || {}),
-				},
-			}
+			return mergeWithDefaults(JSON.parse(stored))
 		}
 	} catch (e) {
 		console.warn('Failed to load display settings from localStorage:', e)
@@ -87,17 +93,38 @@ function createDisplaySettingsStore() {
 	const { subscribe, set, update } = writable<DisplaySettings>(loadInitialSettings())
 
 	function save(settings: DisplaySettings) {
+		const json = JSON.stringify(settings)
 		if (typeof window !== 'undefined') {
 			try {
-				localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+				localStorage.setItem(STORAGE_KEY, json)
 			} catch (e) {
-				console.warn('Failed to save display settings to localStorage:', e)
+				console.warn('Failed to cache display settings:', e)
 			}
 		}
+		settingsApi.setSetting('display_options', json).catch((e) => {
+			console.warn('Failed to save display settings:', e)
+		})
 	}
 
 	return {
 		subscribe,
+		/** Applies the copy stored in the database (source of truth) when settings load. */
+		hydrate(json: string | null | undefined) {
+			if (!json) return
+			try {
+				const next = mergeWithDefaults(JSON.parse(json))
+				if (typeof window !== 'undefined') {
+					try {
+						localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+					} catch {
+						// Cache only
+					}
+				}
+				set(next)
+			} catch (e) {
+				console.warn('Invalid stored display settings:', e)
+			}
+		},
 		set(value: DisplaySettings) {
 			save(value)
 			set(value)

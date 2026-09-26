@@ -103,6 +103,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **[F10]** Ajout d'un fichier du lecteur à la bibliothèque : le store source est mis à jour au lieu de modifier une valeur dérivée.
 - **[F13]** « Synchroniser avec Mixed In Key » dans le menu contextuel ne synchronise que les titres sélectionnés.
 - **[F15]** Les infobulles se ferment au clic, à la sortie du pointeur et quand la fenêtre perd le focus (celle du badge Mixed In Key restait affichée quand le bouton se désactivait pendant la synchro).
+- **[F8]** Panier Beatport : téléchargement titre par titre avec progression (« 2/5 : Titre ») ; seuls les titres réellement téléchargés quittent le panier, les échecs y restent avec leur raison. Les favoris et playlists Beatport, uniquement locaux, sont annoncés comme tels (plus de faux « succès »).
+- **[F9]** Plus d'effet de bord à l'import des modules : le minuteur de rafraîchissement du jeton Beatport démarre avec la restauration explicite de la session au lancement.
+- **[F12]** Position de lecture : une réponse du backend demandée avant un saut, un changement de titre ou un arrêt est ignorée (elle faisait reculer la tête de lecture).
+- **[I4]** `BeatportAuthState` n'a plus qu'un schéma, celui du backend (snake_case) ; les champs camelCase en double sont supprimés partout.
+- **[I8]** Les champs optionnels des types Beatport acceptent `null`, la valeur réellement envoyée par le backend (deux accès non protégés corrigés au passage).
+- **[I9]** Les options d'affichage de la bibliothèque (colonnes, zéro Camelot…) sont enregistrées dans la base (donc sauvegardées et restaurées avec elle) ; le `localStorage` ne sert plus que de cache au démarrage.
 - Tests : 3 tests Vitest pour `toErrorMessage`.
 
 #### Documentation

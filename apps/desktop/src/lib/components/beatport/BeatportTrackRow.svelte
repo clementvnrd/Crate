@@ -134,7 +134,7 @@
 						class="hover:text-[#00FF96] hover:underline transition-colors cursor-pointer"
 						onclick={(e) => {
 							e.stopPropagation()
-							beatportStore.setNavArtist(artist.id, artist.name, artist.image_url)
+							beatportStore.setNavArtist(artist.id, artist.name, artist.image_url ?? undefined)
 						}}
 					>
 						{artist.name}

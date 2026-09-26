@@ -17,6 +17,7 @@ import * as settingsApi from '../api/settings'
 import { rebuildMenu, type MenuTranslations } from '../api/app'
 import { setLanguage as setI18nLanguage, translate } from '../i18n'
 import { toErrorMessage } from '../utils/errors'
+import { displaySettingsStore } from './displaySettings'
 
 // =============================================================================
 // State
@@ -321,6 +322,7 @@ function createSettingsStore() {
 					resolvedTheme,
 					loading: false,
 				}))
+				displaySettingsStore.hydrate(settings.displayOptions)
 
 				applyTheme(resolvedTheme)
 				applyAccentColor(settings.accentColor)

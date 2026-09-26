@@ -32,7 +32,7 @@
 
 	let { open, onClose }: Props = $props()
 
-	const isBeatportConnected = $derived(!!$beatportStore.auth.token && $beatportStore.auth.isAuthenticated)
+	const isBeatportConnected = $derived(!!$beatportStore.auth.token && $beatportStore.auth.is_authenticated)
 	const isAuthRequired = $derived(
 		!isBeatportConnected ||
 			($upgraderStore.error !== null &&
@@ -45,7 +45,7 @@
 	function handleConnectBeatport() {
 		onClose()
 		$pageActions?.handleViewChange('beatport')
-		if (!$beatportStore.auth.isAuthenticated) {
+		if (!$beatportStore.auth.is_authenticated) {
 			beatportStore.openLoginModal()
 		}
 	}

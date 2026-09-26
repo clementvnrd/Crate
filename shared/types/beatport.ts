@@ -1,18 +1,18 @@
 export interface BeatportArtist {
 	id: number
 	name: string
-	slug?: string
-	image_url?: string
+	slug?: string | null
+	image_url?: string | null
 }
 
 export interface BeatportArtistDetail {
 	id: number
 	name: string
-	slug?: string
-	image_url?: string
-	biography?: string
+	slug?: string | null
+	image_url?: string | null
+	biography?: string | null
 	genres: string[]
-	tracks_count?: number
+	tracks_count?: number | null
 }
 
 export interface BeatportGenre {
@@ -25,46 +25,46 @@ export interface BeatportRelease {
 	id: number
 	name: string
 	image_url: string
-	label?: string
+	label?: string | null
 }
 
 export interface BeatportTrack {
 	id: number | string
 	title: string
-	mix_name?: string
+	mix_name?: string | null
 	artists: BeatportArtist[]
-	remixers?: BeatportArtist[]
+	remixers?: BeatportArtist[] | null
 	genre: string
-	genre_id?: number
-	release_name?: string
+	genre_id?: number | null
+	release_name?: string | null
 	release_date: string
 	duration_ms: number
 	duration_formatted: string
-	key?: string
-	bpm?: number
-	artwork_url?: string
-	preview_url?: string
-	waveform_url?: string
+	key?: string | null
+	bpm?: number | null
+	artwork_url?: string | null
+	preview_url?: string | null
+	waveform_url?: string | null
 	is_favorite?: boolean
 	in_cart?: boolean
-	beatport_url?: string
+	beatport_url?: string | null
 }
 
 export interface BeatportChart {
 	id: number | string
 	title: string
-	subtitle?: string
-	description?: string
+	subtitle?: string | null
+	description?: string | null
 	image_url: string
-	genre_name?: string
-	tracks_count?: number
+	genre_name?: string | null
+	tracks_count?: number | null
 }
 
 export interface BeatportPlaylist {
 	id: number | string
 	name: string
 	track_count: number
-	image_url?: string
+	image_url?: string | null
 	is_public?: boolean
 }
 
@@ -86,17 +86,14 @@ export interface BeatportDownloadTask {
 	errorMessage?: string
 }
 
+/** Mirror of the Rust `BeatportAuthState` (snake_case, as serialized by the backend). */
 export interface BeatportAuthState {
-	isAuthenticated: boolean
+	is_authenticated: boolean
 	username: string | null
 	token: string | null
-	refresh_token?: string | null
-	refreshToken?: string | null
-	hasSubscription: boolean
-	subscriptionTier?: string
-	is_authenticated?: boolean
-	has_subscription?: boolean
-	subscription_tier?: string
+	refresh_token: string | null
+	has_subscription: boolean
+	subscription_tier: string | null
 }
 
 export interface BeatportSearchResult {

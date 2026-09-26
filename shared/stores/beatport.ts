@@ -13,6 +13,7 @@ import { toastStore } from './toast'
 import { settingsStore } from './settings'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { playerStore } from './player'
+import { toErrorMessage } from '../utils/errors'
 
 export type BeatportNavSection =
 	| 'home'
@@ -79,13 +80,12 @@ function loadStoredCart(): BeatportTrack[] {
 
 function defaultAuth(): BeatportAuthState {
 	return {
-		isAuthenticated: false,
+		is_authenticated: false,
 		username: null,
 		token: null,
-		hasSubscription: false,
-		subscriptionTier: undefined,
-		is_authenticated: false,
+		refresh_token: null,
 		has_subscription: false,
+		subscription_tier: null,
 	}
 }
 
@@ -117,7 +117,6 @@ function isJwtExpired(token: string | null | undefined): boolean {
 	return false
 }
 
-purgeLegacyStoredAuth()
 const initialAuth = defaultAuth()
 
 const initialState: BeatportState = {
@@ -171,7 +170,7 @@ function setupAutoRefresh() {
 
 	refreshTimer = setInterval(async () => {
 		const state = get(beatportStore)
-		if (state.auth.refresh_token && state.auth.isAuthenticated) {
+		if (state.auth.refresh_token && state.auth.is_authenticated) {
 			try {
 				await beatportStore.refreshSession()
 			} catch (e) {
@@ -183,8 +182,6 @@ function setupAutoRefresh() {
 
 function createBeatportStore() {
 	const { subscribe, set, update } = writable<BeatportState>(initialState)
-
-	setupAutoRefresh()
 
 	function saveCart(cart: BeatportTrack[]) {
 		if (typeof window !== 'undefined') {
@@ -243,8 +240,6 @@ function createBeatportStore() {
 				const auth = await beatportApi.loginBeatportPkce(codeOrUrl)
 				const formattedAuth: BeatportAuthState = {
 					...auth,
-					isAuthenticated: true,
-					hasSubscription: true,
 					is_authenticated: true,
 					has_subscription: true,
 				}
@@ -289,8 +284,6 @@ function createBeatportStore() {
 					...auth,
 					token: accessToken,
 					refresh_token: refreshToken || auth.refresh_token,
-					isAuthenticated: true,
-					hasSubscription: true,
 					is_authenticated: true,
 					has_subscription: true,
 				}
@@ -314,8 +307,6 @@ function createBeatportStore() {
 					const formattedAuth: BeatportAuthState = {
 						...newAuth,
 						refresh_token: newAuth.refresh_token || refTok,
-						isAuthenticated: true,
-						hasSubscription: true,
 						is_authenticated: true,
 						has_subscription: true,
 					}
@@ -349,17 +340,23 @@ function createBeatportStore() {
 			return state.auth.token
 		},
 
-		/** Loads the session saved by the backend (Keychain) if the store has none yet. */
+		/**
+		 * Loads the session saved by the backend (Keychain) if the store has none yet. Called
+		 * explicitly at app start-up, which also starts the token refresh timer (no side effect
+		 * when the module is merely imported).
+		 */
 		async restoreSession() {
+			if (!refreshTimer) {
+				purgeLegacyStoredAuth()
+				setupAutoRefresh()
+			}
 			const current = get({ subscribe })
-			if (current.auth.isAuthenticated && current.auth.token) return
+			if (current.auth.is_authenticated && current.auth.token) return
 			try {
 				const persisted = await beatportApi.getBeatportPersistedAuth()
 				if (persisted && persisted.is_authenticated && (persisted.token || persisted.refresh_token)) {
 					const formattedAuth: BeatportAuthState = {
 						...persisted,
-						isAuthenticated: true,
-						hasSubscription: true,
 						is_authenticated: true,
 						has_subscription: true,
 					}
@@ -382,7 +379,7 @@ function createBeatportStore() {
 			await this.restoreSession()
 			const state = get({ subscribe })
 
-			if (!state.auth.isAuthenticated) {
+			if (!state.auth.is_authenticated) {
 				update((s) => ({
 					...s,
 					genres: [],
@@ -710,7 +707,11 @@ function createBeatportStore() {
 				const nextFavs = isFav
 					? s.favorites.filter((t) => String(t.id) !== String(track.id))
 					: [...s.favorites, track]
-				toastStore.info(isFav ? `Retiré des favoris : ${track.title}` : `Ajouté aux favoris Beatport : ${track.title}`)
+				toastStore.info(
+					isFav
+						? `Retiré des favoris locaux : ${track.title}`
+						: `Ajouté aux favoris locaux (non synchronisés avec Beatport) : ${track.title}`
+				)
 				return { ...s, favorites: nextFavs }
 			})
 		},
@@ -723,7 +724,7 @@ function createBeatportStore() {
 					track_count: 0,
 					is_public: false,
 				}
-				toastStore.success(`Playlist Beatport créée : ${name}`)
+				toastStore.info(`Playlist locale créée (non synchronisée avec Beatport) : ${name}`)
 				return { ...s, userPlaylists: [...s.userPlaylists, newPl] }
 			})
 		},
@@ -761,64 +762,50 @@ function createBeatportStore() {
 				return
 			}
 
-			update((s) => ({
-				...s,
-				isDownloading: true,
-				downloadProgressText: `Téléchargement de ${tracks.length} morceau(x) via BeatportDL...`,
-			}))
-
 			const currentSettings = get(settingsStore)
 			const dest =
 				state.downloadDestination ||
 				currentSettings.beatportDownloadDestination ||
 				undefined
 
-			try {
-				const result = await beatportApi.downloadBeatportTracks(
-					tracks,
-					dest,
-					state.beatportdlPath ?? undefined
-				)
-
-				if (result.success_count > 0) {
-					toastStore.success(
-						`${result.success_count} morceau(x) téléchargé(s) & synchronisé(s) dans Mixed In Key & Crate !`
-					)
-				}
-				if (result.failed_count > 0) {
-					toastStore.warning(
-						`${result.failed_count} morceau(x) n'ont pas pu être téléchargés.`
-					)
-				}
-
+			// One track per call: each success leaves the cart as soon as it is verified, failures
+			// stay in it, and the progress is known.
+			update((s) => ({ ...s, isDownloading: true, downloadProgressText: null }))
+			let succeeded = 0
+			const failures: string[] = []
+			for (const [index, track] of tracks.entries()) {
 				update((s) => ({
 					...s,
-					isDownloading: false,
-					downloadProgressText: null,
-					cart: [],
+					downloadProgressText: `Téléchargement ${index + 1}/${tracks.length} : ${track.title}`,
 				}))
-				saveCart([])
-			} catch (e: any) {
-				console.error('Download error:', e)
-				toastStore.error(`Erreur BeatportDL : ${e?.message || e}`)
-				update((s) => ({
-					...s,
-					isDownloading: false,
-					downloadProgressText: null,
-				}))
+				try {
+					const result = await beatportApi.downloadBeatportTracks([track], dest, state.beatportdlPath ?? undefined)
+					if (result.success_count > 0) {
+						succeeded++
+						update((s) => {
+							const nextCart = s.cart.filter((t) => String(t.id) !== String(track.id))
+							saveCart(nextCart)
+							return { ...s, cart: nextCart }
+						})
+					} else {
+						failures.push(`${track.title}${result.errors.length > 0 ? ` (${result.errors[0]})` : ''}`)
+					}
+				} catch (e) {
+					failures.push(`${track.title} (${toErrorMessage(e, 'erreur inconnue')})`)
+				}
+			}
+
+			update((s) => ({ ...s, isDownloading: false, downloadProgressText: null }))
+			if (succeeded > 0) {
+				toastStore.success(`${succeeded} morceau(x) téléchargé(s) en FLAC et importé(s) dans Crate`)
+			}
+			if (failures.length > 0) {
+				toastStore.warning(`${failures.length} échec(s), restés dans le panier : ${failures.join(' ; ')}`)
 			}
 		},
 
 		logout() {
-			const resetAuth: BeatportAuthState = {
-				isAuthenticated: false,
-				username: null,
-				token: null,
-				refresh_token: null,
-				hasSubscription: false,
-				is_authenticated: false,
-				has_subscription: false,
-			}
+			const resetAuth: BeatportAuthState = defaultAuth()
 			saveAuth(resetAuth)
 			beatportApi.clearBeatportPersistedAuth().catch(() => {})
 			toastStore.info('Déconnecté de Beatport')
@@ -853,4 +840,4 @@ export const beatportCartCount = derived(beatportStore, ($s) => $s.cart.length)
 export const beatportCartDuration = derived(beatportStore, ($s) =>
 	$s.cart.reduce((acc, t) => acc + (t.duration_ms || 0), 0)
 )
-export const isBeatportAuthenticated = derived(beatportStore, ($s) => $s.auth.isAuthenticated)
+export const isBeatportAuthenticated = derived(beatportStore, ($s) => $s.auth.is_authenticated)

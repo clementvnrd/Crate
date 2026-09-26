@@ -5,7 +5,7 @@ Ce fichier est **la** source de vérité du suivi : chaque défaut du [registre]
 Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ = précision ou reste à faire. Le tableau de progression se recalcule avec `yarn suivi`.
 
 <!-- progression:start -->
-**Progression globale : 68 / 106 défauts corrigés (64 %)**
+**Progression globale : 74 / 106 défauts corrigés (70 %)**
 
 | Étape | Corrigés | Progression |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ =
 | Étape 5 — Mixed In Key propre | 8 / 8 | ██████████ |
 | Étape 6 — Statistiques justes | 10 / 10 | ██████████ |
 | Étape 7 — Fonctions DJ exactes | 17 / 18 | █████████░ |
-| Étape 8 — Frontend robuste | 11 / 17 | ██████░░░░ |
+| Étape 8 — Frontend robuste | 17 / 17 | ██████████ |
 | Étape 9 — Hygiène et outillage | 0 / 14 | ░░░░░░░░░░ |
 | Étape 10 — Fondations visuelles | 0 / 5 | ░░░░░░░░░░ |
 | Étape 11 — Conformité vue par vue | 0 / 7 | ░░░░░░░░░░ |
@@ -142,20 +142,20 @@ _Critère de sortie : Erreurs backend visibles, pas d'appel IPC superflu._
 - [x] **F4** — `withTimeout` : une initialisation de plus de 2,5 s perd les fonctions de nettoyage (écouteurs Tauri…
 - [x] **F5** — Splash fermé par un timer de module à 1,5 s : course avec le chargement des réglages, flash possible de…
 - [x] **F7** — L'effet du Toolbar déclenche un appel `get_duplicate_count` à chaque mutation de la bibliothèque
-- [ ] **F8** — Beatport : favoris et playlists « créés » uniquement en local avec un toast de succès trompeur ; panier…
-- [ ] **F9** — Effets de bord à l'import de modules dans `shared/` (timer Beatport de 3 min, timer du splash) et…
+- [x] **F8** — Beatport : favoris et playlists « créés » uniquement en local avec un toast de succès trompeur ; panier… — _favoris et playlists restent locaux, mais annoncés comme tels_
+- [x] **F9** — Effets de bord à l'import de modules dans `shared/` (timer Beatport de 3 min, timer du splash) et…
 - [x] **F10** — Mutation d'une valeur `$derived` (`activeHeroTrack.is_in_library = true`)
-- [ ] **F12** — Course de réponses obsolètes dans le suivi de position (intervalle async appelant `getPlaybackState`…
+- [x] **F12** — Course de réponses obsolètes dans le suivi de position (intervalle async appelant `getPlaybackState`…
 - [x] **F13** — « Synchroniser avec Mixed In Key » du menu contextuel ignore la sélection et resynchronise toute la base
 - [x] **F14** — Upgrader : la confiance s'affiche « 0.96% » au lieu de « 96 % » ; le bouton de remplacement reste actif… — _le « 0.96% » vu à l’audit venait des données fictives du harnais, pas de l’app ; bouton désactivé sans session Beatport_
 - [x] **F15** — L'infobulle du badge Mixed In Key reste affichée après le départ du pointeur — _corrigé dans le composant commun `Tooltip` (toutes les infobulles)_
 - [x] **I1** — Messages d'erreur backend perdus : Tauri rejette avec une chaîne, et les nouveaux stores testent… — _helper appliqué à tous les stores et composants (amont compris)_
 - [x] **I2** — Deux réglages Beatport sans effet : le téléchargeur force `lossless` et lance toujours la synchro Mixed In Key — _réglages sans effet retirés de l’interface (format FLAC imposé par la vérification, synchro MIK assurée par le watcher)_
-- [ ] **I4** — `BeatportAuthState` porte deux conventions (camelCase côté TS, snake\_case côté Rust) ; la cohérence…
+- [x] **I4** — `BeatportAuthState` porte deux conventions (camelCase côté TS, snake\_case côté Rust) ; la cohérence…
 - [x] **I5** — `record_listen_event` accepte un événement complet depuis le webview mais n'est appelé nulle part
 - [x] **I7** — `library-updated` émis sans écouteur ; paramètre `searchType` de la recherche Beatport ignoré
-- [ ] **I8** — Une vingtaine de champs `Option<T>` Rust typés `?: T` côté TS alors que la valeur réelle est `null`
-- [ ] **I9** — Options d'affichage stockées uniquement dans `localStorage` : ni sauvegarde, ni synchro
+- [x] **I8** — Une vingtaine de champs `Option<T>` Rust typés `?: T` côté TS alors que la valeur réelle est `null` — _types Beatport ; les types album acceptaient déjà `null`_
+- [x] **I9** — Options d'affichage stockées uniquement dans `localStorage` : ni sauvegarde, ni synchro
 
 ### Étape 9 — Hygiène et outillage
 
@@ -220,3 +220,4 @@ _Critère de sortie : App en anglais : aucune chaîne française._
 | 2026-09-26 | Synchro Mixed In Key incrémentale et idempotente, cues stables, import/Serato/énergie corrigés | 5 |
 | 2026-09-26 | Statistiques justes : une écoute Spotify = une ligne, pauses exclues, sets Rekordbox datés | 6 |
 | 2026-09-26 | Fonctions DJ exactes : hot cues, XML, waveform réelle, recherche, position, régressions, corbeille | 7 |
+| 2026-09-26 | Frontend robuste : erreurs visibles, init sans fuite, panier fiable, options d’affichage sauvegardées | 8 |
