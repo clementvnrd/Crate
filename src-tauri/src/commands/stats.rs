@@ -111,8 +111,11 @@ pub async fn spotify_has_client_secret(
 pub async fn spotify_get_auth_url(
     client_id: Option<String>,
     redirect_uri: Option<String>,
+    app: tauri::AppHandle,
     spotify: State<'_, SpotifyTrackerService>,
 ) -> Result<String> {
+    // The callback server only runs while a sign-in is in progress.
+    spotify.ensure_loopback_server(app);
     spotify.get_auth_url(client_id.as_deref(), redirect_uri.as_deref())
 }
 
@@ -216,5 +219,25 @@ pub async fn mik_detect_status(
     mik: State<'_, MikTrackerService>,
 ) -> Result<bool> {
     Ok(mik.is_mik_running())
+}
+
+#[tauri::command]
+pub async fn mik_tracker_get_enabled(mik: State<'_, MikTrackerService>) -> Result<bool> {
+    Ok(mik.is_enabled())
+}
+
+/// Turns the (inference-based) Mixed In Key listening tracker on or off, persisted in settings.
+#[tauri::command]
+pub async fn mik_tracker_set_enabled(
+    enabled: bool,
+    mik: State<'_, MikTrackerService>,
+    settings: State<'_, crate::services::SettingsService>,
+) -> Result<()> {
+    settings.set_setting(
+        crate::services::stats::mik::MIK_TRACKER_SETTING,
+        if enabled { "true" } else { "false" },
+    )?;
+    mik.set_enabled(enabled);
+    Ok(())
 }
 

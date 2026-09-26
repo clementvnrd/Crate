@@ -57,6 +57,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **[B9]** La colonne `energy` est incluse dans les sauvegardes et la synchronisation cloud (les anciennes sauvegardes restent lisibles).
 - Tests : 7 nouveaux tests (synchro idempotente, métadonnées utilisateur conservées, cues stables et cues utilisateur gardés, réimport, parseur Serato sur une entrée construite selon le format).
 
+#### Corrigé — statistiques d'écoute (Crate Pulse)
+
+- **[C9]** Suppression de la « réparation » lancée à chaque démarrage, qui transformait toute écoute Spotify de moins de 30 s en écoute complète (minutes et streams gonflés). Les écoutes déjà modifiées ne peuvent pas être restaurées.
+- **[C10]** Fin du double comptage Spotify : l'historique officiel « recently played » (toutes les minutes) est désormais la **seule** source ; le poller toutes les 4 s, qui enregistrait la même écoute une seconde fois (et une troisième après une pause), est supprimé. Le temps écouté est la durée du titre, plafonnée par l'écart avec l'écoute précédente (un titre passé au bout de 50 s compte 50 s).
+- **[B12]** Lecteur Crate : seul le temps de lecture réel est compté (pauses et sauts dans le morceau exclus, arrêt en fin de piste détecté) ; l'écoute enregistrée à 30 s est mise à jour avec la durée totale écoutée au changement de titre.
+- **[B11]** Le suivi des écoutes dans Mixed In Key (déduit d'un fichier ouvert, analyse comprise) est **désactivé par défaut** et activable dans Crate Pulse avec un avertissement.
+- **[B13]** Import XML Rekordbox : seuls les playlists d'historique datées (« HISTORY 2026-09-20 ») deviennent des écoutes, datées de la session et dans l'ordre joué — avant, **toute la collection** exportée était comptée comme écoutée le jour de l'import. Une session n'est importée qu'une fois ; les écoutes sans heure réelle sont exclues de la heatmap. Côté `master.db`, les compteurs de session ne gonflent plus à chaque synchro.
+- **[B14]** Filtres « 7 jours » et « 30 jours » : les dates sont normalisées (`datetime()`) avant comparaison, quel que soit leur format ou fuseau ; une date illisible ne fait plus échouer la heatmap.
+- **[B15]** Import de l'historique JSON Spotify : une seule transaction, dates `2024-03-01 20:15` et ISO 8601 gérées, une date mal formée est ignorée au lieu de faire planter l'import.
+- **[B16]** Plus d'inversion d'ordre de verrous entre la déconnexion Spotify et le poller (risque de blocage de toute la base) : le poller n'existe plus.
+- **[B17]** Rafraîchissement du jeton Spotify sérialisé (un seul à la fois) ; un échec sur un jeton expiré est signalé au lieu de renvoyer silencieusement l'ancien jeton.
+- **[B18]** Le serveur OAuth `127.0.0.1:8888` ne tourne plus en permanence : il démarre à la connexion et s'arrête après succès ou 10 minutes ; il exige un `state` généré par Crate ; les paramètres affichés dans la page de retour sont échappés (page de retour ramenée de ~330 à ~40 lignes).
+- **[B34]** Le service Mixed In Key appelé par l'interface est la même instance que le worker de fond.
+- Tests : 11 nouveaux tests (pauses, durée totale mise à jour, fin de piste, temps écouté plafonné, dates d'export, échappement HTML, heatmap tolérante, filtre 7 jours avec fuseau, import par lot, import XML Rekordbox idempotent).
+
 #### Documentation
 
 - **[L6]** Le README annonce désormais les 15 langues réellement livrées (au lieu de 11) et décrit le fork, les tests et le suivi.

@@ -470,6 +470,8 @@ pub fn run() {
             commands::stats::rekordbox_import_history_xml,
             commands::stats::rekordbox_get_sessions,
             commands::stats::mik_detect_status,
+            commands::stats::mik_tracker_get_enabled,
+            commands::stats::mik_tracker_set_enabled,
         ])
 
         .setup(|app| {
@@ -589,41 +591,38 @@ pub fn run() {
             let stats_recorder = Arc::new(StatsRecorderService::new(conn.clone()));
             let spotify_tracker = Arc::new(SpotifyTrackerService::new(conn.clone(), stats_recorder.clone()));
             let rekordbox_tracker = RekordboxTrackerService::new(conn.clone(), stats_recorder.clone());
-            let mik_tracker = Arc::new(MikTrackerService::new(stats_recorder.clone()));
+            let mik_tracker_enabled = conn
+                .lock()
+                .ok()
+                .and_then(|c| {
+                    c.query_row(
+                        "SELECT value FROM settings WHERE key = ?1",
+                        [crate::services::stats::mik::MIK_TRACKER_SETTING],
+                        |r| r.get::<_, String>(0),
+                    )
+                    .ok()
+                })
+                .is_some_and(|v| v == "true");
+            let mik_tracker = Arc::new(MikTrackerService::new(stats_recorder.clone(), mik_tracker_enabled));
             let player_tracker = PlayerTrackerService::new(stats_recorder.clone());
 
+            // The managed services are the same instances as the background workers below.
             app.manage(StatsRecorderService::new(conn.clone()));
             app.manage((*spotify_tracker).clone());
             app.manage(rekordbox_tracker);
-            app.manage(MikTrackerService::new(stats_recorder.clone()));
+            app.manage((*mik_tracker).clone());
             app.manage(player_tracker);
 
-            // Repair historical Spotify listen events with full track durations
-            if let Err(e) = stats_recorder.repair_spotify_historical_durations() {
-                log::warn!("Failed to repair historical Spotify durations: {e}");
-            }
-
-            // Automatic Spotify OAuth2 loopback server (listens on 127.0.0.1:8888 for OAuth callbacks)
-            spotify_tracker.clone().start_loopback_server(app.handle().clone());
-
-            // Background Spotify polling worker (monitors live playback across devices and syncs recently played)
+            // Background Spotify sync: the "recently played" history is the single source of
+            // Spotify listens (startup catch-up, then every minute).
             {
                 let spotify_svc = spotify_tracker.clone();
                 tauri::async_runtime::spawn(async move {
-                    // Initial sync on startup to capture any offline / sleep plays
-                    let _ = spotify_svc.sync_recently_played().await;
-
-                    let mut tick_counter: u64 = 0;
                     loop {
-                        tokio::time::sleep(std::time::Duration::from_secs(4)).await;
-                        if let Err(e) = spotify_svc.poll_tick().await {
-                            log::debug!("Spotify background poll tick: {e}");
+                        if let Err(e) = spotify_svc.sync_recently_played().await {
+                            log::debug!("Spotify recently-played sync: {e}");
                         }
-                        tick_counter += 1;
-                        // Every 15 ticks (~60s), sync recently played in background to catch offline/mobile listens
-                        if tick_counter % 15 == 0 {
-                            let _ = spotify_svc.sync_recently_played().await;
-                        }
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
                     }
                 });
             }

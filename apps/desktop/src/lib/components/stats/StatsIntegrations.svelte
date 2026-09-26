@@ -3,6 +3,7 @@
 	import { statsStore, isSyncingRekordbox, isImportingSpotify } from '$shared/stores/stats'
 	import * as statsApi from '$shared/api/stats'
 	import Icon from '$lib/components/common/Icon.svelte'
+	import ToggleSwitch from '$lib/components/common/ToggleSwitch.svelte'
 	import { Spinner } from '$lib/components/common'
 	import { openUrl } from '@tauri-apps/plugin-opener'
 	import { toastStore } from '$shared/stores/toast'
@@ -18,6 +19,24 @@
 	}
 
 	let { spotifyAuth, spotifyNowPlaying, rekordboxDetected, rekordboxSessions, mikDetected = false }: Props = $props()
+
+	let mikTrackerEnabled = $state(false)
+
+	onMount(() => {
+		statsApi
+			.getMikTrackerEnabled()
+			.then((enabled) => (mikTrackerEnabled = enabled))
+			.catch(() => {})
+	})
+
+	async function handleToggleMikTracker(enabled: boolean) {
+		try {
+			await statsApi.setMikTrackerEnabled(enabled)
+			mikTrackerEnabled = enabled
+		} catch (err) {
+			toastStore.error(`Impossible de modifier le suivi Mixed In Key : ${err}`)
+		}
+	}
 
 	let fileInputRef: HTMLInputElement | undefined
 	let showSpotifyModal = $state(false)
@@ -341,23 +360,27 @@
 				</div>
 			</div>
 
-			<!-- Info Callout -->
-			<div class="flex items-center justify-between rounded-xl border border-stroke/50 bg-surface-2/60 p-2.5 text-xs">
-				<div>
-					<div class="font-bold text-text-primary">Chronométrage direct MIK</div>
-					<div class="text-[11px] text-text-tertiary">Capture automatique dès l'écoute dans MIK 11</div>
-				</div>
-				<span class="font-mono text-[11px] font-bold text-[#00D2FF]">
-					1A - 12B
-				</span>
-			</div>
+			<!-- Opt-in listening tracker -->
+			<ToggleSwitch
+				checked={mikTrackerEnabled}
+				onchange={handleToggleMikTracker}
+				label="Compter les écoutes dans Mixed In Key"
+				description="Expérimental : Mixed In Key n'indique pas s'il joue. Un morceau resté ouvert (analyse comprise) peut être compté comme écouté."
+				class="rounded-xl border border-stroke/50 bg-surface-2/60 px-2.5"
+			/>
 		</div>
 
 		<!-- Status Label -->
 		<div class="flex items-center gap-2 pt-1 text-xs text-text-secondary">
 			<span class="inline-block h-2 w-2 rounded-full {mikDetected ? 'bg-[#00D2FF] animate-ping' : 'bg-surface-4'}"></span>
 			<span class="text-[11px]">
-				{mikDetected ? 'Morceau chargé détecté dans Mixed In Key 11' : 'En attente de lecture dans Mixed In Key 11'}
+				{#if !mikTrackerEnabled}
+					Suivi des écoutes Mixed In Key désactivé
+				{:else if mikDetected}
+					Mixed In Key 11 ouvert : écoute en cours de suivi
+				{:else}
+					En attente de Mixed In Key 11
+				{/if}
 			</span>
 		</div>
 	</div>

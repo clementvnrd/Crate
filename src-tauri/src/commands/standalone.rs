@@ -89,8 +89,6 @@ pub async fn play_standalone_track(
             format: Some(track.format.clone()),
             artwork_url: track.artwork_path.clone(),
             started_at: chrono::Utc::now().to_rfc3339(),
-            start_instant: std::time::Instant::now(),
-            recorded: false,
         };
         tracker.on_track_started(ctx);
     }

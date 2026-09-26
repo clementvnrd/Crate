@@ -30,8 +30,6 @@ pub async fn play_track(
         format: Some(track.format.clone()),
         artwork_url: track.artwork_path.clone(),
         started_at: chrono::Utc::now().to_rfc3339(),
-        start_instant: std::time::Instant::now(),
-        recorded: false,
     };
     tracker.on_track_started(ctx);
     let duration_ms = track.duration_ms.max(0) as u64;
@@ -44,13 +42,18 @@ pub async fn pause(
     tracker: State<'_, PlayerTrackerService>,
 ) -> Result<PlaybackState> {
     let state = audio.pause()?;
-    tracker.check_and_record_if_due(state.position_ms);
+    tracker.on_paused();
     Ok(state)
 }
 
 #[tauri::command]
-pub async fn resume(audio: State<'_, AudioService>) -> Result<PlaybackState> {
-    audio.resume()
+pub async fn resume(
+    audio: State<'_, AudioService>,
+    tracker: State<'_, PlayerTrackerService>,
+) -> Result<PlaybackState> {
+    let state = audio.resume()?;
+    tracker.on_resumed();
+    Ok(state)
 }
 
 #[tauri::command]
@@ -63,12 +66,8 @@ pub async fn stop(
 }
 
 #[tauri::command]
-pub async fn seek(
-    position_ms: u64,
-    audio: State<'_, AudioService>,
-    tracker: State<'_, PlayerTrackerService>,
-) -> Result<PlaybackState> {
-    tracker.check_and_record_if_due(position_ms);
+pub async fn seek(position_ms: u64, audio: State<'_, AudioService>) -> Result<PlaybackState> {
+    // Jumping ahead is not listening: the tracker only counts time actually played.
     audio.seek(position_ms)
 }
 
@@ -88,9 +87,7 @@ pub async fn get_playback_state(
     tracker: State<'_, PlayerTrackerService>,
 ) -> Result<PlaybackState> {
     let state = audio.get_state()?;
-    if state.is_playing {
-        tracker.check_and_record_if_due(state.position_ms);
-    }
+    tracker.check_and_record_if_due(state.is_playing);
     Ok(state)
 }
 

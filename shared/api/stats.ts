@@ -136,3 +136,12 @@ export async function getMikDetectStatus(): Promise<boolean> {
 	return invoke<boolean>('mik_detect_status')
 }
 
+/** Whether listens heard in Mixed In Key are counted (off by default, inference-based). */
+export async function getMikTrackerEnabled(): Promise<boolean> {
+	return invoke<boolean>('mik_tracker_get_enabled')
+}
+
+export async function setMikTrackerEnabled(enabled: boolean): Promise<void> {
+	return invoke<void>('mik_tracker_set_enabled', { enabled })
+}
+

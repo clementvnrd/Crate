@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use chrono::Utc;
@@ -40,16 +41,37 @@ struct MikAccumulatorState {
     recorded: bool,
 }
 
+/// Settings key of the opt-in Mixed In Key listening tracker.
+pub const MIK_TRACKER_SETTING: &str = "stats_mik_tracker_enabled";
+
+#[derive(Clone)]
 pub struct MikTrackerService {
     recorder: Arc<StatsRecorderService>,
     accumulator: Arc<Mutex<MikAccumulatorState>>,
+    /// Off by default: Mixed In Key exposes no playback state, so the tracker can only infer a
+    /// "listen" from a file being open, which also happens while Mixed In Key analyses a file.
+    enabled: Arc<AtomicBool>,
 }
 
 impl MikTrackerService {
-    pub fn new(recorder: Arc<StatsRecorderService>) -> Self {
+    pub fn new(recorder: Arc<StatsRecorderService>, enabled: bool) -> Self {
         Self {
             recorder,
             accumulator: Arc::new(Mutex::new(MikAccumulatorState::default())),
+            enabled: Arc::new(AtomicBool::new(enabled)),
+        }
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.enabled.load(Ordering::Relaxed)
+    }
+
+    pub fn set_enabled(&self, enabled: bool) {
+        self.enabled.store(enabled, Ordering::Relaxed);
+        if !enabled {
+            if let Ok(mut acc) = self.accumulator.lock() {
+                *acc = MikAccumulatorState::default();
+            }
         }
     }
 
@@ -207,6 +229,9 @@ impl MikTrackerService {
 
     /// Background polling tick: tracks playback/loading in Mixed In Key 11 in real time.
     pub async fn poll_tick(&self) -> Result<()> {
+        if !self.is_enabled() {
+            return Ok(());
+        }
         let pids = Self::get_mik_pids();
         if pids.is_empty() {
             let mut acc = self.accumulator.lock().map_err(|_| CrateError::LockPoisoned)?;

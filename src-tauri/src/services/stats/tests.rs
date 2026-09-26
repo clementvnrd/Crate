@@ -865,31 +865,68 @@ fn test_split_artists_and_multi_artist_aggregation() {
     assert_eq!(ti.unwrap().total_minutes, 5);
 }
 
-#[test]
-fn test_repair_spotify_historical_durations() {
-    let (conn_arc, recorder) = setup_test_db();
-    let conn = conn_arc.lock().unwrap();
 
-    // Insert historical Spotify listen with 30s played_ms but 240s duration_ms
-    conn.execute(
-        r#"
-        INSERT INTO listen_events (
-            id, source, track_id, title, artist, album, duration_ms, played_ms, played_at
-        ) VALUES ('hist1', 'spotify', 'sp_track1', 'My Song', 'My Artist', 'My Album', 240000, 30000, '2026-09-01T12:00:00Z')
-        "#,
-        [],
-    ).unwrap();
-    drop(conn);
-
-    let repaired = recorder.repair_spotify_historical_durations().unwrap();
-    assert_eq!(repaired, 1, "Should repair 1 historical Spotify event");
-
-    let conn = conn_arc.lock().unwrap();
-    let updated_played_ms: i64 = conn.query_row(
-        "SELECT played_ms FROM listen_events WHERE id = 'hist1'",
-        [],
-        |r| r.get(0),
-    ).unwrap();
-    assert_eq!(updated_played_ms, 240000, "Historical played_ms must now match duration_ms");
+fn listen(id: &str, title: &str, played_at: String) -> ListenEvent {
+    ListenEvent {
+        id: id.to_string(),
+        source: "spotify".to_string(),
+        track_id: None,
+        title: title.to_string(),
+        artist: "Artist".to_string(),
+        album: None,
+        duration_ms: 200_000,
+        played_ms: 200_000,
+        bpm: None,
+        key: None,
+        energy: None,
+        format: None,
+        artwork_url: None,
+        played_at,
+        session_id: None,
+        metadata_json: None,
+    }
 }
 
+#[test]
+fn test_heatmap_tolerates_an_unparseable_timestamp() {
+    let (conn_arc, recorder) = setup_test_db();
+    recorder.record_listen_event(&listen("ok", "Valid", Utc::now().to_rfc3339())).unwrap();
+    conn_arc
+        .lock()
+        .unwrap()
+        .execute(
+            "INSERT INTO listen_events (id, source, title, artist, duration_ms, played_ms, played_at)
+             VALUES ('bad', 'spotify', 'Broken', 'Artist', 1000, 60000, 'not a date')",
+            [],
+        )
+        .unwrap();
+    let heatmap = recorder.get_listening_heatmap("all").unwrap();
+    assert_eq!(heatmap.iter().map(|c| c.plays).sum::<usize>(), 1);
+}
+
+#[test]
+fn test_seven_day_filter_handles_offsets() {
+    let (_, recorder) = setup_test_db();
+    let offset = chrono::FixedOffset::east_opt(2 * 3600).unwrap();
+    let recent = (Utc::now() - Duration::days(3)).with_timezone(&offset).to_rfc3339();
+    let old = (Utc::now() - Duration::days(8)).with_timezone(&offset).to_rfc3339();
+    recorder.record_listen_event(&listen("r", "Recent", recent)).unwrap();
+    recorder.record_listen_event(&listen("o", "Old", old)).unwrap();
+    let top = recorder.get_top_tracks("7d", 10).unwrap();
+    assert_eq!(top.len(), 1);
+    assert_eq!(top[0].title, "Recent");
+}
+
+#[test]
+fn test_record_listen_events_batch_skips_duplicates() {
+    let (_, recorder) = setup_test_db();
+    let at = "2026-09-01T14:30:00Z".to_string();
+    let outcomes = recorder
+        .record_listen_events(&[
+            listen("a", "One", at.clone()),
+            listen("b", "Two", at.clone()),
+            listen("c", "One", at),
+        ])
+        .unwrap();
+    assert_eq!(outcomes, vec![true, true, false]);
+}

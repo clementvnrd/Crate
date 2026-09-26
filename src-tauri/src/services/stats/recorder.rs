@@ -24,8 +24,10 @@ impl StatsRecorderService {
     fn time_range_condition(time_range: &str, field_name: &str) -> Option<String> {
         match time_range.to_lowercase().as_str() {
             "today" => Some(format!("datetime({field_name}, 'localtime') >= datetime('now', 'localtime', 'start of day')")),
-            "7d" => Some(format!("{field_name} >= datetime('now', '-7 days')")),
-            "30d" => Some(format!("{field_name} >= datetime('now', '-30 days')")),
+            // datetime() normalises RFC 3339 values (with a `T`, a `Z` or an offset) to UTC before
+            // comparing; comparing the raw strings mixed formats and time zones.
+            "7d" => Some(format!("datetime({field_name}) >= datetime('now', '-7 days')")),
+            "30d" => Some(format!("datetime({field_name}) >= datetime('now', '-30 days')")),
             "year" => Some(format!("datetime({field_name}, 'localtime') >= datetime('now', 'localtime', 'start of year')")),
             "all" | "" => None,
             _ => None,
@@ -77,7 +79,40 @@ impl StatsRecorderService {
         };
 
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        Self::insert_listen_event(&conn, event, title, artist, event_id, played_at, duration_ms)
+    }
 
+    /// Records many events in a single transaction (history imports). Returns, for each event,
+    /// whether it was inserted (false: invalid, below threshold or duplicate).
+    pub fn record_listen_events(&self, events: &[ListenEvent]) -> Result<Vec<bool>> {
+        let mut conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        let tx = conn.transaction().map_err(CrateError::Database)?;
+        let mut outcomes = Vec::with_capacity(events.len());
+        for event in events {
+            let title = event.title.trim();
+            let artist = event.artist.trim();
+            if title.is_empty() || artist.is_empty() || event.played_ms < 1_000 {
+                outcomes.push(false);
+                continue;
+            }
+            let event_id = if event.id.trim().is_empty() { Uuid::new_v4().to_string() } else { event.id.clone() };
+            let played_at = if event.played_at.trim().is_empty() { Utc::now().to_rfc3339() } else { event.played_at.clone() };
+            let duration_ms = if event.duration_ms == 0 { event.played_ms } else { event.duration_ms };
+            outcomes.push(Self::insert_listen_event(&tx, event, title, artist, event_id, played_at, duration_ms)?);
+        }
+        tx.commit().map_err(CrateError::Database)?;
+        Ok(outcomes)
+    }
+
+    fn insert_listen_event(
+        conn: &Connection,
+        event: &ListenEvent,
+        title: &str,
+        artist: &str,
+        event_id: String,
+        played_at: String,
+        duration_ms: u64,
+    ) -> Result<bool> {
         // Anti-duplicate check: same title, artist, source within 15 seconds
         let duplicate_count: i64 = conn
             .query_row(
@@ -132,6 +167,17 @@ impl StatsRecorderService {
         Ok(true)
     }
 
+    /// Updates the listened time of an already recorded listen (end of playback).
+    pub fn update_listen_played_ms(&self, event_id: &str, played_ms: u64) -> Result<()> {
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        conn.execute(
+            "UPDATE listen_events SET played_ms = MAX(played_ms, ?1) WHERE id = ?2",
+            rusqlite::params![played_ms as i64, event_id],
+        )
+        .map_err(CrateError::Database)?;
+        Ok(())
+    }
+
     /// Computes high-level listening summary statistics for a given time range.
     pub fn get_stats_summary(&self, time_range: &str) -> Result<StatsSummary> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
@@ -161,7 +207,7 @@ impl StatsRecorderService {
 
         let week_minutes: i64 = conn
             .query_row(
-                "SELECT COALESCE(SUM(played_ms), 0) / 60000 FROM listen_events WHERE played_at >= datetime('now', '-7 days')",
+                "SELECT COALESCE(SUM(played_ms), 0) / 60000 FROM listen_events WHERE datetime(played_at) >= datetime('now', '-7 days')",
                 [],
                 |row| row.get(0),
             )
@@ -169,7 +215,7 @@ impl StatsRecorderService {
 
         let month_minutes: i64 = conn
             .query_row(
-                "SELECT COALESCE(SUM(played_ms), 0) / 60000 FROM listen_events WHERE played_at >= datetime('now', '-30 days')",
+                "SELECT COALESCE(SUM(played_ms), 0) / 60000 FROM listen_events WHERE datetime(played_at) >= datetime('now', '-30 days')",
                 [],
                 |row| row.get(0),
             )
@@ -356,25 +402,6 @@ impl StatsRecorderService {
         }
 
         artists
-    }
-
-    /// Fixes historical Spotify listen events where played_ms was prematurely capped at 30-35s instead of full track duration.
-    pub fn repair_spotify_historical_durations(&self) -> Result<usize> {
-        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-        let updated = conn.execute(
-            r#"
-            UPDATE listen_events
-            SET played_ms = duration_ms
-            WHERE source = 'spotify'
-              AND duration_ms > 0
-              AND (played_ms < 30000 OR (played_ms <= 35000 AND duration_ms > 35000))
-            "#,
-            [],
-        ).map_err(CrateError::Database)?;
-        if updated > 0 {
-            log::info!("Repaired {updated} Spotify historical listen events with exact track durations");
-        }
-        Ok(updated)
     }
 
     /// Retrieves top played artists, calculating their top track and play counts.
@@ -622,10 +649,12 @@ impl StatsRecorderService {
     pub fn get_listening_heatmap(&self, time_range: &str) -> Result<Vec<HeatmapCell>> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
+        // Plays without a real time of day (Rekordbox XML sets) would pile up at midnight.
+        let exact_time = "(metadata_json IS NULL OR metadata_json NOT LIKE '%\"approximate_time\":true%')";
         let time_cond = Self::time_range_condition(time_range, "played_at");
         let where_clause = match &time_cond {
-            Some(cond) => format!("WHERE {cond}"),
-            None => String::new(),
+            Some(cond) => format!("WHERE {cond} AND {exact_time}"),
+            None => format!("WHERE {exact_time}"),
         };
 
         // SQLite strftime('%w', ..., 'localtime') -> 0 (Sunday) to 6 (Saturday) in user's local timezone
@@ -640,6 +669,7 @@ impl StatsRecorderService {
             FROM listen_events
             {where_clause}
             GROUP BY day_of_week, hour_of_day
+            HAVING day_of_week IS NOT NULL AND hour_of_day IS NOT NULL
             "#
         );
 

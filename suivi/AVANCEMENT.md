@@ -5,7 +5,7 @@ Ce fichier est **la** source de vérité du suivi : chaque défaut du [registre]
 Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ = précision ou reste à faire. Le tableau de progression se recalcule avec `yarn suivi`.
 
 <!-- progression:start -->
-**Progression globale : 32 / 106 défauts corrigés (30 %)**
+**Progression globale : 43 / 106 défauts corrigés (41 %)**
 
 | Étape | Corrigés | Progression |
 | --- | --- | --- |
@@ -14,8 +14,8 @@ Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ =
 | Étape 3 — Secrets et authentification | 4 / 4 | ██████████ |
 | Étape 4 — Upgrader sûr | 9 / 9 | ██████████ |
 | Étape 5 — Mixed In Key propre | 8 / 8 | ██████████ |
-| Étape 6 — Statistiques justes | 0 / 10 | ░░░░░░░░░░ |
-| Étape 7 — Fonctions DJ exactes | 0 / 18 | ░░░░░░░░░░ |
+| Étape 6 — Statistiques justes | 10 / 10 | ██████████ |
+| Étape 7 — Fonctions DJ exactes | 1 / 18 | █░░░░░░░░░ |
 | Étape 8 — Frontend robuste | 2 / 17 | █░░░░░░░░░ |
 | Étape 9 — Hygiène et outillage | 0 / 14 | ░░░░░░░░░░ |
 | Étape 10 — Fondations visuelles | 0 / 5 | ░░░░░░░░░░ |
@@ -101,16 +101,16 @@ _Critère de sortie : Une seule synchro, incrémentale, en lecture seule._
 
 _Critère de sortie : Une écoute = une ligne, pauses exclues._
 
-- [ ] **C9** — La « réparation » Spotify réécrit chaque écoute de moins de 30 s en écoute complète, à chaque démarrage
-- [ ] **C10** — Double comptage Spotify : le poller live et la synchro « recently played » enregistrent la même écoute, et…
-- [ ] **B11** — Tracker Mixed In Key : « fichier ouvert dans `lsof` » est compté comme une écoute ; minutes plafonnées…
-- [ ] **B12** — Tracker local : pauses non gérées, temps mural incluant les pauses, seek compté comme écoute
-- [ ] **B13** — Import Rekordbox : horodatage = heure de l'import, réimport complet à chaque synchro, `master.db`…
-- [ ] **B14** — Requêtes de stats : comparaisons de chaînes de dates hétérogènes, heatmap qui échoue sur une seule ligne…
-- [ ] **B15** — Import JSON Spotify : fichier entier transmis en chaîne par IPC, sans transaction, dédoublonnage par scan…
-- [ ] **B16** — Inversion d'ordre des verrous entre `spotify_disconnect` et le poller : deadlock possible qui gèle toute…
-- [ ] **B17** — Rafraîchissement du jeton Spotify : échec silencieux, jeton périmé renvoyé, course entre poller et commandes
-- [ ] **B18** — Serveur OAuth permanent sur 127.0.0.1:8888, `state` non imposé, paramètres reflétés dans le HTML de réponse
+- [x] **C9** — La « réparation » Spotify réécrit chaque écoute de moins de 30 s en écoute complète, à chaque démarrage — _les écoutes déjà « réparées » par les versions précédentes ne peuvent pas être restaurées (voir question ouverte sur l’historique Spotify)_
+- [x] **C10** — Double comptage Spotify : le poller live et la synchro « recently played » enregistrent la même écoute, et… — _l’historique Spotify déjà en double n’est pas nettoyé automatiquement (décision du propriétaire)_
+- [x] **B11** — Tracker Mixed In Key : « fichier ouvert dans `lsof` » est compté comme une écoute ; minutes plafonnées… — _suivi désactivé par défaut, activable dans Crate Pulse ; pas de détection fiable de la lecture MIK_
+- [x] **B12** — Tracker local : pauses non gérées, temps mural incluant les pauses, seek compté comme écoute
+- [x] **B13** — Import Rekordbox : horodatage = heure de l'import, réimport complet à chaque synchro, `master.db`… — _`master.db` de Rekordbox 6/7 reste illisible (chiffré) : l’import XML est la voie supportée_
+- [x] **B14** — Requêtes de stats : comparaisons de chaînes de dates hétérogènes, heatmap qui échoue sur une seule ligne…
+- [x] **B15** — Import JSON Spotify : fichier entier transmis en chaîne par IPC, sans transaction, dédoublonnage par scan… — _le fichier JSON transite encore en texte par l’IPC (acceptable pour un usage perso)_
+- [x] **B16** — Inversion d'ordre des verrous entre `spotify_disconnect` et le poller : deadlock possible qui gèle toute…
+- [x] **B17** — Rafraîchissement du jeton Spotify : échec silencieux, jeton périmé renvoyé, course entre poller et commandes
+- [x] **B18** — Serveur OAuth permanent sur 127.0.0.1:8888, `state` non imposé, paramètres reflétés dans le HTML de réponse
 
 ### Étape 7 — Fonctions DJ exactes
 
@@ -128,7 +128,7 @@ _Critère de sortie : Touche 3 = cue 3, recherche « You'll », XML valide._
 - [ ] **B31** — `StartupFile` : course au démarrage, plusieurs fichiers ouverts s'écrasent
 - [ ] **B32** — `delete_tracks_and_files` : corbeille via `osascript` par fichier, échecs silencieux, suppression…
 - [ ] **B33** — I/O bloquantes, sous-processus (`beatportdl`, `lsof`, `osascript`) et rusqlite sous `std::sync::Mutex`…
-- [ ] **B34** — Services instanciés deux fois : l'état géré par Tauri n'est pas celui des tâches de fond
+- [x] **B34** — Services instanciés deux fois : l'état géré par Tauri n'est pas celui des tâches de fond
 - [ ] **B35** — `get_duplicate_count` lance un scan complet des doublons à chaque événement `duplicates-updated`
 - [ ] **F1** — Touches 1 à 8 capturées partout, sans condition de vue ni de modificateur
 - [ ] **F2** — Espace en vue Player lance un titre récent au lieu de mettre en pause la préécoute ; logique dupliquée
@@ -218,3 +218,4 @@ _Critère de sortie : App en anglais : aucune chaîne française._
 | 2026-09-26 | Session Beatport dans le Trousseau, fin du scraping DJ.Studio, secret Spotify jamais renvoyé au webview | 3 |
 | 2026-09-26 | Upgrader sûr : dossier isolé, remplacement en place, FLAC décodé en entier, scoring corrigé | 4 |
 | 2026-09-26 | Synchro Mixed In Key incrémentale et idempotente, cues stables, import/Serato/énergie corrigés | 5 |
+| 2026-09-26 | Statistiques justes : une écoute Spotify = une ligne, pauses exclues, sets Rekordbox datés | 6 |
