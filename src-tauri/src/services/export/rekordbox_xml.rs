@@ -212,11 +212,12 @@ impl ExportService {
             let label = xml_escape(track.label.as_deref().unwrap_or(""));
             let key = xml_escape(track.key.as_deref().unwrap_or(""));
             let total_time_secs = track.duration_ms.max(0) / 1000;
-            let bpm_str = track.bpm.map(|b| format!("{:.2}", b)).unwrap_or_else(|| "120.00".to_string());
-            let bitrate = track.bitrate.unwrap_or(320);
-            let sample_rate = track.sample_rate.unwrap_or(44100);
+            // Unknown values stay unknown (0) instead of inventing 120 BPM / 320 kbps.
+            let bpm_str = track.bpm.map(|b| format!("{:.2}", b)).unwrap_or_else(|| "0.00".to_string());
+            let bitrate = track.bitrate.unwrap_or(0);
+            let sample_rate = track.sample_rate.unwrap_or(0);
             let year = track.year.map(|y| y.to_string()).unwrap_or_default();
-            let location = file_path_to_url(&track.file_path);
+            let location = xml_escape(&file_path_to_url(&track.file_path));
 
             xml.push_str(&format!(
                 "    <TRACK TrackID=\"{}\" Name=\"{}\" Artist=\"{}\" Album=\"{}\" Genre=\"{}\" Label=\"{}\" \
@@ -234,13 +235,7 @@ impl ExportService {
 
             if let Some(cues) = cues_by_track.get(&track.id) {
                 for cue in cues {
-                    let start_secs = cue.position_ms as f64 / 1000.0;
-                    let cue_num = cue.hot_cue_index.map(|i| (i - 1).max(0)).unwrap_or(0);
-                    let cue_name = xml_escape(cue.name.as_deref().unwrap_or("Cue"));
-                    xml.push_str(&format!(
-                        "      <POSITION_MARK Name=\"{}\" Type=\"0\" Start=\"{:.3}\" Num=\"{}\" Red=\"40\" Green=\"220\" Blue=\"180\" />\n",
-                        cue_name, start_secs, cue_num
-                    ));
+                    xml.push_str(&position_mark(cue));
                 }
             }
 
@@ -288,21 +283,117 @@ fn xml_escape(s: &str) -> String {
         .replace('\'', "&apos;")
 }
 
+/// `file://localhost/...` URL as Rekordbox writes it: UTF-8 bytes percent-encoded, keeping only
+/// unreserved characters and `/` literal (so `&`, `#`, `%`, spaces and accents are all encoded).
 fn file_path_to_url(path_str: &str) -> String {
     let clean = path_str.replace('\\', "/");
-    let encoded: String = clean
-        .chars()
-        .map(|c| match c {
-            ' ' => "%20".to_string(),
-            '#' => "%23".to_string(),
-            '%' => "%25".to_string(),
-            _ => c.to_string(),
-        })
-        .collect();
-
+    let mut encoded = String::with_capacity(clean.len() + 16);
+    for byte in clean.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' | b'/' => encoded.push(byte as char),
+            _ => encoded.push_str(&format!("%{byte:02X}")),
+        }
+    }
     if encoded.starts_with('/') {
-        format!("file://localhost{}", encoded)
+        format!("file://localhost{encoded}")
     } else {
-        format!("file://localhost/{}", encoded)
+        format!("file://localhost/{encoded}")
+    }
+}
+
+/// One `POSITION_MARK`: hot cues use `Num` 0–7, memory cues `Num="-1"`, loops `Type="4"` with `End`.
+fn position_mark(cue: &Cue) -> String {
+    let start_secs = cue.position_ms.max(0) as f64 / 1000.0;
+    let name = xml_escape(cue.name.as_deref().unwrap_or(""));
+    let num = match (&cue.cue_type, cue.hot_cue_index) {
+        (CueType::Memory, _) | (_, None) => -1,
+        (_, Some(index)) => index.clamp(0, 7),
+    };
+    let (mark_type, end) = match (&cue.cue_type, cue.loop_end_ms) {
+        (CueType::Loop, Some(end_ms)) if end_ms > cue.position_ms => {
+            ("4", format!(" End=\"{:.3}\"", end_ms as f64 / 1000.0))
+        }
+        _ => ("0", String::new()),
+    };
+    let colour = cue
+        .color
+        .as_deref()
+        .and_then(parse_hex_colour)
+        .filter(|_| num >= 0)
+        .map(|(r, g, b)| format!(" Red=\"{r}\" Green=\"{g}\" Blue=\"{b}\""))
+        .unwrap_or_default();
+    format!("      <POSITION_MARK Name=\"{name}\" Type=\"{mark_type}\" Start=\"{start_secs:.3}\"{end} Num=\"{num}\"{colour} />\n")
+}
+
+fn parse_hex_colour(hex: &str) -> Option<(u8, u8, u8)> {
+    let hex = hex.trim().trim_start_matches('#');
+    if hex.len() != 6 {
+        return None;
+    }
+    let channel = |i: usize| u8::from_str_radix(&hex[i..i + 2], 16).ok();
+    Some((channel(0)?, channel(2)?, channel(4)?))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn cue(cue_type: CueType, hot: Option<i32>, loop_end: Option<i64>) -> Cue {
+        Cue {
+            id: "c".into(),
+            track_id: "t".into(),
+            position_ms: 32_500,
+            cue_type,
+            loop_end_ms: loop_end,
+            hot_cue_index: hot,
+            name: Some("Drop & Build".into()),
+            color: Some("#CC0000".into()),
+        }
+    }
+
+    #[test]
+    fn test_location_is_percent_encoded() {
+        assert_eq!(
+            file_path_to_url("/Music/Rock & Roll/Café #1 100%.mp3"),
+            "file://localhost/Music/Rock%20%26%20Roll/Caf%C3%A9%20%231%20100%25.mp3"
+        );
+    }
+
+    #[test]
+    fn test_position_marks_follow_rekordbox_numbering() {
+        let hot = position_mark(&cue(CueType::Hot, Some(2), None));
+        assert!(hot.contains(r#"Num="2""#) && hot.contains(r#"Red="204""#), "{hot}");
+        assert!(hot.contains("Drop &amp; Build"), "names are escaped");
+        let memory = position_mark(&cue(CueType::Memory, None, None));
+        assert!(memory.contains(r#"Num="-1""#), "{memory}");
+        let looped = position_mark(&cue(CueType::Loop, None, Some(40_500)));
+        assert!(looped.contains(r#"Type="4""#) && looped.contains(r#"End="40.500""#), "{looped}");
+    }
+
+    #[test]
+    fn test_exported_xml_parses_with_special_characters() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        conn.execute_batch(
+            "INSERT INTO tracks (id, file_path, title, artist, format, duration_ms, date_added, date_modified)
+               VALUES ('t1', '/Music/Tom & Jerry <live> \"quoted\".mp3', 'A & B', 'C < D', 'mp3', 200000, '2026-01-01', '2026-01-01');
+             INSERT INTO cues (id, track_id, position_ms, type, hot_cue_index, name) VALUES ('c1', 't1', 1000, 'memory', NULL, 'M & M');",
+        )
+        .unwrap();
+        let service = ExportService::new(std::sync::Arc::new(std::sync::Mutex::new(conn)));
+        let path = std::env::temp_dir().join(format!("crate_rb_{}.xml", std::process::id()));
+        service.export_rekordbox_xml(&path, None).unwrap();
+        let xml = std::fs::read_to_string(&path).unwrap();
+        let _ = std::fs::remove_file(&path);
+        assert!(!xml.contains(" & "), "no raw ampersand may remain");
+        assert!(xml.contains("Tom%20%26%20Jerry"), "{xml}");
+        assert!(xml.contains(r#"Num="-1""#));
+        // Every attribute value is well formed: no bare '<' or '&' inside quotes
+        let attr_re = regex::Regex::new(r#"="([^"]*)""#).unwrap();
+        for cap in attr_re.captures_iter(&xml) {
+            let value = &cap[1];
+            assert!(!value.contains('<'), "unescaped < in {value}");
+            assert!(value.split('&').skip(1).all(|rest| rest.starts_with("amp;") || rest.starts_with("lt;") || rest.starts_with("gt;") || rest.starts_with("quot;") || rest.starts_with("apos;")), "unescaped & in {value}");
+        }
     }
 }

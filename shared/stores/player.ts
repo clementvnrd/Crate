@@ -7,6 +7,7 @@ import * as standaloneApi from '../api/standalone'
 import * as libraryApi from '../api/library'
 import * as previewPlayer from '../services/previewPlayer'
 import { toastStore } from './toast'
+import { hotCueForSlot } from '../utils/cues'
 import { translate } from '../i18n'
 import {
 	getStoredNumber,
@@ -199,7 +200,8 @@ function createPlayerStore() {
 					for (let j = startIdx; j < endIdx; j++) {
 						if (waveform[j] > maxVal) maxVal = waveform[j]
 					}
-					computedBars.push(Math.max(15, Math.min(100, Math.round((maxVal / 255) * 100))))
+					// Backend peaks are already 0–100; keep a thin minimum so silence stays visible
+					computedBars.push(Math.max(4, Math.min(100, maxVal)))
 				}
 			}
 
@@ -213,7 +215,8 @@ function createPlayerStore() {
 				return {
 					...s,
 					currentCues: cues || [],
-					waveformBars: computedBars.length > 0 ? computedBars : s.waveformBars,
+					// No waveform (undecodable file): clear the previous track's bars instead of keeping them
+					waveformBars: computedBars,
 					currentTrack: s.currentTrack ? { ...s.currentTrack, waveform_data: waveform } : null,
 				}
 			})
@@ -1115,16 +1118,10 @@ function createPlayerStore() {
 		},
 
 		/**
-		 * Jump directly to Hot Cue 1-8
+		 * Jump to the hot cue of pad 1–8 (key 1 → slot 0 … key 8 → slot 7). An empty pad does nothing.
 		 */
-		async jumpToCueIndex(index: number) {
-			const state = getState()
-			const cue = state.currentCues.find(
-				(c) =>
-					c.hot_cue_index === index ||
-					c.hot_cue_index === index - 1 ||
-					c.hot_cue_index === index + 1
-			) || state.currentCues[index] || state.currentCues[index - 1]
+		async jumpToCueIndex(padNumber: number) {
+			const cue = hotCueForSlot(getState().currentCues, padNumber - 1)
 			if (cue && typeof cue.position_ms === 'number') {
 				await this.seek(cue.position_ms)
 			}

@@ -343,18 +343,33 @@ struct AudioPlayer {
 }
 
 impl AudioPlayer {
-    /// Calculate the current playback position based on elapsed time
+    /// Current playback position.
+    ///
+    /// At normal speed this is rodio's own position (samples actually consumed by the output,
+    /// kept exact across seeks). With a tempo change rodio reports output time rather than the
+    /// position in the recording, so the elapsed wall-clock time × speed is used instead.
+    /// A track that finished playing reports its full duration instead of a stale position.
     fn get_current_position_ms(&self) -> u64 {
-        if let Some(started) = self.started_at {
-            if !self.sink.is_paused() && !self.sink.empty() {
-                let elapsed = started.elapsed().as_millis() as u64;
-                let position =
-                    self.started_position_ms + (elapsed as f64 * self.speed as f64) as u64;
-                // Don't exceed duration
-                return position.min(self.state.duration_ms);
-            }
+        let Some(started) = self.started_at else {
+            return self.state.position_ms;
+        };
+        if self.sink.empty() {
+            return self.state.duration_ms.max(self.state.position_ms);
         }
-        self.state.position_ms
+        if self.sink.is_paused() {
+            return self.state.position_ms;
+        }
+        let position = if (self.speed - 1.0).abs() < f32::EPSILON {
+            self.sink.get_pos().as_millis() as u64
+        } else {
+            let elapsed = started.elapsed().as_millis() as u64;
+            self.started_position_ms + (elapsed as f64 * self.speed as f64) as u64
+        };
+        if self.state.duration_ms > 0 {
+            position.min(self.state.duration_ms)
+        } else {
+            position
+        }
     }
 }
 

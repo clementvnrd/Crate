@@ -5,7 +5,7 @@ Ce fichier est **la** source de vérité du suivi : chaque défaut du [registre]
 Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ = précision ou reste à faire. Le tableau de progression se recalcule avec `yarn suivi`.
 
 <!-- progression:start -->
-**Progression globale : 43 / 106 défauts corrigés (41 %)**
+**Progression globale : 48 / 106 défauts corrigés (45 %)**
 
 | Étape | Corrigés | Progression |
 | --- | --- | --- |
@@ -15,7 +15,7 @@ Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ =
 | Étape 4 — Upgrader sûr | 9 / 9 | ██████████ |
 | Étape 5 — Mixed In Key propre | 8 / 8 | ██████████ |
 | Étape 6 — Statistiques justes | 10 / 10 | ██████████ |
-| Étape 7 — Fonctions DJ exactes | 1 / 18 | █░░░░░░░░░ |
+| Étape 7 — Fonctions DJ exactes | 6 / 18 | ███░░░░░░░ |
 | Étape 8 — Frontend robuste | 2 / 17 | █░░░░░░░░░ |
 | Étape 9 — Hygiène et outillage | 0 / 14 | ░░░░░░░░░░ |
 | Étape 10 — Fondations visuelles | 0 / 5 | ░░░░░░░░░░ |
@@ -116,14 +116,14 @@ _Critère de sortie : Une écoute = une ligne, pauses exclues._
 
 _Critère de sortie : Touche 3 = cue 3, recherche « You'll », XML valide._
 
-- [ ] **C11** — Hot cues décalés d'un cran : le backend indexe en base 1, le front accepte index, index−1 et index+1 ; le…
-- [ ] **C12** — Export Rekordbox XML invalide dès qu'un chemin contient `&`, `"` ou `<` ; URL non encodée pour les…
+- [x] **C11** — Hot cues décalés d'un cran : le backend indexe en base 1, le front accepte index, index−1 et index+1 ; le… — _les cues existants sont convertis en base 0 automatiquement à la prochaine synchro Mixed In Key_
+- [x] **C12** — Export Rekordbox XML invalide dès qu'un chemin contient `&`, `"` ou `<` ; URL non encodée pour les…
 - [ ] **C13** — Régression : `loadTracks()` sans argument réutilise le filtre courant
 - [ ] **C14** — Régression : glisser un tag sur un titre ne fait plus rien (`data-track-id` retiré)
 - [ ] **C15** — Le moteur Rust et la préécoute HTML peuvent jouer en même temps
-- [ ] **B27** — Aucun code n'écrit `waveform_data` : la waveform affichée est toujours le motif factice de 64 barres
-- [ ] **B28** — FTS5 : la sanitisation rend introuvables les titres avec apostrophe, tiret ou slash, et `AND`, `OR`, `NOT`…
-- [ ] **B29** — Position de lecture = horloge murale × vitesse, périmée en fin de piste (pas d'horloge CoreAudio…
+- [x] **B27** — Aucun code n'écrit `waveform_data` : la waveform affichée est toujours le motif factice de 64 barres — _calcul à la demande (86 ms pour un MP3 de 2,4 Mo), mis en cache_
+- [x] **B28** — FTS5 : la sanitisation rend introuvables les titres avec apostrophe, tiret ou slash, et `AND`, `OR`, `NOT`…
+- [x] **B29** — Position de lecture = horloge murale × vitesse, périmée en fin de piste (pas d'horloge CoreAudio… — _position rodio exacte à vitesse normale ; estimation horloge × vitesse conservée quand le tempo est modifié_
 - [ ] **B30** — Associations de fichiers en `rank: Default` avec le parapluie `public.audio` ; bundle `com.crate.app`…
 - [ ] **B31** — `StartupFile` : course au démarrage, plusieurs fichiers ouverts s'écrasent
 - [ ] **B32** — `delete_tracks_and_files` : corbeille via `osascript` par fichier, échecs silencieux, suppression…

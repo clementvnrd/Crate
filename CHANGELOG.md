@@ -72,6 +72,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **[B34]** Le service Mixed In Key appelé par l'interface est la même instance que le worker de fond.
 - Tests : 11 nouveaux tests (pauses, durée totale mise à jour, fin de piste, temps écouté plafonné, dates d'export, échappement HTML, heatmap tolérante, filtre 7 jours avec fuseau, import par lot, import XML Rekordbox idempotent).
 
+#### Corrigé — fonctions DJ
+
+- **[C11]** Hot cues : numérotation unique en base 0 (A = 0 … H = 7) comme l'amont et Rekordbox, dans la synchro Mixed In Key, le parseur Serato et la lecture des fichiers externes. Côté interface, un utilitaire partagé (`shared/utils/cues.ts`) associe pad ↔ cue : la touche 3 déclenche le cue 3 (et non plus le 2), un cue mémoire n'occupe plus de pad, les repères de la waveform affichent 1–8 pour les hot cues et « M » pour les cues mémoire. Les cues déjà en base sont convertis automatiquement à la prochaine synchro.
+- **[C12]** Export Rekordbox XML valide : chemins `Location` entièrement percent-encodés en UTF-8 (`&`, `#`, `%`, espaces, accents) puis échappés, cues mémoire exportés avec `Num="-1"` (et non plus comme hot cue A), boucles en `Type="4"` avec `End`, couleur des cues reprise, plus de BPM (120) ni de débit (320) inventés pour les valeurs inconnues.
+- **[B27]** Waveform réelle : les pics sont calculés depuis le fichier audio au premier affichage (symphonia, 400 barres, ~90 ms pour un MP3 de 2,4 Mo) puis mis en cache ; un fichier illisible affiche une ligne neutre au lieu d'un faux motif, et la waveform du titre précédent n'est plus conservée.
+- **[B28]** Recherche : la requête FTS5 est découpée comme l'index (« You'll » → `"You"* "ll"*`) ; les titres avec apostrophe, tiret ou slash (« You'll », « Jay-Z », « AC/DC ») sont de nouveau trouvés, et `AND`, `OR`, `NOT` tapés en majuscules ne font plus échouer la liste.
+- **[B29]** Position de lecture : position exacte de rodio (`Sink::get_pos`) à vitesse normale ; en fin de piste la position n'est plus figée sur une valeur ancienne.
+- Tests : 9 nouveaux tests Rust (recherche, encodage des chemins, marques de cue, XML valide avec caractères spéciaux, pics de waveform) et 3 tests Vitest (pads de hot cues).
+
 #### Documentation
 
 - **[L6]** Le README annonce désormais les 15 langues réellement livrées (au lieu de 11) et décrit le fork, les tests et le suivi.

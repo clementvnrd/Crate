@@ -7,6 +7,7 @@ pub mod mik_db;
 mod query;
 mod relocation;
 mod update;
+pub mod waveform;
 
 pub use macos_bookmark::*;
 pub use mik::*;

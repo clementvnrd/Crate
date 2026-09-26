@@ -292,7 +292,7 @@ impl MikService {
                         .map(str::to_string);
 
                     if (0..=7).contains(&index) {
-                        let mut cue = Cue::new_hot(track_id.to_string(), pos_ms, (index as i32) + 1);
+                        let mut cue = Cue::new_hot(track_id.to_string(), pos_ms, index as i32);
                         cue.name = name.or_else(|| Some(format!("Hot Cue {}", index + 1)));
                         cue.color = Some(color);
                         cues.push(cue);
@@ -474,10 +474,10 @@ mod tests {
         let cues = MikService::parse_serato_markers(&payload, "track");
 
         assert_eq!(cues.len(), 2);
-        assert_eq!((cues[0].hot_cue_index, cues[0].position_ms), (Some(1), 1_234));
+        assert_eq!((cues[0].hot_cue_index, cues[0].position_ms), (Some(0), 1_234));
         assert_eq!(cues[0].name.as_deref(), Some("Intro"));
         assert_eq!(cues[0].color.as_deref(), Some("#CC0000"));
-        assert_eq!((cues[1].hot_cue_index, cues[1].position_ms), (Some(4), 95_500));
+        assert_eq!((cues[1].hot_cue_index, cues[1].position_ms), (Some(3), 95_500));
         assert_eq!(cues[1].name.as_deref(), Some("Drop"));
     }
 

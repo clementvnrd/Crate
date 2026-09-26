@@ -27,21 +27,7 @@ impl LibraryService {
             if let Some(ref search) = filter.search {
                 let trimmed = search.trim();
                 if !trimmed.is_empty() {
-                    let sanitized_terms: Vec<String> = trimmed
-                        .split_whitespace()
-                        .map(|word| {
-                            let clean: String = word.chars().filter(|c| c.is_alphanumeric()).collect();
-                            if clean.is_empty() {
-                                String::new()
-                            } else {
-                                format!("{clean}*")
-                            }
-                        })
-                        .filter(|s| !s.is_empty())
-                        .collect();
-
-                    if !sanitized_terms.is_empty() {
-                        let fts_match = sanitized_terms.join(" ");
+                    if let Some(fts_match) = fts_query(trimmed) {
                         let p_idx = params.len() + 1;
                         conditions.push(format!(
                             "t.rowid IN (SELECT rowid FROM tracks_fts WHERE tracks_fts MATCH ?{p_idx})"
@@ -254,18 +240,33 @@ impl LibraryService {
         Ok(tracks)
     }
 
-    /// Load full waveform data on demand when playing/previewing a track
+    /// Waveform overview of a track (bars 0–100). Computed from the audio file the first time and
+    /// cached in `waveform_data`; the file is decoded without holding the library lock.
     pub fn get_track_waveform(&self, track_id: &str) -> Result<Option<Vec<u8>>> {
-        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-        let waveform: Option<Vec<u8>> = conn
-            .query_row(
-                "SELECT waveform_data FROM tracks WHERE id = ?1",
+        let (cached, file_path): (Option<Vec<u8>>, Option<String>) = {
+            let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+            conn.query_row(
+                "SELECT waveform_data, file_path FROM tracks WHERE id = ?1",
                 rusqlite::params![track_id],
-                |r| r.get(0),
+                |r| Ok((r.get(0)?, r.get(1)?)),
             )
-            .ok()
-            .flatten();
-        Ok(waveform)
+            .unwrap_or((None, None))
+        };
+        if let Some(waveform) = cached.filter(|w| !w.is_empty()) {
+            return Ok(Some(waveform));
+        }
+        let Some(file_path) = file_path else { return Ok(None) };
+
+        let Some(peaks) = super::waveform::compute_peaks(std::path::Path::new(&file_path), super::waveform::WAVEFORM_BARS) else {
+            return Ok(None);
+        };
+        // Local cache only: waveform_data is not a synced column, so no HLC / dirty marking.
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        conn.execute(
+            "UPDATE tracks SET waveform_data = ?1 WHERE id = ?2",
+            rusqlite::params![peaks, track_id],
+        )?;
+        Ok(Some(peaks))
     }
 
     /// Retrieve Hot Cues and Memory Cues for a track (both from Crate DB and Mixed In Key)
@@ -311,7 +312,7 @@ impl LibraryService {
             if let Ok(mik_songs) = crate::services::library::MikDatabaseService::read_all_songs() {
                 if let Some(song) = mik_songs.into_iter().find(|s| s.file_path.as_ref() == Some(&external_path)) {
                     for (idx, mc) in song.cues.into_iter().enumerate() {
-                        let hot_idx = (idx as i32) + 1;
+                        let hot_idx = idx as i32;
                         cues.push(Cue {
                             id: format!("mik-{}-{}", song.z_pk, mc.z_pk),
                             track_id: track_id_or_path.to_string(),
@@ -319,7 +320,7 @@ impl LibraryService {
                             cue_type: CueType::Hot,
                             loop_end_ms: None,
                             hot_cue_index: Some(hot_idx),
-                            name: mc.name.or_else(|| Some(format!("Hot Cue {hot_idx}"))),
+                            name: mc.name.or_else(|| Some(format!("Hot Cue {}", hot_idx + 1))),
                             color: None,
                         });
                     }
@@ -456,5 +457,67 @@ impl LibraryService {
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(CrateError::Database(e)),
         }
+    }
+}
+
+/// Builds an FTS5 query matching how the `unicode61` tokenizer indexed the text: every run of
+/// letters/digits becomes a quoted prefix term, so "You'll" → `"You"* "ll"*`, "Jay-Z" →
+/// `"Jay"* "Z"*`, "AC/DC" → `"AC"* "DC"*`. Quoting makes AND/OR/NOT/NEAR plain words.
+pub(crate) fn fts_query(search: &str) -> Option<String> {
+    let terms: Vec<String> = search
+        .split(|c: char| !c.is_alphanumeric())
+        .filter(|token| !token.is_empty())
+        .map(|token| format!("\"{token}\"*"))
+        .collect();
+    if terms.is_empty() {
+        None
+    } else {
+        Some(terms.join(" "))
+    }
+}
+
+#[cfg(test)]
+mod fts_tests {
+    use super::*;
+
+    fn library_with(titles: &[(&str, &str)]) -> LibraryService {
+        let conn = Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        for (i, (title, artist)) in titles.iter().enumerate() {
+            conn.execute(
+                "INSERT INTO tracks (id, file_path, title, artist, format, duration_ms, date_added, date_modified)
+                 VALUES (?1, ?2, ?3, ?4, 'mp3', 1000, '2026-01-01', '2026-01-01')",
+                rusqlite::params![format!("t{i}"), format!("/m/{i}.mp3"), title, artist],
+            )
+            .unwrap();
+        }
+        LibraryService::new(Arc::new(Mutex::new(conn)), std::env::temp_dir())
+    }
+
+    fn search(lib: &LibraryService, q: &str) -> Vec<String> {
+        let filter = TrackFilter { search: Some(q.to_string()), ..Default::default() };
+        lib.get_tracks(Some(filter)).unwrap().into_iter().filter_map(|t| t.title).collect()
+    }
+
+    #[test]
+    fn test_search_handles_apostrophes_dashes_slashes_and_operators() {
+        let lib = library_with(&[
+            ("You'll Never Walk Alone", "Gerry"),
+            ("Empire State of Mind", "Jay-Z"),
+            ("Thunderstruck", "AC/DC"),
+            ("Black AND White", "Band"),
+        ]);
+        assert_eq!(search(&lib, "You'll"), vec!["You'll Never Walk Alone"]);
+        assert_eq!(search(&lib, "jay-z"), vec!["Empire State of Mind"]);
+        assert_eq!(search(&lib, "AC/DC"), vec!["Thunderstruck"]);
+        assert_eq!(search(&lib, "AND"), vec!["Black AND White"], "an operator keyword is a plain word");
+        assert_eq!(search(&lib, "thund"), vec!["Thunderstruck"], "prefix search still works");
+        assert!(search(&lib, "\"").len() == 4, "punctuation-only search does not filter or fail");
+    }
+
+    #[test]
+    fn test_fts_query_quotes_every_token() {
+        assert_eq!(fts_query("You'll").as_deref(), Some("\"You\"* \"ll\"*"));
+        assert_eq!(fts_query("  -- ").as_deref(), None);
     }
 }

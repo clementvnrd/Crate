@@ -305,7 +305,8 @@ impl MikDatabaseService {
         for (idx, mik_cue) in mik_cues.iter().enumerate() {
             let cue_id = format!("{prefix}{idx}");
             let pos_ms = (mik_cue.time_secs * 1000.0).max(0.0).round() as i64;
-            let hot_index = (idx as i32) + 1;
+            // Hot cue slots are 0-based everywhere in Crate (A = 0 … H = 7), like upstream and Rekordbox.
+            let hot_index = idx as i32;
             let name = mik_cue
                 .name
                 .clone()

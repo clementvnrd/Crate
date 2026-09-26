@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { hotCuePads, cueMarkerLabel } from '$shared/utils/cues'
 	import { onMount } from 'svelte'
 	import {
 		playerStore,
@@ -136,30 +137,16 @@
 	)
 
 	// Waveform bars (decoded audio waveform if available, or fallback to simulated 64-bar pattern)
-	const defaultWaveformBars = [
-		20, 35, 50, 45, 60, 80, 75, 90, 85, 100, 95, 70, 60, 75, 85, 90,
-		65, 80, 95, 100, 85, 70, 60, 75, 85, 90, 95, 100, 80, 65, 50, 70,
-		85, 90, 100, 95, 80, 75, 90, 85, 70, 60, 75, 85, 90, 80, 65, 70,
-		85, 95, 100, 90, 80, 70, 60, 50, 65, 80, 75, 60, 45, 35, 25, 15
-	]
+	// Neutral flat line while the waveform loads or when the file cannot be decoded
+	// (never a fake pattern that looks like real audio).
+	const defaultWaveformBars = Array.from({ length: 64 }, () => 6)
 
 	const activeWaveformBars = $derived(
 		$currentWaveformBars && $currentWaveformBars.length > 0 ? $currentWaveformBars : defaultWaveformBars
 	)
 
-	// 8 Hot Cue slots
-	const cuePads = $derived.by(() => {
-		return Array.from({ length: 8 }, (_, idx) => {
-			const cueNum = idx + 1
-			const found = $currentCues.find(
-				(c: Cue) => c.hot_cue_index === cueNum || c.hot_cue_index === idx
-			) || $currentCues[idx]
-			return {
-				slot: cueNum,
-				cue: found || null,
-			}
-		})
-	})
+	// 8 Hot Cue pads (slot 0–7, label 1–8); memory cues never take a pad
+	const cuePads = $derived(hotCuePads($currentCues).map((pad) => ({ slot: pad.label, cue: pad.cue })))
 
 	async function handleCuePadClick(slot: number, cue: Cue | null) {
 		if (cue) {
@@ -551,7 +538,7 @@
 									{#if effectiveDuration > 0}
 										{#each $currentCues as cue, idx}
 											{@const cuePercent = Math.min(100, Math.max(0, (cue.position_ms / effectiveDuration) * 100))}
-											{@const cueNum = cue.hot_cue_index != null ? cue.hot_cue_index : idx + 1}
+											{@const cueNum = cueMarkerLabel(cue)}
 											<!-- svelte-ignore a11y_click_events_have_key_events -->
 											<button
 												type="button"
@@ -561,7 +548,7 @@
 													e.stopPropagation()
 													playerStore.jumpToCue(cue)
 												}}
-												title="Hot Cue {cueNum}: {cue.name || formatDuration(cue.position_ms)}"
+												title="{cue.cue_type === 'hot' ? `Hot Cue ${cueNum}` : 'Memory Cue'} : {cue.name || formatDuration(cue.position_ms)}"
 											>
 												<div class="h-3.5 w-3.5 rounded-xs bg-amber-400 text-[8px] font-black text-black flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.9)] border border-amber-200">
 													{cueNum}
