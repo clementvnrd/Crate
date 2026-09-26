@@ -160,9 +160,7 @@ describe('mikSync utils', () => {
 				total: 120,
 				errors: [],
 			}
-			expect(formatMikSyncSummary(result)).toBe(
-				'Mixed In Key Sync: 3 added, 14 updated, 2 removed (120 total in MIK)'
-			)
+			expect(formatMikSyncSummary(result)).toBe('Mixed In Key Sync: 3 added, 14 updated, 2 removed (120 total in MIK)')
 		})
 
 		it('formats summary when up to date', () => {
@@ -188,4 +186,3 @@ describe('mikSync utils', () => {
 		})
 	})
 })
-

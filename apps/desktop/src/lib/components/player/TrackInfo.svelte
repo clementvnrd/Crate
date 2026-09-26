@@ -32,9 +32,7 @@
 	const previewArtworkPath = $derived(previewInfo?.release.artwork_path ?? null)
 	const previewArtworkUrl = $derived(previewInfo?.release.artwork_url ?? null)
 
-	const beatportArtistNames = $derived(
-		beatportTrack?.artists?.map((a) => a.name).join(', ') || 'Beatport Artist'
-	)
+	const beatportArtistNames = $derived(beatportTrack?.artists?.map((a) => a.name).join(', ') || 'Beatport Artist')
 
 	function handleArtworkClick() {
 		if (
@@ -82,10 +80,7 @@
 			class={track.artwork_path ? 'cursor-zoom-in' : ''}
 		/>
 	{:else}
-		<AlbumArt
-			artworkPath={null}
-			size="md"
-		/>
+		<AlbumArt artworkPath={null} size="md" />
 	{/if}
 
 	<!-- Track info -->
@@ -100,11 +95,13 @@
 					{beatportTrack.title}
 				</button>
 				{#if beatportTrack.mix_name}
-					<span class="text-text-tertiary text-xs truncate">({beatportTrack.mix_name})</span>
+					<span class="truncate text-xs text-text-tertiary">({beatportTrack.mix_name})</span>
 				{/if}
 			</div>
-			<div class="flex items-center gap-1 text-xs text-text-secondary truncate">
-				<span class="inline-flex items-center rounded bg-emerald-500/20 px-1 py-0.2 text-[9px] font-bold text-[#00FF96]">
+			<div class="flex items-center gap-1 truncate text-xs text-text-secondary">
+				<span
+					class="py-0.2 inline-flex items-center rounded bg-emerald-500/20 px-1 text-[9px] font-bold text-[#00FF96]"
+				>
 					BP
 				</span>
 				<span class="truncate">{beatportArtistNames}</span>
@@ -150,7 +147,7 @@
 	{#if playbackSource === 'beatport' && beatportTrack}
 		<button
 			type="button"
-			class="flex-shrink-0 cursor-pointer transition-colors text-text-tertiary hover:text-red-400"
+			class="flex-shrink-0 cursor-pointer text-text-tertiary transition-colors hover:text-red-400"
 			onclick={() => beatportStore.toggleFavorite(beatportTrack)}
 			title="Favori Beatport"
 		>
@@ -177,9 +174,25 @@
 {#if showArtworkModal && ((playbackSource === 'beatport' && beatportTrack) || (playbackSource === 'preview' && previewInfo) || (playbackSource === 'standalone' && standaloneTrack) || track)}
 	<AlbumArtModal
 		open={showArtworkModal}
-		artworkPath={playbackSource === 'preview' ? previewArtworkPath : playbackSource === 'standalone' ? (standaloneTrack?.artwork_path ?? null) : (track?.artwork_path ?? null)}
-		artworkUrl={playbackSource === 'beatport' ? (beatportTrack?.artwork_url ?? null) : playbackSource === 'preview' ? previewArtworkUrl : null}
-		trackTitle={playbackSource === 'beatport' && beatportTrack ? beatportTrack.title : playbackSource === 'preview' && previewInfo && previewTrack ? previewTrack.name : playbackSource === 'standalone' && standaloneTrack ? (standaloneTrack.title || standaloneTrack.file_path.split('/').pop() || '') : track ? getTrackDisplayName(track) : ''}
+		artworkPath={playbackSource === 'preview'
+			? previewArtworkPath
+			: playbackSource === 'standalone'
+				? (standaloneTrack?.artwork_path ?? null)
+				: (track?.artwork_path ?? null)}
+		artworkUrl={playbackSource === 'beatport'
+			? (beatportTrack?.artwork_url ?? null)
+			: playbackSource === 'preview'
+				? previewArtworkUrl
+				: null}
+		trackTitle={playbackSource === 'beatport' && beatportTrack
+			? beatportTrack.title
+			: playbackSource === 'preview' && previewInfo && previewTrack
+				? previewTrack.name
+				: playbackSource === 'standalone' && standaloneTrack
+					? standaloneTrack.title || standaloneTrack.file_path.split('/').pop() || ''
+					: track
+						? getTrackDisplayName(track)
+						: ''}
 		onClose={() => (showArtworkModal = false)}
 	/>
 {/if}

@@ -136,3 +136,7 @@ core-foundation = "0.10"
 # macOS Keychain storage of third-party sessions (Beatport)
 security-framework = "3.7"
 
+# Development builds: the app's own code stays in debug (fast rebuilds), dependencies are
+# optimised so audio decoding (symphonia/rodio) and SQLCipher run smoothly in `yarn dev`.
+[profile.dev.package."*"]
+opt-level = 2

@@ -1,6 +1,12 @@
 import { writable, derived, get } from 'svelte/store'
 import { listen } from '@tauri-apps/api/event'
-import type { UpgradeMatch, UpgradeScanResult, UpgradeCountInfo, UpgradeReplacementResult, UpgradeProgress } from '../types'
+import type {
+	UpgradeMatch,
+	UpgradeScanResult,
+	UpgradeCountInfo,
+	UpgradeReplacementResult,
+	UpgradeProgress,
+} from '../types'
 import * as upgraderApi from '../api/upgrader'
 import { toastStore } from './toast'
 import { toErrorMessage } from '../utils/errors'

@@ -1,5 +1,3 @@
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
 use axum::extract::{Query, State};
 use axum::response::Html;
 use axum::routing::get;
@@ -12,6 +10,8 @@ use reqwest::Client;
 use rusqlite::{Connection, OptionalExtension};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use tauri::Emitter;
 
 use crate::error::{CrateError, Result};
@@ -66,14 +66,12 @@ struct SpotifyUserProfile {
 struct SpotifyRecentlyPlayedResponse {
     #[serde(default)]
     items: Vec<SpotifyPlayHistoryItem>,
-    next: Option<String>,
     cursors: Option<SpotifyCursors>,
 }
 
 #[derive(Debug, Deserialize)]
 struct SpotifyCursors {
     after: Option<String>,
-    before: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -128,7 +126,8 @@ impl SpotifyTrackerService {
 
     /// Generates a high-entropy PKCE code verifier (64 chars in [a-zA-Z0-9_-.~]) and computes its SHA-256 challenge.
     pub fn generate_pkce_pair() -> (String, String) {
-        const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
+        const CHARSET: &[u8] =
+            b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
         let mut rng = rand::rng();
         let verifier: String = (0..64)
             .map(|_| {
@@ -178,8 +177,11 @@ impl SpotifyTrackerService {
         let trimmed = secret.trim();
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
         if trimmed.is_empty() {
-            conn.execute("DELETE FROM settings WHERE key = 'spotify_client_secret'", [])
-                .map_err(CrateError::Database)?;
+            conn.execute(
+                "DELETE FROM settings WHERE key = 'spotify_client_secret'",
+                [],
+            )
+            .map_err(CrateError::Database)?;
         } else {
             conn.execute(
                 "INSERT INTO settings (key, value) VALUES ('spotify_client_secret', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
@@ -226,7 +228,10 @@ impl SpotifyTrackerService {
             )
             .ok();
         if verifier.is_some() {
-            let _ = conn.execute("DELETE FROM settings WHERE key = ?1", rusqlite::params![key]);
+            let _ = conn.execute(
+                "DELETE FROM settings WHERE key = ?1",
+                rusqlite::params![key],
+            );
         }
         verifier
     }
@@ -242,7 +247,10 @@ impl SpotifyTrackerService {
             )
             .ok();
         if let Some((key, verifier)) = row {
-            let _ = conn.execute("DELETE FROM settings WHERE key = ?1", rusqlite::params![key]);
+            let _ = conn.execute(
+                "DELETE FROM settings WHERE key = ?1",
+                rusqlite::params![key],
+            );
             Some(verifier)
         } else {
             None
@@ -264,7 +272,11 @@ impl SpotifyTrackerService {
     }
 
     /// Generates the Spotify OAuth2 PKCE authorization URL and stores the code verifier in SQLite keyed by state.
-    pub fn get_auth_url(&self, client_id_opt: Option<&str>, redirect_uri_opt: Option<&str>) -> Result<String> {
+    pub fn get_auth_url(
+        &self,
+        client_id_opt: Option<&str>,
+        redirect_uri_opt: Option<&str>,
+    ) -> Result<String> {
         let client_id = self.resolve_client_id(client_id_opt);
         if let Some(c) = client_id_opt {
             if !c.trim().is_empty() {
@@ -284,7 +296,8 @@ impl SpotifyTrackerService {
             *lock = Some(verifier);
         }
 
-        let scopes = "user-read-playback-state user-read-currently-playing user-read-recently-played";
+        let scopes =
+            "user-read-playback-state user-read-currently-playing user-read-recently-played";
         let encoded_redirect = percent_encode(redirect_uri);
         let encoded_scopes = percent_encode(scopes);
 
@@ -304,10 +317,16 @@ impl SpotifyTrackerService {
         redirect_uri_opt: Option<&str>,
         state: &str,
     ) -> Result<SpotifyAuthState> {
-        let verifier = self.get_and_consume_pkce_verifier(state.trim()).ok_or_else(|| {
-            CrateError::Discovery("Unknown or expired OAuth state: start the connection again from Crate".to_string())
-        })?;
-        self.exchange_code_with_verifier(code, client_id_opt, redirect_uri_opt, verifier).await
+        let verifier = self
+            .get_and_consume_pkce_verifier(state.trim())
+            .ok_or_else(|| {
+                CrateError::Discovery(
+                    "Unknown or expired OAuth state: start the connection again from Crate"
+                        .to_string(),
+                )
+            })?;
+        self.exchange_code_with_verifier(code, client_id_opt, redirect_uri_opt, verifier)
+            .await
     }
 
     pub async fn exchange_code(
@@ -320,17 +339,25 @@ impl SpotifyTrackerService {
         let trimmed_code = code.trim();
         // Support raw code or full callback URL/query string (e.g. "http://127.0.0.1:8888/callback?code=AQD...&state=xyz")
         let mut clean_code = trimmed_code;
-        let mut extracted_state: Option<String> = state_opt.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+        let mut extracted_state: Option<String> = state_opt
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
 
         if let Some(pos) = trimmed_code.find("code=") {
             let after = &trimmed_code[pos + 5..];
-            let end_pos = after.find('&').or_else(|| after.find('#')).unwrap_or(after.len());
+            let end_pos = after
+                .find('&')
+                .or_else(|| after.find('#'))
+                .unwrap_or(after.len());
             clean_code = &after[..end_pos];
         }
         if extracted_state.is_none() {
             if let Some(pos) = trimmed_code.find("state=") {
                 let after = &trimmed_code[pos + 6..];
-                let end_pos = after.find('&').or_else(|| after.find('#')).unwrap_or(after.len());
+                let end_pos = after
+                    .find('&')
+                    .or_else(|| after.find('#'))
+                    .unwrap_or(after.len());
                 let st = &after[..end_pos];
                 if !st.trim().is_empty() {
                     extracted_state = Some(st.trim().to_string());
@@ -348,7 +375,12 @@ impl SpotifyTrackerService {
         // Retrieve exact verifier matching state, or fallback to memory / latest stored
         let verifier = if let Some(ref st) = extracted_state {
             self.get_and_consume_pkce_verifier(st)
-                .or_else(|| self.pending_code_verifier.lock().ok().and_then(|mut l| l.take()))
+                .or_else(|| {
+                    self.pending_code_verifier
+                        .lock()
+                        .ok()
+                        .and_then(|mut l| l.take())
+                })
                 .or_else(|| self.get_latest_pkce_verifier())
                 .unwrap_or_default()
         } else {
@@ -360,7 +392,8 @@ impl SpotifyTrackerService {
                 .unwrap_or_default()
         };
 
-        self.exchange_code_with_verifier(clean_code, client_id_opt, redirect_uri_opt, verifier).await
+        self.exchange_code_with_verifier(clean_code, client_id_opt, redirect_uri_opt, verifier)
+            .await
     }
 
     async fn exchange_code_with_verifier(
@@ -525,10 +558,15 @@ impl SpotifyTrackerService {
     /// Refreshes are serialized (the background sync and a UI command cannot refresh at the same
     /// time with the same single-use refresh token). A failed refresh of an expired token is an
     /// error instead of silently returning the stale token.
-    pub async fn get_valid_access_token(&self, client_id_opt: Option<&str>) -> Result<Option<String>> {
+    pub async fn get_valid_access_token(
+        &self,
+        client_id_opt: Option<&str>,
+    ) -> Result<Option<String>> {
         let _refresh_guard = self.refresh_lock.lock().await;
         // Re-read after acquiring the lock: another task may just have refreshed.
-        let Some((access_token, refresh_token, expires_at, is_connected)) = self.read_stored_tokens()? else {
+        let Some((access_token, refresh_token, expires_at, is_connected)) =
+            self.read_stored_tokens()?
+        else {
             return Ok(None);
         };
         if !is_connected || access_token.is_empty() {
@@ -550,27 +588,35 @@ impl SpotifyTrackerService {
         if let Some(ref secret) = client_secret {
             params.push(("client_secret", secret.clone()));
         }
-        let mut req = self.http_client.post("https://accounts.spotify.com/api/token").form(&params);
+        let mut req = self
+            .http_client
+            .post("https://accounts.spotify.com/api/token")
+            .form(&params);
         if let Some(ref secret) = client_secret {
-            let auth_header = format!("Basic {}", BASE64_STANDARD.encode(format!("{client_id}:{secret}")));
+            let auth_header = format!(
+                "Basic {}",
+                BASE64_STANDARD.encode(format!("{client_id}:{secret}"))
+            );
             req = req.header("Authorization", auth_header);
         }
 
         let failure = match req.send().await {
-            Ok(response) if response.status().is_success() => match response.json::<SpotifyTokenResponse>().await {
-                Ok(token_data) => {
-                    let new_expires_at = now_sec + token_data.expires_in;
-                    let new_refresh_token = token_data.refresh_token.unwrap_or(refresh_token);
-                    let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-                    conn.execute(
+            Ok(response) if response.status().is_success() => {
+                match response.json::<SpotifyTokenResponse>().await {
+                    Ok(token_data) => {
+                        let new_expires_at = now_sec + token_data.expires_in;
+                        let new_refresh_token = token_data.refresh_token.unwrap_or(refresh_token);
+                        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+                        conn.execute(
                         "UPDATE spotify_auth SET access_token = ?1, refresh_token = ?2, expires_at = ?3 WHERE id = 'current'",
                         rusqlite::params![token_data.access_token, new_refresh_token, new_expires_at],
                     )
                     .map_err(CrateError::Database)?;
-                    return Ok(Some(token_data.access_token));
+                        return Ok(Some(token_data.access_token));
+                    }
+                    Err(e) => format!("invalid token response: {e}"),
                 }
-                Err(e) => format!("invalid token response: {e}"),
-            },
+            }
             Ok(response) => format!("HTTP {}", response.status()),
             Err(e) => format!("network error: {e}"),
         };
@@ -598,7 +644,9 @@ impl SpotifyTrackerService {
             .bearer_auth(&token)
             .send()
             .await
-            .map_err(|e| CrateError::Discovery(format!("Spotify currently-playing request failed: {e}")))?;
+            .map_err(|e| {
+                CrateError::Discovery(format!("Spotify currently-playing request failed: {e}"))
+            })?;
 
         if resp.status() == reqwest::StatusCode::NO_CONTENT {
             return Ok(None);
@@ -613,27 +661,45 @@ impl SpotifyTrackerService {
             .await
             .map_err(|e| CrateError::Discovery(format!("Invalid Spotify player JSON: {e}")))?;
 
-        let is_playing = json.get("is_playing").and_then(|v| v.as_bool()).unwrap_or(false);
+        let is_playing = json
+            .get("is_playing")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
         let progress_ms = json.get("progress_ms").and_then(|v| v.as_u64());
 
         let item = json.get("item");
-        let track_id = item.and_then(|i| i.get("id")).and_then(|v| v.as_str()).map(|s| s.to_string());
-        let title = item.and_then(|i| i.get("name")).and_then(|v| v.as_str()).map(|s| s.to_string());
-        let duration_ms = item.and_then(|i| i.get("duration_ms")).and_then(|v| v.as_u64());
+        let track_id = item
+            .and_then(|i| i.get("id"))
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+        let title = item
+            .and_then(|i| i.get("name"))
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+        let duration_ms = item
+            .and_then(|i| i.get("duration_ms"))
+            .and_then(|v| v.as_u64());
 
-        let artist = item.and_then(|i| i.get("artists")).and_then(|a| a.as_array()).and_then(|arr| {
-            let names: Vec<&str> = arr
-                .iter()
-                .filter_map(|art| art.get("name").and_then(|n| n.as_str()))
-                .collect();
-            if names.is_empty() {
-                None
-            } else {
-                Some(names.join(", "))
-            }
-        });
+        let artist = item
+            .and_then(|i| i.get("artists"))
+            .and_then(|a| a.as_array())
+            .and_then(|arr| {
+                let names: Vec<&str> = arr
+                    .iter()
+                    .filter_map(|art| art.get("name").and_then(|n| n.as_str()))
+                    .collect();
+                if names.is_empty() {
+                    None
+                } else {
+                    Some(names.join(", "))
+                }
+            });
 
-        let album = item.and_then(|i| i.get("album")).and_then(|a| a.get("name")).and_then(|v| v.as_str()).map(|s| s.to_string());
+        let album = item
+            .and_then(|i| i.get("album"))
+            .and_then(|a| a.get("name"))
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
 
         let artwork_url = item
             .and_then(|i| i.get("album"))
@@ -708,7 +774,8 @@ impl SpotifyTrackerService {
                 break;
             }
 
-            let mut url = "https://api.spotify.com/v1/me/player/recently-played?limit=50".to_string();
+            let mut url =
+                "https://api.spotify.com/v1/me/player/recently-played?limit=50".to_string();
             if let Some(after_ts) = current_after {
                 url.push_str(&format!("&after={after_ts}"));
             }
@@ -719,7 +786,9 @@ impl SpotifyTrackerService {
                 .bearer_auth(&token)
                 .send()
                 .await
-                .map_err(|e| CrateError::Discovery(format!("Spotify recently-played request failed: {e}")))?;
+                .map_err(|e| {
+                    CrateError::Discovery(format!("Spotify recently-played request failed: {e}"))
+                })?;
 
             if !resp.status().is_success() {
                 let err_text = resp.text().await.unwrap_or_default();
@@ -727,10 +796,9 @@ impl SpotifyTrackerService {
                 break;
             }
 
-            let parsed: SpotifyRecentlyPlayedResponse = resp
-                .json()
-                .await
-                .map_err(|e| CrateError::Discovery(format!("Invalid Spotify recently-played JSON: {e}")))?;
+            let parsed: SpotifyRecentlyPlayedResponse = resp.json().await.map_err(|e| {
+                CrateError::Discovery(format!("Invalid Spotify recently-played JSON: {e}"))
+            })?;
 
             if parsed.items.is_empty() {
                 break;
@@ -835,8 +903,9 @@ impl SpotifyTrackerService {
     /// - Non-empty title and artist
     /// - Formats timestamp into ISO8601 UTC
     pub fn import_streaming_history_json(&self, json_content: &str) -> Result<SpotifyImportResult> {
-        let value: serde_json::Value = serde_json::from_str(json_content)
-            .map_err(|e| CrateError::Discovery(format!("Invalid Spotify JSON history format: {e}")))?;
+        let value: serde_json::Value = serde_json::from_str(json_content).map_err(|e| {
+            CrateError::Discovery(format!("Invalid Spotify JSON history format: {e}"))
+        })?;
 
         let array = match value.as_array() {
             Some(arr) => arr,
@@ -966,18 +1035,27 @@ impl SpotifyTrackerService {
             let addr = "127.0.0.1:8888";
             match tokio::net::TcpListener::bind(addr).await {
                 Ok(listener) => {
-                    log::info!("Spotify OAuth2 callback server listening on http://{addr}/callback");
+                    log::info!(
+                        "Spotify OAuth2 callback server listening on http://{addr}/callback"
+                    );
                     let done = Arc::new(tokio::sync::Notify::new());
                     let router = Router::new()
                         .route("/callback", get(spotify_oauth_callback_handler))
-                        .with_state(SpotifyOAuthServerState { service, app_handle, done: done.clone() });
+                        .with_state(SpotifyOAuthServerState {
+                            service,
+                            app_handle,
+                            done: done.clone(),
+                        });
                     let shutdown = async move {
                         tokio::select! {
                             _ = done.notified() => {}
                             _ = tokio::time::sleep(std::time::Duration::from_secs(600)) => {}
                         }
                     };
-                    if let Err(e) = axum::serve(listener, router).with_graceful_shutdown(shutdown).await {
+                    if let Err(e) = axum::serve(listener, router)
+                        .with_graceful_shutdown(shutdown)
+                        .await
+                    {
                         log::warn!("Spotify OAuth2 callback server terminated: {e}");
                     }
                     log::info!("Spotify OAuth2 callback server stopped");
@@ -1016,7 +1094,11 @@ fn escape_html(input: &str) -> String {
 
 /// Minimal result page shown in the browser after the Spotify redirect.
 fn oauth_page(success: bool, title: &str, message: &str, detail: Option<&str>) -> Html<String> {
-    let (accent, icon) = if success { ("#1DB954", "✓") } else { ("#ef4444", "✕") };
+    let (accent, icon) = if success {
+        ("#1DB954", "✓")
+    } else {
+        ("#ef4444", "✕")
+    };
     let detail_html = detail
         .map(|d| format!(r#"<pre class="detail">{}</pre>"#, escape_html(d)))
         .unwrap_or_default();
@@ -1049,10 +1131,20 @@ async fn spotify_oauth_callback_handler(
     Query(query): Query<OAuthCallbackQuery>,
 ) -> Html<String> {
     if let Some(err) = query.error {
-        return oauth_page(false, "Connexion refusée", "L'autorisation Spotify a été refusée ou a échoué.", Some(&err));
+        return oauth_page(
+            false,
+            "Connexion refusée",
+            "L'autorisation Spotify a été refusée ou a échoué.",
+            Some(&err),
+        );
     }
     let Some(code) = query.code.filter(|c| !c.trim().is_empty()) else {
-        return oauth_page(false, "Code manquant", "Aucun code d'autorisation n'a été reçu de Spotify.", None);
+        return oauth_page(
+            false,
+            "Code manquant",
+            "Aucun code d'autorisation n'a été reçu de Spotify.",
+            None,
+        );
     };
     let Some(oauth_state) = query.state.filter(|s| !s.trim().is_empty()) else {
         return oauth_page(false, "Requête refusée", "Paramètre state absent : cette redirection ne vient pas d'une connexion lancée depuis Crate.", None);
@@ -1066,7 +1158,11 @@ async fn spotify_oauth_callback_handler(
         Ok(auth_state) => {
             let _ = state.app_handle.emit("spotify-auth-changed", &auth_state);
             state.done.notify_one();
-            let who = auth_state.user_name.clone().or(auth_state.user_id.clone()).unwrap_or_default();
+            let who = auth_state
+                .user_name
+                .clone()
+                .or(auth_state.user_id.clone())
+                .unwrap_or_default();
             oauth_page(
                 true,
                 "Spotify connecté",
@@ -1074,13 +1170,20 @@ async fn spotify_oauth_callback_handler(
                 None,
             )
         }
-        Err(e) => oauth_page(false, "Échec de l'authentification", "Impossible d'échanger le code d'autorisation avec Spotify.", Some(&e.to_string())),
+        Err(e) => oauth_page(
+            false,
+            "Échec de l'authentification",
+            "Impossible d'échanger le code d'autorisation avec Spotify.",
+            Some(&e.to_string()),
+        ),
     }
 }
 
 /// Parses an RFC 3339 timestamp into Unix milliseconds.
 fn parse_timestamp_ms(ts: &str) -> Option<i64> {
-    chrono::DateTime::parse_from_rfc3339(ts).ok().map(|dt| dt.timestamp_millis())
+    chrono::DateTime::parse_from_rfc3339(ts)
+        .ok()
+        .map(|dt| dt.timestamp_millis())
 }
 
 /// Listened time of a play that ended at `ended_ms`: the track length, capped by the time elapsed
@@ -1088,7 +1191,9 @@ fn parse_timestamp_ms(ts: &str) -> Option<i64> {
 fn listened_ms(duration_ms: u64, previous_end_ms: Option<i64>, ended_ms: Option<i64>) -> u64 {
     let full = if duration_ms > 0 { duration_ms } else { 30_000 };
     match (previous_end_ms, ended_ms) {
-        (Some(prev), Some(end)) if end > prev => full.min((end - prev) as u64).max(30_000.min(full)),
+        (Some(prev), Some(end)) if end > prev => {
+            full.min((end - prev) as u64).max(30_000.min(full))
+        }
         _ => full,
     }
 }
@@ -1124,14 +1229,27 @@ mod tests {
 
     #[test]
     fn test_history_timestamps() {
-        assert_eq!(parse_history_timestamp("2024-03-01T20:15:00Z").as_deref(), Some("2024-03-01T20:15:00+00:00"));
-        assert_eq!(parse_history_timestamp("2024-03-01 20:15").as_deref(), Some("2024-03-01T20:15:00+00:00"));
+        assert_eq!(
+            parse_history_timestamp("2024-03-01T20:15:00Z").as_deref(),
+            Some("2024-03-01T20:15:00+00:00")
+        );
+        assert_eq!(
+            parse_history_timestamp("2024-03-01 20:15").as_deref(),
+            Some("2024-03-01T20:15:00+00:00")
+        );
         assert_eq!(parse_history_timestamp("2024-03"), None);
-        assert_eq!(parse_history_timestamp("é"), None, "a short or non-ASCII value must not panic");
+        assert_eq!(
+            parse_history_timestamp("é"),
+            None,
+            "a short or non-ASCII value must not panic"
+        );
     }
 
     #[test]
     fn test_escape_html_neutralizes_reflected_parameters() {
-        assert_eq!(escape_html("<script>x</script>"), "&lt;script&gt;x&lt;/script&gt;");
+        assert_eq!(
+            escape_html("<script>x</script>"),
+            "&lt;script&gt;x&lt;/script&gt;"
+        );
     }
 }

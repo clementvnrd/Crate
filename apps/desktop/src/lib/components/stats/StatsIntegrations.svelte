@@ -162,31 +162,39 @@
 <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
 	<!-- 1. Spotify Integration Card -->
 	<div
-		class="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#1DB954]/25 bg-gradient-to-b from-[#121c15]/60 to-surface-1/80 p-5 shadow-lg backdrop-blur-xl space-y-4"
+		class="relative flex flex-col justify-between space-y-4 overflow-hidden rounded-2xl border border-[#1DB954]/25 bg-gradient-to-b from-[#121c15]/60 to-surface-1/80 p-5 shadow-lg backdrop-blur-xl"
 	>
 		<div class="space-y-4">
 			<div class="flex items-start justify-between">
 				<div class="flex items-center gap-3">
-					<div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#1DB954]/15 border border-[#1DB954]/30 text-[#1DB954] shadow-inner flex-shrink-0">
+					<div
+						class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-[#1DB954]/30 bg-[#1DB954]/15 text-[#1DB954] shadow-inner"
+					>
 						<Icon name="spotify" class="h-6 w-6 text-[#1DB954]" />
 					</div>
 					<div>
 						<div class="flex items-center gap-2">
 							<h3 class="text-sm font-bold text-text-primary">Spotify Pulse</h3>
 							{#if spotifyAuth?.is_connected}
-								<span class="inline-flex items-center gap-1 rounded-full bg-[#1DB954]/20 border border-[#1DB954]/40 px-2 py-0.5 text-[10px] font-bold text-[#1DB954]">
-									<span class="h-1.5 w-1.5 rounded-full bg-[#1DB954] animate-pulse"></span>
+								<span
+									class="inline-flex items-center gap-1 rounded-full border border-[#1DB954]/40 bg-[#1DB954]/20 px-2 py-0.5 text-[10px] font-bold text-[#1DB954]"
+								>
+									<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1DB954]"></span>
 									En direct
 								</span>
 							{:else}
-								<span class="rounded-full bg-surface-3 border border-stroke px-2 py-0.5 text-[10px] font-medium text-text-tertiary">
+								<span
+									class="bg-surface-3 rounded-full border border-stroke px-2 py-0.5 text-[10px] font-medium text-text-tertiary"
+								>
 									Non connecté
 								</span>
 							{/if}
 						</div>
-						<p class="text-[11px] text-text-secondary mt-0.5">
+						<p class="mt-0.5 text-[11px] text-text-secondary">
 							{#if spotifyAuth?.is_connected}
-								Compte associé : <strong class="text-text-primary">{spotifyAuth.user_name || spotifyAuth.user_id || 'Utilisateur'}</strong>
+								Compte associé : <strong class="text-text-primary"
+									>{spotifyAuth.user_name || spotifyAuth.user_id || 'Utilisateur'}</strong
+								>
 							{:else}
 								Écoutes en temps réel (OAuth2 PKCE)
 							{/if}
@@ -201,13 +209,13 @@
 					{#if spotifyNowPlaying.artwork_url}
 						<img src={spotifyNowPlaying.artwork_url} alt="" class="h-9 w-9 rounded-lg object-cover shadow-sm" />
 					{:else}
-						<div class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-3 text-[#1DB954]">
+						<div class="bg-surface-3 flex h-9 w-9 items-center justify-center rounded-lg text-[#1DB954]">
 							<Icon name="music-note" class="h-4 w-4" />
 						</div>
 					{/if}
 					<div class="min-w-0 flex-1">
 						<div class="flex items-center gap-1.5">
-							<span class="text-[10px] font-bold uppercase tracking-wider text-[#1DB954]">Lecture en cours</span>
+							<span class="text-[10px] font-bold tracking-wider text-[#1DB954] uppercase">Lecture en cours</span>
 							{#if spotifyNowPlaying.device_name}
 								<span class="text-[10px] text-text-tertiary">({spotifyNowPlaying.device_name})</span>
 							{/if}
@@ -224,7 +232,7 @@
 			{#if spotifyAuth?.is_connected}
 				<button
 					type="button"
-					class="flex items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer"
+					class="flex cursor-pointer items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 transition-all hover:bg-red-500/20 active:scale-95"
 					onclick={() => statsStore.disconnectSpotify()}
 				>
 					<Icon name="x" class="h-3.5 w-3.5" />
@@ -233,7 +241,7 @@
 			{:else}
 				<button
 					type="button"
-					class="flex items-center gap-1.5 rounded-xl bg-[#1DB954] px-3.5 py-1.5 text-xs font-bold text-black shadow-lg shadow-[#1DB954]/20 hover:bg-[#1ed760] active:scale-95 transition-all cursor-pointer"
+					class="flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#1DB954] px-3.5 py-1.5 text-xs font-bold text-black shadow-lg shadow-[#1DB954]/20 transition-all hover:bg-[#1ed760] active:scale-95"
 					onclick={openSpotifyConnectModal}
 				>
 					<Icon name="link" class="h-3.5 w-3.5" />
@@ -252,7 +260,7 @@
 
 			<button
 				type="button"
-				class="flex items-center gap-1.5 rounded-xl border border-stroke bg-surface-2/80 px-3 py-1.5 text-xs font-semibold text-text-primary hover:border-stroke-strong hover:bg-surface-3 active:scale-95 transition-all cursor-pointer"
+				class="hover:border-stroke-strong hover:bg-surface-3 flex cursor-pointer items-center gap-1.5 rounded-xl border border-stroke bg-surface-2/80 px-3 py-1.5 text-xs font-semibold text-text-primary transition-all active:scale-95"
 				onclick={handleTriggerFilePicker}
 				disabled={$isImportingSpotify}
 			>
@@ -269,31 +277,35 @@
 
 	<!-- 2. Rekordbox Integration Card -->
 	<div
-		class="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-red-500/25 bg-gradient-to-b from-[#1c1214]/60 to-surface-1/80 p-5 shadow-lg backdrop-blur-xl space-y-4"
+		class="relative flex flex-col justify-between space-y-4 overflow-hidden rounded-2xl border border-red-500/25 bg-gradient-to-b from-[#1c1214]/60 to-surface-1/80 p-5 shadow-lg backdrop-blur-xl"
 	>
 		<div class="space-y-4">
 			<div class="flex items-start justify-between">
 				<div class="flex items-center gap-3">
-					<div class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 shadow-inner flex-shrink-0">
+					<div
+						class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/15 text-red-400 shadow-inner"
+					>
 						<Icon name="activity" class="h-6 w-6 text-red-400" />
 					</div>
 					<div>
 						<div class="flex items-center gap-2">
 							<h3 class="text-sm font-bold text-text-primary">Rekordbox DJ</h3>
 							{#if rekordboxDetected}
-								<span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+								<span
+									class="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400"
+								>
 									<span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
 									Détecté
 								</span>
 							{:else}
-								<span class="rounded-full bg-surface-3 border border-stroke px-2 py-0.5 text-[10px] font-medium text-text-tertiary">
+								<span
+									class="bg-surface-3 rounded-full border border-stroke px-2 py-0.5 text-[10px] font-medium text-text-tertiary"
+								>
 									Non détecté
 								</span>
 							{/if}
 						</div>
-						<p class="text-[11px] text-text-secondary mt-0.5">
-							Pioneer DJ & Rekordbox 6/7
-						</p>
+						<p class="mt-0.5 text-[11px] text-text-secondary">Pioneer DJ & Rekordbox 6/7</p>
 					</div>
 				</div>
 			</div>
@@ -304,9 +316,7 @@
 					<div class="font-bold text-text-primary">{rekordboxSessions.length} sessions DJ</div>
 					<div class="text-[11px] text-text-tertiary">Sets, transitions et cue points</div>
 				</div>
-				<span class="font-mono text-[11px] font-bold text-red-400">
-					master.db
-				</span>
+				<span class="font-mono text-[11px] font-bold text-red-400"> master.db </span>
 			</div>
 		</div>
 
@@ -314,7 +324,7 @@
 		<div class="pt-1">
 			<button
 				type="button"
-				class="flex items-center gap-2 rounded-xl bg-red-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-lg shadow-red-500/20 hover:bg-red-600 active:scale-95 transition-all cursor-pointer"
+				class="flex cursor-pointer items-center gap-2 rounded-xl bg-red-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-lg shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95"
 				onclick={() => statsStore.syncRekordbox()}
 				disabled={$isSyncingRekordbox}
 			>
@@ -331,31 +341,35 @@
 
 	<!-- 3. Mixed In Key 11 Pro Integration Card -->
 	<div
-		class="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#00D2FF]/25 bg-gradient-to-b from-[#0c1a24]/60 to-surface-1/80 p-5 shadow-lg backdrop-blur-xl space-y-4"
+		class="relative flex flex-col justify-between space-y-4 overflow-hidden rounded-2xl border border-[#00D2FF]/25 bg-gradient-to-b from-[#0c1a24]/60 to-surface-1/80 p-5 shadow-lg backdrop-blur-xl"
 	>
 		<div class="space-y-4">
 			<div class="flex items-start justify-between">
 				<div class="flex items-center gap-3">
-					<div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#00D2FF]/15 border border-[#00D2FF]/30 text-[#00D2FF] shadow-inner flex-shrink-0">
+					<div
+						class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-[#00D2FF]/30 bg-[#00D2FF]/15 text-[#00D2FF] shadow-inner"
+					>
 						<Icon name="sparkles" class="h-6 w-6 text-[#00D2FF]" />
 					</div>
 					<div>
 						<div class="flex items-center gap-2">
 							<h3 class="text-sm font-bold text-text-primary">Mixed In Key 11 Pro</h3>
 							{#if mikDetected}
-								<span class="inline-flex items-center gap-1 rounded-full bg-[#00D2FF]/20 border border-[#00D2FF]/40 px-2 py-0.5 text-[10px] font-bold text-[#00D2FF]">
-									<span class="h-1.5 w-1.5 rounded-full bg-[#00D2FF] animate-pulse"></span>
+								<span
+									class="inline-flex items-center gap-1 rounded-full border border-[#00D2FF]/40 bg-[#00D2FF]/20 px-2 py-0.5 text-[10px] font-bold text-[#00D2FF]"
+								>
+									<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#00D2FF]"></span>
 									En direct
 								</span>
 							{:else}
-								<span class="rounded-full bg-surface-3 border border-stroke px-2 py-0.5 text-[10px] font-medium text-text-tertiary">
+								<span
+									class="bg-surface-3 rounded-full border border-stroke px-2 py-0.5 text-[10px] font-medium text-text-tertiary"
+								>
 									Détecteur actif
 								</span>
 							{/if}
 						</div>
-						<p class="text-[11px] text-text-secondary mt-0.5">
-							Analyse harmonique & Energy Level
-						</p>
+						<p class="mt-0.5 text-[11px] text-text-secondary">Analyse harmonique & Energy Level</p>
 					</div>
 				</div>
 			</div>
@@ -372,7 +386,8 @@
 
 		<!-- Status Label -->
 		<div class="flex items-center gap-2 pt-1 text-xs text-text-secondary">
-			<span class="inline-block h-2 w-2 rounded-full {mikDetected ? 'bg-[#00D2FF] animate-ping' : 'bg-surface-4'}"></span>
+			<span class="inline-block h-2 w-2 rounded-full {mikDetected ? 'animate-ping bg-[#00D2FF]' : 'bg-surface-4'}"
+			></span>
 			<span class="text-[11px]">
 				{#if !mikTrackerEnabled}
 					Suivi des écoutes Mixed In Key désactivé
@@ -391,7 +406,7 @@
 <!-- ========================================================================= -->
 {#if showSpotifyModal}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"
+		class="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md duration-200"
 		role="dialog"
 		aria-modal="true"
 		tabindex="-1"
@@ -403,12 +418,14 @@
 		}}
 	>
 		<div
-			class="relative w-full max-w-lg rounded-3xl border border-[#1DB954]/30 bg-[#0d1711]/95 p-6 shadow-2xl backdrop-blur-2xl text-text-primary space-y-6"
+			class="relative w-full max-w-lg space-y-6 rounded-3xl border border-[#1DB954]/30 bg-[#0d1711]/95 p-6 text-text-primary shadow-2xl backdrop-blur-2xl"
 		>
 			<!-- Header -->
 			<div class="flex items-start justify-between">
 				<div class="flex items-center gap-3">
-					<div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1DB954]/20 border border-[#1DB954]/40 text-[#1DB954] shadow-lg shadow-[#1DB954]/10">
+					<div
+						class="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#1DB954]/40 bg-[#1DB954]/20 text-[#1DB954] shadow-lg shadow-[#1DB954]/10"
+					>
 						<Icon name="spotify" class="h-7 w-7 text-[#1DB954]" />
 					</div>
 					<div>
@@ -418,7 +435,7 @@
 				</div>
 				<button
 					type="button"
-					class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-text-tertiary hover:text-white hover:bg-surface-3 transition-colors cursor-pointer"
+					class="hover:bg-surface-3 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface-2 text-text-tertiary transition-colors hover:text-white"
 					onclick={closeSpotifyModal}
 					aria-label="Fermer"
 				>
@@ -429,13 +446,16 @@
 			<!-- 3-Step Guide -->
 			<div class="space-y-3 rounded-2xl border border-stroke/50 bg-surface-1/80 p-4 text-xs">
 				<div class="flex items-start gap-3">
-					<span class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#1DB954]/20 text-[11px] font-bold text-[#1DB954]">1</span>
+					<span
+						class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#1DB954]/20 text-[11px] font-bold text-[#1DB954]"
+						>1</span
+					>
 					<div class="flex-1 space-y-1">
 						<div class="font-bold text-text-primary">Ouvrir le portail développeur Spotify</div>
 						<div class="flex items-center gap-2">
 							<button
 								type="button"
-								class="inline-flex items-center gap-1.5 rounded-lg bg-surface-3 px-2.5 py-1 text-[11px] font-medium text-emerald-400 hover:bg-surface-4 border border-emerald-500/20 transition-all cursor-pointer"
+								class="bg-surface-3 hover:bg-surface-4 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-emerald-500/20 px-2.5 py-1 text-[11px] font-medium text-emerald-400 transition-all"
 								onclick={handleOpenDeveloperDashboard}
 							>
 								<span>Spotify Developer Dashboard</span>
@@ -446,33 +466,46 @@
 				</div>
 
 				<div class="flex items-start gap-3">
-					<span class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#1DB954]/20 text-[11px] font-bold text-[#1DB954]">2</span>
+					<span
+						class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#1DB954]/20 text-[11px] font-bold text-[#1DB954]"
+						>2</span
+					>
 					<div class="flex-1 space-y-1.5">
 						<div class="font-bold text-text-primary">Créer une application gratuite</div>
 						<p class="text-[11px] text-text-secondary">
-							Nom de l'app : <strong class="text-white">Crate</strong> &middot; API : <strong class="text-white">Web API</strong>
+							Nom de l'app : <strong class="text-white">Crate</strong> &middot; API :
+							<strong class="text-white">Web API</strong>
 						</p>
 						<div class="flex items-center gap-2">
 							<span class="text-[11px] text-text-tertiary">Redirect URI :</span>
-							<code class="rounded bg-black/50 px-2 py-0.5 font-mono text-[10px] text-emerald-400 border border-emerald-500/20">
+							<code
+								class="rounded border border-emerald-500/20 bg-black/50 px-2 py-0.5 font-mono text-[10px] text-emerald-400"
+							>
 								http://127.0.0.1:8888/callback
 							</code>
 							<button
 								type="button"
-								class="rounded bg-surface-3 px-2 py-0.5 text-[10px] font-semibold text-text-primary hover:bg-surface-4 transition-colors cursor-pointer"
+								class="bg-surface-3 hover:bg-surface-4 cursor-pointer rounded px-2 py-0.5 text-[10px] font-semibold text-text-primary transition-colors"
 								onclick={handleCopyRedirectUri}
 							>
 								{isCopiedRedirectUri ? '✓ Copié' : 'Copier'}
 							</button>
 						</div>
-						<p class="text-[10.5px] text-amber-300/90 font-medium">
-							Important : Spotify exige l'adresse IP exacte <code class="rounded bg-black/40 px-1 py-0.5 font-mono text-[10px] text-amber-200">http://127.0.0.1:8888/callback</code> (et refuse <code class="line-through text-amber-400/60">localhost</code>).
+						<p class="text-[10.5px] font-medium text-amber-300/90">
+							Important : Spotify exige l'adresse IP exacte <code
+								class="rounded bg-black/40 px-1 py-0.5 font-mono text-[10px] text-amber-200"
+								>http://127.0.0.1:8888/callback</code
+							>
+							(et refuse <code class="text-amber-400/60 line-through">localhost</code>).
 						</p>
 					</div>
 				</div>
 
 				<div class="flex items-start gap-3">
-					<span class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#1DB954]/20 text-[11px] font-bold text-[#1DB954]">3</span>
+					<span
+						class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#1DB954]/20 text-[11px] font-bold text-[#1DB954]"
+						>3</span
+					>
 					<div class="flex-1">
 						<div class="font-bold text-text-primary">Coller vos identifiants Spotify ci-dessous</div>
 					</div>
@@ -482,9 +515,12 @@
 			<!-- Input Fields -->
 			<div class="space-y-4">
 				<div class="space-y-1.5">
-					<label for="spotify-client-id" class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-text-secondary">
+					<label
+						for="spotify-client-id"
+						class="flex items-center justify-between text-xs font-bold tracking-wider text-text-secondary uppercase"
+					>
 						<span>Client ID Spotify</span>
-						<span class="text-[10px] text-emerald-400 font-semibold lowercase">obligatoire</span>
+						<span class="text-[10px] font-semibold text-emerald-400 lowercase">obligatoire</span>
 					</label>
 					<div class="relative">
 						<input
@@ -492,7 +528,7 @@
 							type="text"
 							bind:value={spotifyClientIdInput}
 							placeholder="Ex: 4a2b8c9d0e1f2a3b4c5d6e7f8a9b0c1d"
-							class="w-full rounded-xl border border-stroke bg-surface-1/90 px-4 py-2.5 font-mono text-xs text-white placeholder-text-tertiary focus:border-[#1DB954] focus:outline-none focus:ring-2 focus:ring-[#1DB954]/20"
+							class="w-full rounded-xl border border-stroke bg-surface-1/90 px-4 py-2.5 font-mono text-xs text-white placeholder-text-tertiary focus:border-[#1DB954] focus:ring-2 focus:ring-[#1DB954]/20 focus:outline-none"
 							onkeydown={(e) => {
 								if (e.key === 'Enter') handleConfirmSpotifyConnect()
 							}}
@@ -501,17 +537,22 @@
 				</div>
 
 				<div class="space-y-1.5">
-					<label for="spotify-client-secret" class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-text-secondary">
+					<label
+						for="spotify-client-secret"
+						class="flex items-center justify-between text-xs font-bold tracking-wider text-text-secondary uppercase"
+					>
 						<span>Client Secret Spotify</span>
-						<span class="text-[10px] text-text-tertiary font-normal lowercase">optionnel mais recommandé</span>
+						<span class="text-[10px] font-normal text-text-tertiary lowercase">optionnel mais recommandé</span>
 					</label>
 					<div class="relative">
 						<input
 							id="spotify-client-secret"
 							type="password"
 							bind:value={spotifyClientSecretInput}
-							placeholder={hasStoredSpotifySecret ? 'Secret enregistré — laisser vide pour le conserver' : 'Ex: 8f7e6d5c4b3a210987654321fedcba09'}
-							class="w-full rounded-xl border border-stroke bg-surface-1/90 px-4 py-2.5 font-mono text-xs text-white placeholder-text-tertiary focus:border-[#1DB954] focus:outline-none focus:ring-2 focus:ring-[#1DB954]/20"
+							placeholder={hasStoredSpotifySecret
+								? 'Secret enregistré — laisser vide pour le conserver'
+								: 'Ex: 8f7e6d5c4b3a210987654321fedcba09'}
+							class="w-full rounded-xl border border-stroke bg-surface-1/90 px-4 py-2.5 font-mono text-xs text-white placeholder-text-tertiary focus:border-[#1DB954] focus:ring-2 focus:ring-[#1DB954]/20 focus:outline-none"
 							onkeydown={(e) => {
 								if (e.key === 'Enter') handleConfirmSpotifyConnect()
 							}}
@@ -527,7 +568,7 @@
 			<div class="border-t border-stroke/40 pt-3">
 				<button
 					type="button"
-					class="flex w-full items-center justify-between py-1 text-xs font-semibold text-text-tertiary hover:text-text-primary transition-colors cursor-pointer"
+					class="flex w-full cursor-pointer items-center justify-between py-1 text-xs font-semibold text-text-tertiary transition-colors hover:text-text-primary"
 					onclick={() => (showManualCodeFallback = !showManualCodeFallback)}
 				>
 					<span class="flex items-center gap-1.5">
@@ -542,22 +583,23 @@
 
 				{#if showManualCodeFallback}
 					<div class="mt-2.5 space-y-2 rounded-2xl border border-stroke/50 bg-surface-1/90 p-3.5 text-xs">
-						<p class="text-[11px] text-text-secondary leading-relaxed">
-							Si le navigateur ne redirige pas automatiquement, collez ici l'URL complète affichée dans la barre d'adresse ou le code d'autorisation :
+						<p class="text-[11px] leading-relaxed text-text-secondary">
+							Si le navigateur ne redirige pas automatiquement, collez ici l'URL complète affichée dans la barre
+							d'adresse ou le code d'autorisation :
 						</p>
 						<div class="flex gap-2">
 							<input
 								type="text"
 								bind:value={manualCodeInput}
 								placeholder="Ex: http://127.0.0.1:8888/callback?code=AQD... ou AQD..."
-								class="flex-1 rounded-xl border border-stroke bg-surface-2/90 px-3 py-2 font-mono text-[11px] text-white placeholder-text-tertiary focus:border-[#1DB954] focus:outline-none focus:ring-1 focus:ring-[#1DB954]/20"
+								class="flex-1 rounded-xl border border-stroke bg-surface-2/90 px-3 py-2 font-mono text-[11px] text-white placeholder-text-tertiary focus:border-[#1DB954] focus:ring-1 focus:ring-[#1DB954]/20 focus:outline-none"
 								onkeydown={(e) => {
 									if (e.key === 'Enter') handleManualCodeSubmit()
 								}}
 							/>
 							<button
 								type="button"
-								class="flex items-center gap-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 px-3.5 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-500/30 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+								class="flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 px-3.5 py-2 text-xs font-bold text-emerald-400 transition-all hover:bg-emerald-500/30 active:scale-95 disabled:opacity-50"
 								onclick={handleManualCodeSubmit}
 								disabled={isSubmittingManualCode || !manualCodeInput.trim()}
 							>
@@ -578,14 +620,14 @@
 			<div class="flex items-center justify-end gap-3 pt-2">
 				<button
 					type="button"
-					class="rounded-xl border border-stroke bg-surface-2 px-4 py-2 text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-colors cursor-pointer"
+					class="hover:bg-surface-3 cursor-pointer rounded-xl border border-stroke bg-surface-2 px-4 py-2 text-xs font-semibold text-text-secondary transition-colors hover:text-text-primary"
 					onclick={closeSpotifyModal}
 				>
 					Annuler
 				</button>
 				<button
 					type="button"
-					class="flex items-center gap-2 rounded-xl bg-[#1DB954] px-5 py-2 text-xs font-bold text-black shadow-lg shadow-[#1DB954]/25 hover:bg-[#1ed760] active:scale-95 transition-all cursor-pointer"
+					class="flex cursor-pointer items-center gap-2 rounded-xl bg-[#1DB954] px-5 py-2 text-xs font-bold text-black shadow-lg shadow-[#1DB954]/25 transition-all hover:bg-[#1ed760] active:scale-95"
 					onclick={handleConfirmSpotifyConnect}
 				>
 					<Icon name="link" class="h-3.5 w-3.5" />
@@ -595,4 +637,3 @@
 		</div>
 	</div>
 {/if}
-

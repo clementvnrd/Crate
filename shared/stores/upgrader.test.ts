@@ -7,7 +7,7 @@ import {
 	upgraderEligibleCount,
 	selectedUpgradeCount,
 } from './upgrader'
-import type { UpgradeScanResult } from '../types'
+import type { UpgradeCountInfo, UpgradeScanResult } from '../types'
 import * as upgraderApi from '../api/upgrader'
 
 vi.mock('../api/upgrader', () => ({
@@ -196,11 +196,11 @@ describe('upgraderStore', () => {
 	})
 
 	it('loads count with deduplication', async () => {
-		let resolveFirst: (value: any) => void
-		const firstPromise = new Promise((resolve) => {
+		let resolveFirst: (value: UpgradeCountInfo) => void
+		const firstPromise = new Promise<UpgradeCountInfo>((resolve) => {
 			resolveFirst = resolve
 		})
-		vi.mocked(upgraderApi.getUpgradeCount).mockReturnValueOnce(firstPromise as any)
+		vi.mocked(upgraderApi.getUpgradeCount).mockReturnValueOnce(firstPromise)
 
 		const call1 = upgraderStore.loadCount()
 		const call2 = upgraderStore.loadCount() // concurrent call should be deduplicated

@@ -20,14 +20,10 @@
 	let isPlaying = $derived(
 		$playbackSource === 'beatport' && String($beatportTrack?.id) === String(track.id) && $isPlayerPlaying
 	)
-	let isCurrentTrack = $derived(
-		$playbackSource === 'beatport' && String($beatportTrack?.id) === String(track.id)
-	)
+	let isCurrentTrack = $derived($playbackSource === 'beatport' && String($beatportTrack?.id) === String(track.id))
 
 	let camelotInfo = $derived(track.key ? getCamelotColor(track.key) : null)
-	let formattedKey = $derived(
-		track.key ? formatCamelotKey(track.key, $displaySettingsStore.camelotZeroPadding) : '-'
-	)
+	let formattedKey = $derived(track.key ? formatCamelotKey(track.key, $displaySettingsStore.camelotZeroPadding) : '-')
 
 	function togglePlay(e: MouseEvent) {
 		e.stopPropagation()
@@ -52,7 +48,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class="group grid grid-cols-[36px_40px_1fr_120px_100px_60px_64px_50px_100px] items-center gap-2 px-3 py-1.5 text-xs transition-colors select-none {isCurrentTrack
-		? 'bg-emerald-950/40 border-l-2 border-l-[#00FF96]'
+		? 'border-l-2 border-l-[#00FF96] bg-emerald-950/40'
 		: 'border-b border-stroke/40 hover:bg-surface-2/60'}"
 	onmouseenter={() => (isHovered = true)}
 	onmouseleave={() => (isHovered = false)}
@@ -64,7 +60,7 @@
 			{#if isHovered}
 				<button
 					type="button"
-					class="flex h-6 w-6 items-center justify-center rounded-full bg-[#00FF96] text-black shadow-lg shadow-[#00FF96]/30 transition-transform active:scale-95 cursor-pointer"
+					class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-[#00FF96] text-black shadow-lg shadow-[#00FF96]/30 transition-transform active:scale-95"
 					onclick={togglePlay}
 					title="Pause preview"
 				>
@@ -72,19 +68,19 @@
 				</button>
 			{:else}
 				<div class="flex h-5 w-5 items-end justify-center gap-[2px] pb-0.5" title="En cours de lecture">
-					<span class="h-3 w-[3px] rounded-full bg-[#00FF96] animate-pulse"></span>
-					<span class="h-4.5 w-[3px] rounded-full bg-[#00FF96] animate-pulse [animation-delay:150ms]"></span>
-					<span class="h-2.5 w-[3px] rounded-full bg-[#00FF96] animate-pulse [animation-delay:300ms]"></span>
+					<span class="h-3 w-[3px] animate-pulse rounded-full bg-[#00FF96]"></span>
+					<span class="h-4.5 w-[3px] animate-pulse rounded-full bg-[#00FF96] [animation-delay:150ms]"></span>
+					<span class="h-2.5 w-[3px] animate-pulse rounded-full bg-[#00FF96] [animation-delay:300ms]"></span>
 				</div>
 			{/if}
 		{:else if isHovered || isCurrentTrack}
 			<button
 				type="button"
-				class="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20 text-[#00FF96] hover:bg-[#00FF96] hover:text-black transition-all active:scale-95 shadow-sm cursor-pointer"
+				class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-emerald-500/20 text-[#00FF96] shadow-sm transition-all hover:bg-[#00FF96] hover:text-black active:scale-95"
 				onclick={togglePlay}
 				title="Play preview"
 			>
-				<Icon name="play" class="h-3 w-3 ml-0.5" fill />
+				<Icon name="play" class="ml-0.5 h-3 w-3" fill />
 			</button>
 		{:else}
 			<span class="font-mono text-[11px] text-text-tertiary">{index}</span>
@@ -97,7 +93,7 @@
 			<img
 				src={track.artwork_url}
 				alt={track.title}
-				class="h-8 w-8 rounded-md object-cover shadow-sm border border-stroke/40"
+				class="h-8 w-8 rounded-md border border-stroke/40 object-cover shadow-sm"
 				loading="lazy"
 				onerror={(e) => {
 					// Fallback if image fails to load
@@ -106,7 +102,9 @@
 				}}
 			/>
 		{:else}
-			<div class="flex h-8 w-8 items-center justify-center rounded-md bg-surface-3 text-[#00FF96] font-bold text-[10px] border border-stroke/40">
+			<div
+				class="bg-surface-3 flex h-8 w-8 items-center justify-center rounded-md border border-stroke/40 text-[10px] font-bold text-[#00FF96]"
+			>
 				BP
 			</div>
 		{/if}
@@ -117,21 +115,23 @@
 		<div class="flex items-center gap-1.5 truncate font-medium text-text-primary">
 			<button
 				type="button"
-				class="truncate hover:text-[#00FF96] cursor-pointer text-left {isCurrentTrack ? 'text-[#00FF96] font-semibold' : ''}"
+				class="cursor-pointer truncate text-left hover:text-[#00FF96] {isCurrentTrack
+					? 'font-semibold text-[#00FF96]'
+					: ''}"
 				onclick={() => playerStore.playBeatport(track)}
 			>
 				{track.title}
 			</button>
 			{#if track.mix_name}
-				<span class="text-text-tertiary text-[11px] truncate">({track.mix_name})</span>
+				<span class="truncate text-[11px] text-text-tertiary">({track.mix_name})</span>
 			{/if}
 		</div>
 		<div class="truncate text-[11px] text-text-secondary">
 			{#if track.artists && track.artists.length > 0}
-				{#each track.artists as artist, aIdx}
+				{#each track.artists as artist, aIdx (aIdx)}
 					<button
 						type="button"
-						class="hover:text-[#00FF96] hover:underline transition-colors cursor-pointer"
+						class="cursor-pointer transition-colors hover:text-[#00FF96] hover:underline"
 						onclick={(e) => {
 							e.stopPropagation()
 							beatportStore.setNavArtist(artist.id, artist.name, artist.image_url ?? undefined)
@@ -152,7 +152,7 @@
 	</div>
 
 	<!-- Released -->
-	<div class="truncate text-text-tertiary font-mono text-[11px]">
+	<div class="truncate font-mono text-[11px] text-text-tertiary">
 		{track.release_date}
 	</div>
 
@@ -165,14 +165,14 @@
 	<div class="flex items-center">
 		{#if camelotInfo}
 			<span
-				class="relative inline-flex h-[20px] w-10 items-center justify-center rounded text-[11px] font-mono font-bold tracking-tight shadow-sm select-none"
+				class="relative inline-flex h-[20px] w-10 items-center justify-center rounded font-mono text-[11px] font-bold tracking-tight shadow-sm select-none"
 				style="background-color: {camelotInfo.bg}; color: {camelotInfo.text};"
 				title="{formattedKey} ({camelotInfo.name}) • Beatport / Camelot"
 			>
 				{formattedKey}
 			</span>
 		{:else}
-			<span class="text-text-tertiary font-mono text-[11px]">{formattedKey}</span>
+			<span class="font-mono text-[11px] text-text-tertiary">{formattedKey}</span>
 		{/if}
 	</div>
 
@@ -186,7 +186,9 @@
 		<!-- Cart / Selection -->
 		<button
 			type="button"
-			class="flex h-6 w-6 items-center justify-center rounded hover:bg-surface-3 transition-colors cursor-pointer {inCart ? 'text-emerald-400 font-bold' : 'text-text-tertiary hover:text-text-primary'}"
+			class="hover:bg-surface-3 flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors {inCart
+				? 'font-bold text-emerald-400'
+				: 'text-text-tertiary hover:text-text-primary'}"
 			onclick={toggleCart}
 			title={inCart ? 'Retirer du panier' : 'Ajouter au panier'}
 		>
@@ -196,7 +198,9 @@
 		<!-- Favorite -->
 		<button
 			type="button"
-			class="flex h-6 w-6 items-center justify-center rounded hover:bg-surface-3 transition-colors cursor-pointer {isFavorite ? 'text-red-500 font-bold' : 'text-text-tertiary hover:text-red-400'}"
+			class="hover:bg-surface-3 flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors {isFavorite
+				? 'font-bold text-red-500'
+				: 'text-text-tertiary hover:text-red-400'}"
 			onclick={toggleFav}
 			title={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris Beatport'}
 		>
@@ -206,7 +210,7 @@
 		<!-- Add to Playlist / Cart Checkmark -->
 		<button
 			type="button"
-			class="flex h-6 w-6 items-center justify-center rounded text-text-tertiary hover:bg-surface-3 hover:text-text-primary transition-colors cursor-pointer"
+			class="hover:bg-surface-3 flex h-6 w-6 cursor-pointer items-center justify-center rounded text-text-tertiary transition-colors hover:text-text-primary"
 			onclick={toggleCart}
 			title={inCart ? 'Dans le panier (cliquer pour retirer)' : 'Ajouter au panier'}
 		>

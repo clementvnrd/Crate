@@ -1,11 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { get } from 'svelte/store'
-import {
-	albumsStore,
-	playerAlbums,
-	selectedAlbum,
-	selectedAlbumTracks,
-} from './albums'
+import { albumsStore, playerAlbums, selectedAlbum, selectedAlbumTracks } from './albums'
 import * as albumApi from '../api/album'
 import type { PlayerAlbum, PlayerAlbumTrack, AddAlbumResult } from '../types'
 

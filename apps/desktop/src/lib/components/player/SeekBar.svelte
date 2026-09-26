@@ -65,7 +65,9 @@
 		aria-valuemin={0}
 		aria-valuemax={effectiveDuration}
 		aria-valuenow={effectivePosition}
-		class="seek-bar group relative h-1.5 flex-1 rounded-full bg-surface-2 transition-all {disabled ? 'opacity-40 cursor-default' : 'cursor-pointer'}"
+		class="seek-bar group relative h-1.5 flex-1 rounded-full bg-surface-2 transition-all {disabled
+			? 'cursor-default opacity-40'
+			: 'cursor-pointer'}"
 		onmousedown={handleMouseDown}
 	>
 		<!-- Progress -->

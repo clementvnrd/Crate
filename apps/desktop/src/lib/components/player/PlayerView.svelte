@@ -105,8 +105,8 @@
 		$isPlaying &&
 			Boolean(
 				activeHeroTrack &&
-					(($playbackSource === 'standalone' && $standaloneTrack?.file_path === activeHeroTrack.file_path) ||
-						($playbackSource === 'library' && $currentTrack?.file_path === activeHeroTrack.file_path))
+				(($playbackSource === 'standalone' && $standaloneTrack?.file_path === activeHeroTrack.file_path) ||
+					($playbackSource === 'library' && $currentTrack?.file_path === activeHeroTrack.file_path))
 			)
 	)
 
@@ -114,19 +114,11 @@
 		activeHeroTrack?.artwork_path ? getArtworkUrl(activeHeroTrack.artwork_path, $appDataDir) : null
 	)
 
-	const camelotInfo = $derived(
-		activeHeroTrack?.key ? getCamelotColor(activeHeroTrack.key) : null
-	)
+	const camelotInfo = $derived(activeHeroTrack?.key ? getCamelotColor(activeHeroTrack.key) : null)
 
-	const energyInfo = $derived(
-		activeHeroTrack?.energy ? getEnergyInfo(activeHeroTrack.energy) : null
-	)
+	const energyInfo = $derived(activeHeroTrack?.energy ? getEnergyInfo(activeHeroTrack.energy) : null)
 
-	const effectiveDuration = $derived(
-		$playbackDuration > 0
-			? $playbackDuration
-			: activeHeroTrack?.duration_ms || 0
-	)
+	const effectiveDuration = $derived($playbackDuration > 0 ? $playbackDuration : activeHeroTrack?.duration_ms || 0)
 
 	const currentDisplayPosition = $derived(
 		isSeekingWaveform && waveformDragMs !== null ? waveformDragMs : $playbackPosition
@@ -314,29 +306,31 @@
 	}
 </script>
 
-<div class="relative flex flex-col h-full w-full overflow-hidden bg-surface-0/80 text-text-primary select-none">
+<div class="relative flex h-full w-full flex-col overflow-hidden bg-surface-0/80 text-text-primary select-none">
 	<!-- ===================================================================== -->
 	<!-- AMBIENT GLOW FLUID BACKGROUND                                         -->
 	<!-- ===================================================================== -->
 	{#if heroArtworkUrl}
-		<div class="pointer-events-none absolute -top-20 -left-20 -right-20 h-[450px] opacity-15 dark:opacity-30 filter blur-[100px] overflow-hidden select-none transition-all duration-700 z-0">
-			<img
-				src={heroArtworkUrl}
-				alt=""
-				class="h-full w-full object-cover scale-150 transform-gpu"
-			/>
+		<div
+			class="pointer-events-none absolute -top-20 -right-20 -left-20 z-0 h-[450px] overflow-hidden opacity-15 blur-[100px] filter transition-all duration-700 select-none dark:opacity-30"
+		>
+			<img src={heroArtworkUrl} alt="" class="h-full w-full scale-150 transform-gpu object-cover" />
 		</div>
 	{/if}
 
 	<!-- ===================================================================== -->
 	<!-- 1. PLAYER HERO (STYLE APPLE MUSIC MACOS)                              -->
 	<!-- ===================================================================== -->
-	<div class="relative z-20 flex-shrink-0 w-full border-b border-stroke-subtle bg-surface-1/60 backdrop-blur-xl p-6 md:p-8 shadow-xl dark:shadow-2xl">
-		<div class="max-w-7xl mx-auto w-full">
+	<div
+		class="relative z-20 w-full flex-shrink-0 border-b border-stroke-subtle bg-surface-1/60 p-6 shadow-xl backdrop-blur-xl md:p-8 dark:shadow-2xl"
+	>
+		<div class="mx-auto w-full max-w-7xl">
 			{#if activeHeroTrack}
-				<div class="flex items-center gap-6 md:gap-8 w-full">
+				<div class="flex w-full items-center gap-6 md:gap-8">
 					<!-- 225x225px Artwork Cover -->
-					<div class="relative h-[225px] w-[225px] flex-shrink-0 overflow-hidden rounded-2xl border border-stroke-subtle bg-surface-2/60 shadow-2xl shadow-black/20 dark:shadow-black/60 group">
+					<div
+						class="group relative h-[225px] w-[225px] flex-shrink-0 overflow-hidden rounded-2xl border border-stroke-subtle bg-surface-2/60 shadow-2xl shadow-black/20 dark:shadow-black/60"
+					>
 						{#if heroArtworkUrl}
 							<img
 								src={heroArtworkUrl}
@@ -352,55 +346,69 @@
 						<!-- Circular Play/Pause overlay button on hover -->
 						<button
 							type="button"
-							class="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-xs opacity-0 transition-opacity duration-200 group-hover:opacity-100 cursor-pointer"
+							class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/30 opacity-0 backdrop-blur-xs transition-opacity duration-200 group-hover:opacity-100"
 							onclick={handleTogglePlayPause}
 							aria-label="Play / Pause"
 						>
-							<div class="flex h-14 w-14 items-center justify-center rounded-full bg-cyan-400 text-black shadow-lg shadow-cyan-400/50 transition-transform active:scale-95 group-hover:scale-105">
-								<Icon name={isCurrentPlayingInHero ? 'pause' : 'play'} class="h-6 w-6 ml-0.5" fill />
+							<div
+								class="flex h-14 w-14 items-center justify-center rounded-full bg-cyan-400 text-black shadow-lg shadow-cyan-400/50 transition-transform group-hover:scale-105 active:scale-95"
+							>
+								<Icon name={isCurrentPlayingInHero ? 'pause' : 'play'} class="ml-0.5 h-6 w-6" fill />
 							</div>
 						</button>
 					</div>
 
 					<!-- Metadata, Waveform & Controls Column -->
-					<div class="flex flex-1 flex-col justify-between min-w-0 h-[225px]">
+					<div class="flex h-[225px] min-w-0 flex-1 flex-col justify-between">
 						<!-- Top Part: Micro-pills Badges (Left) & Controls/Mode Toggle (Right) -->
-						<div class="flex items-center justify-between gap-4 w-full">
+						<div class="flex w-full items-center justify-between gap-4">
 							<!-- Badges micro-pills horizontaux -->
 							<div class="flex flex-wrap items-center gap-2">
 								<!-- Source -->
 								{#if activeHeroTrack.is_in_library}
-									<span class="inline-flex items-center gap-1 rounded-full bg-brand-primary/15 border border-brand-primary/30 px-2.5 py-0.5 text-[10px] font-semibold text-brand-primary">
+									<span
+										class="bg-brand-primary/15 border-brand-primary/30 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold text-brand-primary"
+									>
 										<Icon name="library" class="h-2.5 w-2.5" />
 										Bibliothèque Crate
 									</span>
 								{:else}
-									<span class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-300">
+									<span
+										class="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-300"
+									>
 										<Icon name="hard-drive" class="h-2.5 w-2.5" />
 										Fichier externe
 									</span>
 								{/if}
 
 								<!-- Format -->
-								<span class="rounded-full bg-surface-2 border border-stroke-subtle px-2.5 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wider text-text-secondary">
+								<span
+									class="rounded-full border border-stroke-subtle bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] font-medium tracking-wider text-text-secondary uppercase"
+								>
 									{activeHeroTrack.format || 'AUDIO'}
 								</span>
 
 								<!-- Bitrate -->
-								<span class="rounded-full bg-surface-2 border border-stroke-subtle px-2.5 py-0.5 text-[10px] font-mono font-medium text-text-tertiary">
+								<span
+									class="rounded-full border border-stroke-subtle bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] font-medium text-text-tertiary"
+								>
 									{formatBitrate(activeHeroTrack.bitrate, activeHeroTrack.format, activeHeroTrack.sample_rate)}
 								</span>
 
 								<!-- kHz -->
 								{#if activeHeroTrack.sample_rate}
-									<span class="rounded-full bg-surface-2 border border-stroke-subtle px-2.5 py-0.5 text-[10px] font-mono font-medium text-text-tertiary">
+									<span
+										class="rounded-full border border-stroke-subtle bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] font-medium text-text-tertiary"
+									>
 										{formatSampleRateDisplay(activeHeroTrack.sample_rate)}
 									</span>
 								{/if}
 
 								<!-- BPM -->
 								{#if activeHeroTrack.bpm}
-									<span class="rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-0.5 text-[10px] font-mono font-bold text-cyan-600 dark:text-cyan-300">
+									<span
+										class="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-0.5 font-mono text-[10px] font-bold text-cyan-600 dark:text-cyan-300"
+									>
 										{formatBpm(activeHeroTrack.bpm)} BPM
 									</span>
 								{/if}
@@ -410,21 +418,23 @@
 									<div class="inline-flex items-center gap-1.5">
 										{#if camelotInfo}
 											<span
-												class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-extrabold select-none border shadow-xs"
+												class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold shadow-xs select-none"
 												style="background-color: {camelotInfo.bg}; color: {camelotInfo.text}; border-color: {camelotInfo.border};"
 												title="Camelot Key: {camelotInfo.name}"
 											>
 												{formatKey(activeHeroTrack.key, 'camelot')}
 											</span>
 										{:else}
-											<span class="rounded-full bg-surface-2 border border-stroke-subtle px-2.5 py-0.5 text-[10px] font-mono font-bold text-text-primary">
+											<span
+												class="rounded-full border border-stroke-subtle bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] font-bold text-text-primary"
+											>
 												{activeHeroTrack.key}
 											</span>
 										{/if}
 
 										<button
 											type="button"
-											class="inline-flex items-center gap-1 rounded-full bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-600 dark:text-purple-300 px-2 py-0.5 text-[10px] font-bold shadow-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
+											class="inline-flex cursor-pointer items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold text-purple-600 shadow-xs transition-all hover:scale-105 hover:bg-purple-500/25 active:scale-95 dark:text-purple-300"
 											onclick={handleHarmonicMatch}
 											title="Trouver les morceaux compatibles (Même clé, relative, ±1h, ±4% BPM)"
 										>
@@ -437,7 +447,7 @@
 								<!-- Energy ⚡ -->
 								{#if energyInfo}
 									<span
-										class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border shadow-xs"
+										class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold shadow-xs"
 										style="background-color: {energyInfo.bg}; color: {energyInfo.color}; border-color: {energyInfo.border};"
 										title="Énergie: {energyInfo.descriptor} ({activeHeroTrack.energy}/10)"
 									>
@@ -448,21 +458,27 @@
 							</div>
 
 							<!-- Action Buttons & Mode Switch -->
-							<div class="flex items-center gap-3 flex-shrink-0">
+							<div class="flex flex-shrink-0 items-center gap-3">
 								<!-- Mode Toggle: [📋 Récents | 💿 Albums] -->
-								<div class="inline-flex items-center p-0.5 rounded-full bg-surface-2/90 border border-stroke-subtle shadow-inner">
+								<div
+									class="inline-flex items-center rounded-full border border-stroke-subtle bg-surface-2/90 p-0.5 shadow-inner"
+								>
 									<button
 										type="button"
-										class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer {!isAlbumMode ? 'bg-cyan-500 text-black shadow-xs font-bold' : 'text-text-secondary hover:text-text-primary'}"
-										onclick={() => isAlbumMode = false}
+										class="flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all {!isAlbumMode
+											? 'bg-cyan-500 font-bold text-black shadow-xs'
+											: 'text-text-secondary hover:text-text-primary'}"
+										onclick={() => (isAlbumMode = false)}
 									>
 										<Icon name="disc" class="h-3 w-3" />
 										<span>Récents</span>
 									</button>
 									<button
 										type="button"
-										class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer {isAlbumMode ? 'bg-cyan-500 text-black shadow-xs font-bold' : 'text-text-secondary hover:text-text-primary'}"
-										onclick={() => isAlbumMode = true}
+										class="flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all {isAlbumMode
+											? 'bg-cyan-500 font-bold text-black shadow-xs'
+											: 'text-text-secondary hover:text-text-primary'}"
+										onclick={() => (isAlbumMode = true)}
 									>
 										<Icon name="folder-open" class="h-3 w-3" />
 										<span>Mode Album</span>
@@ -472,11 +488,14 @@
 								{#if !activeHeroTrack.is_in_library}
 									<button
 										type="button"
-										class="flex items-center gap-1.5 rounded-full bg-brand-primary px-3 py-1.5 text-xs font-semibold text-black shadow-md shadow-brand-primary/20 hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+										class="shadow-brand-primary/20 flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-primary px-3 py-1.5 text-xs font-semibold text-black shadow-md transition-all hover:brightness-110 active:scale-95 disabled:opacity-50"
 										onclick={handleImportToLibrary}
 										disabled={isImporting}
 									>
-										<Icon name={isImporting ? 'loader' : 'plus'} class="h-3.5 w-3.5 {isImporting ? 'animate-spin' : ''}" />
+										<Icon
+											name={isImporting ? 'loader' : 'plus'}
+											class="h-3.5 w-3.5 {isImporting ? 'animate-spin' : ''}"
+										/>
 										<span>{isImporting ? 'Ajout...' : 'Ajouter à ma bibliothèque'}</span>
 									</button>
 								{/if}
@@ -484,7 +503,7 @@
 								<Tooltip text="Révéler dans le Finder" position="bottom">
 									<button
 										type="button"
-										class="flex h-8 w-8 items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-secondary hover:bg-surface-3 hover:text-text-primary active:scale-95 transition-all cursor-pointer"
+										class="hover:bg-surface-3 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-secondary transition-all hover:text-text-primary active:scale-95"
 										onclick={() => handleRevealInFinder(activeHeroTrack.file_path)}
 										aria-label="Révéler dans le Finder"
 									>
@@ -496,13 +515,16 @@
 
 						<!-- Middle Part: Title & Artist directly above waveform -->
 						<div class="min-w-0">
-							<h1 class="text-2xl font-bold tracking-tight text-text-primary line-clamp-1" title={activeHeroTrack.title || activeHeroTrack.file_path}>
+							<h1
+								class="line-clamp-1 text-2xl font-bold tracking-tight text-text-primary"
+								title={activeHeroTrack.title || activeHeroTrack.file_path}
+							>
 								{activeHeroTrack.title || activeHeroTrack.file_path.split('/').pop() || 'Morceau Inconnu'}
 							</h1>
-							<p class="text-base font-medium text-text-secondary mt-0.5 line-clamp-1">
+							<p class="mt-0.5 line-clamp-1 text-base font-medium text-text-secondary">
 								{activeHeroTrack.artist || 'Artiste inconnu'}
 								{#if activeHeroTrack.album}
-									<span class="text-text-tertiary font-normal"> — {activeHeroTrack.album}</span>
+									<span class="font-normal text-text-tertiary"> — {activeHeroTrack.album}</span>
 								{/if}
 							</p>
 						</div>
@@ -511,7 +533,7 @@
 						<div class="flex flex-col gap-3">
 							<!-- Waveform Row with Time Markers -->
 							<div class="flex items-center gap-3">
-								<span class="text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400 tabular-nums w-12 text-right">
+								<span class="w-12 text-right font-mono text-xs font-bold text-cyan-600 tabular-nums dark:text-cyan-400">
 									{formatDuration(currentDisplayPosition)}
 								</span>
 
@@ -519,18 +541,20 @@
 								<!-- svelte-ignore a11y_no_static_element_interactions -->
 								<div
 									bind:this={waveformContainer}
-									class="relative h-12 flex-1 cursor-pointer overflow-hidden rounded-xl bg-surface-2/60 px-2 py-1 transition-all border border-stroke-subtle group"
+									class="group relative h-12 flex-1 cursor-pointer overflow-hidden rounded-xl border border-stroke-subtle bg-surface-2/60 px-2 py-1 transition-all"
 									onmousedown={handleWaveformMouseDown}
 									onmousemove={handleWaveformMouseMove}
 									onmouseleave={handleWaveformMouseLeave}
 								>
 									<!-- Waveform Bars Display -->
 									<div class="flex h-full w-full items-center justify-between gap-[2px]">
-										{#each activeWaveformBars as barHeight, i}
+										{#each activeWaveformBars as barHeight, i (i)}
 											{@const barPercent = (i / activeWaveformBars.length) * 100}
 											{@const isPlayed = barPercent <= progressPercent}
 											<div
-												class="flex-1 rounded-full {isPlayed ? 'bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.7)]' : 'bg-text-tertiary/20 group-hover:bg-text-tertiary/35'}"
+												class="flex-1 rounded-full {isPlayed
+													? 'bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.7)]'
+													: 'bg-text-tertiary/20 group-hover:bg-text-tertiary/35'}"
 												style="height: {barHeight}%;"
 											></div>
 										{/each}
@@ -538,24 +562,28 @@
 
 									<!-- Hot Cue Visual Pins on Waveform -->
 									{#if effectiveDuration > 0}
-										{#each $currentCues as cue, idx}
+										{#each $currentCues as cue (cue.id)}
 											{@const cuePercent = Math.min(100, Math.max(0, (cue.position_ms / effectiveDuration) * 100))}
 											{@const cueNum = cueMarkerLabel(cue)}
-											<!-- svelte-ignore a11y_click_events_have_key_events -->
 											<button
 												type="button"
-												class="absolute top-0 bottom-0 z-10 w-4 -translate-x-1/2 flex flex-col items-center justify-between group/pin cursor-pointer transition-all hover:scale-110"
+												class="group/pin absolute top-0 bottom-0 z-10 flex w-4 -translate-x-1/2 cursor-pointer flex-col items-center justify-between transition-all hover:scale-110"
 												style="left: {cuePercent}%"
 												onclick={(e) => {
 													e.stopPropagation()
 													playerStore.jumpToCue(cue)
 												}}
-												title="{cue.cue_type === 'hot' ? `Hot Cue ${cueNum}` : 'Memory Cue'} : {cue.name || formatDuration(cue.position_ms)}"
+												title="{cue.cue_type === 'hot' ? `Hot Cue ${cueNum}` : 'Memory Cue'} : {cue.name ||
+													formatDuration(cue.position_ms)}"
 											>
-												<div class="h-3.5 w-3.5 rounded-xs bg-amber-400 text-[8px] font-black text-black flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.9)] border border-amber-200">
+												<div
+													class="flex h-3.5 w-3.5 items-center justify-center rounded-xs border border-amber-200 bg-amber-400 text-[8px] font-black text-black shadow-[0_0_8px_rgba(251,191,36,0.9)]"
+												>
 													{cueNum}
 												</div>
-												<div class="w-[1.5px] flex-1 bg-amber-400/80 group-hover/pin:bg-amber-300 shadow-[0_0_4px_rgba(251,191,36,0.6)]"></div>
+												<div
+													class="w-[1.5px] flex-1 bg-amber-400/80 shadow-[0_0_4px_rgba(251,191,36,0.6)] group-hover/pin:bg-amber-300"
+												></div>
 											</button>
 										{/each}
 									{/if}
@@ -569,7 +597,7 @@
 									<!-- Hover Time Tooltip -->
 									{#if isHoveringWaveform && effectiveDuration > 0}
 										<div
-											class="pointer-events-none absolute top-1 rounded-md bg-surface-1 px-2 py-0.5 text-[10px] font-mono font-bold text-cyan-400 border border-cyan-500/40 -translate-x-1/2 shadow-xl"
+											class="pointer-events-none absolute top-1 -translate-x-1/2 rounded-md border border-cyan-500/40 bg-surface-1 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-400 shadow-xl"
 											style="left: {hoverWaveformPercent * 100}%"
 										>
 											{formatDuration(hoverWaveformPercent * effectiveDuration)}
@@ -577,23 +605,27 @@
 									{/if}
 								</div>
 
-								<span class="text-xs font-mono font-semibold text-text-tertiary tabular-nums w-12">
+								<span class="w-12 font-mono text-xs font-semibold text-text-tertiary tabular-nums">
 									{formatDuration(effectiveDuration)}
 								</span>
 							</div>
 
 							<!-- 8 Hot Cue Pads Row -->
-							<div class="grid grid-cols-8 gap-2 px-1 py-1 bg-surface-1/40 rounded-xl border border-stroke-subtle">
-								{#each cuePads as pad}
+							<div class="grid grid-cols-8 gap-2 rounded-xl border border-stroke-subtle bg-surface-1/40 px-1 py-1">
+								{#each cuePads as pad (pad.slot)}
 									<button
 										type="button"
-										class="flex flex-col items-center justify-center py-1.5 px-1 rounded-lg border transition-all select-none {pad.cue ? 'bg-amber-500/15 border-amber-500/40 text-amber-500 dark:text-amber-400 hover:bg-amber-500/25 hover:border-amber-400 active:scale-95 shadow-xs cursor-pointer' : 'bg-surface-2/40 border-white/5 text-text-tertiary/40 hover:bg-surface-2/60 cursor-default'}"
+										class="flex flex-col items-center justify-center rounded-lg border px-1 py-1.5 transition-all select-none {pad.cue
+											? 'cursor-pointer border-amber-500/40 bg-amber-500/15 text-amber-500 shadow-xs hover:border-amber-400 hover:bg-amber-500/25 active:scale-95 dark:text-amber-400'
+											: 'cursor-default border-white/5 bg-surface-2/40 text-text-tertiary/40 hover:bg-surface-2/60'}"
 										onclick={() => handleCuePadClick(pad.slot, pad.cue)}
 										disabled={!pad.cue}
-										title={pad.cue ? `Sauter au Hot Cue ${pad.slot} (${pad.cue.name || formatDuration(pad.cue.position_ms)})` : `Cue ${pad.slot} non défini`}
+										title={pad.cue
+											? `Sauter au Hot Cue ${pad.slot} (${pad.cue.name || formatDuration(pad.cue.position_ms)})`
+											: `Cue ${pad.slot} non défini`}
 									>
-										<span class="text-[11px] font-extrabold font-mono leading-none">CUE {pad.slot}</span>
-										<span class="text-[9px] font-mono mt-0.5 tabular-nums opacity-90">
+										<span class="font-mono text-[11px] leading-none font-extrabold">CUE {pad.slot}</span>
+										<span class="mt-0.5 font-mono text-[9px] tabular-nums opacity-90">
 											{pad.cue ? formatDuration(pad.cue.position_ms) : '--:--'}
 										</span>
 									</button>
@@ -604,7 +636,7 @@
 							<div class="flex items-center justify-center gap-3">
 								<button
 									type="button"
-									class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 border border-stroke-subtle text-text-secondary hover:bg-surface-3 hover:text-text-primary active:scale-95 transition-all cursor-pointer shadow-xs"
+									class="hover:bg-surface-3 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-secondary shadow-xs transition-all hover:text-text-primary active:scale-95"
 									onclick={() => handleSeek(0)}
 									title="Revenir au début"
 								>
@@ -613,16 +645,16 @@
 
 								<button
 									type="button"
-									class="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-cyan-400 text-black shadow-lg shadow-cyan-400/40 hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+									class="flex h-[52px] w-[52px] cursor-pointer items-center justify-center rounded-full bg-cyan-400 text-black shadow-lg shadow-cyan-400/40 transition-all hover:brightness-110 active:scale-95"
 									onclick={handleTogglePlayPause}
 									title={isCurrentPlayingInHero ? 'Pause' : 'Lecture'}
 								>
-									<Icon name={isCurrentPlayingInHero ? 'pause' : 'play'} class="h-7 w-7 ml-0.5" fill />
+									<Icon name={isCurrentPlayingInHero ? 'pause' : 'play'} class="ml-0.5 h-7 w-7" fill />
 								</button>
 
 								<button
 									type="button"
-									class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 border border-stroke-subtle text-text-secondary hover:bg-surface-3 hover:text-text-primary active:scale-95 transition-all cursor-pointer shadow-xs"
+									class="hover:bg-surface-3 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-secondary shadow-xs transition-all hover:text-text-primary active:scale-95"
 									onclick={handleStop}
 									title="Arrêter la lecture"
 								>
@@ -634,33 +666,41 @@
 				</div>
 			{:else}
 				<!-- Empty Hero State -->
-				<div class="flex items-center justify-between py-12 px-6">
+				<div class="flex items-center justify-between px-6 py-12">
 					<div class="flex items-center gap-6">
-						<div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-surface-2 border border-stroke-subtle text-cyan-600 dark:text-cyan-400 shadow-inner">
+						<div
+							class="flex h-20 w-20 items-center justify-center rounded-2xl border border-stroke-subtle bg-surface-2 text-cyan-600 shadow-inner dark:text-cyan-400"
+						>
 							<Icon name="disc" class="h-10 w-10 opacity-80" />
 						</div>
 						<div>
 							<h2 class="text-xl font-bold text-text-primary">Lecteur Audio Crate</h2>
-							<p class="text-sm text-text-secondary mt-1">
+							<p class="mt-1 text-sm text-text-secondary">
 								Ouvrez n'importe quel fichier audio depuis le Finder pour l'écouter instantanément.
 							</p>
 						</div>
 					</div>
 
 					<!-- Mode Toggle even in empty hero -->
-					<div class="inline-flex items-center p-0.5 rounded-full bg-surface-2 border border-stroke-subtle shadow-inner">
+					<div
+						class="inline-flex items-center rounded-full border border-stroke-subtle bg-surface-2 p-0.5 shadow-inner"
+					>
 						<button
 							type="button"
-							class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer {!isAlbumMode ? 'bg-cyan-500 text-black shadow-xs font-bold' : 'text-text-secondary hover:text-text-primary'}"
-							onclick={() => isAlbumMode = false}
+							class="flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all {!isAlbumMode
+								? 'bg-cyan-500 font-bold text-black shadow-xs'
+								: 'text-text-secondary hover:text-text-primary'}"
+							onclick={() => (isAlbumMode = false)}
 						>
 							<Icon name="disc" class="h-3 w-3" />
 							<span>Récents</span>
 						</button>
 						<button
 							type="button"
-							class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer {isAlbumMode ? 'bg-cyan-500 text-black shadow-xs font-bold' : 'text-text-secondary hover:text-text-primary'}"
-							onclick={() => isAlbumMode = true}
+							class="flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all {isAlbumMode
+								? 'bg-cyan-500 font-bold text-black shadow-xs'
+								: 'text-text-secondary hover:text-text-primary'}"
+							onclick={() => (isAlbumMode = true)}
 						>
 							<Icon name="folder-open" class="h-3 w-3" />
 							<span>Mode Album</span>
@@ -676,31 +716,31 @@
 	<!-- ===================================================================== -->
 	{#if !isAlbumMode}
 		<!-- EN-TÊTE DES RÉCENTS FIXE PLEINE LARGEUR (NE DOIT PAS SCROLLER) -->
-		<div class="w-full border-y border-stroke-subtle bg-surface-0/90 backdrop-blur-md px-6 py-2 flex-shrink-0 z-20 shadow-xs">
+		<div
+			class="z-20 w-full flex-shrink-0 border-y border-stroke-subtle bg-surface-0/90 px-6 py-2 shadow-xs backdrop-blur-md"
+		>
 			<!-- Ligne 1 : Titre + Barre de recherche instantanée + Bouton Effacer l'historique -->
-			<div class="flex items-center justify-between pb-2 gap-4">
-				<div class="flex items-center gap-4 flex-1 min-w-0">
-					<div class="flex items-center gap-2.5 flex-shrink-0">
+			<div class="flex items-center justify-between gap-4 pb-2">
+				<div class="flex min-w-0 flex-1 items-center gap-4">
+					<div class="flex flex-shrink-0 items-center gap-2.5">
 						<Icon name="disc" class="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-						<h2 class="text-sm font-bold text-text-primary">
-							Fichiers Récents
-						</h2>
+						<h2 class="text-sm font-bold text-text-primary">Fichiers Récents</h2>
 					</div>
 
 					<!-- Barre de recherche instantanée -->
-					<div class="relative flex items-center max-w-sm w-full">
-						<Icon name="search" class="absolute left-2.5 h-3.5 w-3.5 text-text-tertiary pointer-events-none" />
+					<div class="relative flex w-full max-w-sm items-center">
+						<Icon name="search" class="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-text-tertiary" />
 						<input
 							type="text"
 							placeholder="Filtrer les récents (titre, artiste, format, clé)..."
 							bind:value={recentSearchQuery}
-							class="h-7 w-full rounded-full bg-surface-2/80 border border-stroke-subtle pl-8 pr-7 text-xs text-text-primary placeholder:text-text-tertiary focus:border-cyan-500 focus:bg-surface-2 focus:outline-hidden transition-all"
+							class="h-7 w-full rounded-full border border-stroke-subtle bg-surface-2/80 pr-7 pl-8 text-xs text-text-primary transition-all placeholder:text-text-tertiary focus:border-cyan-500 focus:bg-surface-2 focus:outline-hidden"
 						/>
 						{#if recentSearchQuery}
 							<button
 								type="button"
-								class="absolute right-2 flex h-4 w-4 items-center justify-center rounded-full text-text-tertiary hover:text-text-primary cursor-pointer"
-								onclick={() => recentSearchQuery = ''}
+								class="absolute right-2 flex h-4 w-4 cursor-pointer items-center justify-center rounded-full text-text-tertiary hover:text-text-primary"
+								onclick={() => (recentSearchQuery = '')}
 								aria-label="Effacer la recherche"
 							>
 								<Icon name="x" class="h-3 w-3" />
@@ -712,7 +752,7 @@
 				{#if $recentStandaloneTracks.length > 0}
 					<button
 						type="button"
-						class="flex items-center gap-1.5 rounded-full border border-stroke-subtle bg-surface-2 px-2.5 py-0.5 text-[11px] font-medium text-text-tertiary hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400 active:scale-95 transition-all cursor-pointer flex-shrink-0"
+						class="flex flex-shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-stroke-subtle bg-surface-2 px-2.5 py-0.5 text-[11px] font-medium text-text-tertiary transition-all hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-500 active:scale-95 dark:hover:text-red-400"
 						onclick={handleClearRecent}
 					>
 						<Icon name="trash" class="h-3 w-3" />
@@ -722,7 +762,9 @@
 			</div>
 
 			<!-- Ligne 2 : En-têtes de colonnes fixes -->
-			<div class="grid grid-cols-[32px_36px_minmax(180px,2fr)_minmax(120px,1.2fr)_110px_110px_64px_130px_60px] items-center gap-3 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-text-tertiary border-t border-stroke-subtle">
+			<div
+				class="grid grid-cols-[32px_36px_minmax(180px,2fr)_minmax(120px,1.2fr)_110px_110px_64px_130px_60px] items-center gap-3 border-t border-stroke-subtle px-3 py-1 text-[10px] font-semibold tracking-wider text-text-tertiary uppercase"
+			>
 				<span class="pl-1">#</span>
 				<span>Cover</span>
 				<span>Titre & Artiste</span>
@@ -731,47 +773,53 @@
 				<span>BPM / Clé</span>
 				<span class="text-right">Durée</span>
 				<span>Dernière lecture</span>
-				<span class="text-right pr-1">Actions</span>
+				<span class="pr-1 text-right">Actions</span>
 			</div>
 		</div>
 
 		<!-- LISTE DÉFILANTE DES SONS UNIQUEMENT (flex-1 overflow-y-auto) -->
-		<div class="flex-1 overflow-y-auto px-6 py-1 scroll-smooth">
+		<div class="flex-1 overflow-y-auto scroll-smooth px-6 py-1">
 			{#if $recentTracksLoading}
-				<div class="flex h-32 items-center justify-center text-text-tertiary gap-2">
+				<div class="flex h-32 items-center justify-center gap-2 text-text-tertiary">
 					<Icon name="loader" class="h-4 w-4 animate-spin" />
 					<span class="text-xs">Chargement de l'historique...</span>
 				</div>
 			{:else if $recentStandaloneTracks.length === 0}
 				<!-- Empty State -->
 				<div class="flex flex-col items-center justify-center py-12 text-center">
-					<div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-2 border border-stroke-subtle mb-2.5 text-cyan-600 dark:text-cyan-400/60 shadow-inner">
+					<div
+						class="mb-2.5 flex h-12 w-12 items-center justify-center rounded-2xl border border-stroke-subtle bg-surface-2 text-cyan-600 shadow-inner dark:text-cyan-400/60"
+					>
 						<Icon name="disc" class="h-6 w-6" />
 					</div>
 					<h3 class="text-sm font-semibold text-text-primary">Aucun fichier audio récent</h3>
-					<p class="text-xs text-text-tertiary max-w-sm mt-1">
-						Double-cliquez sur un fichier audio dans le Finder ou ouvrez-le avec Crate pour l'écouter directement sans encombrer votre bibliothèque.
+					<p class="mt-1 max-w-sm text-xs text-text-tertiary">
+						Double-cliquez sur un fichier audio dans le Finder ou ouvrez-le avec Crate pour l'écouter directement sans
+						encombrer votre bibliothèque.
 					</p>
 				</div>
 			{:else if filteredRecentTracks.length === 0}
 				<!-- Empty Filter State -->
 				<div class="flex flex-col items-center justify-center py-12 text-center">
-					<div class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 border border-stroke-subtle mb-2 text-text-tertiary">
+					<div
+						class="mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-tertiary"
+					>
 						<Icon name="search" class="h-5 w-5" />
 					</div>
 					<h3 class="text-xs font-semibold text-text-primary">Aucun résultat pour « {recentSearchQuery} »</h3>
 					<button
 						type="button"
-						class="mt-2 text-xs text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer"
-						onclick={() => recentSearchQuery = ''}
+						class="mt-2 cursor-pointer text-xs text-cyan-600 hover:underline dark:text-cyan-400"
+						onclick={() => (recentSearchQuery = '')}
 					>
 						Effacer le filtre
 					</button>
 				</div>
 			{:else}
 				<div class="flex flex-col divide-y divide-stroke-subtle/50 py-1">
-					{#each filteredRecentTracks as track, index}
-						{@const isPlayingThis = $isPlaying && $playbackSource === 'standalone' && $standaloneTrack?.file_path === track.file_path}
+					{#each filteredRecentTracks as track, index (track.id)}
+						{@const isPlayingThis =
+							$isPlaying && $playbackSource === 'standalone' && $standaloneTrack?.file_path === track.file_path}
 						{@const trackArtUrl = track.artwork_path ? getArtworkUrl(track.artwork_path, $appDataDir) : null}
 						{@const trackCamelot = track.key ? getCamelotColor(track.key) : null}
 
@@ -779,25 +827,31 @@
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<div
-							class="grid grid-cols-[32px_36px_minmax(180px,2fr)_minmax(120px,1.2fr)_110px_110px_64px_130px_60px] items-center gap-3 px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer group {isPlayingThis ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-300' : 'hover:bg-surface-1 text-text-primary'}"
+							class="group grid cursor-pointer grid-cols-[32px_36px_minmax(180px,2fr)_minmax(120px,1.2fr)_110px_110px_64px_130px_60px] items-center gap-3 rounded-lg px-3 py-1.5 text-xs transition-colors {isPlayingThis
+								? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-300'
+								: 'text-text-primary hover:bg-surface-1'}"
 							onclick={() => handlePlayTrack(track)}
 						>
 							<!-- Index / Play Icon / Equalizer Animation -->
-							<div class="pl-1 font-mono text-text-tertiary flex items-center">
+							<div class="flex items-center pl-1 font-mono text-text-tertiary">
 								{#if isPlayingThis}
-									<div class="flex items-end gap-[2px] h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400">
-										<span class="w-[3px] bg-cyan-600 dark:bg-cyan-400 rounded-full animate-eq-1"></span>
-										<span class="w-[3px] bg-cyan-600 dark:bg-cyan-400 rounded-full animate-eq-2"></span>
-										<span class="w-[3px] bg-cyan-600 dark:bg-cyan-400 rounded-full animate-eq-3"></span>
+									<div class="flex h-3.5 w-3.5 items-end gap-[2px] text-cyan-600 dark:text-cyan-400">
+										<span class="animate-eq-1 w-[3px] rounded-full bg-cyan-600 dark:bg-cyan-400"></span>
+										<span class="animate-eq-2 w-[3px] rounded-full bg-cyan-600 dark:bg-cyan-400"></span>
+										<span class="animate-eq-3 w-[3px] rounded-full bg-cyan-600 dark:bg-cyan-400"></span>
 									</div>
 								{:else}
 									<span class="group-hover:hidden">{index + 1}</span>
-									<Icon name="play" class="h-3.5 w-3.5 hidden group-hover:block text-cyan-600 dark:text-cyan-400" fill />
+									<Icon
+										name="play"
+										class="hidden h-3.5 w-3.5 text-cyan-600 group-hover:block dark:text-cyan-400"
+										fill
+									/>
 								{/if}
 							</div>
 
 							<!-- Cover Thumbnail -->
-							<div class="h-8 w-8 overflow-hidden rounded-lg bg-surface-2/60 border border-stroke-subtle flex-shrink-0">
+							<div class="h-8 w-8 flex-shrink-0 overflow-hidden rounded-lg border border-stroke-subtle bg-surface-2/60">
 								{#if trackArtUrl}
 									<img src={trackArtUrl} alt="" class="h-full w-full object-cover" />
 								{:else}
@@ -809,24 +863,28 @@
 
 							<!-- Title & Artist -->
 							<div class="min-w-0 pr-2">
-								<div class="font-semibold text-text-primary group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate">
+								<div
+									class="truncate font-semibold text-text-primary transition-colors group-hover:text-cyan-600 dark:group-hover:text-cyan-400"
+								>
 									{track.title || track.file_path.split('/').pop() || 'Morceau inconnu'}
 								</div>
-								<div class="text-[11px] text-text-secondary truncate">
+								<div class="truncate text-[11px] text-text-secondary">
 									{track.artist || 'Artiste inconnu'}
 								</div>
 							</div>
 
 							<!-- Album -->
-							<div class="text-text-secondary truncate text-[11px] pr-2">
+							<div class="truncate pr-2 text-[11px] text-text-secondary">
 								{track.album || '-'}
 							</div>
 
 							<!-- Format & Bitrate -->
-							<div class="font-mono text-[11px] truncate">
-								<span class="font-bold uppercase text-text-primary">{track.format}</span>
+							<div class="truncate font-mono text-[11px]">
+								<span class="font-bold text-text-primary uppercase">{track.format}</span>
 								{#if track.bitrate}
-									<span class="text-text-tertiary ml-1">({formatBitrate(track.bitrate, track.format, track.sample_rate)})</span>
+									<span class="ml-1 text-text-tertiary"
+										>({formatBitrate(track.bitrate, track.format, track.sample_rate)})</span
+									>
 								{/if}
 							</div>
 
@@ -838,13 +896,13 @@
 								{#if track.key}
 									{#if trackCamelot}
 										<span
-											class="rounded-full px-1.5 py-0.2 text-[9px] font-extrabold border shadow-xs"
+											class="py-0.2 rounded-full border px-1.5 text-[9px] font-extrabold shadow-xs"
 											style="background-color: {trackCamelot.bg}; color: {trackCamelot.text}; border-color: {trackCamelot.border};"
 										>
 											{formatKey(track.key, 'camelot')}
 										</span>
 									{:else}
-										<span class="font-mono text-text-secondary text-[10px]">{track.key}</span>
+										<span class="font-mono text-[10px] text-text-secondary">{track.key}</span>
 									{/if}
 								{/if}
 								{#if !track.bpm && !track.key}
@@ -853,12 +911,12 @@
 							</div>
 
 							<!-- Duration -->
-							<div class="font-mono text-right text-text-secondary tabular-nums text-[11px]">
+							<div class="text-right font-mono text-[11px] text-text-secondary tabular-nums">
 								{formatDuration(track.duration_ms)}
 							</div>
 
 							<!-- Last Played -->
-							<div class="text-[11px] text-text-tertiary truncate">
+							<div class="truncate text-[11px] text-text-tertiary">
 								{track.last_played_at ? formatDate(track.last_played_at, 'locale') : '-'}
 							</div>
 
@@ -866,11 +924,11 @@
 							<!-- svelte-ignore a11y_no_static_element_interactions -->
 							<!-- svelte-ignore a11y_click_events_have_key_events -->
 							<div class="pr-1 text-right" onclick={(e) => e.stopPropagation()}>
-								<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+								<div class="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
 									<Tooltip text="Révéler dans le Finder" position="top">
 										<button
 											type="button"
-											class="p-1 rounded-full text-text-tertiary hover:bg-surface-2 hover:text-text-primary cursor-pointer transition-colors"
+											class="cursor-pointer rounded-full p-1 text-text-tertiary transition-colors hover:bg-surface-2 hover:text-text-primary"
 											onclick={() => handleRevealInFinder(track.file_path)}
 										>
 											<Icon name="folder-open" class="h-3 w-3" />
@@ -880,7 +938,7 @@
 									<Tooltip text="Supprimer de l'historique" position="top">
 										<button
 											type="button"
-											class="p-1 rounded-full text-text-tertiary hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400 cursor-pointer transition-colors"
+											class="cursor-pointer rounded-full p-1 text-text-tertiary transition-colors hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400"
 											onclick={(e) => handleRemoveRecent(e, track.id)}
 										>
 											<Icon name="x" class="h-3 w-3" />
@@ -904,16 +962,31 @@
 
 <style>
 	@keyframes eq-pulse-1 {
-		0%, 100% { height: 4px; }
-		50% { height: 14px; }
+		0%,
+		100% {
+			height: 4px;
+		}
+		50% {
+			height: 14px;
+		}
 	}
 	@keyframes eq-pulse-2 {
-		0%, 100% { height: 12px; }
-		50% { height: 5px; }
+		0%,
+		100% {
+			height: 12px;
+		}
+		50% {
+			height: 5px;
+		}
 	}
 	@keyframes eq-pulse-3 {
-		0%, 100% { height: 6px; }
-		50% { height: 14px; }
+		0%,
+		100% {
+			height: 6px;
+		}
+		50% {
+			height: 14px;
+		}
 	}
 	.animate-eq-1 {
 		animation: eq-pulse-1 0.7s ease-in-out infinite;

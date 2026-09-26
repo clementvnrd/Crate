@@ -1,11 +1,5 @@
 <script lang="ts">
-	import {
-		albumsStore,
-		playerAlbums,
-		albumsLoading,
-		albumsAdding,
-		appDataDir,
-	} from '$lib/stores'
+	import { albumsStore, playerAlbums, albumsLoading, albumsAdding, appDataDir } from '$lib/stores'
 	import type { PlayerAlbum } from '$shared/types'
 	import { getArtworkUrl } from '$shared/utils'
 	import { Icon, Tooltip } from '$lib/components/common'
@@ -27,23 +21,31 @@
 
 	function handleRemoveAlbum(e: MouseEvent, albumId: string) {
 		e.stopPropagation()
-		if (confirm('Voulez-vous retirer cet album du lecteur Crate ? (Les fichiers sur votre disque ne seront pas supprimés)')) {
+		if (
+			confirm(
+				'Voulez-vous retirer cet album du lecteur Crate ? (Les fichiers sur votre disque ne seront pas supprimés)'
+			)
+		) {
 			albumsStore.removeAlbum(albumId)
 		}
 	}
 </script>
 
-<div class="flex flex-col h-full w-full overflow-y-auto px-6 py-4">
+<div class="flex h-full w-full flex-col overflow-y-auto px-6 py-4">
 	<!-- Top Bar: Header & Add Album Button -->
-	<div class="flex items-center justify-between pb-5 border-b border-stroke-subtle flex-shrink-0">
+	<div class="flex flex-shrink-0 items-center justify-between border-b border-stroke-subtle pb-5">
 		<div class="flex items-center gap-3">
-			<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 shadow-xs">
+			<div
+				class="flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-600 shadow-xs dark:text-cyan-400"
+			>
 				<Icon name="disc" class="h-5 w-5" />
 			</div>
 			<div>
-				<h2 class="text-base font-bold text-text-primary flex items-center gap-2">
+				<h2 class="flex items-center gap-2 text-base font-bold text-text-primary">
 					<span>Mes Albums</span>
-					<span class="text-xs px-2 py-0.5 rounded-full bg-surface-2 border border-stroke-subtle font-mono text-text-secondary font-medium">
+					<span
+						class="rounded-full border border-stroke-subtle bg-surface-2 px-2 py-0.5 font-mono text-xs font-medium text-text-secondary"
+					>
 						{$playerAlbums.length}
 					</span>
 				</h2>
@@ -55,7 +57,7 @@
 
 		<button
 			type="button"
-			class="flex items-center gap-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black px-3.5 py-2 text-xs font-bold shadow-lg shadow-cyan-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+			class="flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-3.5 py-2 text-xs font-bold text-black shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-400 active:scale-95 disabled:opacity-50"
 			onclick={handleAddAlbum}
 			disabled={$albumsAdding}
 		>
@@ -67,23 +69,26 @@
 	<!-- Main Grid Content -->
 	<div class="flex-1 py-6">
 		{#if $albumsLoading}
-			<div class="flex h-48 items-center justify-center text-text-tertiary gap-2.5">
+			<div class="flex h-48 items-center justify-center gap-2.5 text-text-tertiary">
 				<Icon name="loader" class="h-5 w-5 animate-spin text-cyan-500" />
 				<span class="text-sm">Chargement des albums...</span>
 			</div>
 		{:else if $playerAlbums.length === 0}
 			<!-- Empty State -->
-			<div class="flex flex-col items-center justify-center py-16 text-center max-w-md mx-auto">
-				<div class="flex h-20 w-20 items-center justify-center rounded-3xl bg-surface-1 border border-stroke-subtle mb-4 text-cyan-600 dark:text-cyan-400 shadow-inner">
+			<div class="mx-auto flex max-w-md flex-col items-center justify-center py-16 text-center">
+				<div
+					class="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl border border-stroke-subtle bg-surface-1 text-cyan-600 shadow-inner dark:text-cyan-400"
+				>
 					<Icon name="disc" class="h-10 w-10 opacity-70" />
 				</div>
 				<h3 class="text-base font-bold text-text-primary">Aucun album importé</h3>
-				<p class="text-xs text-text-secondary mt-1.5 leading-relaxed">
-					Ajoutez un dossier contenant vos fichiers audio pour parcourir votre collection sous forme d'albums avec leurs pochettes intégrées.
+				<p class="mt-1.5 text-xs leading-relaxed text-text-secondary">
+					Ajoutez un dossier contenant vos fichiers audio pour parcourir votre collection sous forme d'albums avec leurs
+					pochettes intégrées.
 				</p>
 				<button
 					type="button"
-					class="mt-5 flex items-center gap-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black px-4 py-2.5 text-xs font-bold shadow-md shadow-cyan-500/20 active:scale-95 transition-all cursor-pointer"
+					class="mt-5 flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-xs font-bold text-black shadow-md shadow-cyan-500/20 transition-all hover:bg-cyan-400 active:scale-95"
 					onclick={handleAddAlbum}
 				>
 					<Icon name="folder-plus" class="h-4 w-4" />
@@ -92,19 +97,18 @@
 			</div>
 		{:else}
 			<!-- Apple Music Style Album Grid -->
-			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 pb-12">
+			<div class="grid grid-cols-2 gap-6 pb-12 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
 				{#each $playerAlbums as album (album.id)}
 					{@const artUrl = album.artwork_path ? getArtworkUrl(album.artwork_path, $appDataDir) : null}
 
 					<!-- Album Card -->
 					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<div
-						class="group flex flex-col cursor-pointer"
-						onclick={() => onSelectAlbum(album)}
-					>
+					<div class="group flex cursor-pointer flex-col" onclick={() => onSelectAlbum(album)}>
 						<!-- Square Artwork Container -->
-						<div class="relative aspect-square w-full rounded-2xl overflow-hidden bg-surface-2/70 border border-stroke-subtle shadow-md group-hover:shadow-2xl group-hover:border-cyan-500/30 transition-all duration-300">
+						<div
+							class="relative aspect-square w-full overflow-hidden rounded-2xl border border-stroke-subtle bg-surface-2/70 shadow-md transition-all duration-300 group-hover:border-cyan-500/30 group-hover:shadow-2xl"
+						>
 							{#if artUrl}
 								<img
 									src={artUrl}
@@ -118,22 +122,24 @@
 							{/if}
 
 							<!-- Hover Overlay Gradient -->
-							<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"></div>
+							<div
+								class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+							></div>
 
 							<!-- Floating Play Button on Hover -->
 							<button
 								type="button"
-								class="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-cyan-400 text-black shadow-lg shadow-cyan-400/50 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer z-10"
+								class="absolute right-3 bottom-3 z-10 flex h-10 w-10 translate-y-2 cursor-pointer items-center justify-center rounded-full bg-cyan-400 text-black opacity-0 shadow-lg shadow-cyan-400/50 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
 								onclick={(e) => handlePlayAlbumDirect(e, album)}
 								aria-label="Lire l'album"
 							>
-								<Icon name="play" class="h-4 w-4 ml-0.5" fill />
+								<Icon name="play" class="ml-0.5 h-4 w-4" fill />
 							</button>
 
 							<!-- Delete/Remove Icon Button on Top Right -->
 							<button
 								type="button"
-								class="absolute top-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 backdrop-blur-md text-text-tertiary hover:text-red-400 hover:bg-black/80 opacity-0 group-hover:opacity-100 transition-all duration-200 active:scale-95 cursor-pointer z-10"
+								class="absolute top-2.5 right-2.5 z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-black/60 text-text-tertiary opacity-0 backdrop-blur-md transition-all duration-200 group-hover:opacity-100 hover:bg-black/80 hover:text-red-400 active:scale-95"
 								onclick={(e) => handleRemoveAlbum(e, album.id)}
 								title="Retirer de la liste"
 							>
@@ -141,20 +147,26 @@
 							</button>
 
 							<!-- Track Count Badge on Bottom Left -->
-							<div class="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-mono font-medium text-white/90 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-								{album.track_count} {album.track_count > 1 ? 'pistes' : 'piste'}
+							<div
+								class="pointer-events-none absolute bottom-2.5 left-2.5 rounded-md bg-black/60 px-2 py-0.5 font-mono text-[10px] font-medium text-white/90 opacity-0 backdrop-blur-md transition-opacity duration-200 group-hover:opacity-100"
+							>
+								{album.track_count}
+								{album.track_count > 1 ? 'pistes' : 'piste'}
 							</div>
 						</div>
 
 						<!-- Album Title & Artist -->
 						<div class="mt-2.5 min-w-0">
-							<h3 class="text-sm font-bold text-text-primary group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate" title={album.title}>
+							<h3
+								class="truncate text-sm font-bold text-text-primary transition-colors group-hover:text-cyan-600 dark:group-hover:text-cyan-400"
+								title={album.title}
+							>
 								{album.title}
 							</h3>
-							<p class="text-xs font-medium text-text-secondary truncate mt-0.5" title={album.artist}>
+							<p class="mt-0.5 truncate text-xs font-medium text-text-secondary" title={album.artist}>
 								{album.artist}
 							</p>
-							<div class="flex items-center gap-1.5 text-[10px] text-text-tertiary mt-1">
+							<div class="mt-1 flex items-center gap-1.5 text-[10px] text-text-tertiary">
 								{#if album.year}
 									<span>{album.year}</span>
 									{#if album.genre}

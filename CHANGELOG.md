@@ -111,6 +111,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **[I9]** Les options d'affichage de la bibliothèque (colonnes, zéro Camelot…) sont enregistrées dans la base (donc sauvegardées et restaurées avec elle) ; le `localStorage` ne sert plus que de cache au démarrage.
 - Tests : 3 tests Vitest pour `toErrorMessage`.
 
+#### Outillage et qualité
+
+- **[Q4]** Rust : `cargo fmt` appliqué (40 fichiers) et `cargo clippy --features desktop -- -D warnings` passe (37 erreurs → 0) : code mort supprimé (`ListenSource`, `set_track_rating`, `set_track_color`, `extract_bpm/key`, `detect_rekordbox_dir`, champs de réponse Spotify inutilisés, réexports inutiles), itérations et tris simplifiés.
+- **[Q5]** TypeScript/Svelte : Prettier appliqué et ESLint à 0 erreur (38 → 0) : clés sur toutes les boucles `{#each}`, plus de `any` explicite, `$derived` modifiable dans la barre de recherche, caches non réactifs documentés.
+- **[Q6]** CI du fork sur Linux : un job frontend (format, lint, types, Vitest) et un job Rust (clippy, tests) à chaque push ; le job Rust vérifie aussi la compilation hors macOS.
+- **[Q3]** `RunEvent::Opened` limité aux plateformes qui le fournissent (macOS, iOS, Android) : le code compile de nouveau sous Windows/Linux.
+- **[Q8]** Dépendances de test épinglées (Vitest 4.1.11, testing-library, jsdom), une seule version de Vite (7.3.0, via `resolutions`) pour l'app et les tests, fournisseur de couverture `@vitest/coverage-v8` ajouté (`yarn test:coverage`).
+- **[Q13]** `yarn dev` compile l'app en debug (reconstructions rapides) avec des dépendances optimisées (`[profile.dev.package."*"]`) pour garder un décodage audio fluide.
+- **[B10]** Migrations : libellés alignés sur leur position réelle (6 à 15) et règle « on ajoute, on ne renumérote jamais » documentée ; l'ordre n'est pas modifié car la base locale les a déjà appliquées.
+- **[Q11]** Script `set_default_player.swift` supprimé ; la synthèse de l'assistant précédent est archivée dans `suivi/historique/`.
+- **[Q12]** `CLAUDE.md` en place depuis le début du fork (règles de suivi et règles techniques).
+
 #### Documentation
 
 - **[L6]** Le README annonce désormais les 15 langues réellement livrées (au lieu de 11) et décrit le fork, les tests et le suivi.

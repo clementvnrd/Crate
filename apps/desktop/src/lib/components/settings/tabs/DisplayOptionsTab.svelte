@@ -57,7 +57,7 @@
 	<!-- Columns to display -->
 	<section class="space-y-2 rounded-lg border border-stroke bg-surface-1 p-4">
 		<Text variant="header-4" weight="semibold">{$translate('settings.displayOptions.columnsToDisplay')}</Text>
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 divide-y md:divide-y-0 divide-stroke-subtle">
+		<div class="grid grid-cols-1 gap-x-6 divide-y divide-stroke-subtle md:grid-cols-2 md:divide-y-0">
 			<div class="space-y-1 divide-y divide-stroke-subtle">
 				<ToggleSwitch
 					label={$translate('settings.displayOptions.columns.coverArt')}

@@ -1,10 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { get } from 'svelte/store'
-import {
-	recentTracksStore,
-	recentStandaloneTracks,
-	recentTracksLoading,
-} from './recentTracks'
+import { recentTracksStore, recentStandaloneTracks, recentTracksLoading } from './recentTracks'
 import type { StandaloneTrack } from '$shared/types'
 import * as standaloneApi from '$shared/api/standalone'
 

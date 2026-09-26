@@ -28,4 +28,3 @@ export function getArtworkUrl(
 	const fullPath = trimmed.startsWith('/') ? trimmed : `${dataDir}/${trimmed}`
 	return convertFileSrc(fullPath)
 }
-

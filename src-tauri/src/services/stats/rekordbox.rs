@@ -1,6 +1,6 @@
+use rusqlite::{Connection, OpenFlags};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use rusqlite::{Connection, OpenFlags};
 use uuid::Uuid;
 
 use crate::error::{CrateError, Result};
@@ -46,12 +46,10 @@ impl RekordboxTrackerService {
             }
         }
 
-        candidates.into_iter().filter(|p| p.exists() && p.is_dir()).collect()
-    }
-
-    /// Finds the first accessible Rekordbox directory.
-    pub fn detect_rekordbox_dir() -> Option<PathBuf> {
-        Self::detect_rekordbox_dirs().into_iter().next()
+        candidates
+            .into_iter()
+            .filter(|p| p.exists() && p.is_dir())
+            .collect()
     }
 
     /// Finds Rekordbox master database file if present.
@@ -81,7 +79,9 @@ impl RekordboxTrackerService {
                     total_synced += count;
                 }
                 Err(e) => {
-                    log::warn!("Could not read Rekordbox master.db (may be encrypted or locked): {e}");
+                    log::warn!(
+                        "Could not read Rekordbox master.db (may be encrypted or locked): {e}"
+                    );
                 }
             }
         }
@@ -116,7 +116,7 @@ impl RekordboxTrackerService {
             db_path,
             OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
         )
-        .map_err(|e| CrateError::Database(e))?;
+        .map_err(CrateError::Database)?;
 
         let _ = rb_conn.execute("PRAGMA query_only = ON;", []);
 
@@ -182,12 +182,17 @@ impl RekordboxTrackerService {
 
             if let Ok(mapped) = rows {
                 for item in mapped.flatten() {
-                    let (_id, session_id, title, artist, album, duration_ms, bpm, key, played_at) = item;
+                    let (_id, session_id, title, artist, album, duration_ms, bpm, key, played_at) =
+                        item;
                     if title.trim().is_empty() || artist.trim().is_empty() {
                         continue;
                     }
 
-                    let played_ms = if duration_ms > 0 { duration_ms } else { 180_000 };
+                    let played_ms = if duration_ms > 0 {
+                        duration_ms
+                    } else {
+                        180_000
+                    };
 
                     let event = ListenEvent {
                         id: Uuid::new_v4().to_string(),
@@ -228,7 +233,10 @@ impl RekordboxTrackerService {
                         "#,
                         rusqlite::params![
                             session_id,
-                            format!("Rekordbox Session {}", &played_at[..10.min(played_at.len())]),
+                            format!(
+                                "Rekordbox Session {}",
+                                &played_at[..10.min(played_at.len())]
+                            ),
                             played_at,
                             played_ms as i64
                         ],
@@ -255,8 +263,12 @@ impl RekordboxTrackerService {
             let session_id = format!("rb-xml-{}", history.name);
             let already_imported = {
                 let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-                conn.query_row("SELECT 1 FROM rekordbox_sessions WHERE id = ?1", [&session_id], |_| Ok(()))
-                    .is_ok()
+                conn.query_row(
+                    "SELECT 1 FROM rekordbox_sessions WHERE id = ?1",
+                    [&session_id],
+                    |_| Ok(()),
+                )
+                .is_ok()
             };
             if already_imported {
                 continue;
@@ -266,7 +278,9 @@ impl RekordboxTrackerService {
             let mut session_played_ms: u64 = 0;
             let mut session_track_count = 0usize;
             for key in &history.track_keys {
-                let Some(track) = collection.get(key) else { continue };
+                let Some(track) = collection.get(key) else {
+                    continue;
+                };
                 if track.title.is_empty() || track.artist.is_empty() {
                     continue;
                 }
@@ -299,7 +313,8 @@ impl RekordboxTrackerService {
 
             if session_track_count > 0 {
                 let started_at = history.date.to_rfc3339();
-                let ended_at = (history.date + chrono::Duration::milliseconds(offset_ms)).to_rfc3339();
+                let ended_at =
+                    (history.date + chrono::Duration::milliseconds(offset_ms)).to_rfc3339();
                 let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
                 conn.execute(
                     r#"
@@ -365,7 +380,6 @@ impl RekordboxTrackerService {
     }
 }
 
-
 /// A track of the Rekordbox XML COLLECTION.
 #[derive(Debug, Clone)]
 struct XmlTrack {
@@ -396,25 +410,42 @@ fn xml_unescape(value: &str) -> String {
 
 fn xml_attr(attrs: &str, name: &str) -> Option<String> {
     let re = regex::Regex::new(&format!(r#"(?:^|\s){name}="([^"]*)""#)).ok()?;
-    re.captures(attrs).and_then(|c| c.get(1)).map(|m| xml_unescape(m.as_str()))
+    re.captures(attrs)
+        .and_then(|c| c.get(1))
+        .map(|m| xml_unescape(m.as_str()))
 }
 
 /// TrackID → track, from the `<COLLECTION>` section.
 fn parse_collection(xml: &str) -> std::collections::HashMap<String, XmlTrack> {
     let mut tracks = std::collections::HashMap::new();
-    let Some(start) = xml.find("<COLLECTION") else { return tracks };
-    let end = xml[start..].find("</COLLECTION>").map_or(xml.len(), |e| start + e);
+    let Some(start) = xml.find("<COLLECTION") else {
+        return tracks;
+    };
+    let end = xml[start..]
+        .find("</COLLECTION>")
+        .map_or(xml.len(), |e| start + e);
     let track_re = regex::Regex::new(r#"<TRACK\s+([^>]*?)/?>"#).expect("valid regex");
     for cap in track_re.captures_iter(&xml[start..end]) {
         let attrs = &cap[1];
-        let Some(id) = xml_attr(attrs, "TrackID") else { continue };
+        let Some(id) = xml_attr(attrs, "TrackID") else {
+            continue;
+        };
         tracks.insert(
             id,
             XmlTrack {
-                title: xml_attr(attrs, "Name").unwrap_or_default().trim().to_string(),
-                artist: xml_attr(attrs, "Artist").unwrap_or_default().trim().to_string(),
+                title: xml_attr(attrs, "Name")
+                    .unwrap_or_default()
+                    .trim()
+                    .to_string(),
+                artist: xml_attr(attrs, "Artist")
+                    .unwrap_or_default()
+                    .trim()
+                    .to_string(),
                 album: xml_attr(attrs, "Album").filter(|a| !a.is_empty()),
-                duration_ms: xml_attr(attrs, "TotalTime").and_then(|t| t.parse::<u64>().ok()).unwrap_or(0) * 1000,
+                duration_ms: xml_attr(attrs, "TotalTime")
+                    .and_then(|t| t.parse::<u64>().ok())
+                    .unwrap_or(0)
+                    * 1000,
                 bpm: xml_attr(attrs, "AverageBpm").and_then(|b| b.parse().ok()),
                 key: xml_attr(attrs, "Tonality").filter(|k| !k.is_empty()),
             },
@@ -425,8 +456,11 @@ fn parse_collection(xml: &str) -> std::collections::HashMap<String, XmlTrack> {
 
 /// Playlists (`Type="1"`) whose name carries a date, found in the `<PLAYLISTS>` section.
 fn parse_history_playlists(xml: &str) -> Vec<XmlHistory> {
-    let Some(start) = xml.find("<PLAYLISTS") else { return Vec::new() };
-    let node_re = regex::Regex::new(r#"(?s)<NODE\s+([^>]*Type="1"[^>]*)>(.*?)</NODE>"#).expect("valid regex");
+    let Some(start) = xml.find("<PLAYLISTS") else {
+        return Vec::new();
+    };
+    let node_re =
+        regex::Regex::new(r#"(?s)<NODE\s+([^>]*Type="1"[^>]*)>(.*?)</NODE>"#).expect("valid regex");
     let key_re = regex::Regex::new(r#"<TRACK\s+Key="([^"]+)""#).expect("valid regex");
     let date_re = regex::Regex::new(r"(\d{4})-(\d{2})-(\d{2})").expect("valid regex");
     node_re
@@ -434,10 +468,24 @@ fn parse_history_playlists(xml: &str) -> Vec<XmlHistory> {
         .filter_map(|cap| {
             let name = xml_attr(&cap[1], "Name")?;
             let d = date_re.captures(&name)?;
-            let date = chrono::NaiveDate::from_ymd_opt(d[1].parse().ok()?, d[2].parse().ok()?, d[3].parse().ok()?)?;
-            let local = date.and_hms_opt(0, 0, 0)?.and_local_timezone(chrono::Local).earliest()?;
-            let track_keys = key_re.captures_iter(&cap[2]).map(|k| k[1].to_string()).collect();
-            Some(XmlHistory { name, date: local, track_keys })
+            let date = chrono::NaiveDate::from_ymd_opt(
+                d[1].parse().ok()?,
+                d[2].parse().ok()?,
+                d[3].parse().ok()?,
+            )?;
+            let local = date
+                .and_hms_opt(0, 0, 0)?
+                .and_local_timezone(chrono::Local)
+                .earliest()?;
+            let track_keys = key_re
+                .captures_iter(&cap[2])
+                .map(|k| k[1].to_string())
+                .collect();
+            Some(XmlHistory {
+                name,
+                date: local,
+                track_keys,
+            })
         })
         .collect()
 }
@@ -478,7 +526,11 @@ mod xml_tests {
     fn test_only_history_playlists_become_listens_once() {
         let (svc, conn) = service();
         assert_eq!(svc.import_rekordbox_history_xml(SAMPLE).unwrap(), 2);
-        assert_eq!(svc.import_rekordbox_history_xml(SAMPLE).unwrap(), 0, "re-importing the same export adds nothing");
+        assert_eq!(
+            svc.import_rekordbox_history_xml(SAMPLE).unwrap(),
+            0,
+            "re-importing the same export adds nothing"
+        );
 
         let conn = conn.lock().unwrap();
         let titles: Vec<String> = conn
@@ -489,7 +541,16 @@ mod xml_tests {
             .flatten()
             .collect();
         assert_eq!(titles, vec!["Opus", "R&B Groove"]);
-        let first_day: String = conn.query_row("SELECT date(played_at) FROM listen_events LIMIT 1", [], |r| r.get(0)).unwrap();
-        assert!(first_day.starts_with("2026-09-"), "dated from the history playlist, not today");
+        let first_day: String = conn
+            .query_row(
+                "SELECT date(played_at) FROM listen_events LIMIT 1",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert!(
+            first_day.starts_with("2026-09-"),
+            "dated from the history playlist, not today"
+        );
     }
 }

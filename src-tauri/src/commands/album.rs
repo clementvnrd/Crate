@@ -13,9 +13,7 @@ pub async fn add_player_album(
 }
 
 #[tauri::command]
-pub async fn get_player_albums(
-    album_service: State<'_, AlbumService>,
-) -> Result<Vec<PlayerAlbum>> {
+pub async fn get_player_albums(album_service: State<'_, AlbumService>) -> Result<Vec<PlayerAlbum>> {
     album_service.get_albums()
 }
 

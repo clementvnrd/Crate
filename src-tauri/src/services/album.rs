@@ -83,16 +83,31 @@ impl AlbumService {
 
         // Check for folder cover art first (cover.jpg, folder.png, etc.)
         let folder_art_candidates = [
-            "cover.jpg", "cover.png", "cover.jpeg", "cover.webp",
-            "folder.jpg", "folder.png", "folder.jpeg",
-            "front.jpg", "front.png", "front.jpeg",
-            "albumart.jpg", "album.jpg", "art.jpg",
-            "Cover.jpg", "Cover.png", "Folder.jpg", "Front.jpg",
+            "cover.jpg",
+            "cover.png",
+            "cover.jpeg",
+            "cover.webp",
+            "folder.jpg",
+            "folder.png",
+            "folder.jpeg",
+            "front.jpg",
+            "front.png",
+            "front.jpeg",
+            "albumart.jpg",
+            "album.jpg",
+            "art.jpg",
+            "Cover.jpg",
+            "Cover.png",
+            "Folder.jpg",
+            "Front.jpg",
         ];
         for candidate in &folder_art_candidates {
             let img_path = folder_path.join(candidate);
             if img_path.exists() {
-                if let Some(saved) = self.artwork_service.save_from_file(&img_path, &format!("album_{}", album_id)) {
+                if let Some(saved) = self
+                    .artwork_service
+                    .save_from_file(&img_path, &format!("album_{}", album_id))
+                {
                     detected_album_art = Some(saved);
                     break;
                 }
@@ -126,7 +141,10 @@ impl AlbumService {
                 bitrate = properties.audio_bitrate().map(|b| b as i32);
                 sample_rate = properties.sample_rate().map(|s| s as i32);
 
-                if let Some(tag) = tagged_file.primary_tag().or_else(|| tagged_file.first_tag()) {
+                if let Some(tag) = tagged_file
+                    .primary_tag()
+                    .or_else(|| tagged_file.first_tag())
+                {
                     title = tag.title().map(|s| s.trim().to_string());
                     artist = tag.artist().map(|s| s.trim().to_string());
                     album = tag.album().map(|s| s.trim().to_string());
@@ -135,8 +153,12 @@ impl AlbumService {
                     if detected_year.is_none() {
                         if let Some(year) = tag.year() {
                             detected_year = Some(year as i32);
-                        } else if let Some(date_str) = tag.get_string(&lofty::tag::ItemKey::RecordingDate) {
-                            if let Ok(y) = date_str.chars().take(4).collect::<String>().parse::<i32>() {
+                        } else if let Some(date_str) =
+                            tag.get_string(&lofty::tag::ItemKey::RecordingDate)
+                        {
+                            if let Ok(y) =
+                                date_str.chars().take(4).collect::<String>().parse::<i32>()
+                            {
                                 if (1900..=2099).contains(&y) {
                                     detected_year = Some(y);
                                 }
@@ -163,10 +185,11 @@ impl AlbumService {
                     energy = Some(e);
                 }
 
-                if let Some(art) = self
-                    .artwork_service
-                    .extract_from_tagged_file_or_folder(&tagged_file, path, &track_id)
-                {
+                if let Some(art) = self.artwork_service.extract_from_tagged_file_or_folder(
+                    &tagged_file,
+                    path,
+                    &track_id,
+                ) {
                     artwork_path = Some(art.clone());
                     if detected_album_art.is_none() {
                         detected_album_art = Some(art);
@@ -241,13 +264,11 @@ impl AlbumService {
             .map(|(name, _)| name);
 
         // Sort tracks by track number, then path
-        raw_tracks.sort_by(|a, b| {
-            match (a.track_number, b.track_number) {
-                (Some(na), Some(nb)) if na != nb => na.cmp(&nb),
-                (Some(_), None) => std::cmp::Ordering::Less,
-                (None, Some(_)) => std::cmp::Ordering::Greater,
-                _ => a.file_path.cmp(&b.file_path),
-            }
+        raw_tracks.sort_by(|a, b| match (a.track_number, b.track_number) {
+            (Some(na), Some(nb)) if na != nb => na.cmp(&nb),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            _ => a.file_path.cmp(&b.file_path),
         });
 
         // Ensure track artwork falls back to detected album artwork
@@ -505,10 +526,9 @@ impl AlbumService {
     }
 
     /// Helper for symphonia audio properties fallback
-    fn read_audio_properties_symphonia(
-        path: &Path,
-    ) -> Result<(i64, Option<i32>, Option<i32>)> {
-        let file = File::open(path).map_err(|e| CrateError::Metadata(format!("Failed to open: {e}")))?;
+    fn read_audio_properties_symphonia(path: &Path) -> Result<(i64, Option<i32>, Option<i32>)> {
+        let file =
+            File::open(path).map_err(|e| CrateError::Metadata(format!("Failed to open: {e}")))?;
         let mss = MediaSourceStream::new(Box::new(file), Default::default());
 
         let mut hint = Hint::new();
@@ -564,7 +584,6 @@ mod tests {
         let (conn, dir) = setup_test_db();
         let service = AlbumService::new(conn.clone(), dir);
 
-
         // Test with empty/non-existent folder
         let invalid = service.add_album_from_folder("/non/existent/path");
         assert!(invalid.is_err());
@@ -577,76 +596,82 @@ mod tests {
         let album_id = uuid::Uuid::new_v4().to_string();
         {
             let conn_guard = conn.lock().unwrap();
-            conn_guard.execute(
-                r#"
+            conn_guard
+                .execute(
+                    r#"
                 INSERT INTO player_albums (
                     id, folder_path, title, artist, year, genre, artwork_path,
                     track_count, total_duration_ms, created_at
                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
                 "#,
-                rusqlite::params![
-                    album_id,
-                    "/Users/test/Music/Discovery",
-                    "Discovery",
-                    "Daft Punk",
-                    2001,
-                    "Electronic",
-                    None::<String>,
-                    2,
-                    450000,
-                    chrono::Utc::now().to_rfc3339()
-                ],
-            ).unwrap();
+                    rusqlite::params![
+                        album_id,
+                        "/Users/test/Music/Discovery",
+                        "Discovery",
+                        "Daft Punk",
+                        2001,
+                        "Electronic",
+                        None::<String>,
+                        2,
+                        450000,
+                        chrono::Utc::now().to_rfc3339()
+                    ],
+                )
+                .unwrap();
 
-            conn_guard.execute(
-                r#"
+            conn_guard
+                .execute(
+                    r#"
                 INSERT INTO player_album_tracks (
                     id, album_id, file_path, track_number, title, artist,
                     duration_ms, format, bitrate, sample_rate, bpm, key, energy, artwork_path
                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
                 "#,
-                rusqlite::params![
-                    uuid::Uuid::new_v4().to_string(),
-                    album_id,
-                    "/Users/test/Music/Discovery/01 One More Time.flac",
-                    1,
-                    "One More Time",
-                    "Daft Punk",
-                    320000,
-                    "flac",
-                    1411,
-                    44100,
-                    123.0,
-                    "11B",
-                    8,
-                    None::<String>
-                ],
-            ).unwrap();
+                    rusqlite::params![
+                        uuid::Uuid::new_v4().to_string(),
+                        album_id,
+                        "/Users/test/Music/Discovery/01 One More Time.flac",
+                        1,
+                        "One More Time",
+                        "Daft Punk",
+                        320000,
+                        "flac",
+                        1411,
+                        44100,
+                        123.0,
+                        "11B",
+                        8,
+                        None::<String>
+                    ],
+                )
+                .unwrap();
 
-            conn_guard.execute(
-                r#"
+            conn_guard
+                .execute(
+                    r#"
                 INSERT INTO player_album_tracks (
                     id, album_id, file_path, track_number, title, artist,
                     duration_ms, format, bitrate, sample_rate, bpm, key, energy, artwork_path
                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
                 "#,
-                rusqlite::params![
-                    uuid::Uuid::new_v4().to_string(),
-                    album_id,
-                    "/Users/test/Music/Discovery/02 Aerodynamic.flac",
-                    2,
-                    "Aerodynamic",
-                    "Daft Punk",
-                    130000,
-                    "flac",
-                    1411,
-                    44100,
-                    123.0,
-                    "4A",
-                    9,
-                    None::<String>
-                ],
-            ).unwrap();
+                    rusqlite::params![
+                        uuid::Uuid::new_v4().to_string(),
+                        album_id,
+                        "/Users/test/Music/Discovery/02 Aerodynamic.flac",
+                        2,
+                        "Aerodynamic",
+                        "Daft Punk",
+                        130000,
+                        "flac",
+                        1411,
+                        44100,
+                        123.0,
+                        "4A",
+                        9,
+                        None::<String>
+                    ],
+                )
+                .unwrap();
         }
 
         // Test get_albums

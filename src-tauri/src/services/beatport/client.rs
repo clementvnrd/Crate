@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
 use crate::services::library::mik::MikService;
-use std::sync::Mutex;
-use sha2::{Sha256, Digest};
 use base64::Engine;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::sync::Mutex;
 
 pub const BEATPORT_CLIENT_ID: &str = "0GIvkCltVIuPkkwSJHp6NDb3s0potTjLBQr388Dd";
 pub const BEATPORT_REDIRECT_URI: &str = "https://api.beatport.com/v4/docs/oauth2-redirect.html";
@@ -112,7 +112,8 @@ impl BeatportClient {
 
     /// Generates PKCE authorization URL for official Beatport Identity Login
     pub fn generate_pkce_auth_url() -> String {
-        const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+        const CHARSET: &[u8] =
+            b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
         let mut rng = rand::rng();
         let verifier: String = (0..64)
             .map(|_| {
@@ -140,10 +141,16 @@ impl BeatportClient {
     }
 
     /// Exchanges PKCE code for real Beatport JWT access token
-    pub async fn login_with_pkce_code(&self, code_input: &str) -> Result<BeatportAuthState, String> {
+    pub async fn login_with_pkce_code(
+        &self,
+        code_input: &str,
+    ) -> Result<BeatportAuthState, String> {
         let trimmed = code_input.trim();
         // If the user pasted a raw JWT or JSON token directly into the PKCE box
-        if trimmed.starts_with("eyJ") || trimmed.starts_with('{') || trimmed.contains("access_token") {
+        if trimmed.starts_with("eyJ")
+            || trimmed.starts_with('{')
+            || trimmed.contains("access_token")
+        {
             return self.validate_token(trimmed, None).await;
         }
 
@@ -172,7 +179,8 @@ impl BeatportClient {
                 ("redirect_uri", uri),
             ];
 
-            let resp = self.http_client
+            let resp = self
+                .http_client
                 .post("https://account.beatport.com/o/token/")
                 .form(&params)
                 .send()
@@ -181,24 +189,31 @@ impl BeatportClient {
             match resp {
                 Ok(response) => {
                     if response.status().is_success() {
-                        let json_resp: serde_json::Value = response.json().await
+                        let json_resp: serde_json::Value = response
+                            .json()
+                            .await
                             .map_err(|e| format!("Réponse JSON invalide : {e}"))?;
 
-                        let access_token = json_resp.get("access_token")
+                        let access_token = json_resp
+                            .get("access_token")
                             .and_then(|v| v.as_str())
                             .ok_or("Aucun access_token dans la réponse Beatport")?
                             .to_string();
 
-                        let refresh_token = json_resp.get("refresh_token")
+                        let refresh_token = json_resp
+                            .get("refresh_token")
                             .and_then(|v| v.as_str())
                             .map(|s| s.to_string());
 
                         let user_info = self.get_my_account(&access_token).await.ok();
-                        let display_name = user_info.and_then(|u| {
-                            u.get("username").and_then(|v| v.as_str())
-                                .or_else(|| u.get("first_name").and_then(|v| v.as_str()))
-                                .map(|s| s.to_string())
-                        }).unwrap_or_else(|| "Beatport Subscriber".to_string());
+                        let display_name = user_info
+                            .and_then(|u| {
+                                u.get("username")
+                                    .and_then(|v| v.as_str())
+                                    .or_else(|| u.get("first_name").and_then(|v| v.as_str()))
+                                    .map(|s| s.to_string())
+                            })
+                            .unwrap_or_else(|| "Beatport Subscriber".to_string());
 
                         let state = BeatportAuthState {
                             is_authenticated: true,
@@ -220,18 +235,24 @@ impl BeatportClient {
             }
         }
 
-        Err(format!("Échec d'obtention du token Beatport : {last_error}"))
+        Err(format!(
+            "Échec d'obtention du token Beatport : {last_error}"
+        ))
     }
 
     /// Refreshes an expired access token using the refresh token
-    pub async fn refresh_access_token(&self, refresh_token: &str) -> Result<BeatportAuthState, String> {
+    pub async fn refresh_access_token(
+        &self,
+        refresh_token: &str,
+    ) -> Result<BeatportAuthState, String> {
         let params = [
             ("grant_type", "refresh_token"),
             ("refresh_token", refresh_token),
             ("client_id", BEATPORT_CLIENT_ID),
         ];
 
-        let resp = self.http_client
+        let resp = self
+            .http_client
             .post("https://account.beatport.com/o/token/")
             .header("Origin", "https://api.beatport.com")
             .header("Referer", "https://api.beatport.com/")
@@ -245,25 +266,32 @@ impl BeatportClient {
             return Err(format!("Échec renouvellement token Beatport : {err_text}"));
         }
 
-        let json_resp: serde_json::Value = resp.json().await
+        let json_resp: serde_json::Value = resp
+            .json()
+            .await
             .map_err(|e| format!("Réponse JSON invalide : {e}"))?;
 
-        let new_access_token = json_resp.get("access_token")
+        let new_access_token = json_resp
+            .get("access_token")
             .and_then(|v| v.as_str())
             .ok_or("Aucun access_token dans la réponse de rafraîchissement")?
             .to_string();
 
-        let new_refresh_token = json_resp.get("refresh_token")
+        let new_refresh_token = json_resp
+            .get("refresh_token")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string())
             .or_else(|| Some(refresh_token.to_string()));
 
         let user_info = self.get_my_account(&new_access_token).await.ok();
-        let display_name = user_info.and_then(|u| {
-            u.get("username").and_then(|v| v.as_str())
-                .or_else(|| u.get("first_name").and_then(|v| v.as_str()))
-                .map(|s| s.to_string())
-        }).unwrap_or_else(|| "Beatport Subscriber".to_string());
+        let display_name = user_info
+            .and_then(|u| {
+                u.get("username")
+                    .and_then(|v| v.as_str())
+                    .or_else(|| u.get("first_name").and_then(|v| v.as_str()))
+                    .map(|s| s.to_string())
+            })
+            .unwrap_or_else(|| "Beatport Subscriber".to_string());
 
         let state = BeatportAuthState {
             is_authenticated: true,
@@ -278,7 +306,11 @@ impl BeatportClient {
     }
 
     /// Validates an existing access token or manual token paste
-    pub async fn validate_token(&self, token: &str, refresh_token: Option<&str>) -> Result<BeatportAuthState, String> {
+    pub async fn validate_token(
+        &self,
+        token: &str,
+        refresh_token: Option<&str>,
+    ) -> Result<BeatportAuthState, String> {
         let mut access_token = token.trim().to_string();
         let mut final_refresh_token = refresh_token.map(|s| s.to_string());
 
@@ -294,9 +326,13 @@ impl BeatportClient {
         }
 
         // A token is only accepted if Beatport's account endpoint accepts it.
-        let user_info = self.get_my_account(&access_token).await
+        let user_info = self
+            .get_my_account(&access_token)
+            .await
             .map_err(|e| format!("Jeton Beatport refusé : {e}"))?;
-        let username = user_info.get("username").and_then(|v| v.as_str())
+        let username = user_info
+            .get("username")
+            .and_then(|v| v.as_str())
             .or_else(|| user_info.get("first_name").and_then(|v| v.as_str()))
             .unwrap_or("Beatport User")
             .to_string();
@@ -330,7 +366,8 @@ impl BeatportClient {
 
     /// Fetches user profile account from /v4/my/account/
     pub async fn get_my_account(&self, token: &str) -> Result<serde_json::Value, String> {
-        let resp = self.http_client
+        let resp = self
+            .http_client
             .get("https://api.beatport.com/v4/my/account/")
             .bearer_auth(token)
             .send()
@@ -341,12 +378,15 @@ impl BeatportClient {
             return Err("Token Beatport expiré ou invalide".to_string());
         }
 
-        resp.json().await.map_err(|e| format!("JSON profile invalide : {e}"))
+        resp.json()
+            .await
+            .map_err(|e| format!("JSON profile invalide : {e}"))
     }
 
     /// Fetches real user playlists from /v4/my/playlists/
     pub async fn get_user_playlists(&self, token: &str) -> Result<Vec<BeatportPlaylist>, String> {
-        let resp = self.http_client
+        let resp = self
+            .http_client
             .get("https://api.beatport.com/v4/my/playlists/?per_page=100")
             .bearer_auth(token)
             .send()
@@ -359,9 +399,19 @@ impl BeatportClient {
                     let mut playlists = Vec::new();
                     for item in results {
                         if let Some(id) = item.get("id").map(|v| v.to_string()) {
-                            let name = item.get("name").and_then(|n| n.as_str()).unwrap_or("Untitled").to_string();
-                            let track_count = item.get("track_count").and_then(|c| c.as_i64()).unwrap_or(0);
-                            let is_public = item.get("is_public").and_then(|p| p.as_bool()).unwrap_or(false);
+                            let name = item
+                                .get("name")
+                                .and_then(|n| n.as_str())
+                                .unwrap_or("Untitled")
+                                .to_string();
+                            let track_count = item
+                                .get("track_count")
+                                .and_then(|c| c.as_i64())
+                                .unwrap_or(0);
+                            let is_public = item
+                                .get("is_public")
+                                .and_then(|p| p.as_bool())
+                                .unwrap_or(false);
                             playlists.push(BeatportPlaylist {
                                 id,
                                 name,
@@ -380,8 +430,13 @@ impl BeatportClient {
     }
 
     /// Fetches tracks of a user playlist (/v4/my/playlists/{id}/tracks/)
-    pub async fn get_playlist_tracks(&self, token: Option<&str>, playlist_id: &str) -> Result<Vec<BeatportTrack>, String> {
-        let url = format!("https://api.beatport.com/v4/my/playlists/{playlist_id}/tracks/?per_page=100");
+    pub async fn get_playlist_tracks(
+        &self,
+        token: Option<&str>,
+        playlist_id: &str,
+    ) -> Result<Vec<BeatportTrack>, String> {
+        let url =
+            format!("https://api.beatport.com/v4/my/playlists/{playlist_id}/tracks/?per_page=100");
         let mut req = self.http_client.get(&url);
         if let Some(t) = token {
             req = req.bearer_auth(t);
@@ -390,7 +445,8 @@ impl BeatportClient {
         if let Ok(resp) = req.send().await {
             if resp.status().is_success() {
                 if let Ok(json_data) = resp.json::<serde_json::Value>().await {
-                    let raw_items = json_data.get("results")
+                    let raw_items = json_data
+                        .get("results")
                         .or_else(|| json_data.get("tracks"))
                         .and_then(|r| r.as_array());
 
@@ -412,8 +468,13 @@ impl BeatportClient {
     }
 
     /// Fetches tracks of an artist (/v4/catalog/artists/{id}/tracks/)
-    pub async fn get_artist_tracks(&self, token: Option<&str>, artist_id: i64) -> Result<Vec<BeatportTrack>, String> {
-        let url = format!("https://api.beatport.com/v4/catalog/artists/{artist_id}/tracks/?per_page=150");
+    pub async fn get_artist_tracks(
+        &self,
+        token: Option<&str>,
+        artist_id: i64,
+    ) -> Result<Vec<BeatportTrack>, String> {
+        let url =
+            format!("https://api.beatport.com/v4/catalog/artists/{artist_id}/tracks/?per_page=150");
         let mut req = self.http_client.get(&url);
         if let Some(t) = token {
             req = req.bearer_auth(t);
@@ -422,7 +483,8 @@ impl BeatportClient {
         if let Ok(resp) = req.send().await {
             if resp.status().is_success() {
                 if let Ok(json_data) = resp.json::<serde_json::Value>().await {
-                    let raw_items = json_data.get("results")
+                    let raw_items = json_data
+                        .get("results")
                         .or_else(|| json_data.get("tracks"))
                         .and_then(|r| r.as_array());
 
@@ -444,35 +506,61 @@ impl BeatportClient {
     }
 
     /// Fetches artist detail (/v4/catalog/artists/{id}/)
-    pub async fn get_artist_detail(&self, token: Option<&str>, artist_id: i64) -> Result<BeatportArtistDetail, String> {
+    pub async fn get_artist_detail(
+        &self,
+        token: Option<&str>,
+        artist_id: i64,
+    ) -> Result<BeatportArtistDetail, String> {
         let url = format!("https://api.beatport.com/v4/catalog/artists/{artist_id}/");
         let mut req = self.http_client.get(&url);
         if let Some(t) = token {
             req = req.bearer_auth(t);
         }
 
-        let resp = req.send().await.map_err(|e| format!("Erreur artist detail : {e}"))?;
+        let resp = req
+            .send()
+            .await
+            .map_err(|e| format!("Erreur artist detail : {e}"))?;
         if !resp.status().is_success() {
             return Err("Artiste non trouvé sur Beatport".to_string());
         }
 
-        let item: serde_json::Value = resp.json().await.map_err(|e| format!("JSON artist invalide : {e}"))?;
+        let item: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("JSON artist invalide : {e}"))?;
 
         let id = item.get("id").and_then(|i| i.as_i64()).unwrap_or(artist_id);
-        let name = item.get("name").and_then(|n| n.as_str()).unwrap_or("Artist").to_string();
-        let slug = item.get("slug").and_then(|s| s.as_str()).map(|s| s.to_string());
-        let biography = item.get("biography").and_then(|b| b.as_str()).map(|s| s.to_string());
+        let name = item
+            .get("name")
+            .and_then(|n| n.as_str())
+            .unwrap_or("Artist")
+            .to_string();
+        let slug = item
+            .get("slug")
+            .and_then(|s| s.as_str())
+            .map(|s| s.to_string());
+        let biography = item
+            .get("biography")
+            .and_then(|b| b.as_str())
+            .map(|s| s.to_string());
 
-        let image_url = item.get("image")
+        let image_url = item
+            .get("image")
             .and_then(|img| img.get("uri").or_else(|| img.get("dynamic_uri")))
             .and_then(|u| u.as_str())
             .map(|s| s.replace("{w}x{h}", "500x500"));
 
-        let genres = item.get("genres")
+        let genres = item
+            .get("genres")
             .and_then(|arr| arr.as_array())
             .map(|arr| {
                 arr.iter()
-                    .filter_map(|g| g.get("name").and_then(|n| n.as_str()).map(|s| s.to_string()))
+                    .filter_map(|g| {
+                        g.get("name")
+                            .and_then(|n| n.as_str())
+                            .map(|s| s.to_string())
+                    })
                     .collect()
             })
             .unwrap_or_default();
@@ -491,8 +579,13 @@ impl BeatportClient {
     }
 
     /// Fetches tracks of a curated chart (/v4/catalog/charts/{id}/tracks/)
-    pub async fn get_chart_tracks(&self, token: Option<&str>, chart_id: &str) -> Result<Vec<BeatportTrack>, String> {
-        let url = format!("https://api.beatport.com/v4/catalog/charts/{chart_id}/tracks/?per_page=100");
+    pub async fn get_chart_tracks(
+        &self,
+        token: Option<&str>,
+        chart_id: &str,
+    ) -> Result<Vec<BeatportTrack>, String> {
+        let url =
+            format!("https://api.beatport.com/v4/catalog/charts/{chart_id}/tracks/?per_page=100");
         let mut req = self.http_client.get(&url);
         if let Some(t) = token {
             req = req.bearer_auth(t);
@@ -501,7 +594,8 @@ impl BeatportClient {
         if let Ok(resp) = req.send().await {
             if resp.status().is_success() {
                 if let Ok(json_data) = resp.json::<serde_json::Value>().await {
-                    let raw_items = json_data.get("results")
+                    let raw_items = json_data
+                        .get("results")
                         .or_else(|| json_data.get("tracks"))
                         .and_then(|r| r.as_array());
 
@@ -523,7 +617,11 @@ impl BeatportClient {
     }
 
     /// Fetches user favorites / stars
-    pub async fn get_user_favorites(&self, token: Option<&str>, _page: Option<i64>) -> Result<Vec<BeatportTrack>, String> {
+    pub async fn get_user_favorites(
+        &self,
+        token: Option<&str>,
+        _page: Option<i64>,
+    ) -> Result<Vec<BeatportTrack>, String> {
         let url = "https://api.beatport.com/v4/my/stars/?per_page=100";
         let mut req = self.http_client.get(url);
         if let Some(t) = token {
@@ -533,7 +631,8 @@ impl BeatportClient {
         if let Ok(resp) = req.send().await {
             if resp.status().is_success() {
                 if let Ok(json_data) = resp.json::<serde_json::Value>().await {
-                    let raw_items = json_data.get("results")
+                    let raw_items = json_data
+                        .get("results")
                         .or_else(|| json_data.get("tracks"))
                         .and_then(|r| r.as_array());
 
@@ -555,7 +654,10 @@ impl BeatportClient {
     }
 
     /// Fetches user purchases
-    pub async fn get_user_purchases(&self, token: Option<&str>) -> Result<Vec<BeatportTrack>, String> {
+    pub async fn get_user_purchases(
+        &self,
+        token: Option<&str>,
+    ) -> Result<Vec<BeatportTrack>, String> {
         let url = "https://api.beatport.com/v4/my/hype-purchases/?per_page=100";
         let mut req = self.http_client.get(url);
         if let Some(t) = token {
@@ -565,7 +667,8 @@ impl BeatportClient {
         if let Ok(resp) = req.send().await {
             if resp.status().is_success() {
                 if let Ok(json_data) = resp.json::<serde_json::Value>().await {
-                    let raw_items = json_data.get("results")
+                    let raw_items = json_data
+                        .get("results")
                         .or_else(|| json_data.get("tracks"))
                         .and_then(|r| r.as_array());
 
@@ -624,7 +727,10 @@ impl BeatportClient {
     }
 
     /// Fetches Featured Curated Charts (filtering only charts with tracks)
-    pub async fn get_featured_charts(&self, token: Option<&str>) -> Result<Vec<BeatportChart>, String> {
+    pub async fn get_featured_charts(
+        &self,
+        token: Option<&str>,
+    ) -> Result<Vec<BeatportChart>, String> {
         let url = "https://api.beatport.com/v4/catalog/charts/?per_page=30";
         let mut req = self.http_client.get(url);
         if let Some(t) = token {
@@ -637,7 +743,10 @@ impl BeatportClient {
                     if let Some(results) = json_data.get("results").and_then(|r| r.as_array()) {
                         let mut charts = Vec::new();
                         for item in results {
-                            let track_count = item.get("track_count").and_then(|c| c.as_i64()).unwrap_or(0);
+                            let track_count = item
+                                .get("track_count")
+                                .and_then(|c| c.as_i64())
+                                .unwrap_or(0);
                             if track_count == 0 {
                                 continue;
                             }
@@ -646,8 +755,12 @@ impl BeatportClient {
                                 item.get("id").map(|v| v.to_string()),
                                 item.get("name").and_then(|n| n.as_str()),
                             ) {
-                                let desc = item.get("description").and_then(|d| d.as_str()).map(|s| s.to_string());
-                                let img = item.get("image")
+                                let desc = item
+                                    .get("description")
+                                    .and_then(|d| d.as_str())
+                                    .map(|s| s.to_string());
+                                let img = item
+                                    .get("image")
                                     .and_then(|i| i.get("uri").or_else(|| i.get("dynamic_uri")))
                                     .and_then(|u| u.as_str())
                                     .unwrap_or("")
@@ -676,7 +789,11 @@ impl BeatportClient {
     }
 
     /// Fetches Beatport Tracks (Catalog / Genre)
-    pub async fn get_top_tracks(&self, token: Option<&str>, genre_id: Option<i64>) -> Result<Vec<BeatportTrack>, String> {
+    pub async fn get_top_tracks(
+        &self,
+        token: Option<&str>,
+        genre_id: Option<i64>,
+    ) -> Result<Vec<BeatportTrack>, String> {
         let url = if let Some(gid) = genre_id {
             format!("https://api.beatport.com/v4/catalog/tracks/?genre_id={gid}&per_page=50")
         } else {
@@ -691,7 +808,8 @@ impl BeatportClient {
         if let Ok(resp) = req.send().await {
             if resp.status().is_success() {
                 if let Ok(json_data) = resp.json::<serde_json::Value>().await {
-                    let raw_items = json_data.get("results")
+                    let raw_items = json_data
+                        .get("results")
                         .or_else(|| json_data.get("tracks"))
                         .and_then(|r| r.as_array());
 
@@ -713,10 +831,14 @@ impl BeatportClient {
     }
 
     /// Comprehensive Search (tracks and artists) with auto-token fallback, auto-refresh on 401/403, and explicit auth error
-    pub async fn search_catalog_full(&self, token: Option<&str>, query: &str) -> Result<BeatportSearchResult, String> {
-        let mut active_token = token.map(|s| s.to_string()).or_else(|| {
-            Self::load_persisted_auth().and_then(|a| a.token)
-        });
+    pub async fn search_catalog_full(
+        &self,
+        token: Option<&str>,
+        query: &str,
+    ) -> Result<BeatportSearchResult, String> {
+        let mut active_token = token
+            .map(|s| s.to_string())
+            .or_else(|| Self::load_persisted_auth().and_then(|a| a.token));
 
         if active_token.is_none() {
             if let Some(auth) = Self::load_persisted_auth() {
@@ -729,12 +851,18 @@ impl BeatportClient {
         }
 
         let Some(mut current_token) = active_token else {
-            return Err("Authentification Beatport requise. Aucun jeton d'accès disponible.".to_string());
+            return Err(
+                "Authentification Beatport requise. Aucun jeton d'accès disponible.".to_string(),
+            );
         };
 
-        let url = format!("https://api.beatport.com/v4/catalog/search/?q={}&per_page=50", url_encode(query));
+        let url = format!(
+            "https://api.beatport.com/v4/catalog/search/?q={}&per_page=50",
+            url_encode(query)
+        );
 
-        let mut resp = self.http_client
+        let mut resp = self
+            .http_client
             .get(&url)
             .bearer_auth(&current_token)
             .send()
@@ -756,12 +884,15 @@ impl BeatportClient {
             }
 
             if refreshed {
-                resp = self.http_client
+                resp = self
+                    .http_client
                     .get(&url)
                     .bearer_auth(&current_token)
                     .send()
                     .await
-                    .map_err(|e| format!("Erreur réseau Beatport search (après rafraîchissement): {e}"))?;
+                    .map_err(|e| {
+                        format!("Erreur réseau Beatport search (après rafraîchissement): {e}")
+                    })?;
             }
 
             if resp.status().as_u16() == 401 || resp.status().as_u16() == 403 {
@@ -773,7 +904,9 @@ impl BeatportClient {
             return Err(format!("Erreur API Beatport (status: {})", resp.status()));
         }
 
-        let json_data: serde_json::Value = resp.json().await
+        let json_data: serde_json::Value = resp
+            .json()
+            .await
             .map_err(|e| format!("Réponse JSON recherche Beatport invalide: {e}"))?;
 
         let mut tracks = Vec::new();
@@ -786,8 +919,12 @@ impl BeatportClient {
                     a.get("id").and_then(|i| i.as_i64()),
                     a.get("name").and_then(|n| n.as_str()),
                 ) {
-                    let slug = a.get("slug").and_then(|s| s.as_str()).map(|s| s.to_string());
-                    let img = a.get("image")
+                    let slug = a
+                        .get("slug")
+                        .and_then(|s| s.as_str())
+                        .map(|s| s.to_string());
+                    let img = a
+                        .get("image")
                         .and_then(|i| i.get("uri").or_else(|| i.get("dynamic_uri")))
                         .and_then(|u| u.as_str())
                         .map(|s| s.replace("{w}x{h}", "500x500"));
@@ -803,7 +940,8 @@ impl BeatportClient {
         }
 
         // Parse tracks
-        let raw_tracks = json_data.get("tracks")
+        let raw_tracks = json_data
+            .get("tracks")
             .or_else(|| json_data.get("results"))
             .and_then(|r| r.as_array());
 
@@ -823,63 +961,83 @@ impl BeatportClient {
     fn parse_beatport_json_track(item: &serde_json::Value) -> Option<BeatportTrack> {
         let id = item.get("id")?.to_string();
         let title = item.get("name")?.as_str()?.to_string();
-        let mix_name = item.get("mix_name").and_then(|m| m.as_str()).map(|s| s.to_string());
+        let mix_name = item
+            .get("mix_name")
+            .and_then(|m| m.as_str())
+            .map(|s| s.to_string());
 
-        let artists = item.get("artists")
+        let artists = item
+            .get("artists")
             .and_then(|arr| arr.as_array())
             .map(|arr| {
-                arr.iter().filter_map(|a| {
-                    let a_img = a.get("image")
-                        .and_then(|i| i.get("uri").or_else(|| i.get("dynamic_uri")))
-                        .and_then(|u| u.as_str())
-                        .map(|s| s.replace("{w}x{h}", "500x500"));
+                arr.iter()
+                    .filter_map(|a| {
+                        let a_img = a
+                            .get("image")
+                            .and_then(|i| i.get("uri").or_else(|| i.get("dynamic_uri")))
+                            .and_then(|u| u.as_str())
+                            .map(|s| s.replace("{w}x{h}", "500x500"));
 
-                    Some(BeatportArtist {
-                        id: a.get("id")?.as_i64().unwrap_or(0),
-                        name: a.get("name")?.as_str()?.to_string(),
-                        slug: a.get("slug").and_then(|s| s.as_str()).map(|s| s.to_string()),
-                        image_url: a_img,
+                        Some(BeatportArtist {
+                            id: a.get("id")?.as_i64().unwrap_or(0),
+                            name: a.get("name")?.as_str()?.to_string(),
+                            slug: a
+                                .get("slug")
+                                .and_then(|s| s.as_str())
+                                .map(|s| s.to_string()),
+                            image_url: a_img,
+                        })
                     })
-                }).collect()
+                    .collect()
             })
             .unwrap_or_default();
 
-        let genre = item.get("genre")
+        let genre = item
+            .get("genre")
             .and_then(|g| g.get("name"))
             .and_then(|n| n.as_str())
             .unwrap_or("Electronic")
             .to_string();
 
-        let genre_id = item.get("genre").and_then(|g| g.get("id")).and_then(|i| i.as_i64());
+        let genre_id = item
+            .get("genre")
+            .and_then(|g| g.get("id"))
+            .and_then(|i| i.as_i64());
 
-        let release_name = item.get("release")
+        let release_name = item
+            .get("release")
             .and_then(|r| r.get("name"))
             .and_then(|n| n.as_str())
             .map(|s| s.to_string());
 
-        let release_date = item.get("new_release_date")
+        let release_date = item
+            .get("new_release_date")
             .and_then(|d| d.as_str())
             .or_else(|| item.get("publish_date").and_then(|d| d.as_str()))
             .or_else(|| item.get("release_date").and_then(|d| d.as_str()))
             .unwrap_or("2026-01-01")
             .to_string();
 
-        let duration_ms = item.get("length_ms")
+        let duration_ms = item
+            .get("length_ms")
             .and_then(|l| l.as_i64())
             .unwrap_or(240_000);
 
         let duration_formatted = format_ms_to_time(duration_ms);
 
-        let key_raw = item.get("key")
+        let key_raw = item
+            .get("key")
             .and_then(|k| k.get("name").or(Some(k)))
             .and_then(|k| k.as_str());
-        let key = key_raw.map(|k| MikService::normalize_key(k));
+        let key = key_raw.map(MikService::normalize_key);
 
-        let bpm = item.get("bpm")
+        let bpm = item
+            .get("bpm")
             .and_then(|b| b.as_f64().or_else(|| b.as_i64().map(|i| i as f64)));
 
         // PRIORITIZE SQUARE RELEASE ARTWORK (500x500) over banner/waveform
-        let artwork_url = item.get("release")
+        let artwork_url = item
+            .get("release")
             .and_then(|r| r.get("image"))
             .and_then(|img| img.get("uri").or_else(|| img.get("dynamic_uri")))
             .and_then(|u| u.as_str())
@@ -891,11 +1049,13 @@ impl BeatportClient {
                     .map(|s| s.replace("{w}x{h}", "500x500"))
             });
 
-        let preview_url = item.get("sample_url")
+        let preview_url = item
+            .get("sample_url")
             .and_then(|u| u.as_str())
             .map(|s| s.to_string());
 
-        let waveform_url = item.get("waveform")
+        let waveform_url = item
+            .get("waveform")
             .and_then(|w| w.get("large_url").or_else(|| w.get("url")))
             .and_then(|u| u.as_str())
             .map(|s| s.to_string())

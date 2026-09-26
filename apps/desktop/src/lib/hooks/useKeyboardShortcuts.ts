@@ -1,6 +1,13 @@
 import { get } from 'svelte/store'
 import { isInputFocused, isNativeDialogOpen } from '$shared/utils'
-import { activeView, currentTrack, standaloneTrack, playerStore, recentStandaloneTracks, playbackPosition } from '$lib/stores'
+import {
+	activeView,
+	currentTrack,
+	standaloneTrack,
+	playerStore,
+	recentStandaloneTracks,
+	playbackPosition,
+} from '$lib/stores'
 
 // =============================================================================
 // Types
@@ -222,8 +229,7 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): () => 
 		// Number keys 1 to 8: jump to hot cues — only in the Player and Library views, with a track
 		// loaded, and never while typing (other views keep their own use of the digits)
 		const view = get(activeView)
-		const cueKeysActive =
-			(view === 'player' || view === 'library') && !!(get(currentTrack) || get(standaloneTrack))
+		const cueKeysActive = (view === 'player' || view === 'library') && !!(get(currentTrack) || get(standaloneTrack))
 		if (cueKeysActive && !inputFocused && !e.metaKey && !e.ctrlKey && !e.altKey) {
 			const num = parseInt(e.key, 10)
 			if (num >= 1 && num <= 8) {

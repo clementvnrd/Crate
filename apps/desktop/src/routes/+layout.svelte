@@ -415,7 +415,7 @@
 					></div>
 					<Text variant="header-1" as="span" weight="bold">Crate</Text>
 					<span
-						class="rounded bg-brand-primary/20 border border-brand-primary/40 px-1.5 py-0.5 text-[11px] font-mono font-bold text-brand-primary tracking-wide"
+						class="bg-brand-primary/20 border-brand-primary/40 rounded border px-1.5 py-0.5 font-mono text-[11px] font-bold tracking-wide text-brand-primary"
 						title="App Build Number"
 					>
 						Build 57
@@ -433,13 +433,17 @@
 					>
 						<div
 							class="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(33.333%-2px)] rounded-md bg-surface-0 shadow-sm transition-transform duration-200 ease-out motion-reduce:transition-none"
-							style="transform: translateX({$activeView === 'player' ? '0%' : $activeView === 'library' ? '100%' : '200%'})"
+							style="transform: translateX({$activeView === 'player'
+								? '0%'
+								: $activeView === 'library'
+									? '100%'
+									: '200%'})"
 						></div>
 						<button
 							type="button"
 							class="relative z-10 flex items-center justify-center gap-1.5 rounded-md px-3 py-1 text-center text-xs font-medium transition-colors {$activeView ===
 							'player'
-								? 'text-cyan-400 font-semibold'
+								? 'font-semibold text-cyan-400'
 								: 'text-text-tertiary hover:cursor-pointer hover:text-text-secondary'}"
 							onclick={() => $pageActions?.handleViewChange('player')}
 						>
@@ -450,7 +454,7 @@
 							type="button"
 							class="relative z-10 rounded-md px-3 py-1 text-center text-xs font-medium transition-colors {$activeView ===
 							'library'
-								? 'text-text-primary font-semibold'
+								? 'font-semibold text-text-primary'
 								: 'text-text-tertiary hover:cursor-pointer hover:text-text-secondary'}"
 							onclick={() => $pageActions?.handleViewChange('library')}
 						>
@@ -460,11 +464,16 @@
 							type="button"
 							class="relative z-10 flex items-center justify-center gap-1.5 rounded-md px-3 py-1 text-center text-xs font-medium transition-colors {$activeView ===
 							'beatport'
-								? 'text-emerald-500 dark:text-emerald-400 font-semibold'
+								? 'font-semibold text-emerald-500 dark:text-emerald-400'
 								: 'text-text-tertiary hover:cursor-pointer hover:text-text-secondary'}"
 							onclick={() => $pageActions?.handleViewChange('beatport')}
 						>
-							<Icon name="beatport" class="h-3 w-3 {$activeView === 'beatport' ? 'text-emerald-500 dark:text-emerald-400' : 'text-text-tertiary'}" />
+							<Icon
+								name="beatport"
+								class="h-3 w-3 {$activeView === 'beatport'
+									? 'text-emerald-500 dark:text-emerald-400'
+									: 'text-text-tertiary'}"
+							/>
 							<span>Beatport</span>
 						</button>
 					</div>
@@ -533,7 +542,13 @@
 				{/if}
 
 				<!-- Right: Main Content -->
-				<div class="flex flex-1 overflow-hidden {$activeView !== 'beatport' && $activeView !== 'player' && $activeView !== 'stats' ? 'rounded-tl-md border-t border-l border-stroke' : ''}">
+				<div
+					class="flex flex-1 overflow-hidden {$activeView !== 'beatport' &&
+					$activeView !== 'player' &&
+					$activeView !== 'stats'
+						? 'rounded-tl-md border-t border-l border-stroke'
+						: ''}"
+				>
 					{@render children()}
 				</div>
 			</div>

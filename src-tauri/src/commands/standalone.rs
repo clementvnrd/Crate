@@ -75,8 +75,14 @@ pub async fn play_standalone_track(
             } else {
                 "crate_standalone".to_string()
             },
-            title: track.title.clone().unwrap_or_else(|| "Unknown Track".to_string()),
-            artist: track.artist.clone().unwrap_or_else(|| "Unknown Artist".to_string()),
+            title: track
+                .title
+                .clone()
+                .unwrap_or_else(|| "Unknown Track".to_string()),
+            artist: track
+                .artist
+                .clone()
+                .unwrap_or_else(|| "Unknown Artist".to_string()),
             album: track.album.clone(),
             duration_ms: track.duration_ms.max(0) as u64,
             bpm: track.bpm,

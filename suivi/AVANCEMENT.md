@@ -5,7 +5,7 @@ Ce fichier est **la** source de vérité du suivi : chaque défaut du [registre]
 Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ = précision ou reste à faire. Le tableau de progression se recalcule avec `yarn suivi`.
 
 <!-- progression:start -->
-**Progression globale : 74 / 106 défauts corrigés (70 %)**
+**Progression globale : 83 / 106 défauts corrigés (78 %)**
 
 | Étape | Corrigés | Progression |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ =
 | Étape 6 — Statistiques justes | 10 / 10 | ██████████ |
 | Étape 7 — Fonctions DJ exactes | 17 / 18 | █████████░ |
 | Étape 8 — Frontend robuste | 17 / 17 | ██████████ |
-| Étape 9 — Hygiène et outillage | 0 / 14 | ░░░░░░░░░░ |
+| Étape 9 — Hygiène et outillage | 9 / 14 | ██████░░░░ |
 | Étape 10 — Fondations visuelles | 0 / 5 | ░░░░░░░░░░ |
 | Étape 11 — Conformité vue par vue | 0 / 7 | ░░░░░░░░░░ |
 | Étape 12 — Traduction | 1 / 6 | ██░░░░░░░░ |
@@ -161,20 +161,20 @@ _Critère de sortie : Erreurs backend visibles, pas d'appel IPC superflu._
 
 _Critère de sortie : CI verte, fmt/lint propres, builds multiplateformes._
 
-- [ ] **Q2** — Build iOS/Android cassé : `services::beatport`, `services::stats` et deux commandes de bibliothèque ne…
-- [ ] **Q3** — Build Windows/Linux cassé : `RunEvent::Opened` n'existe que sur macOS, iOS et Android
-- [ ] **Q4** — Clippy avec `-D warnings` : 37 erreurs (16 de code mort) ; cargo fmt : 35 fichiers
-- [ ] **Q5** — ESLint : 38 erreurs ; Prettier : 60 fichiers
-- [ ] **Q6** — Aucun workflow n'exécute `yarn test` ni `cargo test`
+- [ ] **Q2** — Build iOS/Android cassé : `services::beatport`, `services::stats` et deux commandes de bibliothèque ne… — _reporté : la vérification exige les cibles iOS/Android et Xcode, absents ; priorité basse (Crate n’est utilisé que sur ce Mac)_
+- [x] **Q3** — Build Windows/Linux cassé : `RunEvent::Opened` n'existe que sur macOS, iOS et Android — _code corrigé ; compilation Linux vérifiée par le job Rust de la CI (Windows non vérifié)_
+- [x] **Q4** — Clippy avec `-D warnings` : 37 erreurs (16 de code mort) ; cargo fmt : 35 fichiers
+- [x] **Q5** — ESLint : 38 erreurs ; Prettier : 60 fichiers
+- [x] **Q6** — Aucun workflow n'exécute `yarn test` ni `cargo test` — _jobs Linux : frontend (format, lint, types, Vitest) et Rust (clippy, tests) ; la matrice macOS/Windows de l’amont reste manuelle_
 - [ ] **Q7** — Tests absents sur les chemins à risque : remplacement de fichiers, purge, pollers, OAuth ; 3 tests lisent…
-- [ ] **Q8** — Vitest tourne sur Vite 8.2 alors que l'app utilise Vite 7.3 ; `test:coverage` sans fournisseur de…
+- [x] **Q8** — Vitest tourne sur Vite 8.2 alors que l'app utilise Vite 7.3 ; `test:coverage` sans fournisseur de…
 - [ ] **Q9** — Icônes dev, staging et prod devenues identiques octet pour octet ; `.ico`, icônes Windows, iOS et Android…
 - [ ] **Q10** — CHANGELOG, version, README et site de documentation non mis à jour ; la doc des raccourcis contredit le…
-- [ ] **Q11** — Fichiers à ne pas commiter : `SYNTHESE_DISCUSSION.md` (chemins personnels),…
-- [ ] **Q12** — Pas de `CLAUDE.md` : chaque assistant redécouvre les règles (feature `desktop`, flags clippy de la CI,…
-- [ ] **Q13** — `yarn dev` compile le Rust en `--release` : chaque modification coûte plusieurs minutes (amont)
+- [x] **Q11** — Fichiers à ne pas commiter : `SYNTHESE_DISCUSSION.md` (chemins personnels),… — _script Swift supprimé ; la synthèse est archivée dans `suivi/historique/` (dépôt privé) ; polices traitées avec D8_
+- [x] **Q12** — Pas de `CLAUDE.md` : chaque assistant redécouvre les règles (feature `desktop`, flags clippy de la CI,…
+- [x] **Q13** — `yarn dev` compile le Rust en `--release` : chaque modification coûte plusieurs minutes (amont)
 - [ ] **Q14** — 87 alertes `yarn audit` (61 hautes) dans l'outillage transitif ; `cargo audit` non installé localement
-- [ ] **B10** — Numérotation des migrations divergente de l'amont (15 entrées, libellées 7 à 16, la 6 sautée)
+- [x] **B10** — Numérotation des migrations divergente de l'amont (15 entrées, libellées 7 à 16, la 6 sautée) — _libellés corrigés (6 à 15), ordre inchangé : la base locale a déjà appliqué ces migrations_
 
 ### Étape 10 — Fondations visuelles
 

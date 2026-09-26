@@ -5,7 +5,6 @@ use lofty::config::{ParseOptions, ParsingMode};
 use lofty::file::{AudioFile, TaggedFile};
 use lofty::prelude::*;
 use lofty::probe::Probe;
-use lofty::tag::Tag;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::probe::Hint;
 
@@ -495,14 +494,6 @@ impl LibraryService {
         dirty::mark_dirty(&conn, buckets::CUES)?;
         Ok(())
     }
-
-    fn extract_bpm(&self, tag: &Tag) -> Option<f64> {
-        MikService::extract_bpm(tag)
-    }
-
-    fn extract_key(&self, tag: &Tag) -> Option<String> {
-        MikService::extract_key(tag)
-    }
 }
 
 #[cfg(test)]
@@ -512,12 +503,16 @@ mod tests {
     const SILENCE_FLAC: &[u8] = include_bytes!("../../../test-fixtures/silence-1s.flac");
 
     fn library(suffix: &str) -> (LibraryService, PathBuf) {
-        let dir = std::env::temp_dir().join(format!("crate_import_{suffix}_{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("crate_import_{suffix}_{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let conn = Connection::open_in_memory().unwrap();
         crate::db::run_migrations(&conn).unwrap();
-        (LibraryService::new(Arc::new(Mutex::new(conn)), dir.clone()), dir)
+        (
+            LibraryService::new(Arc::new(Mutex::new(conn)), dir.clone()),
+            dir,
+        )
     }
 
     #[test]
@@ -533,14 +528,31 @@ mod tests {
             .conn
             .lock()
             .unwrap()
-            .query_row("SELECT file_hash FROM tracks WHERE id = ?1", [&id], |r| r.get(0))
+            .query_row("SELECT file_hash FROM tracks WHERE id = ?1", [&id], |r| {
+                r.get(0)
+            })
             .unwrap();
-        assert!(stored_hash.is_some(), "the content hash must be saved at import");
+        assert!(
+            stored_hash.is_some(),
+            "the content hash must be saved at import"
+        );
 
         let second = lib.import_tracks(vec![path]).unwrap();
-        assert_eq!(second.failed_count, 0, "re-importing a file must not fail: {:?}", second.errors);
-        assert_eq!(second.tracks[0].id, id, "a re-imported file keeps its track id");
-        let count: i64 = lib.conn.lock().unwrap().query_row("SELECT COUNT(*) FROM tracks", [], |r| r.get(0)).unwrap();
+        assert_eq!(
+            second.failed_count, 0,
+            "re-importing a file must not fail: {:?}",
+            second.errors
+        );
+        assert_eq!(
+            second.tracks[0].id, id,
+            "a re-imported file keeps its track id"
+        );
+        let count: i64 = lib
+            .conn
+            .lock()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM tracks", [], |r| r.get(0))
+            .unwrap();
         assert_eq!(count, 1);
         let _ = std::fs::remove_dir_all(dir);
     }

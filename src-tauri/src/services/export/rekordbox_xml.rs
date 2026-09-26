@@ -23,11 +23,9 @@ impl ExportService {
 
                 for pid in pids {
                     let playlist_name: String = conn
-                        .query_row(
-                            "SELECT name FROM playlists WHERE id = ?1",
-                            [pid],
-                            |r| r.get(0),
-                        )
+                        .query_row("SELECT name FROM playlists WHERE id = ?1", [pid], |r| {
+                            r.get(0)
+                        })
                         .unwrap_or_else(|_| "Playlist".to_string());
 
                     let mut stmt = conn.prepare(
@@ -86,7 +84,10 @@ impl ExportService {
                     let mut p_track_ids = Vec::new();
                     for t in rows.flatten() {
                         p_track_ids.push(t.id.clone());
-                        if !all_tracks.iter().any(|existing: &Track| existing.id == t.id) {
+                        if !all_tracks
+                            .iter()
+                            .any(|existing: &Track| existing.id == t.id)
+                        {
                             all_tracks.push(t);
                         }
                     }
@@ -150,12 +151,16 @@ impl ExportService {
                 let tracks_vec: Vec<Track> = rows.flatten().collect();
 
                 // Fetch all playlists
-                let mut pl_stmt = conn.prepare("SELECT id, name FROM playlists WHERE is_folder = 0")?;
-                let pl_rows = pl_stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))?;
+                let mut pl_stmt =
+                    conn.prepare("SELECT id, name FROM playlists WHERE is_folder = 0")?;
+                let pl_rows = pl_stmt.query_map([], |row| {
+                    Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+                })?;
                 let mut track_map = Vec::new();
                 for (pid, pname) in pl_rows.flatten() {
                     let mut pt_stmt = conn.prepare("SELECT track_id FROM playlist_tracks WHERE playlist_id = ?1 ORDER BY position ASC")?;
-                    let t_ids: Vec<String> = pt_stmt.query_map([&pid], |r| r.get(0))?.flatten().collect();
+                    let t_ids: Vec<String> =
+                        pt_stmt.query_map([&pid], |r| r.get(0))?.flatten().collect();
                     if !t_ids.is_empty() {
                         track_map.push((pid, pname, t_ids));
                     }
@@ -168,7 +173,8 @@ impl ExportService {
         let track_count = tracks.len();
 
         // 2. Fetch cues for all exported tracks
-        let mut cues_by_track: std::collections::HashMap<String, Vec<Cue>> = std::collections::HashMap::new();
+        let mut cues_by_track: std::collections::HashMap<String, Vec<Cue>> =
+            std::collections::HashMap::new();
         {
             let mut cue_stmt = conn.prepare(
                 r#"
@@ -192,7 +198,10 @@ impl ExportService {
                 })
             })?;
             for cue in cue_rows.flatten() {
-                cues_by_track.entry(cue.track_id.clone()).or_default().push(cue);
+                cues_by_track
+                    .entry(cue.track_id.clone())
+                    .or_default()
+                    .push(cue);
             }
         }
 
@@ -213,7 +222,10 @@ impl ExportService {
             let key = xml_escape(track.key.as_deref().unwrap_or(""));
             let total_time_secs = track.duration_ms.max(0) / 1000;
             // Unknown values stay unknown (0) instead of inventing 120 BPM / 320 kbps.
-            let bpm_str = track.bpm.map(|b| format!("{:.2}", b)).unwrap_or_else(|| "0.00".to_string());
+            let bpm_str = track
+                .bpm
+                .map(|b| format!("{:.2}", b))
+                .unwrap_or_else(|| "0.00".to_string());
             let bitrate = track.bitrate.unwrap_or(0);
             let sample_rate = track.sample_rate.unwrap_or(0);
             let year = track.year.map(|y| y.to_string()).unwrap_or_default();
@@ -266,10 +278,8 @@ impl ExportService {
         xml.push_str("</DJ_PLAYLISTS>\n");
 
         // Write file
-        let mut file = File::create(target_path)
-            .map_err(CrateError::Io)?;
-        file.write_all(xml.as_bytes())
-            .map_err(CrateError::Io)?;
+        let mut file = File::create(target_path).map_err(CrateError::Io)?;
+        file.write_all(xml.as_bytes()).map_err(CrateError::Io)?;
 
         Ok(track_count)
     }
@@ -290,7 +300,9 @@ fn file_path_to_url(path_str: &str) -> String {
     let mut encoded = String::with_capacity(clean.len() + 16);
     for byte in clean.bytes() {
         match byte {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' | b'/' => encoded.push(byte as char),
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' | b'/' => {
+                encoded.push(byte as char)
+            }
             _ => encoded.push_str(&format!("%{byte:02X}")),
         }
     }
@@ -362,12 +374,18 @@ mod tests {
     #[test]
     fn test_position_marks_follow_rekordbox_numbering() {
         let hot = position_mark(&cue(CueType::Hot, Some(2), None));
-        assert!(hot.contains(r#"Num="2""#) && hot.contains(r#"Red="204""#), "{hot}");
+        assert!(
+            hot.contains(r#"Num="2""#) && hot.contains(r#"Red="204""#),
+            "{hot}"
+        );
         assert!(hot.contains("Drop &amp; Build"), "names are escaped");
         let memory = position_mark(&cue(CueType::Memory, None, None));
         assert!(memory.contains(r#"Num="-1""#), "{memory}");
         let looped = position_mark(&cue(CueType::Loop, None, Some(40_500)));
-        assert!(looped.contains(r#"Type="4""#) && looped.contains(r#"End="40.500""#), "{looped}");
+        assert!(
+            looped.contains(r#"Type="4""#) && looped.contains(r#"End="40.500""#),
+            "{looped}"
+        );
     }
 
     #[test]
@@ -393,7 +411,14 @@ mod tests {
         for cap in attr_re.captures_iter(&xml) {
             let value = &cap[1];
             assert!(!value.contains('<'), "unescaped < in {value}");
-            assert!(value.split('&').skip(1).all(|rest| rest.starts_with("amp;") || rest.starts_with("lt;") || rest.starts_with("gt;") || rest.starts_with("quot;") || rest.starts_with("apos;")), "unescaped & in {value}");
+            assert!(
+                value.split('&').skip(1).all(|rest| rest.starts_with("amp;")
+                    || rest.starts_with("lt;")
+                    || rest.starts_with("gt;")
+                    || rest.starts_with("quot;")
+                    || rest.starts_with("apos;")),
+                "unescaped & in {value}"
+            );
         }
     }
 }

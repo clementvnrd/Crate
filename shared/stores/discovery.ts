@@ -98,9 +98,7 @@ function createDiscoveryStore() {
 				}))
 				return release
 			} catch (error) {
-				toastStore.error(
-					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to add release')
-				)
+				toastStore.error(typeof error === 'string' ? error : toErrorMessage(error, 'Failed to add release'))
 				return null
 			}
 		},
@@ -114,9 +112,7 @@ function createDiscoveryStore() {
 				}))
 				return release
 			} catch (error) {
-				toastStore.error(
-					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to update release')
-				)
+				toastStore.error(typeof error === 'string' ? error : toErrorMessage(error, 'Failed to update release'))
 				return null
 			}
 		},
@@ -129,9 +125,7 @@ function createDiscoveryStore() {
 					releases: state.releases.filter((r) => r.id !== id),
 				}))
 			} catch (error) {
-				toastStore.error(
-					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to delete release')
-				)
+				toastStore.error(typeof error === 'string' ? error : toErrorMessage(error, 'Failed to delete release'))
 			}
 		},
 
@@ -153,9 +147,7 @@ function createDiscoveryStore() {
 				await discoveryApi.assignTags(releaseIds, tagIds)
 				await this.loadReleases()
 			} catch (error) {
-				toastStore.error(
-					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to assign tags')
-				)
+				toastStore.error(typeof error === 'string' ? error : toErrorMessage(error, 'Failed to assign tags'))
 			}
 		},
 
@@ -169,9 +161,7 @@ function createDiscoveryStore() {
 				}))
 				return release
 			} catch (error) {
-				toastStore.error(
-					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to refresh metadata')
-				)
+				toastStore.error(typeof error === 'string' ? error : toErrorMessage(error, 'Failed to refresh metadata'))
 				return null
 			} finally {
 				update((state) => {
@@ -187,9 +177,7 @@ function createDiscoveryStore() {
 				await discoveryApi.removeTags(releaseIds, tagIds)
 				await this.loadReleases()
 			} catch (error) {
-				toastStore.error(
-					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to remove tags')
-				)
+				toastStore.error(typeof error === 'string' ? error : toErrorMessage(error, 'Failed to remove tags'))
 			}
 		},
 
@@ -209,9 +197,7 @@ function createDiscoveryStore() {
 				}
 				return result
 			} catch (error) {
-				toastStore.error(
-					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to import release')
-				)
+				toastStore.error(typeof error === 'string' ? error : toErrorMessage(error, 'Failed to import release'))
 				return null
 			}
 		},
@@ -275,9 +261,7 @@ function createDiscoveryStore() {
 					releases: state.releases.map((r) => (r.id === id ? { ...r, is_new: isNew } : r)),
 				}))
 			} catch (error) {
-				toastStore.error(
-					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to update release')
-				)
+				toastStore.error(typeof error === 'string' ? error : toErrorMessage(error, 'Failed to update release'))
 			}
 		},
 
@@ -321,9 +305,7 @@ function createDiscoveryStore() {
 				}))
 				return merged
 			} catch (error) {
-				toastStore.error(
-					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to merge releases')
-				)
+				toastStore.error(typeof error === 'string' ? error : toErrorMessage(error, 'Failed to merge releases'))
 				return null
 			}
 		},

@@ -194,7 +194,6 @@ export interface MikSyncResult {
 	errors?: string[]
 }
 
-
 // =============================================================================
 // Duplicate Track Detection Types
 // =============================================================================
@@ -501,7 +500,15 @@ export type AccentColor =
 	| 'emerald'
 	| 'teal'
 
-export type Font = 'jost' | 'dm-sans' | 'inter' | 'nunito' | 'open-sans' | 'fira-code' | 'ibm-plex-mono' | 'source-code-pro'
+export type Font =
+	| 'jost'
+	| 'dm-sans'
+	| 'inter'
+	| 'nunito'
+	| 'open-sans'
+	| 'fira-code'
+	| 'ibm-plex-mono'
+	| 'source-code-pro'
 
 export type Language =
 	| 'en'
@@ -1000,4 +1007,3 @@ export * from './duplicate'
 export * from './upgrader'
 export * from './stats'
 export * from './album'
-

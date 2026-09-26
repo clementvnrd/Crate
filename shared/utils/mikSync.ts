@@ -64,7 +64,10 @@ export function isMikAnalyzed(
 	track: Partial<Track> | { analysis_source?: string | null; energy?: number | null; bpm?: number | null }
 ): boolean {
 	if (!track) return false
-	return track.analysis_source === 'mixed_in_key' || (track.energy !== undefined && track.energy !== null && track.energy > 0)
+	return (
+		track.analysis_source === 'mixed_in_key' ||
+		(track.energy !== undefined && track.energy !== null && track.energy > 0)
+	)
 }
 
 /**

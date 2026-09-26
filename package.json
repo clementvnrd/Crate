@@ -8,7 +8,7 @@
 		"apps/*"
 	],
 	"scripts": {
-		"dev": "cross-env CRATE_ENV=development tauri dev --config src-tauri/tauri.dev.conf.json -- --release --features devtools,desktop",
+		"dev": "cross-env CRATE_ENV=development tauri dev --config src-tauri/tauri.dev.conf.json -- --features devtools,desktop",
 		"dev:vite": "yarn workspace @bbx-audio/crate-desktop dev:vite",
 		"dev:ios": "tauri ios dev --host -f mobile",
 		"dev:android": "tauri android dev -f mobile",
@@ -52,9 +52,10 @@
 		"@eslint/eslintrc": "3.3.3",
 		"@eslint/js": "9.39.2",
 		"@tauri-apps/cli": "2",
-		"@testing-library/jest-dom": "^7.0.1",
-		"@testing-library/svelte": "^5.4.2",
+		"@testing-library/jest-dom": "7.0.1",
+		"@testing-library/svelte": "5.4.2",
 		"@types/node": "22.19.3",
+		"@vitest/coverage-v8": "4.1.11",
 		"cross-env": "10.1.0",
 		"eslint": "9.39.2",
 		"eslint-config-prettier": "10.1.8",
@@ -62,17 +63,20 @@
 		"eslint-plugin-svelte": "3.13.1",
 		"globals": "16.5.0",
 		"husky": "8.0.3",
-		"jsdom": "^30.0.1",
+		"jsdom": "30.0.1",
 		"lint-staged": "16.2.7",
 		"prettier": "3.7.4",
 		"prettier-plugin-svelte": "3.4.1",
 		"prettier-plugin-tailwindcss": "0.7.2",
 		"typescript": "5.9.3",
 		"typescript-eslint": "8.50.0",
-		"vitest": "^4.1.11"
+		"vitest": "4.1.11"
 	},
 	"lint-staged": {
 		"**/*.{ts,js,svelte,json,css}": "yarn format:fix",
 		"**/*.{ts,js,svelte}": "yarn lint:fix"
+	},
+	"resolutions": {
+		"vite": "7.3.0"
 	}
 }

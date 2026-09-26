@@ -71,7 +71,6 @@ function createLibraryStore() {
 			}
 		},
 
-
 		/**
 		 * Reload the tracks keeping the active filter (search, tags, playlist…), for refreshes
 		 * triggered by background changes. `loadTracks()` without argument shows all tracks.

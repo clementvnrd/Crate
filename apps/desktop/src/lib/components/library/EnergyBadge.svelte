@@ -14,7 +14,10 @@
 
 {#if info}
 	<span
-		class="inline-flex items-center justify-center gap-1 rounded font-bold tracking-tight select-none border transition-all {size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-[11px] min-w-[46px]'} {className}"
+		class="inline-flex items-center justify-center gap-1 rounded border font-bold tracking-tight transition-all select-none {size ===
+		'sm'
+			? 'px-1.5 py-0.5 text-[10px]'
+			: 'min-w-[46px] px-2 py-0.5 text-[11px]'} {className}"
 		style="
 			background-color: {info.bg};
 			color: {info.color};
@@ -24,7 +27,7 @@
 		title="Energy {info.level}/10 : {info.descriptor} (Mixed In Key)"
 	>
 		<span class="text-xs leading-none">{info.symbol}</span>
-		<span class="tabular-nums font-extrabold">{info.level}</span>
+		<span class="font-extrabold tabular-nums">{info.level}</span>
 	</span>
 {:else}
 	<span class="text-xs text-text-tertiary select-none">-</span>

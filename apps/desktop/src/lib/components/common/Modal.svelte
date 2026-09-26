@@ -117,7 +117,9 @@
 				</div>
 			{/if}
 
-			<div class="min-h-0 {flush ? 'flex-1 flex flex-col min-h-0 overflow-hidden h-full' : 'overflow-y-auto px-4 py-4'}">
+			<div
+				class="min-h-0 {flush ? 'flex h-full min-h-0 flex-1 flex-col overflow-hidden' : 'overflow-y-auto px-4 py-4'}"
+			>
 				{@render children()}
 			</div>
 

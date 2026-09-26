@@ -35,7 +35,10 @@ struct PlaySession {
 
 impl PlaySession {
     fn total_ms(&self, now: Instant) -> u64 {
-        self.listened_ms + self.playing_since.map_or(0, |since| now.saturating_duration_since(since).as_millis() as u64)
+        self.listened_ms
+            + self.playing_since.map_or(0, |since| {
+                now.saturating_duration_since(since).as_millis() as u64
+            })
     }
 
     fn pause(&mut self, now: Instant) {
@@ -73,7 +76,10 @@ pub struct PlayerTrackerService {
 
 impl PlayerTrackerService {
     pub fn new(recorder: Arc<StatsRecorderService>) -> Self {
-        Self { recorder, current: Arc::new(Mutex::new(None)) }
+        Self {
+            recorder,
+            current: Arc::new(Mutex::new(None)),
+        }
     }
 
     /// Called when starting playback of a track: closes the previous one.
@@ -107,15 +113,24 @@ impl PlayerTrackerService {
     }
 
     fn track_started_at(&self, ctx: TrackPlayingContext, now: Instant) {
-        let Ok(mut lock) = self.current.lock() else { return };
+        let Ok(mut lock) = self.current.lock() else {
+            return;
+        };
         if let Some(previous) = lock.take() {
             self.finish(previous, now);
         }
-        *lock = Some(PlaySession { ctx, listened_ms: 0, playing_since: Some(now), recorded_event_id: None });
+        *lock = Some(PlaySession {
+            ctx,
+            listened_ms: 0,
+            playing_since: Some(now),
+            recorded_event_id: None,
+        });
     }
 
     fn paused_at(&self, now: Instant) {
-        let Ok(mut lock) = self.current.lock() else { return };
+        let Ok(mut lock) = self.current.lock() else {
+            return;
+        };
         if let Some(session) = lock.as_mut() {
             session.pause(now);
             self.record_if_due(session, now);
@@ -123,7 +138,9 @@ impl PlayerTrackerService {
     }
 
     fn check_at(&self, is_playing: bool, now: Instant) {
-        let Ok(mut lock) = self.current.lock() else { return };
+        let Ok(mut lock) = self.current.lock() else {
+            return;
+        };
         if let Some(session) = lock.as_mut() {
             if !is_playing {
                 session.pause(now);
@@ -133,7 +150,9 @@ impl PlayerTrackerService {
     }
 
     fn stopped_at(&self, now: Instant) {
-        let Ok(mut lock) = self.current.lock() else { return };
+        let Ok(mut lock) = self.current.lock() else {
+            return;
+        };
         if let Some(session) = lock.take() {
             self.finish(session, now);
         }
@@ -144,7 +163,12 @@ impl PlayerTrackerService {
         if session.recorded_event_id.is_none() && total >= LISTEN_THRESHOLD_MS {
             let event = session.event(total);
             if let Ok(true) = self.recorder.record_listen_event(&event) {
-                log::info!("Recorded listen for '{}' by '{}' on {}", session.ctx.title, session.ctx.artist, session.ctx.source);
+                log::info!(
+                    "Recorded listen for '{}' by '{}' on {}",
+                    session.ctx.title,
+                    session.ctx.artist,
+                    session.ctx.source
+                );
                 session.recorded_event_id = Some(event.id);
             }
         }
@@ -199,8 +223,13 @@ mod tests {
 
     fn listens(conn: &Arc<Mutex<rusqlite::Connection>>) -> Vec<(String, i64)> {
         let conn = conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT title, played_ms FROM listen_events ORDER BY title").unwrap();
-        stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?))).unwrap().flatten().collect()
+        let mut stmt = conn
+            .prepare("SELECT title, played_ms FROM listen_events ORDER BY title")
+            .unwrap();
+        stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+            .unwrap()
+            .flatten()
+            .collect()
     }
 
     #[test]
@@ -226,8 +255,15 @@ mod tests {
         let t0 = Instant::now();
         tracker.track_started_at(ctx("Long", t0), t0);
         tracker.check_at(true, t0 + Duration::from_secs(31));
-        tracker.track_started_at(ctx("Next", t0 + Duration::from_secs(240)), t0 + Duration::from_secs(240));
-        assert_eq!(listens(&conn), vec![("Long".to_string(), 240_000)], "one row, with the 4 minutes played");
+        tracker.track_started_at(
+            ctx("Next", t0 + Duration::from_secs(240)),
+            t0 + Duration::from_secs(240),
+        );
+        assert_eq!(
+            listens(&conn),
+            vec![("Long".to_string(), 240_000)],
+            "one row, with the 4 minutes played"
+        );
     }
 
     #[test]

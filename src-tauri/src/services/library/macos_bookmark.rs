@@ -1,6 +1,6 @@
-use std::path::PathBuf;
 #[cfg(test)]
 use std::path::Path;
+use std::path::PathBuf;
 
 #[cfg(target_os = "macos")]
 pub mod native {
@@ -150,7 +150,10 @@ mod tests {
         let path = PathBuf::from("/Applications");
         if path.exists() {
             let bookmark = create_bookmark(&path);
-            assert!(bookmark.is_some(), "Should create bookmark for /Applications");
+            assert!(
+                bookmark.is_some(),
+                "Should create bookmark for /Applications"
+            );
             let resolved = resolve_bookmark(&bookmark.unwrap());
             assert_eq!(resolved, Some(path));
         }

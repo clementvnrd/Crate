@@ -29,10 +29,7 @@
 	let { onNext, onPrevious, onLocateTrack }: Props = $props()
 
 	const hasTrack = $derived(
-		$currentTrack !== null ||
-			$previewInfo !== null ||
-			$beatportTrack !== null ||
-			$standaloneTrack !== null
+		$currentTrack !== null || $previewInfo !== null || $beatportTrack !== null || $standaloneTrack !== null
 	)
 
 	function handlePlayPause() {

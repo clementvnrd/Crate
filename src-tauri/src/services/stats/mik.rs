@@ -1,8 +1,8 @@
+use chrono::Utc;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use chrono::Utc;
 use uuid::Uuid;
 
 use crate::error::{CrateError, Result};
@@ -149,10 +149,10 @@ impl MikTrackerService {
                                         | "ogg"
                                         | "alac"
                                         | "wma"
-                                ) {
-                                    if path.exists() && !files.contains(&path) {
-                                        files.push(path);
-                                    }
+                                ) && path.exists()
+                                    && !files.contains(&path)
+                                {
+                                    files.push(path);
                                 }
                             }
                         }
@@ -185,7 +185,10 @@ impl MikTrackerService {
             let mut artist = "Unknown Artist".to_string();
             let mut album = None;
 
-            if let Some(tag) = tagged_file.primary_tag().or_else(|| tagged_file.first_tag()) {
+            if let Some(tag) = tagged_file
+                .primary_tag()
+                .or_else(|| tagged_file.first_tag())
+            {
                 if let Some(t) = tag.title() {
                     let clean = t.trim();
                     if !clean.is_empty() {
@@ -234,7 +237,10 @@ impl MikTrackerService {
         }
         let pids = Self::get_mik_pids();
         if pids.is_empty() {
-            let mut acc = self.accumulator.lock().map_err(|_| CrateError::LockPoisoned)?;
+            let mut acc = self
+                .accumulator
+                .lock()
+                .map_err(|_| CrateError::LockPoisoned)?;
             if acc.accumulated_ms >= 1_000 && !acc.recorded && !acc.title.is_empty() {
                 let event = ListenEvent {
                     id: Uuid::new_v4().to_string(),
@@ -263,7 +269,10 @@ impl MikTrackerService {
         let active_files = Self::find_active_audio_files();
         let current_file_opt = active_files.into_iter().next();
 
-        let mut acc = self.accumulator.lock().map_err(|_| CrateError::LockPoisoned)?;
+        let mut acc = self
+            .accumulator
+            .lock()
+            .map_err(|_| CrateError::LockPoisoned)?;
 
         match current_file_opt {
             Some(current_file) => {

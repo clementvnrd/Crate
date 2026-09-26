@@ -240,9 +240,7 @@ describe('duplicateStore', () => {
 		const onDeletedMock = vi.fn()
 		await duplicateStore.deleteSelected(onDeletedMock)
 
-		expect(libraryApi.deleteTracksAndFiles).toHaveBeenCalledWith(
-			expect.arrayContaining(['t1_mp3', 't2_wav_dup'])
-		)
+		expect(libraryApi.deleteTracksAndFiles).toHaveBeenCalledWith(expect.arrayContaining(['t1_mp3', 't2_wav_dup']))
 		expect(onDeletedMock).toHaveBeenCalled()
 		expect(get(duplicateGroupCount)).toBe(0)
 	})

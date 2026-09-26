@@ -33,5 +33,3 @@ pub mod sync;
 pub mod tag;
 #[cfg(feature = "desktop")]
 pub mod upgrader;
-
-

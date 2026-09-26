@@ -203,6 +203,3 @@ export async function getTrackWaveform(trackId: string): Promise<number[] | null
 export async function getTrackCues(trackId: string): Promise<import('../types').Cue[]> {
 	return invoke<import('../types').Cue[]>('get_track_cues', { trackId })
 }
-
-
-

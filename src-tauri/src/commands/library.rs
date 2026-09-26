@@ -55,9 +55,9 @@ pub async fn delete_tracks(
     ids: Vec<String>,
     library: State<'_, LibraryService>,
 ) -> Result<()> {
-    let res = library.delete_tracks(ids)?;
+    library.delete_tracks(ids)?;
     let _ = app.emit("duplicates-updated", ());
-    Ok(res)
+    Ok(())
 }
 
 #[tauri::command]
@@ -66,9 +66,9 @@ pub async fn delete_tracks_and_files(
     ids: Vec<String>,
     library: State<'_, LibraryService>,
 ) -> Result<()> {
-    let res = library.delete_tracks_and_files(ids)?;
+    library.delete_tracks_and_files(ids)?;
     let _ = app.emit("duplicates-updated", ());
-    Ok(res)
+    Ok(())
 }
 
 #[tauri::command]

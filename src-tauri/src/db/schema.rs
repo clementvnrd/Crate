@@ -1,3 +1,6 @@
+/// Ordered schema migrations. Only the position in this list matters: the database records how
+/// many have been applied. Never reorder, renumber or edit an entry that has shipped — append.
+/// Entries 1–5 come from upstream, entries 6+ from the personal fork.
 pub fn get_migrations() -> Vec<&'static str> {
     vec![
         // Migration 1: Initial schema
@@ -382,12 +385,12 @@ ALTER TABLE discovery_releases ADD COLUMN surfaced_at TEXT;
         r#"
 ALTER TABLE discovery_releases ADD COLUMN source_page_url TEXT;
 "#,
-        // Migration 7: Mixed In Key energy level support
+        // Migration 6 (fork): Mixed In Key energy level support
         r#"
 ALTER TABLE tracks ADD COLUMN energy INTEGER;
 CREATE INDEX IF NOT EXISTS idx_tracks_energy ON tracks(energy);
 "#,
-        // Migration 8: Reset false analysis_source on tracks without genuine MIK cues or energy
+        // Migration 7 (fork): Reset false analysis_source on tracks without genuine MIK cues or energy
         r#"
 UPDATE tracks
 SET analysis_source = NULL
@@ -395,7 +398,7 @@ WHERE analysis_source = 'mixed_in_key'
   AND energy IS NULL
   AND id NOT IN (SELECT DISTINCT track_id FROM cues);
 "#,
-        // Migration 9: Ignored duplicate track pairs
+        // Migration 8 (fork): Ignored duplicate track pairs
         r#"
 CREATE TABLE ignored_duplicate_pairs (
     track_id_a TEXT NOT NULL,
@@ -405,7 +408,7 @@ CREATE TABLE ignored_duplicate_pairs (
 );
 CREATE INDEX IF NOT EXISTS idx_ignored_duplicate_pairs_b ON ignored_duplicate_pairs(track_id_b);
 "#,
-        // Migration 10: Recent standalone tracks
+        // Migration 9 (fork): Recent standalone tracks
         r#"
 CREATE TABLE recent_standalone_tracks (
     id TEXT PRIMARY KEY,
@@ -424,7 +427,7 @@ CREATE TABLE recent_standalone_tracks (
 );
 CREATE INDEX IF NOT EXISTS idx_recent_standalone_tracks_last_played ON recent_standalone_tracks(last_played_at DESC);
 "#,
-        // Migration 11: Ignored upgrade matches
+        // Migration 10 (fork): Ignored upgrade matches
         r#"
 CREATE TABLE ignored_upgrade_matches (
     track_id TEXT NOT NULL,
@@ -434,7 +437,7 @@ CREATE TABLE ignored_upgrade_matches (
 );
 CREATE INDEX IF NOT EXISTS idx_ignored_upgrade_matches_bp ON ignored_upgrade_matches(beatport_id);
 "#,
-        // Migration 12: Beatport upgrade matches cache
+        // Migration 11 (fork): Beatport upgrade matches cache
         r#"
 CREATE TABLE upgrade_matches_cache (
     track_id TEXT PRIMARY KEY,
@@ -448,7 +451,7 @@ CREATE TABLE upgrade_matches_cache (
 );
 CREATE INDEX IF NOT EXISTS idx_upgrade_matches_cache_scanned_at ON upgrade_matches_cache(scanned_at);
 "#,
-        // Migration 13: Crate Pulse & Stats tables
+        // Migration 12 (fork): Crate Pulse & Stats tables
         r#"
 CREATE TABLE listen_events (
     id TEXT PRIMARY KEY,
@@ -492,7 +495,7 @@ CREATE TABLE rekordbox_sessions (
 );
 CREATE INDEX IF NOT EXISTS idx_rekordbox_sessions_started ON rekordbox_sessions(started_at DESC);
 "#,
-        // Migration 14: Player Mode Album (album grid, tracks, covers)
+        // Migration 13 (fork): Player Mode Album (album grid, tracks, covers)
         r#"
 CREATE TABLE player_albums (
     id TEXT PRIMARY KEY,
@@ -526,12 +529,12 @@ CREATE TABLE player_album_tracks (
 );
 CREATE INDEX IF NOT EXISTS idx_player_album_tracks_album ON player_album_tracks(album_id, track_number ASC);
 "#,
-        // Migration 15: Fast file path lookups for tracks and recent standalone tracks
+        // Migration 14 (fork): Fast file path lookups for tracks and recent standalone tracks
         r#"
 CREATE INDEX IF NOT EXISTS idx_tracks_file_path ON tracks(file_path);
 CREATE INDEX IF NOT EXISTS idx_recent_standalone_tracks_file_path ON recent_standalone_tracks(file_path);
 "#,
-        // Migration 16: SQLite FTS5 Full-Text Search for ultra-fast instant track search
+        // Migration 15 (fork): SQLite FTS5 Full-Text Search for ultra-fast instant track search
         r#"
 CREATE VIRTUAL TABLE IF NOT EXISTS tracks_fts USING fts5(
     title,
@@ -566,4 +569,3 @@ SELECT rowid, title, artist, album, genre, label FROM tracks;
 "#,
     ]
 }
-

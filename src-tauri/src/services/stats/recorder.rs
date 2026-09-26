@@ -1,14 +1,17 @@
+use chrono::Utc;
+use rusqlite::Connection;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use rusqlite::Connection;
 use uuid::Uuid;
-use chrono::Utc;
 
 use crate::error::{CrateError, Result};
 use crate::models::stats::{
     BpmBucketItem, HarmonicStatsItem, HeatmapCell, ListenEvent, StatsSummary, TopArtistItem,
     TopTrackItem,
 };
+
+/// Per-artist totals: (played ms, streams, per-track (streams, played ms), artwork URL).
+type ArtistAccumulator = (u64, usize, HashMap<String, (usize, u64)>, Option<String>);
 
 pub struct StatsRecorderService {
     conn: Arc<Mutex<Connection>>,
@@ -79,7 +82,15 @@ impl StatsRecorderService {
         };
 
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-        Self::insert_listen_event(&conn, event, title, artist, event_id, played_at, duration_ms)
+        Self::insert_listen_event(
+            &conn,
+            event,
+            title,
+            artist,
+            event_id,
+            played_at,
+            duration_ms,
+        )
     }
 
     /// Records many events in a single transaction (history imports). Returns, for each event,
@@ -95,10 +106,30 @@ impl StatsRecorderService {
                 outcomes.push(false);
                 continue;
             }
-            let event_id = if event.id.trim().is_empty() { Uuid::new_v4().to_string() } else { event.id.clone() };
-            let played_at = if event.played_at.trim().is_empty() { Utc::now().to_rfc3339() } else { event.played_at.clone() };
-            let duration_ms = if event.duration_ms == 0 { event.played_ms } else { event.duration_ms };
-            outcomes.push(Self::insert_listen_event(&tx, event, title, artist, event_id, played_at, duration_ms)?);
+            let event_id = if event.id.trim().is_empty() {
+                Uuid::new_v4().to_string()
+            } else {
+                event.id.clone()
+            };
+            let played_at = if event.played_at.trim().is_empty() {
+                Utc::now().to_rfc3339()
+            } else {
+                event.played_at.clone()
+            };
+            let duration_ms = if event.duration_ms == 0 {
+                event.played_ms
+            } else {
+                event.duration_ms
+            };
+            outcomes.push(Self::insert_listen_event(
+                &tx,
+                event,
+                title,
+                artist,
+                event_id,
+                played_at,
+                duration_ms,
+            )?);
         }
         tx.commit().map_err(CrateError::Database)?;
         Ok(outcomes)
@@ -339,13 +370,27 @@ impl StatsRecorderService {
         // Also extract featured artists from title: e.g. "(feat. Delilah Montagu)", "[ft. Sia]", "feat. Beacon"
         let title_lower = raw_title.to_lowercase();
         for pattern in &[
-            "(feat. ", "(feat ", "(ft. ", "(ft ", "[feat. ", "[feat ", "[ft. ", "[ft ",
-            " feat. ", " ft. ", " featuring ", " feat ", " ft "
+            "(feat. ",
+            "(feat ",
+            "(ft. ",
+            "(ft ",
+            "[feat. ",
+            "[feat ",
+            "[ft. ",
+            "[ft ",
+            " feat. ",
+            " ft. ",
+            " featuring ",
+            " feat ",
+            " ft ",
         ] {
             if let Some(idx) = title_lower.find(pattern) {
                 let start = idx + pattern.len();
                 let remainder = &raw_title[start..];
-                let end_idx = remainder.find(')').or_else(|| remainder.find(']')).unwrap_or(remainder.len());
+                let end_idx = remainder
+                    .find(')')
+                    .or_else(|| remainder.find(']'))
+                    .unwrap_or(remainder.len());
                 let feat_part = remainder[..end_idx].trim();
                 if !feat_part.is_empty() {
                     candidate_strings.push(feat_part.to_string());
@@ -357,17 +402,37 @@ impl StatsRecorderService {
             // Normalize common collaboration tokens to a uniform comma delimiter
             let mut normalized = raw;
             for delim in &[
-                " featuring ", " Featuring ", " FEATURING ",
-                " feat. ", " Feat. ", " FEAT. ",
-                " feat ", " Feat ", " FEAT ",
-                " ft. ", " Ft. ", " FT. ",
-                " ft ", " Ft ", " FT ",
-                " with ", " With ", " WITH ",
-                " w/ ", " W/ ",
-                " vs. ", " Vs. ", " VS. ",
-                " vs ", " Vs ", " VS ",
-                " x ", " X ",
-                " & ", " ; ", " / "
+                " featuring ",
+                " Featuring ",
+                " FEATURING ",
+                " feat. ",
+                " Feat. ",
+                " FEAT. ",
+                " feat ",
+                " Feat ",
+                " FEAT ",
+                " ft. ",
+                " Ft. ",
+                " FT. ",
+                " ft ",
+                " Ft ",
+                " FT ",
+                " with ",
+                " With ",
+                " WITH ",
+                " w/ ",
+                " W/ ",
+                " vs. ",
+                " Vs. ",
+                " VS. ",
+                " vs ",
+                " Vs ",
+                " VS ",
+                " x ",
+                " X ",
+                " & ",
+                " ; ",
+                " / ",
             ] {
                 normalized = normalized.replace(delim, ", ");
             }
@@ -375,9 +440,20 @@ impl StatsRecorderService {
             for part in normalized.split(',') {
                 let mut cleaned = part.trim();
                 // Remove wrapping quotes, parens, brackets, commas, semicolons
-                cleaned = cleaned.trim_matches(|c: char| {
-                    c == '"' || c == '\'' || c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}' || c == ',' || c == ';'
-                }).trim();
+                cleaned = cleaned
+                    .trim_matches(|c: char| {
+                        c == '"'
+                            || c == '\''
+                            || c == '('
+                            || c == ')'
+                            || c == '['
+                            || c == ']'
+                            || c == '{'
+                            || c == '}'
+                            || c == ','
+                            || c == ';'
+                    })
+                    .trim();
 
                 if cleaned.is_empty() {
                     continue;
@@ -385,9 +461,18 @@ impl StatsRecorderService {
 
                 let lower = cleaned.to_lowercase();
                 // Ignore generic non-artist keywords
-                if lower == "feat" || lower == "ft" || lower == "featuring" || lower == "various artists"
-                    || lower == "unknown artist" || lower == "original mix" || lower == "extended mix"
-                    || lower == "remix" || lower == "radio edit" || lower == "dub mix" || lower == "vip" {
+                if lower == "feat"
+                    || lower == "ft"
+                    || lower == "featuring"
+                    || lower == "various artists"
+                    || lower == "unknown artist"
+                    || lower == "original mix"
+                    || lower == "extended mix"
+                    || lower == "remix"
+                    || lower == "radio edit"
+                    || lower == "dub mix"
+                    || lower == "vip"
+                {
                     continue;
                 }
 
@@ -440,16 +525,19 @@ impl StatsRecorderService {
             .map_err(CrateError::Database)?;
 
         // Map: ArtistName -> (total_played_ms, streams_count, Map<TrackTitle, (stream_count, played_ms)>, Option<ArtworkUrl>)
-        let mut artist_stats: HashMap<String, (u64, usize, HashMap<String, (usize, u64)>, Option<String>)> = HashMap::new();
+        let mut artist_stats: HashMap<String, ArtistAccumulator> = HashMap::new();
 
         for item in rows {
-            let (title, raw_artist, _duration_ms, played_ms, artwork_url) = item.map_err(CrateError::Database)?;
+            let (title, raw_artist, _duration_ms, played_ms, artwork_url) =
+                item.map_err(CrateError::Database)?;
             let effective_played_ms = (played_ms.max(0)) as u64;
             let is_stream = effective_played_ms >= 30_000;
 
             let artists = Self::split_artists(&raw_artist, &title);
             for artist_name in artists {
-                let entry = artist_stats.entry(artist_name).or_insert_with(|| (0, 0, HashMap::new(), None));
+                let entry = artist_stats
+                    .entry(artist_name)
+                    .or_insert_with(|| (0, 0, HashMap::new(), None));
                 entry.0 += effective_played_ms;
                 if is_stream {
                     entry.1 += 1;
@@ -470,34 +558,32 @@ impl StatsRecorderService {
         let mut top_artists: Vec<TopArtistItem> = artist_stats
             .into_iter()
             .filter(|(_, (_, streams, _, _))| *streams >= 1)
-            .map(|(artist, (total_played_ms, streams, tracks_map, artwork_url))| {
-                // Find top track for this artist (most streams, then most played_ms)
-                let top_track = tracks_map
-                    .into_iter()
-                    .max_by(|a, b| {
-                        match a.1 .0.cmp(&b.1 .0) {
+            .map(
+                |(artist, (total_played_ms, streams, tracks_map, artwork_url))| {
+                    // Find top track for this artist (most streams, then most played_ms)
+                    let top_track = tracks_map
+                        .into_iter()
+                        .max_by(|a, b| match a.1 .0.cmp(&b.1 .0) {
                             std::cmp::Ordering::Equal => a.1 .1.cmp(&b.1 .1),
                             other => other,
-                        }
-                    })
-                    .map(|(title, _)| title);
+                        })
+                        .map(|(title, _)| title);
 
-                TopArtistItem {
-                    artist,
-                    plays: streams,
-                    total_minutes: total_played_ms / 60_000,
-                    top_track,
-                    artwork_url,
-                }
-            })
+                    TopArtistItem {
+                        artist,
+                        plays: streams,
+                        total_minutes: total_played_ms / 60_000,
+                        top_track,
+                        artwork_url,
+                    }
+                },
+            )
             .collect();
 
         // Sort by plays DESC, total_minutes DESC
-        top_artists.sort_by(|a, b| {
-            match b.plays.cmp(&a.plays) {
-                std::cmp::Ordering::Equal => b.total_minutes.cmp(&a.total_minutes),
-                other => other,
-            }
+        top_artists.sort_by(|a, b| match b.plays.cmp(&a.plays) {
+            std::cmp::Ordering::Equal => b.total_minutes.cmp(&a.total_minutes),
+            other => other,
         });
 
         top_artists.truncate(limit_val);
@@ -650,7 +736,8 @@ impl StatsRecorderService {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
         // Plays without a real time of day (Rekordbox XML sets) would pile up at midnight.
-        let exact_time = "(metadata_json IS NULL OR metadata_json NOT LIKE '%\"approximate_time\":true%')";
+        let exact_time =
+            "(metadata_json IS NULL OR metadata_json NOT LIKE '%\"approximate_time\":true%')";
         let time_cond = Self::time_range_condition(time_range, "played_at");
         let where_clause = match &time_cond {
             Some(cond) => format!("WHERE {cond} AND {exact_time}"),

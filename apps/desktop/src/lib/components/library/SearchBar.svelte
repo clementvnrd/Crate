@@ -10,11 +10,8 @@
 
 	let { onSearchChange, placeholder, initialValue = '' }: Props = $props()
 
-	let inputValue = $state(initialValue)
-
-	$effect(() => {
-		inputValue = initialValue
-	})
+	// Follows `initialValue` and can be overwritten while typing (writable $derived)
+	let inputValue = $derived(initialValue)
 
 	// Debounced search
 	let debounceTimer: ReturnType<typeof setTimeout>

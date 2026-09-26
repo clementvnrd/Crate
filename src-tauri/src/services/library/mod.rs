@@ -9,7 +9,6 @@ mod relocation;
 mod update;
 pub mod waveform;
 
-pub use macos_bookmark::*;
 pub use mik::*;
 pub use mik_db::*;
 
@@ -57,7 +56,11 @@ impl LibraryService {
             use unicode_normalization::UnicodeNormalization;
             let mut paths = std::collections::HashSet::new();
             for id in ids {
-                if let Ok(path) = conn.query_row("SELECT file_path FROM tracks WHERE id = ?1", [id], |r| r.get::<_, String>(0)) {
+                if let Ok(path) =
+                    conn.query_row("SELECT file_path FROM tracks WHERE id = ?1", [id], |r| {
+                        r.get::<_, String>(0)
+                    })
+                {
                     paths.insert(path.nfc().collect::<String>());
                 }
             }

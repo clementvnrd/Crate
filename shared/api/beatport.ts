@@ -36,10 +36,7 @@ export async function getBeatportFeaturedCharts(token?: string | null): Promise<
 	return invoke<BeatportChart[]>('beatport_get_featured_charts', { token: token ?? null })
 }
 
-export async function getBeatportTopTracks(
-	token?: string | null,
-	genreId?: number | null
-): Promise<BeatportTrack[]> {
+export async function getBeatportTopTracks(token?: string | null, genreId?: number | null): Promise<BeatportTrack[]> {
 	return invoke<BeatportTrack[]>('beatport_get_top_tracks', {
 		token: token ?? null,
 		genreId: genreId ?? null,
@@ -98,17 +95,13 @@ export async function getBeatportPlaylistTracks(
 	})
 }
 
-export async function getBeatportUserFavorites(
-	token?: string | null
-): Promise<BeatportTrack[]> {
+export async function getBeatportUserFavorites(token?: string | null): Promise<BeatportTrack[]> {
 	return invoke<BeatportTrack[]>('beatport_get_user_favorites', {
 		token: token ?? null,
 	})
 }
 
-export async function getBeatportUserPurchases(
-	token?: string | null
-): Promise<BeatportTrack[]> {
+export async function getBeatportUserPurchases(token?: string | null): Promise<BeatportTrack[]> {
 	return invoke<BeatportTrack[]>('beatport_get_user_purchases', {
 		token: token ?? null,
 	})

@@ -50,4 +50,3 @@ export async function takeStartupFiles(): Promise<string[]> {
 export async function playStandaloneTrack(path: string, id?: string, durationMs?: number): Promise<PlaybackState> {
 	return invoke<PlaybackState>('play_standalone_track', { path, id, durationMs })
 }
-

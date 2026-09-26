@@ -23,19 +23,19 @@ pub mod follow;
 #[cfg(feature = "desktop")]
 pub mod hash;
 #[cfg(feature = "desktop")]
-pub mod trash;
-#[cfg(feature = "desktop")]
 pub mod library;
 #[cfg(feature = "desktop")]
 pub mod media_controls;
-pub mod playlist;
 pub mod player;
+pub mod playlist;
 pub mod settings;
 pub mod smart_rules;
 #[cfg(feature = "desktop")]
 pub mod standalone;
 pub mod stats;
 pub mod tag;
+#[cfg(feature = "desktop")]
+pub mod trash;
 
 #[cfg(feature = "desktop")]
 pub use album::AlbumService;
@@ -70,4 +70,3 @@ pub use settings::SettingsService;
 pub use standalone::StandaloneService;
 pub use stats::*;
 pub use tag::TagService;
-

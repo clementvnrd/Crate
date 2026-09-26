@@ -130,11 +130,7 @@ export function formatEnergy(energy: number | null | undefined): string {
  * Format bitrate for display (e.g. 320 kbps, 807 kbps, 1411 kbps, 2117 kbps)
  * Automatically normalizes raw bps values and handles PCM WAV/AIFF bitrates
  */
-export function formatBitrate(
-	bitrate: number | null | undefined,
-	format?: string,
-	sampleRate?: number | null
-): string {
+export function formatBitrate(bitrate: number | null | undefined, format?: string, sampleRate?: number | null): string {
 	const fmt = (format || '').toLowerCase()
 	if (bitrate === null || bitrate === undefined || bitrate <= 0) {
 		if (fmt === 'wav' || fmt === 'aiff') {

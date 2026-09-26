@@ -278,8 +278,14 @@ impl AnalysisService {
         }
 
         // Check if track is already analyzed by Mixed In Key
-        if track.analysis_source.as_deref() == Some("mixed_in_key") && track.bpm.is_some() && track.key.is_some() {
-            log::info!("Track {} already analyzed by Mixed In Key, skipping stratum-dsp analysis", track_id);
+        if track.analysis_source.as_deref() == Some("mixed_in_key")
+            && track.bpm.is_some()
+            && track.key.is_some()
+        {
+            log::info!(
+                "Track {} already analyzed by Mixed In Key, skipping stratum-dsp analysis",
+                track_id
+            );
             return Ok((
                 AnalysisResult {
                     track_id: track_id.to_string(),
@@ -294,10 +300,14 @@ impl AnalysisService {
 
         // Check if audio file has Mixed In Key / file tag analysis on disk
         if let Some(tf) = crate::services::library::MikService::read_metadata_lenient(file_path) {
-            let mik_data = crate::services::library::MikService::extract_analysis_data(&tf, track_id);
+            let mik_data =
+                crate::services::library::MikService::extract_analysis_data(&tf, track_id);
             if mik_data.is_mik && (mik_data.bpm.is_some() || mik_data.key.is_some()) {
                 let conn_guard = conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-                let updated = crate::services::library::MikService::sync_track_from_file(&conn_guard, &track)?;
+                let updated = crate::services::library::MikService::sync_track_from_file(
+                    &conn_guard,
+                    &track,
+                )?;
                 log::info!("Track {} synced with Mixed In Key tags from file", track_id);
                 return Ok((
                     AnalysisResult {

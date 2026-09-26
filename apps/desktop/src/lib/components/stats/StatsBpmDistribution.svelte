@@ -18,16 +18,12 @@
 		return 'Électronique'
 	}
 
-	let maxCount = $derived(
-		Math.max(...bpmStats.map((b) => b.count), 1)
-	)
+	let maxCount = $derived(Math.max(...bpmStats.map((b) => b.count), 1))
 
-	let totalTracks = $derived(
-		bpmStats.reduce((acc, b) => acc + b.count, 0) || 1
-	)
+	let totalTracks = $derived(bpmStats.reduce((acc, b) => acc + b.count, 0) || 1)
 </script>
 
-<div class="flex flex-col h-full rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
+<div class="flex h-full flex-col rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
 	<div class="mb-4 flex items-center justify-between">
 		<div class="flex items-center gap-2">
 			<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
@@ -38,15 +34,17 @@
 				<p class="text-[11px] text-text-tertiary">Analyse des plages de tempo & styles musicaux</p>
 			</div>
 		</div>
-		<span class="rounded-full bg-surface-2 border border-stroke px-2 py-0.5 text-[10px] font-mono font-medium text-text-secondary">
+		<span
+			class="rounded-full border border-stroke bg-surface-2 px-2 py-0.5 font-mono text-[10px] font-medium text-text-secondary"
+		>
 			{bpmStats.length} plages
 		</span>
 	</div>
 
 	{#if isLoading && bpmStats.length === 0}
 		<div class="space-y-3 py-4">
-			{#each Array(4) as _}
-				<div class="h-8 rounded-lg bg-surface-3 animate-pulse"></div>
+			{#each Array(4) as _, i (i)}
+				<div class="bg-surface-3 h-8 animate-pulse rounded-lg"></div>
 			{/each}
 		</div>
 	{:else if bpmStats.length === 0}
@@ -54,32 +52,36 @@
 			Aucune donnée BPM disponible pour cette période.
 		</div>
 	{:else}
-		<div class="flex-1 overflow-y-auto max-h-[360px] pr-1 space-y-2.5">
+		<div class="max-h-[360px] flex-1 space-y-2.5 overflow-y-auto pr-1">
 			{#each bpmStats as bucket (bucket.bpm_range)}
 				{@const percentage = Math.round((bucket.count / totalTracks) * 1000) / 10}
 				{@const fillPercent = Math.min(100, Math.round((bucket.count / maxCount) * 100))}
 				{@const genreHint = getGenreHint(bucket.bpm_range)}
-				<div class="group rounded-xl border border-stroke/40 bg-surface-2/40 p-2.5 transition-all hover:bg-surface-2/80 hover:border-stroke">
-					<div class="flex items-center justify-between mb-1.5">
+				<div
+					class="group rounded-xl border border-stroke/40 bg-surface-2/40 p-2.5 transition-all hover:border-stroke hover:bg-surface-2/80"
+				>
+					<div class="mb-1.5 flex items-center justify-between">
 						<div class="flex items-center gap-2">
-							<span class="rounded bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-xs font-mono font-bold text-emerald-400 shadow-xs">
+							<span
+								class="rounded border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 font-mono text-xs font-bold text-emerald-400 shadow-xs"
+							>
 								{bucket.bpm_range} BPM
 							</span>
-							<span class="text-xs font-medium text-text-secondary truncate">
+							<span class="truncate text-xs font-medium text-text-secondary">
 								{genreHint}
 							</span>
 						</div>
 
 						<div class="flex items-center gap-2 font-mono text-xs">
 							<span class="font-bold text-text-primary">{bucket.count} morceaux</span>
-							<span class="text-text-tertiary text-[11px]">({percentage}%)</span>
+							<span class="text-[11px] text-text-tertiary">({percentage}%)</span>
 						</div>
 					</div>
 
 					<!-- Progress bar -->
-					<div class="relative h-2 w-full overflow-hidden rounded-full bg-surface-3">
+					<div class="bg-surface-3 relative h-2 w-full overflow-hidden rounded-full">
 						<div
-							class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500 shadow-sm"
+							class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 shadow-sm transition-all duration-500"
 							style="width: {fillPercent}%"
 						></div>
 					</div>

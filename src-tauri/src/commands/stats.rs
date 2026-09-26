@@ -2,9 +2,8 @@ use tauri::State;
 
 use crate::error::Result;
 use crate::models::stats::{
-    BpmBucketItem, HarmonicStatsItem, HeatmapCell, ListenEvent, RekordboxSession,
-    SpotifyAuthState, SpotifyImportResult, SpotifyNowPlaying, StatsSummary, TopArtistItem,
-    TopTrackItem,
+    BpmBucketItem, HarmonicStatsItem, HeatmapCell, ListenEvent, RekordboxSession, SpotifyAuthState,
+    SpotifyImportResult, SpotifyNowPlaying, StatsSummary, TopArtistItem, TopTrackItem,
 };
 use crate::services::stats::{
     MikTrackerService, RekordboxTrackerService, SpotifyTrackerService, StatsRecorderService,
@@ -101,9 +100,7 @@ pub async fn set_spotify_client_secret(
 
 /// Tells the UI whether a client secret is stored, without ever sending it back to the webview.
 #[tauri::command]
-pub async fn spotify_has_client_secret(
-    spotify: State<'_, SpotifyTrackerService>,
-) -> Result<bool> {
+pub async fn spotify_has_client_secret(spotify: State<'_, SpotifyTrackerService>) -> Result<bool> {
     Ok(spotify.get_client_secret().is_some())
 }
 
@@ -142,9 +139,7 @@ pub async fn spotify_exchange_code(
 }
 
 #[tauri::command]
-pub async fn spotify_disconnect(
-    spotify: State<'_, SpotifyTrackerService>,
-) -> Result<()> {
+pub async fn spotify_disconnect(spotify: State<'_, SpotifyTrackerService>) -> Result<()> {
     spotify.disconnect()
 }
 
@@ -215,9 +210,7 @@ pub async fn rekordbox_get_sessions(
 // ==========================================
 
 #[tauri::command]
-pub async fn mik_detect_status(
-    mik: State<'_, MikTrackerService>,
-) -> Result<bool> {
+pub async fn mik_detect_status(mik: State<'_, MikTrackerService>) -> Result<bool> {
     Ok(mik.is_mik_running())
 }
 
@@ -240,4 +233,3 @@ pub async fn mik_tracker_set_enabled(
     mik.set_enabled(enabled);
     Ok(())
 }
-

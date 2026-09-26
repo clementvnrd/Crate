@@ -122,7 +122,9 @@
 		try {
 			const res = await libraryApi.syncFromMikDatabase(tracks.map((t) => t.id))
 			await libraryStore.reloadWithCurrentFilter()
-			toastStore.success(`Synchronisé avec Mixed In Key (${res.updated} morceau${res.updated > 1 ? 'x' : ''} mis à jour)`)
+			toastStore.success(
+				`Synchronisé avec Mixed In Key (${res.updated} morceau${res.updated > 1 ? 'x' : ''} mis à jour)`
+			)
 		} catch (error) {
 			console.error('Mixed In Key resync failed:', error)
 			toastStore.error('Erreur lors de la synchronisation Mixed In Key')
@@ -449,7 +451,9 @@
 			}
 			await playlistsStore.load()
 			const count = trackIds.length
-			toastStore.success(count === 1 ? '1 morceau supprimé (mis à la corbeille)' : `${count} morceaux supprimés (mis à la corbeille)`)
+			toastStore.success(
+				count === 1 ? '1 morceau supprimé (mis à la corbeille)' : `${count} morceaux supprimés (mis à la corbeille)`
+			)
 		} catch (err) {
 			console.error('Failed to delete track and file:', err)
 			toastStore.error(toErrorMessage(err, 'Échec de la suppression'))

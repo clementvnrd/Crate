@@ -4,7 +4,7 @@
 </script>
 
 {#if $toasts.length > 0}
-	<div class="fixed right-6 bottom-24 z-50 flex flex-col-reverse gap-2 pointer-events-none select-none">
+	<div class="pointer-events-none fixed right-6 bottom-24 z-50 flex flex-col-reverse gap-2 select-none">
 		{#each $toasts as toast (toast.id)}
 			<div class="pointer-events-auto shadow-2xl">
 				<Toast {toast} onDismiss={() => toastStore.dismiss(toast.id)} />

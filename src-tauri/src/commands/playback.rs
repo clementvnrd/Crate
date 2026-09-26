@@ -20,8 +20,14 @@ pub async fn play_track(
     let ctx = crate::services::player::TrackPlayingContext {
         track_id: Some(id.clone()),
         source: "crate_local".to_string(),
-        title: track.title.clone().unwrap_or_else(|| "Unknown Track".to_string()),
-        artist: track.artist.clone().unwrap_or_else(|| "Unknown Artist".to_string()),
+        title: track
+            .title
+            .clone()
+            .unwrap_or_else(|| "Unknown Track".to_string()),
+        artist: track
+            .artist
+            .clone()
+            .unwrap_or_else(|| "Unknown Artist".to_string()),
         album: track.album.clone(),
         duration_ms: track.duration_ms.max(0) as u64,
         bpm: track.bpm,
@@ -90,7 +96,6 @@ pub async fn get_playback_state(
     tracker.check_and_record_if_due(state.is_playing);
     Ok(state)
 }
-
 
 #[tauri::command]
 pub async fn get_audio_devices() -> Result<Vec<AudioDevice>> {

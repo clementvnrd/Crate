@@ -393,7 +393,10 @@ fn audio_thread(command_rx: Receiver<AudioCommand>, response_tx: Sender<AudioRes
                 );
 
                 // Check if we should shutdown
-                if matches!(response, AudioResponse::Ok) && player.is_none() && output_stream.is_none() {
+                if matches!(response, AudioResponse::Ok)
+                    && player.is_none()
+                    && output_stream.is_none()
+                {
                     // This was a shutdown command - but we'll keep running
                 }
 
@@ -658,7 +661,9 @@ fn handle_command(
                         let stream = match get_or_create_stream(output_stream, selected_device) {
                             Ok(s) => s,
                             Err(stream_err) => {
-                                log::error!("Failed to get output stream for seek rebuild: {stream_err}");
+                                log::error!(
+                                    "Failed to get output stream for seek rebuild: {stream_err}"
+                                );
                                 return AudioResponse::Error(stream_err);
                             }
                         };

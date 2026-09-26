@@ -72,12 +72,7 @@ export {
 } from './cloudSync'
 export { displaySettingsStore } from './displaySettings'
 export type { DisplaySettings, ColumnVisibility } from './displaySettings'
-export {
-	beatportStore,
-	beatportCart,
-	beatportCartCount,
-	beatportCartDuration,
-} from './beatport'
+export { beatportStore, beatportCart, beatportCartCount, beatportCartDuration } from './beatport'
 export {
 	duplicateStore,
 	duplicateGroups,

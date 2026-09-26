@@ -26,7 +26,10 @@ export async function getTopTracks(timeRange: TimeRange | string = '7d', limit: 
 	return invoke<TopTrackItem[]>('get_top_tracks', { timeRange, limit })
 }
 
-export async function getTopArtists(timeRange: TimeRange | string = '7d', limit: number = 20): Promise<TopArtistItem[]> {
+export async function getTopArtists(
+	timeRange: TimeRange | string = '7d',
+	limit: number = 20
+): Promise<TopArtistItem[]> {
 	return invoke<TopArtistItem[]>('get_top_artists', { timeRange, limit })
 }
 
@@ -144,4 +147,3 @@ export async function getMikTrackerEnabled(): Promise<boolean> {
 export async function setMikTrackerEnabled(enabled: boolean): Promise<void> {
 	return invoke<void>('mik_tracker_set_enabled', { enabled })
 }
-

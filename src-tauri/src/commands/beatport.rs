@@ -1,11 +1,11 @@
+use crate::services::beatport::client::{
+    BeatportArtistDetail, BeatportAuthState, BeatportChart, BeatportClient, BeatportGenre,
+    BeatportPlaylist, BeatportSearchResult, BeatportTrack,
+};
+use crate::services::beatport::downloader::{BeatportDownloadResult, BeatportDownloader};
+use crate::services::{LibraryService, SettingsService};
 use std::path::Path;
 use tauri::State;
-use crate::services::{LibraryService, SettingsService};
-use crate::services::beatport::client::{
-    BeatportClient, BeatportTrack, BeatportChart, BeatportGenre, BeatportPlaylist, BeatportAuthState,
-    BeatportArtistDetail, BeatportSearchResult,
-};
-use crate::services::beatport::downloader::{BeatportDownloader, BeatportDownloadResult};
 
 #[tauri::command]
 pub fn beatport_get_pkce_auth_url() -> String {
@@ -36,9 +36,14 @@ pub async fn beatport_login_pkce(code: String) -> Result<BeatportAuthState, Stri
 }
 
 #[tauri::command]
-pub async fn beatport_validate_token(token: String, refresh_token: Option<String>) -> Result<BeatportAuthState, String> {
+pub async fn beatport_validate_token(
+    token: String,
+    refresh_token: Option<String>,
+) -> Result<BeatportAuthState, String> {
     let client = BeatportClient::new();
-    client.validate_token(&token, refresh_token.as_deref()).await
+    client
+        .validate_token(&token, refresh_token.as_deref())
+        .await
 }
 
 #[tauri::command]
@@ -54,37 +59,54 @@ pub async fn beatport_get_genres(token: Option<String>) -> Result<Vec<BeatportGe
 }
 
 #[tauri::command]
-pub async fn beatport_get_featured_charts(token: Option<String>) -> Result<Vec<BeatportChart>, String> {
+pub async fn beatport_get_featured_charts(
+    token: Option<String>,
+) -> Result<Vec<BeatportChart>, String> {
     let client = BeatportClient::new();
     client.get_featured_charts(token.as_deref()).await
 }
 
 #[tauri::command]
-pub async fn beatport_get_top_tracks(token: Option<String>, genre_id: Option<i64>) -> Result<Vec<BeatportTrack>, String> {
+pub async fn beatport_get_top_tracks(
+    token: Option<String>,
+    genre_id: Option<i64>,
+) -> Result<Vec<BeatportTrack>, String> {
     let client = BeatportClient::new();
     client.get_top_tracks(token.as_deref(), genre_id).await
 }
 
 #[tauri::command]
-pub async fn beatport_get_chart_tracks(token: Option<String>, chart_id: String) -> Result<Vec<BeatportTrack>, String> {
+pub async fn beatport_get_chart_tracks(
+    token: Option<String>,
+    chart_id: String,
+) -> Result<Vec<BeatportTrack>, String> {
     let client = BeatportClient::new();
     client.get_chart_tracks(token.as_deref(), &chart_id).await
 }
 
 #[tauri::command]
-pub async fn beatport_get_artist_tracks(token: Option<String>, artist_id: i64) -> Result<Vec<BeatportTrack>, String> {
+pub async fn beatport_get_artist_tracks(
+    token: Option<String>,
+    artist_id: i64,
+) -> Result<Vec<BeatportTrack>, String> {
     let client = BeatportClient::new();
     client.get_artist_tracks(token.as_deref(), artist_id).await
 }
 
 #[tauri::command]
-pub async fn beatport_get_artist_detail(token: Option<String>, artist_id: i64) -> Result<BeatportArtistDetail, String> {
+pub async fn beatport_get_artist_detail(
+    token: Option<String>,
+    artist_id: i64,
+) -> Result<BeatportArtistDetail, String> {
     let client = BeatportClient::new();
     client.get_artist_detail(token.as_deref(), artist_id).await
 }
 
 #[tauri::command]
-pub async fn beatport_search(token: Option<String>, query: String) -> Result<BeatportSearchResult, String> {
+pub async fn beatport_search(
+    token: Option<String>,
+    query: String,
+) -> Result<BeatportSearchResult, String> {
     let client = BeatportClient::new();
     client.search_catalog_full(token.as_deref(), &query).await
 }
@@ -96,19 +118,28 @@ pub async fn beatport_get_user_playlists(token: String) -> Result<Vec<BeatportPl
 }
 
 #[tauri::command]
-pub async fn beatport_get_playlist_tracks(token: Option<String>, playlist_id: String) -> Result<Vec<BeatportTrack>, String> {
+pub async fn beatport_get_playlist_tracks(
+    token: Option<String>,
+    playlist_id: String,
+) -> Result<Vec<BeatportTrack>, String> {
     let client = BeatportClient::new();
-    client.get_playlist_tracks(token.as_deref(), &playlist_id).await
+    client
+        .get_playlist_tracks(token.as_deref(), &playlist_id)
+        .await
 }
 
 #[tauri::command]
-pub async fn beatport_get_user_favorites(token: Option<String>) -> Result<Vec<BeatportTrack>, String> {
+pub async fn beatport_get_user_favorites(
+    token: Option<String>,
+) -> Result<Vec<BeatportTrack>, String> {
     let client = BeatportClient::new();
     client.get_user_favorites(token.as_deref(), None).await
 }
 
 #[tauri::command]
-pub async fn beatport_get_user_purchases(token: Option<String>) -> Result<Vec<BeatportTrack>, String> {
+pub async fn beatport_get_user_purchases(
+    token: Option<String>,
+) -> Result<Vec<BeatportTrack>, String> {
     let client = BeatportClient::new();
     client.get_user_purchases(token.as_deref()).await
 }
@@ -142,7 +173,8 @@ pub async fn beatport_download_tracks(
         &dest_path,
         beatportdl_path.as_deref(),
         Some(&library),
-    ).await;
+    )
+    .await;
 
     if let Ok(ref res) = result {
         if res.success_count > 0 {

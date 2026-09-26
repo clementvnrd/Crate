@@ -146,10 +146,10 @@ export function getHarmonicKeys(key: string | null | undefined, includeEnergyBoo
 	const plus2 = num === 11 ? 1 : num === 12 ? 2 : num + 2
 
 	const keys = [
-		`${num}${letter}`,            // Same key
-		`${num}${oppositeLetter}`,    // Relative major/minor
-		`${minus1}${letter}`,         // Adjacent down
-		`${plus1}${letter}`,          // Adjacent up
+		`${num}${letter}`, // Same key
+		`${num}${oppositeLetter}`, // Relative major/minor
+		`${minus1}${letter}`, // Adjacent down
+		`${plus1}${letter}`, // Adjacent up
 	]
 
 	if (includeEnergyBoost) {

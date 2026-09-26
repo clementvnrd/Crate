@@ -1,9 +1,7 @@
 use tauri::{Emitter, State};
 
 use crate::error::Result;
-use crate::models::{
-    UpgradeCountInfo, UpgradeMatch, UpgradeReplacementResult, UpgradeScanResult,
-};
+use crate::models::{UpgradeCountInfo, UpgradeMatch, UpgradeReplacementResult, UpgradeScanResult};
 use crate::services::{BeatportUpgraderService, LibraryService, SettingsService};
 
 #[tauri::command]
@@ -60,7 +58,12 @@ pub async fn execute_upgrade_replacements(
         let _ = progress_app.emit("upgrade-progress", progress);
     };
     let res = upgrader
-        .execute_upgrade_replacements(&matches, Some(&library), custom_dest.as_deref(), &on_progress)
+        .execute_upgrade_replacements(
+            &matches,
+            Some(&library),
+            custom_dest.as_deref(),
+            &on_progress,
+        )
         .await?;
     let _ = app.emit("upgrades-updated", ());
     let _ = app.emit("library-updated", ());

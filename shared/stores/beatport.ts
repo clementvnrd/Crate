@@ -15,14 +15,7 @@ import { openUrl } from '@tauri-apps/plugin-opener'
 import { playerStore } from './player'
 import { toErrorMessage } from '../utils/errors'
 
-export type BeatportNavSection =
-	| 'home'
-	| 'purchased'
-	| 'offline'
-	| 'favorites'
-	| 'playlist'
-	| 'chart'
-	| 'artist'
+export type BeatportNavSection = 'home' | 'purchased' | 'offline' | 'favorites' | 'playlist' | 'chart' | 'artist'
 
 interface BeatportState {
 	auth: BeatportAuthState
@@ -159,7 +152,7 @@ const initialState: BeatportState = {
 	error: null,
 }
 
-let refreshTimer: any = null
+let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 function setupAutoRefresh() {
 	if (typeof window === 'undefined') return
@@ -168,16 +161,19 @@ function setupAutoRefresh() {
 		refreshTimer = null
 	}
 
-	refreshTimer = setInterval(async () => {
-		const state = get(beatportStore)
-		if (state.auth.refresh_token && state.auth.is_authenticated) {
-			try {
-				await beatportStore.refreshSession()
-			} catch (e) {
-				console.warn('Background token refresh failed:', e)
+	refreshTimer = setInterval(
+		async () => {
+			const state = get(beatportStore)
+			if (state.auth.refresh_token && state.auth.is_authenticated) {
+				try {
+					await beatportStore.refreshSession()
+				} catch (e) {
+					console.warn('Background token refresh failed:', e)
+				}
 			}
-		}
-	}, 3 * 60 * 1000)
+		},
+		3 * 60 * 1000
+	)
 }
 
 function createBeatportStore() {
@@ -226,11 +222,11 @@ function createBeatportStore() {
 			try {
 				const authUrl = await beatportApi.getBeatportPkceAuthUrl()
 				await openUrl(authUrl)
-				toastStore.info('Connexion ouverte dans votre navigateur. Autorisez puis collez le code ou l\'URL.')
+				toastStore.info("Connexion ouverte dans votre navigateur. Autorisez puis collez le code ou l'URL.")
 				update((s) => ({ ...s, showLoginModal: true }))
-			} catch (e: any) {
+			} catch (e) {
 				console.error('Failed to open Beatport Auth URL:', e)
-				toastStore.error(`Impossible d'ouvrir le navigateur : ${e?.message || e}`)
+				toastStore.error(`Impossible d'ouvrir le navigateur : ${toErrorMessage(e, String(e))}`)
 			}
 		},
 
@@ -247,9 +243,9 @@ function createBeatportStore() {
 				toastStore.success(`Compte Beatport connecté avec succès (${formattedAuth.username})`)
 				update((s) => ({ ...s, auth: formattedAuth, showLoginModal: false, loading: false }))
 				await this.loadInitialData()
-			} catch (e: any) {
-				toastStore.error(`Échec de connexion Beatport : ${e?.message || e}`)
-				update((s) => ({ ...s, loading: false, error: e?.message || String(e) }))
+			} catch (e) {
+				toastStore.error(`Échec de connexion Beatport : ${toErrorMessage(e, String(e))}`)
+				update((s) => ({ ...s, loading: false, error: toErrorMessage(e, String(e)) }))
 			}
 		},
 
@@ -291,9 +287,9 @@ function createBeatportStore() {
 				toastStore.success(`Connecté avec token Beatport (${formattedAuth.username})`)
 				update((s) => ({ ...s, auth: formattedAuth, showLoginModal: false, loading: false }))
 				await this.loadInitialData()
-			} catch (e: any) {
-				toastStore.error(`Token Beatport invalide : ${e?.message || e}`)
-				update((s) => ({ ...s, loading: false, error: e?.message || String(e) }))
+			} catch (e) {
+				toastStore.error(`Token Beatport invalide : ${toErrorMessage(e, String(e))}`)
+				update((s) => ({ ...s, loading: false, error: toErrorMessage(e, String(e)) }))
 			}
 		},
 
@@ -415,9 +411,8 @@ function createBeatportStore() {
 
 				update((s) => {
 					// If user already navigated to a specific section, preserve currentSectionTracks unless it was empty
-					const currentTracks = s.currentSectionTracks.length > 0 && s.navSection !== 'home'
-						? s.currentSectionTracks
-						: topTracks
+					const currentTracks =
+						s.currentSectionTracks.length > 0 && s.navSection !== 'home' ? s.currentSectionTracks : topTracks
 					return {
 						...s,
 						genres: genres.length > 0 ? genres : s.genres,
@@ -430,9 +425,9 @@ function createBeatportStore() {
 				})
 
 				await this.loadUserData(token)
-			} catch (e: any) {
+			} catch (e) {
 				console.error('Failed to load Beatport catalog data:', e)
-				update((s) => ({ ...s, loading: false, error: hasExistingData ? null : (e?.message || String(e)) }))
+				update((s) => ({ ...s, loading: false, error: hasExistingData ? null : toErrorMessage(e, String(e)) }))
 			}
 		},
 
@@ -459,7 +454,11 @@ function createBeatportStore() {
 			}
 		},
 
-		async setNavSection(section: BeatportNavSection, playlistId: string | null = null, playlistName: string | null = null) {
+		async setNavSection(
+			section: BeatportNavSection,
+			playlistId: string | null = null,
+			playlistName: string | null = null
+		) {
 			const state = get({ subscribe })
 			update((s) => ({
 				...s,
@@ -508,8 +507,8 @@ function createBeatportStore() {
 					loading: false,
 					error: null,
 				}))
-			} catch (e: any) {
-				update((s) => ({ ...s, loading: false, error: e?.message || String(e) }))
+			} catch (e) {
+				update((s) => ({ ...s, loading: false, error: toErrorMessage(e, String(e)) }))
 			}
 		},
 
@@ -549,8 +548,8 @@ function createBeatportStore() {
 					loading: false,
 					error: null,
 				}))
-			} catch (e: any) {
-				update((s) => ({ ...s, loading: false, error: e?.message || String(e) }))
+			} catch (e) {
+				update((s) => ({ ...s, loading: false, error: toErrorMessage(e, String(e)) }))
 			}
 		},
 
@@ -596,8 +595,8 @@ function createBeatportStore() {
 					loading: false,
 					error: null,
 				}))
-			} catch (e: any) {
-				update((s) => ({ ...s, loading: false, error: e?.message || String(e) }))
+			} catch (e) {
+				update((s) => ({ ...s, loading: false, error: toErrorMessage(e, String(e)) }))
 			}
 		},
 
@@ -632,8 +631,8 @@ function createBeatportStore() {
 			try {
 				const tracks = await beatportApi.getBeatportTopTracks(token, genreId)
 				update((s) => ({ ...s, topTracks: tracks, currentSectionTracks: tracks, loading: false, error: null }))
-			} catch (e: any) {
-				update((s) => ({ ...s, loading: false, error: e?.message || String(e) }))
+			} catch (e) {
+				update((s) => ({ ...s, loading: false, error: toErrorMessage(e, String(e)) }))
 			}
 		},
 
@@ -656,8 +655,8 @@ function createBeatportStore() {
 					loading: false,
 					error: null,
 				}))
-			} catch (e: any) {
-				update((s) => ({ ...s, loading: false, error: e?.message || String(e) }))
+			} catch (e) {
+				update((s) => ({ ...s, loading: false, error: toErrorMessage(e, String(e)) }))
 			}
 		},
 
@@ -704,9 +703,7 @@ function createBeatportStore() {
 		toggleFavorite(track: BeatportTrack) {
 			update((s) => {
 				const isFav = s.favorites.some((t) => String(t.id) === String(track.id))
-				const nextFavs = isFav
-					? s.favorites.filter((t) => String(t.id) !== String(track.id))
-					: [...s.favorites, track]
+				const nextFavs = isFav ? s.favorites.filter((t) => String(t.id) !== String(track.id)) : [...s.favorites, track]
 				toastStore.info(
 					isFav
 						? `Retiré des favoris locaux : ${track.title}`
@@ -763,10 +760,7 @@ function createBeatportStore() {
 			}
 
 			const currentSettings = get(settingsStore)
-			const dest =
-				state.downloadDestination ||
-				currentSettings.beatportDownloadDestination ||
-				undefined
+			const dest = state.downloadDestination || currentSettings.beatportDownloadDestination || undefined
 
 			// One track per call: each success leaves the cart as soon as it is verified, failures
 			// stay in it, and the progress is known.

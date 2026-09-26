@@ -265,7 +265,10 @@ impl LibraryService {
                 .flatten());
         };
 
-        let Some(peaks) = super::waveform::compute_peaks(std::path::Path::new(&file_path), super::waveform::WAVEFORM_BARS) else {
+        let Some(peaks) = super::waveform::compute_peaks(
+            std::path::Path::new(&file_path),
+            super::waveform::WAVEFORM_BARS,
+        ) else {
             return Ok(None);
         };
         // Local cache only: waveform_data is not a synced column, so no HLC / dirty marking.
@@ -311,14 +314,21 @@ impl LibraryService {
         // opened from outside the library (standalone player) is looked up in Mixed In Key, and
         // that happens after releasing the library lock.
         let is_library_track = conn
-            .query_row("SELECT 1 FROM tracks WHERE id = ?1", [track_id_or_path], |_| Ok(()))
+            .query_row(
+                "SELECT 1 FROM tracks WHERE id = ?1",
+                [track_id_or_path],
+                |_| Ok(()),
+            )
             .is_ok();
         drop(conn);
 
         let external_path = std::path::PathBuf::from(track_id_or_path);
         if cues.is_empty() && !is_library_track && external_path.is_file() {
             if let Ok(mik_songs) = crate::services::library::MikDatabaseService::read_all_songs() {
-                if let Some(song) = mik_songs.into_iter().find(|s| s.file_path.as_ref() == Some(&external_path)) {
+                if let Some(song) = mik_songs
+                    .into_iter()
+                    .find(|s| s.file_path.as_ref() == Some(&external_path))
+                {
                     for (idx, mc) in song.cues.into_iter().enumerate() {
                         let hot_idx = idx as i32;
                         cues.push(Cue {
@@ -503,8 +513,15 @@ mod fts_tests {
     }
 
     fn search(lib: &LibraryService, q: &str) -> Vec<String> {
-        let filter = TrackFilter { search: Some(q.to_string()), ..Default::default() };
-        lib.get_tracks(Some(filter)).unwrap().into_iter().filter_map(|t| t.title).collect()
+        let filter = TrackFilter {
+            search: Some(q.to_string()),
+            ..Default::default()
+        };
+        lib.get_tracks(Some(filter))
+            .unwrap()
+            .into_iter()
+            .filter_map(|t| t.title)
+            .collect()
     }
 
     #[test]
@@ -518,9 +535,20 @@ mod fts_tests {
         assert_eq!(search(&lib, "You'll"), vec!["You'll Never Walk Alone"]);
         assert_eq!(search(&lib, "jay-z"), vec!["Empire State of Mind"]);
         assert_eq!(search(&lib, "AC/DC"), vec!["Thunderstruck"]);
-        assert_eq!(search(&lib, "AND"), vec!["Black AND White"], "an operator keyword is a plain word");
-        assert_eq!(search(&lib, "thund"), vec!["Thunderstruck"], "prefix search still works");
-        assert!(search(&lib, "\"").len() == 4, "punctuation-only search does not filter or fail");
+        assert_eq!(
+            search(&lib, "AND"),
+            vec!["Black AND White"],
+            "an operator keyword is a plain word"
+        );
+        assert_eq!(
+            search(&lib, "thund"),
+            vec!["Thunderstruck"],
+            "prefix search still works"
+        );
+        assert!(
+            search(&lib, "\"").len() == 4,
+            "punctuation-only search does not filter or fail"
+        );
     }
 
     #[test]

@@ -95,11 +95,5 @@ function createRecentTracksStore() {
 
 export const recentTracksStore = createRecentTracksStore()
 
-export const recentStandaloneTracks = derived(
-	recentTracksStore,
-	($state) => $state.tracks
-)
-export const recentTracksLoading = derived(
-	recentTracksStore,
-	($state) => $state.loading
-)
+export const recentStandaloneTracks = derived(recentTracksStore, ($state) => $state.tracks)
+export const recentTracksLoading = derived(recentTracksStore, ($state) => $state.loading)

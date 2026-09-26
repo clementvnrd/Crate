@@ -23,7 +23,12 @@ pub fn compute_peaks(path: &Path, bins: usize) -> Option<Vec<u8>> {
         hint.with_extension(ext);
     }
     let probed = symphonia::default::get_probe()
-        .format(&hint, mss, &FormatOptions::default(), &MetadataOptions::default())
+        .format(
+            &hint,
+            mss,
+            &FormatOptions::default(),
+            &MetadataOptions::default(),
+        )
         .ok()?;
     let mut format = probed.format;
     let track = format.default_track()?;
@@ -38,14 +43,19 @@ pub fn compute_peaks(path: &Path, bins: usize) -> Option<Vec<u8>> {
     loop {
         let packet = match format.next_packet() {
             Ok(packet) => packet,
-            Err(SymphoniaError::IoError(e)) if e.kind() == std::io::ErrorKind::UnexpectedEof => break,
+            Err(SymphoniaError::IoError(e)) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
+                break
+            }
             Err(_) => break,
         };
         if packet.track_id() != track_id {
             continue;
         }
-        let Ok(decoded) = decoder.decode(&packet) else { continue };
-        let buf = sample_buf.get_or_insert_with(|| SampleBuffer::new(decoded.capacity() as u64, *decoded.spec()));
+        let Ok(decoded) = decoder.decode(&packet) else {
+            continue;
+        };
+        let buf = sample_buf
+            .get_or_insert_with(|| SampleBuffer::new(decoded.capacity() as u64, *decoded.spec()));
         if buf.capacity() < decoded.capacity() {
             *buf = SampleBuffer::new(decoded.capacity() as u64, *decoded.spec());
         }
@@ -65,8 +75,12 @@ fn fold_peaks(peaks: &[f32], bins: usize) -> Vec<u8> {
     (0..bins)
         .map(|bin| {
             let start = bin * peaks.len() / bins;
-            let end = ((bin + 1) * peaks.len() / bins).max(start + 1).min(peaks.len());
-            let peak = peaks[start.min(peaks.len() - 1)..end].iter().fold(0.0f32, |m, p| m.max(*p));
+            let end = ((bin + 1) * peaks.len() / bins)
+                .max(start + 1)
+                .min(peaks.len());
+            let peak = peaks[start.min(peaks.len() - 1)..end]
+                .iter()
+                .fold(0.0f32, |m, p| m.max(*p));
             (peak.clamp(0.0, 1.0) * 100.0).round() as u8
         })
         .collect()
@@ -82,7 +96,13 @@ mod tests {
         let frames = rate as usize; // 1 s
         let mut data = Vec::with_capacity(frames * 4);
         for i in 0..frames {
-            let v: i16 = if i < frames / 2 { 0 } else if (i / 50) % 2 == 0 { 16_384 } else { -16_384 };
+            let v: i16 = if i < frames / 2 {
+                0
+            } else if (i / 50) % 2 == 0 {
+                16_384
+            } else {
+                -16_384
+            };
             data.extend(v.to_le_bytes());
             data.extend(v.to_le_bytes());
         }
@@ -111,12 +131,16 @@ mod tests {
         let _ = std::fs::remove_file(&path);
         assert_eq!(peaks.len(), 10);
         assert!(peaks[..4].iter().all(|p| *p == 0), "silent half: {peaks:?}");
-        assert!(peaks[6..].iter().all(|p| (45..=55).contains(p)), "half-scale half: {peaks:?}");
+        assert!(
+            peaks[6..].iter().all(|p| (45..=55).contains(p)),
+            "half-scale half: {peaks:?}"
+        );
     }
 
     #[test]
     fn test_undecodable_file_has_no_waveform() {
-        let path = std::env::temp_dir().join(format!("crate_waveform_bad_{}.mp3", std::process::id()));
+        let path =
+            std::env::temp_dir().join(format!("crate_waveform_bad_{}.mp3", std::process::id()));
         std::fs::write(&path, b"not audio at all").unwrap();
         assert!(compute_peaks(&path, 10).is_none());
         let _ = std::fs::remove_file(&path);

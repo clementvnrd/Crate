@@ -65,17 +65,15 @@
 	>
 		<div class="flex items-center gap-3">
 			<div
-				class="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-primary/15 border border-brand-primary/30 text-brand-primary shadow-sm"
+				class="bg-brand-primary/15 border-brand-primary/30 flex h-9 w-9 items-center justify-center rounded-xl border text-brand-primary shadow-sm"
 			>
 				<Icon name="chart" class="h-5 w-5 text-brand-primary" />
 			</div>
 			<div>
 				<div class="flex items-center gap-2">
-					<h1 class="text-base font-bold text-text-primary tracking-tight">
-						Crate Pulse & Stats
-					</h1>
+					<h1 class="text-base font-bold tracking-tight text-text-primary">Crate Pulse & Stats</h1>
 					<span
-						class="rounded-full bg-brand-primary/20 border border-brand-primary/40 px-2 py-0.5 text-[10px] font-mono font-bold text-brand-primary uppercase tracking-wider"
+						class="bg-brand-primary/20 border-brand-primary/40 rounded-full border px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-brand-primary uppercase"
 					>
 						Live
 					</span>
@@ -91,26 +89,25 @@
 			<!-- Now Playing Spotify Live Pill (if active) -->
 			{#if $spotifyNowPlaying?.is_playing}
 				<div
-					class="hidden md:flex items-center gap-2 rounded-full border border-[#1DB954]/40 bg-[#1DB954]/10 px-3 py-1 text-xs font-medium text-[#1DB954] shadow-sm animate-pulse"
+					class="hidden animate-pulse items-center gap-2 rounded-full border border-[#1DB954]/40 bg-[#1DB954]/10 px-3 py-1 text-xs font-medium text-[#1DB954] shadow-sm md:flex"
 				>
 					<span class="h-2 w-2 rounded-full bg-[#1DB954]"></span>
 					<span class="font-bold">Live Spotify :</span>
-					<span class="truncate max-w-[140px] text-text-primary">
+					<span class="max-w-[140px] truncate text-text-primary">
 						{$spotifyNowPlaying.title}
 					</span>
 				</div>
 			{/if}
 
 			<!-- Segmented Range Control -->
-			<div class="flex items-center rounded-xl bg-surface-2 p-1 border border-stroke shadow-xs">
+			<div class="flex items-center rounded-xl border border-stroke bg-surface-2 p-1 shadow-xs">
 				{#each TIME_RANGES as r (r.id)}
 					<button
 						type="button"
-						class="rounded-lg px-3 py-1 text-xs font-semibold transition-all cursor-pointer {
-							$statsSelectedRange === r.id
-								? 'bg-surface-0 text-text-primary shadow-sm border border-stroke-strong/60'
-								: 'text-text-tertiary hover:text-text-secondary'
-						}"
+						class="cursor-pointer rounded-lg px-3 py-1 text-xs font-semibold transition-all {$statsSelectedRange ===
+						r.id
+							? 'border-stroke-strong/60 border bg-surface-0 text-text-primary shadow-sm'
+							: 'text-text-tertiary hover:text-text-secondary'}"
 						onclick={() => handleRangeChange(r.id)}
 					>
 						{r.label}
@@ -121,15 +118,12 @@
 			<!-- Refresh Button -->
 			<button
 				type="button"
-				class="flex h-8 w-8 items-center justify-center rounded-xl border border-stroke bg-surface-2 text-text-secondary hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary active:scale-95 transition-all cursor-pointer shadow-sm"
+				class="hover:border-stroke-strong hover:bg-surface-3 flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-stroke bg-surface-2 text-text-secondary shadow-sm transition-all hover:text-text-primary active:scale-95"
 				onclick={handleRefresh}
 				title="Rafraîchir les statistiques"
 				disabled={$isStatsLoading}
 			>
-				<Icon
-					name="refresh-cw"
-					class="h-4 w-4 {$isStatsLoading ? 'animate-spin text-brand-primary' : ''}"
-				/>
+				<Icon name="refresh-cw" class="h-4 w-4 {$isStatsLoading ? 'animate-spin text-brand-primary' : ''}" />
 			</button>
 		</div>
 	</div>

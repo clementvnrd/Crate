@@ -789,14 +789,16 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			}, ms)
 		})
 		return Promise.race([
-			promise.then((res) => {
-				clearTimeout(timer)
-				return res
-			}).catch((err) => {
-				clearTimeout(timer)
-				console.warn('Timed promise caught error:', err)
-				return fallback
-			}),
+			promise
+				.then((res) => {
+					clearTimeout(timer)
+					return res
+				})
+				.catch((err) => {
+					clearTimeout(timer)
+					console.warn('Timed promise caught error:', err)
+					return fallback
+				}),
 			timeoutPromise,
 		])
 	}

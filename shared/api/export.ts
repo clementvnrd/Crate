@@ -53,10 +53,7 @@ export async function resumeExport(deviceId: string, mountPoint: string): Promis
 /**
  * Export library or playlists to Pioneer Rekordbox XML format
  */
-export async function exportRekordboxXml(
-	targetPath: string,
-	playlistIds?: string[]
-): Promise<number> {
+export async function exportRekordboxXml(targetPath: string, playlistIds?: string[]): Promise<number> {
 	return invoke<number>('export_rekordbox_xml', {
 		targetPath,
 		playlistIds: playlistIds ?? null,

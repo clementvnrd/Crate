@@ -4,6 +4,7 @@ import * as albumApi from '../api/album'
 import { playerStore } from './player'
 import { toastStore } from './toast'
 import { open } from '@tauri-apps/plugin-dialog'
+import { toErrorMessage } from '../utils/errors'
 
 interface AlbumsState {
 	albums: PlayerAlbum[]
@@ -65,7 +66,7 @@ function createAlbumsStore() {
 			const selected = await open({
 				directory: true,
 				multiple: false,
-				title: 'Sélectionner un dossier d\'album',
+				title: "Sélectionner un dossier d'album",
 			})
 
 			if (!selected || typeof selected !== 'string') {
@@ -73,11 +74,13 @@ function createAlbumsStore() {
 			}
 
 			update((s) => ({ ...s, isAdding: true }))
-			toastStore.info('Analyse du dossier d\'album en cours...')
+			toastStore.info("Analyse du dossier d'album en cours...")
 
 			const result = await albumApi.addPlayerAlbum(selected)
 			update((s) => {
-				const existingIdx = s.albums.findIndex((a) => a.id === result.album.id || a.folder_path === result.album.folder_path)
+				const existingIdx = s.albums.findIndex(
+					(a) => a.id === result.album.id || a.folder_path === result.album.folder_path
+				)
 				let updatedAlbums: PlayerAlbum[]
 				if (existingIdx >= 0) {
 					updatedAlbums = [...s.albums]
@@ -95,9 +98,9 @@ function createAlbumsStore() {
 			})
 
 			toastStore.success(`Album "${result.album.title}" importé (${result.tracks.length} pistes)`)
-		} catch (e: any) {
+		} catch (e) {
 			console.error('Failed to add album:', e)
-			const errorMsg = e?.message || e || 'Erreur lors de l\'ajout de l\'album'
+			const errorMsg = toErrorMessage(e, "Erreur lors de l'ajout de l'album")
 			toastStore.error(String(errorMsg))
 			update((s) => ({ ...s, isAdding: false }))
 		}
@@ -119,14 +122,11 @@ function createAlbumsStore() {
 			toastStore.info('Album supprimé de la liste')
 		} catch (e) {
 			console.error('Failed to remove album:', e)
-			toastStore.error('Erreur lors de la suppression de l\'album')
+			toastStore.error("Erreur lors de la suppression de l'album")
 		}
 	}
 
-	function convertToStandaloneTrack(
-		track: PlayerAlbumTrack,
-		album: PlayerAlbum | null
-	): StandaloneTrack {
+	function convertToStandaloneTrack(track: PlayerAlbumTrack, album: PlayerAlbum | null): StandaloneTrack {
 		return {
 			id: track.id,
 			file_path: track.file_path,
@@ -170,15 +170,12 @@ function createAlbumsStore() {
 	async function playPreviousAlbumTrack() {
 		const state = get(albumsStore)
 		if (!state.selectedAlbum || state.selectedAlbumTracks.length === 0) return
-		const prevIndex = (state.currentTrackIndex - 1 + state.selectedAlbumTracks.length) % state.selectedAlbumTracks.length
+		const prevIndex =
+			(state.currentTrackIndex - 1 + state.selectedAlbumTracks.length) % state.selectedAlbumTracks.length
 		await playTrackByIndex(prevIndex, state.selectedAlbumTracks, state.selectedAlbum)
 	}
 
-	async function playAlbumTrack(
-		track: PlayerAlbumTrack,
-		albumTracks?: PlayerAlbumTrack[],
-		album?: PlayerAlbum | null
-	) {
+	async function playAlbumTrack(track: PlayerAlbumTrack, albumTracks?: PlayerAlbumTrack[], album?: PlayerAlbum | null) {
 		const state = get(albumsStore)
 		const targetAlbum = album || state.selectedAlbum
 		const tracks = albumTracks || state.selectedAlbumTracks

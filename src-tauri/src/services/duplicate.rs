@@ -1,23 +1,21 @@
+use regex::Regex;
+use rusqlite::Connection;
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
-use std::sync::{Arc, Mutex};
-use rusqlite::Connection;
-use unicode_normalization::UnicodeNormalization;
-use regex::Regex;
 use std::sync::LazyLock;
+use std::sync::{Arc, Mutex};
+use unicode_normalization::UnicodeNormalization;
 
 use crate::error::{CrateError, Result};
 use crate::models::{
-    DuplicateCountInfo, DuplicateGroup, DuplicateMatchType, DuplicateScanResult,
-    DuplicateTrackInfo,
+    DuplicateCountInfo, DuplicateGroup, DuplicateMatchType, DuplicateScanResult, DuplicateTrackInfo,
 };
 
 static FEAT_PAREN_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\s*[\(\[](?:feat\.?|ft\.?|featuring)\s+[^)\]]+[\)\]]").unwrap()
 });
-static FEAT_INLINE_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)\s+\b(?:feat\.?|ft\.?|featuring)\b.*$").unwrap()
-});
+static FEAT_INLINE_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)\s+\b(?:feat\.?|ft\.?|featuring)\b.*$").unwrap());
 static MIX_PAREN_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\s*[\(\[](?:[^\)\]]*\b)?(?:intro|outro|short(?:\s+edit|\s+mix|\s+cut)?|quick\s*hit|club|extended|original|radio|clean|dirty|explicit|dj\s*edit|dj\s*intro|re-?drum|transition|bootleg|mashup|slowed(?:\s*\+\s*reverb)?|sped\s*up|speed\s*up|acapella|a\s*cappella|bonus\s*track|instrumental|album|vocal|dub|vip|acoustic|remaster(?:ed)?|live|main|12\x22)(?:\s*(?:mix|edit|version|remaster|cut|dirty|clean|extended|short|outro|intro|dub|vip))?(?:\b[^\)\]]*)?[\)\]]").unwrap()
 });
@@ -27,14 +25,11 @@ static MIX_DASH_RE: LazyLock<Regex> = LazyLock::new(|| {
 /// Separators between artists. Words only match as whole words ("Daft Punk" is one artist,
 /// "Alex" keeps its x): feat./ft./vs., featuring, with, and, a standalone "x", & + / ; ,
 pub(crate) static ARTIST_DELIM_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)\s*(?:\b(?:feat|ft|vs)\b\.?|\b(?:featuring|with|and)\b|&|\+|/|;|,)\s*|\s+x\s+").unwrap()
+    Regex::new(r"(?i)\s*(?:\b(?:feat|ft|vs)\b\.?|\b(?:featuring|with|and)\b|&|\+|/|;|,)\s*|\s+x\s+")
+        .unwrap()
 });
-static PUNCT_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"[^\p{L}\p{N}\s]").unwrap()
-});
-static WHITESPACE_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\s+").unwrap()
-});
+static PUNCT_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[^\p{L}\p{N}\s]").unwrap());
+static WHITESPACE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap());
 
 /// Check if a title contains a mix or version tag
 pub fn has_version_tag(s: &str) -> bool {
@@ -162,6 +157,7 @@ pub fn keys_match(k1: Option<&str>, k2: Option<&str>) -> bool {
 }
 
 /// Calculate a quality score for ranking versions of a track.
+#[allow(clippy::too_many_arguments)] // flat inputs keep every scoring criterion explicit at call sites
 pub fn calculate_quality_score(
     format: &str,
     bitrate: Option<i32>,
@@ -301,7 +297,10 @@ pub struct DuplicateService {
 
 impl DuplicateService {
     pub fn new(conn: Arc<Mutex<Connection>>) -> Self {
-        Self { conn, count_cache: Mutex::new(None) }
+        Self {
+            conn,
+            count_cache: Mutex::new(None),
+        }
     }
 
     /// Cheap summary of everything the duplicate scan depends on: any added, removed, edited or
@@ -321,7 +320,8 @@ impl DuplicateService {
 
     /// Load all ignored pairs as canonical tuples `(min(id_a, id_b), max(id_a, id_b))`
     fn get_ignored_pairs(&self, conn: &Connection) -> Result<HashSet<(String, String)>> {
-        let mut stmt = conn.prepare("SELECT track_id_a, track_id_b FROM ignored_duplicate_pairs")?;
+        let mut stmt =
+            conn.prepare("SELECT track_id_a, track_id_b FROM ignored_duplicate_pairs")?;
         let rows = stmt.query_map([], |row| {
             let a: String = row.get(0)?;
             let b: String = row.get(1)?;
@@ -418,11 +418,7 @@ impl DuplicateService {
             root
         }
 
-        fn union_sets(
-            parent: &mut [usize],
-            i: usize,
-            j: usize,
-        ) {
+        fn union_sets(parent: &mut [usize], i: usize, j: usize) {
             let root_i = find_root(parent, i);
             let root_j = find_root(parent, j);
             if root_i != root_j {
@@ -455,7 +451,11 @@ impl DuplicateService {
                         };
                         if !ignored_pairs.contains(&canonical) {
                             union_sets(&mut parent, idx1, idx2);
-                            let pair_key = if idx1 < idx2 { (idx1, idx2) } else { (idx2, idx1) };
+                            let pair_key = if idx1 < idx2 {
+                                (idx1, idx2)
+                            } else {
+                                (idx2, idx1)
+                            };
                             edge_match_types.insert(pair_key, DuplicateMatchType::ExactHash);
                         }
                     }
@@ -542,13 +542,22 @@ impl DuplicateService {
 
                         // If both have analyzed BPM and they differ by > 1.0, only allow if key matches or dur_diff <= 10_000
                         if let (Some(b1), Some(b2)) = (t1.bpm, t2.bpm) {
-                            if b1 > 0.0 && b2 > 0.0 && (b1 - b2).abs() > 1.0 && !key_matches && dur_diff > 10_000 {
+                            if b1 > 0.0
+                                && b2 > 0.0
+                                && (b1 - b2).abs() > 1.0
+                                && !key_matches
+                                && dur_diff > 10_000
+                            {
                                 continue;
                             }
                         }
 
                         union_sets(&mut parent, idx1, idx2);
-                        let pair_key = if idx1 < idx2 { (idx1, idx2) } else { (idx2, idx1) };
+                        let pair_key = if idx1 < idx2 {
+                            (idx1, idx2)
+                        } else {
+                            (idx2, idx1)
+                        };
                         edge_match_types.insert(pair_key, DuplicateMatchType::Metadata);
                     }
                 }
@@ -597,7 +606,10 @@ impl DuplicateService {
                     raw.genre.as_ref().filter(|s| !s.is_empty()).is_some(),
                     raw.year.is_some(),
                     raw.label.as_ref().filter(|s| !s.is_empty()).is_some(),
-                    raw.artwork_path.as_ref().filter(|s| !s.is_empty()).is_some(),
+                    raw.artwork_path
+                        .as_ref()
+                        .filter(|s| !s.is_empty())
+                        .is_some(),
                     raw.key.as_ref().filter(|s| !s.is_empty()).is_some(),
                     raw.energy.is_some(),
                     raw.bpm,
@@ -657,9 +669,9 @@ impl DuplicateService {
             total_duplicate_tracks += track_infos.len() - 1;
 
             // Determine primary match type
-            let has_exact_hash = track_infos.windows(2).any(|w| {
-                w[0].file_hash.is_some() && w[0].file_hash == w[1].file_hash
-            });
+            let has_exact_hash = track_infos
+                .windows(2)
+                .any(|w| w[0].file_hash.is_some() && w[0].file_hash == w[1].file_hash);
 
             let match_type = if has_exact_hash {
                 DuplicateMatchType::ExactHash
@@ -678,7 +690,7 @@ impl DuplicateService {
         }
 
         // Sort groups: largest reclaimable bytes first
-        duplicate_groups.sort_by(|a, b| b.reclaimable_bytes.cmp(&a.reclaimable_bytes));
+        duplicate_groups.sort_by_key(|g| std::cmp::Reverse(g.reclaimable_bytes));
 
         let total_groups = duplicate_groups.len();
 
@@ -841,7 +853,10 @@ mod tests {
         assert_eq!(normalize_title("Strobe (Radio Edit)"), "strobe");
         assert_eq!(normalize_title("One (feat. Pharrell)"), "one");
         assert_eq!(normalize_title("One ft. Pharrell Williams"), "one");
-        assert_eq!(normalize_title("Café del Mar (Original Mix)"), "café del mar");
+        assert_eq!(
+            normalize_title("Café del Mar (Original Mix)"),
+            "café del mar"
+        );
         assert_eq!(normalize_artist("Avicii feat. Aloe Blacc"), "avicii");
         assert_eq!(normalize_artist("Deadmau5"), "deadmau5");
     }
@@ -853,7 +868,19 @@ mod tests {
             Some(1411),
             Some(44100),
             30_000_000,
-            true, true, true, true, true, true, true, true, true, Some(128.0), 4, 5, 10
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            Some(128.0),
+            4,
+            5,
+            10,
         );
 
         let mp3_320_score = calculate_quality_score(
@@ -861,7 +888,19 @@ mod tests {
             Some(320),
             Some(44100),
             10_000_000,
-            true, true, true, false, false, false, false, true, false, Some(128.0), 0, 0, 0
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            Some(128.0),
+            0,
+            0,
+            0,
         );
 
         let mp3_128_score = calculate_quality_score(
@@ -869,7 +908,19 @@ mod tests {
             Some(128),
             Some(44100),
             4_000_000,
-            true, true, false, false, false, false, false, false, false, None, 0, 0, 0
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            None,
+            0,
+            0,
+            0,
         );
 
         assert!(flac_score > mp3_320_score);
@@ -911,9 +962,20 @@ mod tests {
         let conn = Arc::new(Mutex::new(conn));
         let svc = DuplicateService::new(conn.clone());
         assert_eq!(svc.get_duplicate_count().unwrap().group_count, 1);
-        assert_eq!(svc.get_duplicate_count().unwrap().group_count, 1, "served from the cache");
-        conn.lock().unwrap().execute("DELETE FROM tracks WHERE id = 't2'", []).unwrap();
-        assert_eq!(svc.get_duplicate_count().unwrap().group_count, 0, "a deletion invalidates the cache");
+        assert_eq!(
+            svc.get_duplicate_count().unwrap().group_count,
+            1,
+            "served from the cache"
+        );
+        conn.lock()
+            .unwrap()
+            .execute("DELETE FROM tracks WHERE id = 't2'", [])
+            .unwrap();
+        assert_eq!(
+            svc.get_duplicate_count().unwrap().group_count,
+            0,
+            "a deletion invalidates the cache"
+        );
     }
 
     #[test]
@@ -942,12 +1004,14 @@ mod tests {
         assert!(!res.groups[0].tracks[1].recommended_keep);
 
         // Test ignore
-        svc.ignore_duplicate_group(vec!["t1".to_string(), "t2".to_string()]).unwrap();
+        svc.ignore_duplicate_group(vec!["t1".to_string(), "t2".to_string()])
+            .unwrap();
         let res_after_ignore = svc.get_duplicate_groups().unwrap();
         assert_eq!(res_after_ignore.total_groups, 0);
 
         // Test unignore
-        svc.unignore_duplicate_group(vec!["t1".to_string(), "t2".to_string()]).unwrap();
+        svc.unignore_duplicate_group(vec!["t1".to_string(), "t2".to_string()])
+            .unwrap();
         let res_after_unignore = svc.get_duplicate_groups().unwrap();
         assert_eq!(res_after_unignore.total_groups, 1);
     }
@@ -1000,12 +1064,20 @@ mod tests {
         assert_eq!(normalize_title("Song Name - Dirty"), "song name");
         assert_eq!(normalize_title("Song Name - Extended Mix"), "song name");
 
-        assert!(artists_match("Jamie T, Fred again..", "Fred again.., Jamie T"));
-        assert!(artists_match("Jamie T & Fred again..", "Fred again.., Jamie T"));
-        assert!(artists_match("Skrillex & Fred again.. feat. Flowdan", "Fred again.., Skrillex, Flowdan"));
+        assert!(artists_match(
+            "Jamie T, Fred again..",
+            "Fred again.., Jamie T"
+        ));
+        assert!(artists_match(
+            "Jamie T & Fred again..",
+            "Fred again.., Jamie T"
+        ));
+        assert!(artists_match(
+            "Skrillex & Fred again.. feat. Flowdan",
+            "Fred again.., Skrillex, Flowdan"
+        ));
     }
 }
-
 
 #[cfg(test)]
 mod artist_delimiter_tests {

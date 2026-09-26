@@ -47,9 +47,13 @@ fn write_private(path: &PathBuf, contents: &str) {
 
 #[cfg(target_os = "macos")]
 fn store_write(json: &str) -> bool {
-    security_framework::passwords::set_generic_password(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT, json.as_bytes())
-        .map_err(|e| log::warn!("Beatport: could not save the session to the Keychain: {e}"))
-        .is_ok()
+    security_framework::passwords::set_generic_password(
+        KEYCHAIN_SERVICE,
+        KEYCHAIN_ACCOUNT,
+        json.as_bytes(),
+    )
+    .map_err(|e| log::warn!("Beatport: could not save the session to the Keychain: {e}"))
+    .is_ok()
 }
 
 #[cfg(target_os = "macos")]
@@ -66,7 +70,8 @@ fn store_read() -> Option<String> {
 
 #[cfg(target_os = "macos")]
 fn store_clear() {
-    let _ = security_framework::passwords::delete_generic_password(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT);
+    let _ =
+        security_framework::passwords::delete_generic_password(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT);
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -115,9 +120,11 @@ pub fn save(auth: &BeatportAuthState) {
     if let Ok(json) = serde_json::to_string(auth) {
         store_write(&json);
     }
-    if let (Some(token), Some(refresh), Some(path)) =
-        (&auth.token, &auth.refresh_token, beatportdl_credentials_file())
-    {
+    if let (Some(token), Some(refresh), Some(path)) = (
+        &auth.token,
+        &auth.refresh_token,
+        beatportdl_credentials_file(),
+    ) {
         write_private(&path, &beatportdl_credentials_json(token, refresh));
     }
 }
@@ -130,7 +137,11 @@ pub fn load() -> Option<BeatportAuthState> {
     // One-time migration of the plaintext session written by earlier builds.
     #[cfg(target_os = "macos")]
     if let Some(path) = legacy_auth_file() {
-        if let Some(auth) = std::fs::read_to_string(&path).ok().as_deref().and_then(parse_session) {
+        if let Some(auth) = std::fs::read_to_string(&path)
+            .ok()
+            .as_deref()
+            .and_then(parse_session)
+        {
             if let Ok(json) = serde_json::to_string(&auth) {
                 if store_write(&json) {
                     let _ = std::fs::remove_file(&path);
@@ -182,7 +193,8 @@ mod tests {
 
     #[test]
     fn test_beatportdl_credentials_format() {
-        let json: serde_json::Value = serde_json::from_str(&beatportdl_credentials_json("a", "r")).unwrap();
+        let json: serde_json::Value =
+            serde_json::from_str(&beatportdl_credentials_json("a", "r")).unwrap();
         assert_eq!(json["access_token"], "a");
         assert_eq!(json["refresh_token"], "r");
         assert_eq!(json["token_type"], "Bearer");

@@ -44,10 +44,13 @@ pub struct MikDbSong {
     pub album: Option<String>,
     pub genre: Option<String>,
     pub label: Option<String>,
+    /// Read for completeness of the Core Data row; not used by the sync yet.
+    #[allow(dead_code)]
     pub comment: Option<String>,
     pub year: Option<i32>,
     pub bitrate: Option<i32>,
     pub sample_rate: Option<i32>,
+    #[allow(dead_code)]
     pub filesize: Option<i64>,
     pub tempo: Option<f64>,
     pub key: Option<String>,
@@ -81,29 +84,32 @@ impl MikDatabaseService {
             home.join("Library/Application Support/Mixed In Key/Collection10.mikdb"),
         ];
 
-        for path in candidates {
-            if path.exists() {
-                return Some(path);
-            }
-        }
-
-        None
+        candidates.into_iter().find(|path| path.exists())
     }
 
     /// Open connection to Mixed In Key SQLite DB strictly in read-only mode
     pub fn open_mik_db() -> Result<Connection> {
-        let db_path = Self::find_mik_db_path()
-            .ok_or_else(|| CrateError::Metadata("Mixed In Key database (Collection11.mikdb) not found".into()))?;
+        let db_path = Self::find_mik_db_path().ok_or_else(|| {
+            CrateError::Metadata("Mixed In Key database (Collection11.mikdb) not found".into())
+        })?;
 
-        let flags = OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI | OpenFlags::SQLITE_OPEN_NO_MUTEX;
+        let flags = OpenFlags::SQLITE_OPEN_READ_ONLY
+            | OpenFlags::SQLITE_OPEN_URI
+            | OpenFlags::SQLITE_OPEN_NO_MUTEX;
 
         let conn = Connection::open_with_flags(&db_path, flags).map_err(|e| {
-            CrateError::Metadata(format!("Failed to open Mixed In Key database {}: {e}", db_path.display()))
+            CrateError::Metadata(format!(
+                "Failed to open Mixed In Key database {}: {e}",
+                db_path.display()
+            ))
         })?;
 
-        conn.busy_timeout(std::time::Duration::from_millis(5000)).map_err(|e| {
-            CrateError::Metadata(format!("Failed to set busy timeout on Mixed In Key database: {e}"))
-        })?;
+        conn.busy_timeout(std::time::Duration::from_millis(5000))
+            .map_err(|e| {
+                CrateError::Metadata(format!(
+                    "Failed to set busy timeout on Mixed In Key database: {e}"
+                ))
+            })?;
 
         let _ = conn.pragma_update(None, "query_only", "ON");
 
@@ -152,7 +158,8 @@ impl MikDatabaseService {
         let mik_conn = Self::open_mik_db()?;
 
         // 1. Read all cue points indexed by ZSONG
-        let mut cues_by_song: std::collections::HashMap<i64, Vec<MikDbCue>> = std::collections::HashMap::new();
+        let mut cues_by_song: std::collections::HashMap<i64, Vec<MikDbCue>> =
+            std::collections::HashMap::new();
         let mut cue_stmt = mik_conn.prepare(
             "SELECT Z_PK, ZSONG, ZTIME, ZENERGYLEVEL, ZNAME FROM ZCUEPOINT ORDER BY ZTIME ASC",
         )?;
@@ -163,13 +170,19 @@ impl MikDatabaseService {
             let time_secs: f64 = row.get(2)?;
             let energy_level: Option<i32> = row.get(3)?;
             let name: Option<String> = row.get(4)?;
-            Ok((z_song, MikDbCue { z_pk, time_secs, energy_level, name }))
+            Ok((
+                z_song,
+                MikDbCue {
+                    z_pk,
+                    time_secs,
+                    energy_level,
+                    name,
+                },
+            ))
         })?;
 
-        for cue_res in cue_rows {
-            if let Ok((song_id, cue)) = cue_res {
-                cues_by_song.entry(song_id).or_default().push(cue);
-            }
+        for (song_id, cue) in cue_rows.flatten() {
+            cues_by_song.entry(song_id).or_default().push(cue);
         }
 
         // 2. Read all songs
@@ -204,7 +217,9 @@ impl MikDatabaseService {
 
             let energy = energy_f.map(|e| e.round() as i32);
 
-            let file_path = bookmark_data.as_deref().and_then(macos_bookmark::resolve_bookmark);
+            let file_path = bookmark_data
+                .as_deref()
+                .and_then(macos_bookmark::resolve_bookmark);
 
             let cues = cues_by_song.remove(&z_pk).unwrap_or_default();
 
@@ -230,11 +245,7 @@ impl MikDatabaseService {
         })?;
 
         let mut songs = Vec::new();
-        for song_res in song_rows {
-            if let Ok(song) = song_res {
-                songs.push(song);
-            }
-        }
+        songs.extend(song_rows.flatten());
 
         Ok(songs)
     }
@@ -297,7 +308,11 @@ impl MikDatabaseService {
     /// MIK cues get a deterministic id (`mik-<track>-<n>`), so re-syncing updates them in place
     /// instead of recreating them; cues created in Crate are left alone. Legacy copies of MIK cues
     /// (random ids from earlier builds, same position) are replaced once. Returns true on change.
-    pub(crate) fn sync_mik_cues(crate_conn: &Connection, track_id: &str, mik_cues: &[MikDbCue]) -> Result<bool> {
+    pub(crate) fn sync_mik_cues(
+        crate_conn: &Connection,
+        track_id: &str,
+        mik_cues: &[MikDbCue],
+    ) -> Result<bool> {
         let prefix = format!("mik-{track_id}-");
         let mut changed = false;
         let mut wanted_ids = Vec::with_capacity(mik_cues.len());
@@ -310,7 +325,11 @@ impl MikDatabaseService {
             let name = mik_cue
                 .name
                 .clone()
-                .or_else(|| mik_cue.energy_level.map(|e| format!("Hot Cue {} (Energy {})", idx + 1, e)))
+                .or_else(|| {
+                    mik_cue
+                        .energy_level
+                        .map(|e| format!("Hot Cue {} (Energy {})", idx + 1, e))
+                })
                 .or_else(|| Some(format!("Hot Cue {}", idx + 1)));
 
             // Legacy copy of this MIK cue with a random id: same position, not ours.
@@ -336,9 +355,12 @@ impl MikDatabaseService {
         }
 
         // MIK cues that no longer exist in Mixed In Key
-        let mut stmt = crate_conn.prepare("SELECT id FROM cues WHERE track_id = ?1 AND id LIKE ?2")?;
+        let mut stmt =
+            crate_conn.prepare("SELECT id FROM cues WHERE track_id = ?1 AND id LIKE ?2")?;
         let existing: Vec<String> = stmt
-            .query_map(rusqlite::params![track_id, format!("{prefix}%")], |r| r.get(0))?
+            .query_map(rusqlite::params![track_id, format!("{prefix}%")], |r| {
+                r.get(0)
+            })?
             .flatten()
             .collect();
         for id in existing.iter().filter(|id| !wanted_ids.contains(id)) {
@@ -358,10 +380,16 @@ impl MikDatabaseService {
             "SELECT id, file_path FROM tracks WHERE LOWER(TRIM(title)) = LOWER(TRIM(?1)) AND LOWER(TRIM(artist)) = LOWER(TRIM(?2)) LIMIT 2",
         )?;
         let mut matches: Vec<(String, String)> = stmt
-            .query_map(rusqlite::params![title, artist], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .query_map(rusqlite::params![title, artist], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })?
             .flatten()
             .collect();
-        Ok(if matches.len() == 1 { matches.pop() } else { None })
+        Ok(if matches.len() == 1 {
+            matches.pop()
+        } else {
+            None
+        })
     }
 
     /// Full synchronization of Mixed In Key DB into Crate DB with Unicode path normalization.
@@ -383,8 +411,10 @@ impl MikDatabaseService {
         mik_songs: Vec<MikDbSong>,
         artwork_service: Option<&ArtworkService>,
     ) -> Result<MikSyncResult> {
-        let mut result = MikSyncResult::default();
-        result.total = mik_songs.len();
+        let mut result = MikSyncResult {
+            total: mik_songs.len(),
+            ..Default::default()
+        };
 
         // One transaction for the whole pass: atomic, and far fewer disk syncs.
         let tx = crate_conn.unchecked_transaction()?;
@@ -403,7 +433,9 @@ impl MikDatabaseService {
                 _ => {
                     // Try to find track in Crate by title & artist to retrieve its path
                     if let (Some(ref title), Some(ref artist)) = (&song.name, &song.artist) {
-                        let crate_path = Self::unique_title_artist_match(crate_conn, title, artist)?.map(|(_, p)| p);
+                        let crate_path =
+                            Self::unique_title_artist_match(crate_conn, title, artist)?
+                                .map(|(_, p)| p);
                         if let Some(cp) = crate_path {
                             let pb = PathBuf::from(cp);
                             if pb.exists() {
@@ -451,7 +483,9 @@ impl MikDatabaseService {
                 // Relocated file: adopt the MIK path only for a single title/artist match whose own
                 // file no longer exists. Never merge distinct files that merely share a title.
                 if let (Some(ref title), Some(ref artist)) = (&song.name, &song.artist) {
-                    if let Some((id, existing_path)) = Self::unique_title_artist_match(crate_conn, title, artist)? {
+                    if let Some((id, existing_path)) =
+                        Self::unique_title_artist_match(crate_conn, title, artist)?
+                    {
                         if !Path::new(&existing_path).exists() {
                             matching_ids.push((id, existing_path));
                         }
@@ -482,11 +516,18 @@ impl MikDatabaseService {
                     )?;
                     crate_conn.execute("DELETE FROM cues WHERE track_id = ?1", [dup_id])?;
                     crate_conn.execute("DELETE FROM track_tags WHERE track_id = ?1", [dup_id])?;
-                    crate_conn.execute("DELETE FROM playlist_tracks WHERE track_id = ?1", [dup_id])?;
-                    crate_conn.execute("DELETE FROM device_tracks WHERE track_id = ?1", [dup_id])?;
+                    crate_conn
+                        .execute("DELETE FROM playlist_tracks WHERE track_id = ?1", [dup_id])?;
+                    crate_conn
+                        .execute("DELETE FROM device_tracks WHERE track_id = ?1", [dup_id])?;
                     crate_conn.execute("DELETE FROM tracks WHERE id = ?1", [dup_id])?;
                     if let Ok(hlc) = dirty::next_hlc(crate_conn) {
-                        let _ = dirty::record_tombstone(crate_conn, buckets::TRACKS_ENTITY, dup_id, &hlc);
+                        let _ = dirty::record_tombstone(
+                            crate_conn,
+                            buckets::TRACKS_ENTITY,
+                            dup_id,
+                            &hlc,
+                        );
                     }
                     let _ = dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(dup_id));
                     log::info!("Pruned duplicate track {dup_id} for file {nfc_path_str}");
@@ -513,7 +554,11 @@ impl MikDatabaseService {
                 if artwork_update.is_none() {
                     if let Some(art_svc) = artwork_service {
                         if let Some(tagged_file) = MikService::read_metadata_lenient(path) {
-                            if let Some(art_path) = art_svc.extract_from_tagged_file_or_folder(&tagged_file, path, &primary_id) {
+                            if let Some(art_path) = art_svc.extract_from_tagged_file_or_folder(
+                                &tagged_file,
+                                path,
+                                &primary_id,
+                            ) {
                                 artwork_update = Some(art_path);
                                 artwork_source_update = Some("extracted".to_string());
                             }
@@ -521,7 +566,9 @@ impl MikDatabaseService {
                     }
                 }
 
-                let normalized_bitrate = song.bitrate.map(|b| if b > 10000 { (b + 500) / 1000 } else { b });
+                let normalized_bitrate =
+                    song.bitrate
+                        .map(|b| if b > 10000 { (b + 500) / 1000 } else { b });
                 let hlc = dirty::next_hlc(crate_conn)?;
 
                 // Enrich the existing track. Analysis data (BPM, key, energy) follows Mixed In Key;
@@ -622,19 +669,26 @@ impl MikDatabaseService {
                         sample_rate = props.sample_rate().map(|s| s as i32);
                     }
                     if let Some(art_svc) = artwork_service {
-                        if let Some(art_path) = art_svc.extract_from_tagged_file_or_folder(&tagged_file, path, &track_id) {
+                        if let Some(art_path) = art_svc.extract_from_tagged_file_or_folder(
+                            &tagged_file,
+                            path,
+                            &track_id,
+                        ) {
                             artwork_path = Some(art_path);
                             artwork_source = Some("extracted".to_string());
                         }
                     }
                 }
 
-                if (format == "wav" || format == "aiff") && (bitrate.is_none() || bitrate == Some(0) || bitrate.unwrap_or(0) <= 10) {
+                if (format == "wav" || format == "aiff")
+                    && (bitrate.is_none() || bitrate == Some(0) || bitrate.unwrap_or(0) <= 10)
+                {
                     let sr = sample_rate.unwrap_or(44100);
                     bitrate = Some((sr * 2 * 24 + 500) / 1000);
                 }
 
-                let normalized_bitrate = bitrate.map(|b| if b > 10000 { (b + 500) / 1000 } else { b });
+                let normalized_bitrate =
+                    bitrate.map(|b| if b > 10000 { (b + 500) / 1000 } else { b });
                 let hlc = dirty::next_hlc(crate_conn)?;
 
                 let track = Track {
@@ -642,7 +696,9 @@ impl MikDatabaseService {
                     file_path: nfc_path_str.clone(),
                     file_hash,
                     title: song.name.clone().or_else(|| {
-                        path.file_stem().and_then(|s| s.to_str()).map(|s| s.to_string())
+                        path.file_stem()
+                            .and_then(|s| s.to_str())
+                            .map(|s| s.to_string())
                     }),
                     artist: song.artist.clone(),
                     album: song.album.clone(),
@@ -741,22 +797,31 @@ impl MikDatabaseService {
         }
 
         // Tracks absent from Mixed In Key are kept: Mixed In Key enriches Crate, it does not own it.
-        let untouched: i64 = crate_conn.query_row("SELECT COUNT(*) FROM tracks", [], |r| r.get(0))?;
+        let untouched: i64 =
+            crate_conn.query_row("SELECT COUNT(*) FROM tracks", [], |r| r.get(0))?;
         let untouched = (untouched as usize).saturating_sub(synced_track_ids.len());
         if untouched > 0 {
-            log::debug!("{untouched} Crate track(s) are not in Mixed In Key and were left untouched");
+            log::debug!(
+                "{untouched} Crate track(s) are not in Mixed In Key and were left untouched"
+            );
         }
 
         // Artwork pass limited to the tracks added or changed by this sync (not the whole library).
         if let Some(art_svc) = artwork_service {
             for tid in &touched_ids {
                 let missing: Option<String> = crate_conn
-                    .query_row("SELECT file_path FROM tracks WHERE id = ?1 AND artwork_path IS NULL", [tid], |r| r.get(0))
+                    .query_row(
+                        "SELECT file_path FROM tracks WHERE id = ?1 AND artwork_path IS NULL",
+                        [tid],
+                        |r| r.get(0),
+                    )
                     .ok();
                 let Some(fpath) = missing else { continue };
                 let p = PathBuf::from(&fpath);
                 if let Some(tagged) = MikService::read_metadata_lenient(&p) {
-                    if let Some(art_path) = art_svc.extract_from_tagged_file_or_folder(&tagged, &p, tid) {
+                    if let Some(art_path) =
+                        art_svc.extract_from_tagged_file_or_folder(&tagged, &p, tid)
+                    {
                         let hlc = dirty::next_hlc(crate_conn)?;
                         crate_conn.execute(
                             "UPDATE tracks SET artwork_path = ?1, artwork_source = 'extracted', _hlc = ?2 WHERE id = ?3",
@@ -769,7 +834,10 @@ impl MikDatabaseService {
         }
 
         // Normalize all legacy bitrates in DB from bps to kbps (e.g. 806807 -> 807, 320000 -> 320, 2116800 -> 2117)
-        let _ = crate_conn.execute("UPDATE tracks SET bitrate = (bitrate + 500) / 1000 WHERE bitrate > 10000", []);
+        let _ = crate_conn.execute(
+            "UPDATE tracks SET bitrate = (bitrate + 500) / 1000 WHERE bitrate > 10000",
+            [],
+        );
 
         // Fix any tracks where bitrate was corrupted to <= 10 (e.g. 2 kbps) on lossless/uncompressed tracks
         let _ = crate_conn.execute(
@@ -792,7 +860,6 @@ impl MikDatabaseService {
 
         Ok(result)
     }
-
 }
 
 #[cfg(test)]
@@ -804,21 +871,28 @@ mod tests {
         let path = MikDatabaseService::find_mik_db_path();
         if let Some(ref p) = path {
             assert!(p.exists());
-            assert!(p.to_string_lossy().contains("Collection11.mikdb") || p.to_string_lossy().contains("Collection10.mikdb"));
+            assert!(
+                p.to_string_lossy().contains("Collection11.mikdb")
+                    || p.to_string_lossy().contains("Collection10.mikdb")
+            );
         }
     }
 
     #[test]
     fn test_read_mik_database() {
         if let Ok(songs) = MikDatabaseService::read_all_songs() {
-            assert!(!songs.is_empty(), "Should read songs from Mixed In Key database");
+            assert!(
+                !songs.is_empty(),
+                "Should read songs from Mixed In Key database"
+            );
             let song = &songs[0];
             assert!(song.tempo.is_some() || song.key.is_some() || song.name.is_some());
         }
     }
 
     fn temp_library(suffix: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("crate_mik_sync_{suffix}_{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("crate_mik_sync_{suffix}_{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir
@@ -868,7 +942,8 @@ mod tests {
     }
 
     fn track_count(conn: &Connection) -> i64 {
-        conn.query_row("SELECT COUNT(*) FROM tracks", [], |r| r.get(0)).unwrap()
+        conn.query_row("SELECT COUNT(*) FROM tracks", [], |r| r.get(0))
+            .unwrap()
     }
 
     #[test]
@@ -880,11 +955,20 @@ mod tests {
         insert_track(&conn, "a", &in_mik, "In MIK", "Artist");
         insert_track(&conn, "b", &not_in_mik, "Not in MIK", "Artist");
 
-        let result = MikDatabaseService::apply_mik_songs(&conn, vec![mik_song(&in_mik, "In MIK", "Artist")], None).unwrap();
+        let result = MikDatabaseService::apply_mik_songs(
+            &conn,
+            vec![mik_song(&in_mik, "In MIK", "Artist")],
+            None,
+        )
+        .unwrap();
 
         assert_eq!(result.removed, 0);
         assert_eq!(result.updated, 1);
-        assert_eq!(track_count(&conn), 2, "a track missing from Mixed In Key must never be deleted");
+        assert_eq!(
+            track_count(&conn),
+            2,
+            "a track missing from Mixed In Key must never be deleted"
+        );
         let _ = std::fs::remove_dir_all(dir);
     }
 
@@ -898,11 +982,20 @@ mod tests {
         insert_track(&conn, "orig", &original, "Song", "Artist");
         insert_track(&conn, "ext", &extended, "Song", "Artist");
 
-        MikDatabaseService::apply_mik_songs(&conn, vec![mik_song(&other, "Song", "Artist")], None).unwrap();
+        MikDatabaseService::apply_mik_songs(&conn, vec![mik_song(&other, "Song", "Artist")], None)
+            .unwrap();
 
         assert_eq!(track_count(&conn), 3);
-        let orig_path: String = conn.query_row("SELECT file_path FROM tracks WHERE id = 'orig'", [], |r| r.get(0)).unwrap();
-        let ext_path: String = conn.query_row("SELECT file_path FROM tracks WHERE id = 'ext'", [], |r| r.get(0)).unwrap();
+        let orig_path: String = conn
+            .query_row("SELECT file_path FROM tracks WHERE id = 'orig'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        let ext_path: String = conn
+            .query_row("SELECT file_path FROM tracks WHERE id = 'ext'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
         assert_eq!(orig_path, original);
         assert_eq!(ext_path, extended);
         let _ = std::fs::remove_dir_all(dir);
@@ -912,7 +1005,10 @@ mod tests {
     fn test_sync_relocated_file_keeps_track_identity() {
         let dir = temp_library("relocated");
         let conn = crate_db();
-        let old_path = dir.join("old_folder/track.mp3").to_string_lossy().to_string();
+        let old_path = dir
+            .join("old_folder/track.mp3")
+            .to_string_lossy()
+            .to_string();
         let new_path = touch(&dir, "track.mp3");
         insert_track(&conn, "keep-me", &old_path, "Track", "Artist");
         conn.execute_batch(
@@ -922,18 +1018,43 @@ mod tests {
         )
         .unwrap();
 
-        MikDatabaseService::apply_mik_songs(&conn, vec![mik_song(&new_path, "Track", "Artist")], None).unwrap();
+        MikDatabaseService::apply_mik_songs(
+            &conn,
+            vec![mik_song(&new_path, "Track", "Artist")],
+            None,
+        )
+        .unwrap();
 
         assert_eq!(track_count(&conn), 1);
-        let path: String = conn.query_row("SELECT file_path FROM tracks WHERE id = 'keep-me'", [], |r| r.get(0)).unwrap();
-        assert_eq!(path, new_path, "the existing track follows its file instead of being re-imported");
-        let tags: i64 = conn.query_row("SELECT COUNT(*) FROM track_tags WHERE track_id = 'keep-me'", [], |r| r.get(0)).unwrap();
+        let path: String = conn
+            .query_row(
+                "SELECT file_path FROM tracks WHERE id = 'keep-me'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            path, new_path,
+            "the existing track follows its file instead of being re-imported"
+        );
+        let tags: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM track_tags WHERE track_id = 'keep-me'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
         assert_eq!(tags, 1, "tags stay attached to the relocated track");
         let _ = std::fs::remove_dir_all(dir);
     }
 
     fn cue(time_secs: f64) -> MikDbCue {
-        MikDbCue { z_pk: 0, time_secs, energy_level: None, name: None }
+        MikDbCue {
+            z_pk: 0,
+            time_secs,
+            energy_level: None,
+            name: None,
+        }
     }
 
     #[test]
@@ -949,7 +1070,10 @@ mod tests {
         let second = MikDatabaseService::apply_mik_songs(&conn, vec![song], None).unwrap();
 
         assert_eq!(first.updated, 1);
-        assert_eq!(second.updated, 0, "an unchanged Mixed In Key library must not rewrite tracks");
+        assert_eq!(
+            second.updated, 0,
+            "an unchanged Mixed In Key library must not rewrite tracks"
+        );
         let _ = std::fs::remove_dir_all(dir);
     }
 
@@ -960,10 +1084,18 @@ mod tests {
         let path = touch(&dir, "track.mp3");
         insert_track(&conn, "t", &path, "My Edited Title", "Artist");
 
-        MikDatabaseService::apply_mik_songs(&conn, vec![mik_song(&path, "Tag Title", "Artist")], None).unwrap();
+        MikDatabaseService::apply_mik_songs(
+            &conn,
+            vec![mik_song(&path, "Tag Title", "Artist")],
+            None,
+        )
+        .unwrap();
 
-        let (title, bpm): (String, f64) =
-            conn.query_row("SELECT title, bpm FROM tracks WHERE id = 't'", [], |r| Ok((r.get(0)?, r.get(1)?))).unwrap();
+        let (title, bpm): (String, f64) = conn
+            .query_row("SELECT title, bpm FROM tracks WHERE id = 't'", [], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })
+            .unwrap();
         assert_eq!(title, "My Edited Title");
         assert_eq!(bpm, 124.0, "analysis data still comes from Mixed In Key");
         let _ = std::fs::remove_dir_all(dir);
@@ -986,8 +1118,13 @@ mod tests {
 
         MikDatabaseService::apply_mik_songs(&conn, vec![song.clone()], None).unwrap();
         let ids = |conn: &Connection| -> Vec<String> {
-            let mut stmt = conn.prepare("SELECT id FROM cues WHERE track_id = 't' ORDER BY id").unwrap();
-            stmt.query_map([], |r| r.get(0)).unwrap().flatten().collect()
+            let mut stmt = conn
+                .prepare("SELECT id FROM cues WHERE track_id = 't' ORDER BY id")
+                .unwrap();
+            stmt.query_map([], |r| r.get(0))
+                .unwrap()
+                .flatten()
+                .collect()
         };
         assert_eq!(ids(&conn), vec!["mik-t-0", "mik-t-1", "user-cue"]);
 
@@ -1012,6 +1149,4 @@ mod tests {
         assert_eq!(track_count(&conn), 1);
         let _ = std::fs::remove_dir_all(dir);
     }
-
 }
-

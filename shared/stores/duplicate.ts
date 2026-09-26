@@ -206,9 +206,7 @@ function createDuplicateStore() {
 				}
 				const count = trackIds.length
 				toastStore.success(
-					count === 1
-						? '1 doublon supprimé (mis à la corbeille)'
-						: `${count} doublons supprimés (mis à la corbeille)`
+					count === 1 ? '1 doublon supprimé (mis à la corbeille)' : `${count} doublons supprimés (mis à la corbeille)`
 				)
 				await this.load()
 			} catch (error) {

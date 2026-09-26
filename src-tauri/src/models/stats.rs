@@ -1,49 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Source platform / module where the listening occurred
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ListenSource {
-    Spotify,
-    CrateLocal,
-    CrateBeatport,
-    Rekordbox,
-    MixedInKey,
-    #[serde(untagged)]
-    Other(String),
-}
-
-impl ListenSource {
-    pub fn as_str(&self) -> &str {
-        match self {
-            ListenSource::Spotify => "spotify",
-            ListenSource::CrateLocal => "crate_local",
-            ListenSource::CrateBeatport => "crate_beatport",
-            ListenSource::Rekordbox => "rekordbox",
-            ListenSource::MixedInKey => "mixed_in_key",
-            ListenSource::Other(s) => s.as_str(),
-        }
-    }
-
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "spotify" => ListenSource::Spotify,
-            "crate_local" => ListenSource::CrateLocal,
-            "crate_beatport" => ListenSource::CrateBeatport,
-            "rekordbox" => ListenSource::Rekordbox,
-            "mixed_in_key" => ListenSource::MixedInKey,
-            other => ListenSource::Other(other.to_string()),
-        }
-    }
-}
-
-impl std::fmt::Display for ListenSource {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_str())
-    }
-}
-
 /// Represents a single track listening event
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ListenEvent {

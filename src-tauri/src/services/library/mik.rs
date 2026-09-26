@@ -217,9 +217,7 @@ impl MikService {
         for tag in tagged_file.tags() {
             for item in tag.items() {
                 let matches_serato = match item.key() {
-                    ItemKey::Unknown(ref k) => {
-                        k.contains("Serato Markers") || k.contains("GEOB")
-                    }
+                    ItemKey::Unknown(ref k) => k.contains("Serato Markers") || k.contains("GEOB"),
                     _ => false,
                 };
 
@@ -281,7 +279,8 @@ impl MikService {
                 if entry_end <= decoded.len() && length >= 12 {
                     let entry = &decoded[entry_start..entry_end];
                     let index = entry[1];
-                    let pos_ms = u32::from_be_bytes([entry[2], entry[3], entry[4], entry[5]]) as i64;
+                    let pos_ms =
+                        u32::from_be_bytes([entry[2], entry[3], entry[4], entry[5]]) as i64;
                     let color = format!("#{:02X}{:02X}{:02X}", entry[7], entry[8], entry[9]);
                     let name = entry
                         .get(12..)
@@ -309,6 +308,7 @@ impl MikService {
     }
 
     /// Check if a key is in Camelot notation (e.g. 11A, 8B, 1A, 12B)
+    #[cfg(test)]
     pub fn is_camelot_key(key: &str) -> bool {
         let clean = key.trim();
         if clean.len() < 2 || clean.len() > 3 {
@@ -339,7 +339,11 @@ impl MikService {
 
         let tagged_file = match Self::read_metadata_lenient(path) {
             Some(tf) => tf,
-            None => return Err(CrateError::Metadata("Could not parse file tags".to_string())),
+            None => {
+                return Err(CrateError::Metadata(
+                    "Could not parse file tags".to_string(),
+                ))
+            }
         };
 
         let mik_data = Self::extract_analysis_data(&tagged_file, &track.id);
@@ -474,10 +478,16 @@ mod tests {
         let cues = MikService::parse_serato_markers(&payload, "track");
 
         assert_eq!(cues.len(), 2);
-        assert_eq!((cues[0].hot_cue_index, cues[0].position_ms), (Some(0), 1_234));
+        assert_eq!(
+            (cues[0].hot_cue_index, cues[0].position_ms),
+            (Some(0), 1_234)
+        );
         assert_eq!(cues[0].name.as_deref(), Some("Intro"));
         assert_eq!(cues[0].color.as_deref(), Some("#CC0000"));
-        assert_eq!((cues[1].hot_cue_index, cues[1].position_ms), (Some(3), 95_500));
+        assert_eq!(
+            (cues[1].hot_cue_index, cues[1].position_ms),
+            (Some(3), 95_500)
+        );
         assert_eq!(cues[1].name.as_deref(), Some("Drop"));
     }
 
@@ -506,4 +516,3 @@ mod tests {
         assert_eq!(decoded, Some(vec![1, 2, 3, 4]));
     }
 }
-

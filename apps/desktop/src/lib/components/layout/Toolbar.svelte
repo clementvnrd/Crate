@@ -75,9 +75,7 @@
 			if (res.updated > 0) parts.push(`${res.updated} mis à jour`)
 			if (res.removed > 0) parts.push(`${res.removed} supprimé${res.removed > 1 ? 's' : ''}`)
 			const detail = parts.length > 0 ? parts.join(', ') : 'À jour'
-			toastStore.success(
-				`Bibliothèque Mixed In Key synchronisée : ${detail} (${res.total} au total)`
-			)
+			toastStore.success(`Bibliothèque Mixed In Key synchronisée : ${detail} (${res.total} au total)`)
 		} catch (err) {
 			console.error('MIK DB Sync error:', err)
 			toastStore.error('Erreur lors de la synchronisation avec la bibliothèque Mixed In Key')
@@ -114,13 +112,18 @@
 	<Tooltip text="Synchronisé en direct avec Mixed In Key 11 Pro (Cliquer pour forcer)" position="bottom" delay={250}>
 		<button
 			type="button"
-			class="group flex items-center gap-2 rounded-lg border border-sky-500/30 bg-surface-2/80 px-2.5 py-1 text-xs transition-all hover:border-sky-400/60 hover:bg-sky-950/40 active:scale-95 hover:cursor-pointer shadow-sm"
+			class="group flex items-center gap-2 rounded-lg border border-sky-500/30 bg-surface-2/80 px-2.5 py-1 text-xs shadow-sm transition-all hover:cursor-pointer hover:border-sky-400/60 hover:bg-sky-950/40 active:scale-95"
 			onclick={handleSyncMik}
 			disabled={syncingMik}
 		>
 			<MixedInKeyLogo variant="full" size="sm" showPro animated={syncingMik} />
 			<div class="h-3 w-px bg-stroke"></div>
-			<Icon name="refresh-cw" class="h-3 w-3 text-sky-400 {syncingMik ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-300'}" />
+			<Icon
+				name="refresh-cw"
+				class="h-3 w-3 text-sky-400 {syncingMik
+					? 'animate-spin'
+					: 'transition-transform duration-300 group-hover:rotate-180'}"
+			/>
 		</button>
 	</Tooltip>
 
@@ -134,16 +137,18 @@
 	>
 		<button
 			type="button"
-			class="relative flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:cursor-pointer shadow-sm active:scale-95
+			class="relative flex h-8 w-8 items-center justify-center rounded-lg border shadow-sm transition-all hover:cursor-pointer active:scale-95
 			{$duplicateGroupCount > 0
 				? 'border-amber-500/40 bg-amber-950/30 text-amber-300 hover:border-amber-400 hover:bg-amber-900/40'
-				: 'border-stroke bg-surface-2/80 text-text-secondary hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary'}"
+				: 'hover:border-stroke-strong hover:bg-surface-3 border-stroke bg-surface-2/80 text-text-secondary hover:text-text-primary'}"
 			onclick={onOpenDuplicates}
 			aria-label="Gestion des doublons"
 		>
 			<Icon name="clone" class="h-4 w-4 {$duplicateGroupCount > 0 ? 'text-amber-400' : 'text-text-secondary'}" />
 			{#if $duplicateGroupCount > 0}
-				<span class="absolute -bottom-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white font-bold text-[10px] font-mono flex items-center justify-center shadow-md border-2 border-surface-0">
+				<span
+					class="absolute -right-1 -bottom-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-surface-0 bg-red-500 px-1 font-mono text-[10px] font-bold text-white shadow-md"
+				>
 					{$duplicateGroupCount}
 				</span>
 			{/if}
@@ -160,16 +165,18 @@
 	>
 		<button
 			type="button"
-			class="relative flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:cursor-pointer shadow-sm active:scale-95
+			class="relative flex h-8 w-8 items-center justify-center rounded-lg border shadow-sm transition-all hover:cursor-pointer active:scale-95
 			{$upgraderMatchCount > 0
 				? 'border-emerald-500/40 bg-emerald-950/30 text-emerald-300 hover:border-emerald-400 hover:bg-emerald-900/40'
-				: 'border-stroke bg-surface-2/80 text-text-secondary hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary'}"
+				: 'hover:border-stroke-strong hover:bg-surface-3 border-stroke bg-surface-2/80 text-text-secondary hover:text-text-primary'}"
 			onclick={onOpenUpgrader}
 			aria-label="Beatport Quality Upgrader"
 		>
 			<Icon name="sparkles" class="h-4 w-4 {$upgraderMatchCount > 0 ? 'text-emerald-400' : 'text-text-secondary'}" />
 			{#if $upgraderMatchCount > 0}
-				<span class="absolute -bottom-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-emerald-500 text-white font-bold text-[10px] font-mono flex items-center justify-center shadow-md border-2 border-surface-0">
+				<span
+					class="absolute -right-1 -bottom-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-surface-0 bg-emerald-500 px-1 font-mono text-[10px] font-bold text-white shadow-md"
+				>
 					{$upgraderMatchCount}
 				</span>
 			{/if}
@@ -180,10 +187,10 @@
 	<Tooltip text={$translate('nav.discovery')} position="bottom" delay={250}>
 		<button
 			type="button"
-			class="relative flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:cursor-pointer shadow-sm active:scale-95
+			class="relative flex h-8 w-8 items-center justify-center rounded-lg border shadow-sm transition-all hover:cursor-pointer active:scale-95
 			{activeView === 'discovery'
 				? 'border-brand-primary/60 bg-brand-primary/20 text-brand-primary'
-				: 'border-stroke bg-surface-2/80 text-text-secondary hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary'}"
+				: 'hover:border-stroke-strong hover:bg-surface-3 border-stroke bg-surface-2/80 text-text-secondary hover:text-text-primary'}"
 			onclick={() => onViewChange?.('discovery')}
 			aria-label={$translate('nav.discovery')}
 		>
@@ -195,10 +202,10 @@
 	<Tooltip text="Crate Pulse & Statistiques" position="bottom" delay={250}>
 		<button
 			type="button"
-			class="relative flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:cursor-pointer shadow-sm active:scale-95
+			class="relative flex h-8 w-8 items-center justify-center rounded-lg border shadow-sm transition-all hover:cursor-pointer active:scale-95
 			{activeView === 'stats'
 				? 'border-brand-primary/60 bg-brand-primary/20 text-brand-primary'
-				: 'border-stroke bg-surface-2/80 text-text-secondary hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary'}"
+				: 'hover:border-stroke-strong hover:bg-surface-3 border-stroke bg-surface-2/80 text-text-secondary hover:text-text-primary'}"
 			onclick={() => onViewChange?.('stats')}
 			aria-label="Statistiques"
 		>
@@ -210,12 +217,15 @@
 	<Tooltip text="Exporter la collection en Rekordbox XML (Prêt pour CDJ / Rekordbox)" position="bottom" delay={250}>
 		<button
 			type="button"
-			class="relative flex h-8 w-8 items-center justify-center rounded-lg border border-stroke bg-surface-2/80 text-text-secondary hover:border-cyan-500/50 hover:bg-cyan-950/30 hover:text-cyan-400 transition-all hover:cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
+			class="relative flex h-8 w-8 items-center justify-center rounded-lg border border-stroke bg-surface-2/80 text-text-secondary shadow-sm transition-all hover:cursor-pointer hover:border-cyan-500/50 hover:bg-cyan-950/30 hover:text-cyan-400 active:scale-95 disabled:opacity-50"
 			onclick={handleExportRekordboxXml}
 			disabled={exportingXml}
 			aria-label="Exporter vers Rekordbox XML"
 		>
-			<Icon name={exportingXml ? 'loader' : 'download'} class="h-4 w-4 text-cyan-400 {exportingXml ? 'animate-spin' : ''}" />
+			<Icon
+				name={exportingXml ? 'loader' : 'download'}
+				class="h-4 w-4 text-cyan-400 {exportingXml ? 'animate-spin' : ''}"
+			/>
 		</button>
 	</Tooltip>
 

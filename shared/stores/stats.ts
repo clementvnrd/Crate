@@ -130,17 +130,10 @@ function createStatsStore() {
 					spotifyAuth: spotifyAuthRes.status === 'fulfilled' ? spotifyAuthRes.value : s.spotifyAuth,
 					spotifyNowPlaying: spotifyNowRes.status === 'fulfilled' ? spotifyNowRes.value : s.spotifyNowPlaying,
 					rekordboxDetected:
-						rekordboxDetectedRes.status === 'fulfilled'
-							? rekordboxDetectedRes.value
-							: s.rekordboxDetected,
+						rekordboxDetectedRes.status === 'fulfilled' ? rekordboxDetectedRes.value : s.rekordboxDetected,
 					rekordboxSessions:
-						rekordboxSessionsRes.status === 'fulfilled'
-							? rekordboxSessionsRes.value
-							: s.rekordboxSessions,
-					mikDetected:
-						mikDetectedRes.status === 'fulfilled'
-							? mikDetectedRes.value
-							: s.mikDetected,
+						rekordboxSessionsRes.status === 'fulfilled' ? rekordboxSessionsRes.value : s.rekordboxSessions,
+					mikDetected: mikDetectedRes.status === 'fulfilled' ? mikDetectedRes.value : s.mikDetected,
 				}))
 			} catch (err) {
 				const errorMsg = toErrorMessage(err, 'Erreur lors du chargement des statistiques')
@@ -228,9 +221,7 @@ function createStatsStore() {
 			try {
 				const result = await statsApi.importSpotifyHistoryJson(jsonContent)
 				update((s) => ({ ...s, isImportingSpotify: false }))
-				toastStore.success(
-					`Historique Spotify importé : ${result.imported_count} titres (${result.total_minutes} min)`
-				)
+				toastStore.success(`Historique Spotify importé : ${result.imported_count} titres (${result.total_minutes} min)`)
 				await this.refreshAll()
 				return result
 			} catch (err) {
@@ -253,8 +244,7 @@ function createStatsStore() {
 				await this.refreshAll()
 				return count
 			} catch (err) {
-				const errorMsg =
-					toErrorMessage(err, 'Erreur lors de la synchronisation avec Rekordbox')
+				const errorMsg = toErrorMessage(err, 'Erreur lors de la synchronisation avec Rekordbox')
 				update((s) => ({ ...s, isSyncingRekordbox: false }))
 				toastStore.error(errorMsg)
 				return null
@@ -292,4 +282,3 @@ export const statsSelectedRange = derived(statsStore, ($s) => $s.selectedRange)
 export const isStatsLoading = derived(statsStore, ($s) => $s.isLoading)
 export const isSyncingRekordbox = derived(statsStore, ($s) => $s.isSyncingRekordbox)
 export const isImportingSpotify = derived(statsStore, ($s) => $s.isImportingSpotify)
-

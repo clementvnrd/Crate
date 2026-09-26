@@ -38,8 +38,6 @@ pub use playlist::*;
 pub use settings::*;
 pub use smart_rules::*;
 pub use standalone::*;
-pub use stats::*;
 pub use tag::*;
 pub use track::*;
 pub use upgrader::*;
-

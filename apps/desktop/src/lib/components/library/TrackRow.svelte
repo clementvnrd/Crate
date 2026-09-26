@@ -152,13 +152,9 @@
 		'file_path',
 	]
 
-	const activeColumns = $derived(
-		columnOrder.filter((col) => $displaySettingsStore.columns[col] ?? false)
-	)
+	const activeColumns = $derived(columnOrder.filter((col) => $displaySettingsStore.columns[col] ?? false))
 
-	const gridTemplateColumns = $derived(
-		activeColumns.map((col) => columnWidthMap[col]).join(' ')
-	)
+	const gridTemplateColumns = $derived(activeColumns.map((col) => columnWidthMap[col]).join(' '))
 </script>
 
 <div
@@ -169,10 +165,8 @@
 	class="group relative grid items-center gap-2 border-b border-stroke-subtle px-3 py-1.5 text-sm transition-colors select-none {selected
 		? 'bg-brand-muted text-text-primary'
 		: isTagDragHovered
-			? 'bg-brand-muted/50 text-text-primary ring-1 ring-brand-primary/50 ring-inset'
-			: 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'} {isMissing
-		? 'opacity-60'
-		: ''}"
+			? 'bg-brand-muted/50 ring-brand-primary/50 text-text-primary ring-1 ring-inset'
+			: 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'} {isMissing ? 'opacity-60' : ''}"
 	style="grid-template-columns: {gridTemplateColumns};"
 	{onclick}
 	{ondblclick}
@@ -267,10 +261,13 @@
 				{#if track.key}
 					{@const isMik = track.analysis_source === 'mixed_in_key'}
 					{@const camelotInfo = getCamelotColor(track.key)}
-					{@const formattedKey = $keyNotationFormat === 'camelot' ? formatCamelotKey(track.key, $displaySettingsStore.camelotZeroPadding) : formatKey(track.key, $keyNotationFormat)}
+					{@const formattedKey =
+						$keyNotationFormat === 'camelot'
+							? formatCamelotKey(track.key, $displaySettingsStore.camelotZeroPadding)
+							: formatKey(track.key, $keyNotationFormat)}
 					{#if isMik && camelotInfo}
 						<span
-							class="relative inline-flex h-[22px] w-11 items-center justify-center rounded text-[11px] font-mono font-bold tracking-tight shadow-sm select-none"
+							class="relative inline-flex h-[22px] w-11 items-center justify-center rounded font-mono text-[11px] font-bold tracking-tight shadow-sm select-none"
 							style="background-color: {camelotInfo.bg}; color: {camelotInfo.text};"
 							title="{formattedKey} ({camelotInfo.name}) • Mixed In Key 11 Pro"
 						>
@@ -278,20 +275,20 @@
 							<img
 								src="/mik-ring.png"
 								alt="MIK"
-								class="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 object-contain drop-shadow-[0_0_3px_rgba(56,189,248,0.8)] pointer-events-none select-none"
+								class="pointer-events-none absolute -top-1.5 -right-1.5 h-3.5 w-3.5 object-contain drop-shadow-[0_0_3px_rgba(56,189,248,0.8)] select-none"
 								title="Mixed In Key 11 Pro Analyzed"
 							/>
 						</span>
 					{:else}
 						<span
-							class="relative inline-flex h-[22px] w-11 items-center justify-center rounded text-[11px] font-mono font-medium tracking-tight bg-surface-3 text-text-secondary border border-stroke select-none"
+							class="bg-surface-3 relative inline-flex h-[22px] w-11 items-center justify-center rounded border border-stroke font-mono text-[11px] font-medium tracking-tight text-text-secondary select-none"
 							title="{formattedKey} • Non analysé par Mixed In Key"
 						>
 							{formattedKey}
 						</span>
 					{/if}
 				{:else}
-					<span class="text-text-tertiary text-xs">-</span>
+					<span class="text-xs text-text-tertiary">-</span>
 				{/if}
 			</div>
 		{:else if col === 'energy'}
@@ -307,16 +304,18 @@
 			<!-- Format / File Type (MP3, FLAC, WAV, AIFF, M4A) -->
 			<div class="flex items-center">
 				{#if track.format}
-					<span class="rounded bg-surface-2 border border-stroke px-1.5 py-0.5 text-[10px] font-mono font-bold tracking-wider text-text-secondary uppercase">
+					<span
+						class="rounded border border-stroke bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-wider text-text-secondary uppercase"
+					>
 						{track.format}
 					</span>
 				{:else}
-					<span class="text-text-tertiary text-xs">-</span>
+					<span class="text-xs text-text-tertiary">-</span>
 				{/if}
 			</div>
 		{:else if col === 'bitrate'}
 			<!-- Bitrate (Normalized kbps) -->
-			<div class="truncate text-xs font-mono text-text-secondary">
+			<div class="truncate font-mono text-xs text-text-secondary">
 				<span>{formatBitrate(track.bitrate, track.format, track.sample_rate)}</span>
 			</div>
 		{:else if col === 'duration_ms'}
@@ -368,17 +367,15 @@
 			</div>
 		{:else if col === 'file_size'}
 			<!-- File Size -->
-			<div class="truncate text-xs font-mono text-text-secondary">
-				-
-			</div>
+			<div class="truncate font-mono text-xs text-text-secondary">-</div>
 		{:else if col === 'sample_rate'}
 			<!-- Sample Rate -->
-			<div class="truncate text-xs font-mono text-text-secondary">
+			<div class="truncate font-mono text-xs text-text-secondary">
 				{track.sample_rate ? `${Math.round(track.sample_rate / 1000)} kHz` : '-'}
 			</div>
 		{:else if col === 'file_path'}
 			<!-- File Path -->
-			<div class="truncate text-xs font-mono text-text-tertiary" title={track.file_path}>
+			<div class="truncate font-mono text-xs text-text-tertiary" title={track.file_path}>
 				{track.file_path}
 			</div>
 		{/if}

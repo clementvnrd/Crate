@@ -94,8 +94,7 @@
 	}
 
 	function handleTogglePlayLocal(match: UpgradeMatch) {
-		const isThisLocalPlaying =
-			$playbackSource === 'library' && $currentTrack?.id === match.track_id && $isPlaying
+		const isThisLocalPlaying = $playbackSource === 'library' && $currentTrack?.id === match.track_id && $isPlaying
 
 		if (isThisLocalPlaying) {
 			playerStore.pause()
@@ -160,6 +159,7 @@
 		})
 	}
 
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- memo cache, not UI state
 	const waveformCache = new Map<string, number[]>()
 
 	function getBarsForTrack(id: string): number[] {
@@ -189,20 +189,26 @@
 </script>
 
 <Modal {open} {onClose} size="4xl" flush>
-	<div class="flex flex-col h-[85vh] max-h-[85vh] overflow-hidden bg-surface-1">
+	<div class="flex h-[85vh] max-h-[85vh] flex-col overflow-hidden bg-surface-1">
 		<!-- Header -->
-		<div class="flex-shrink-0 flex items-center justify-between border-b border-stroke px-6 py-4 bg-surface-2/60">
+		<div class="flex flex-shrink-0 items-center justify-between border-b border-stroke bg-surface-2/60 px-6 py-4">
 			<div class="flex items-center gap-3">
 				<!-- Sparkles Upgrader Icon -->
-				<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 via-teal-500/15 to-emerald-600/10 border border-emerald-500/30 text-emerald-400 shadow-sm">
+				<div
+					class="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/20 via-teal-500/15 to-emerald-600/10 text-emerald-400 shadow-sm"
+				>
 					<Icon name="sparkles" class="h-5 w-5 stroke-[2.2]" />
 				</div>
 				<div>
 					<div class="flex items-center gap-2.5">
 						<Text variant="header-1" weight="bold">Beatport Quality Upgrader</Text>
 						{#if $upgraderMatchCount > 0}
-							<span class="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-400 border border-emerald-500/30">
-								{$upgraderMatchCount} morceau{$upgraderMatchCount > 1 ? 'x' : ''} améliorable{$upgraderMatchCount > 1 ? 's' : ''} en FLAC Lossless
+							<span
+								class="rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-400"
+							>
+								{$upgraderMatchCount} morceau{$upgraderMatchCount > 1 ? 'x' : ''} améliorable{$upgraderMatchCount > 1
+									? 's'
+									: ''} en FLAC Lossless
 							</span>
 						{/if}
 					</div>
@@ -214,14 +220,14 @@
 				{#if $upgraderMatchCount > 0}
 					<button
 						type="button"
-						class="bg-surface-2 hover:bg-surface-3 border border-stroke/50 text-text-secondary hover:text-text-primary text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+						class="hover:bg-surface-3 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
 						onclick={() => upgraderStore.selectAll()}
 					>
 						Tout cocher
 					</button>
 					<button
 						type="button"
-						class="bg-surface-2 hover:bg-surface-3 border border-stroke/50 text-text-secondary hover:text-text-primary text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+						class="hover:bg-surface-3 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
 						onclick={() => upgraderStore.deselectAll()}
 					>
 						Tout décocher
@@ -230,7 +236,7 @@
 
 				<button
 					type="button"
-					class="bg-surface-2 hover:bg-surface-3 border border-stroke/50 text-text-secondary hover:text-text-primary text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
+					class="hover:bg-surface-3 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary disabled:opacity-50"
 					onclick={() => upgraderStore.load()}
 					disabled={$isUpgraderLoading}
 					title="Actualiser la recherche des upgrades"
@@ -241,7 +247,7 @@
 
 				<button
 					type="button"
-					class="bg-surface-2 hover:bg-surface-3 border border-stroke/50 text-text-secondary hover:text-text-primary text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
+					class="hover:bg-surface-3 inline-flex cursor-pointer items-center gap-1 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
 					onclick={onClose}
 					title="Fermer"
 				>
@@ -252,23 +258,26 @@
 		</div>
 
 		<!-- Body Content -->
-		<div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
+		<div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
 			{#if isAuthRequired && !$isUpgraderLoading}
-				<div class="flex flex-col items-center justify-center gap-5 text-center p-8 rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/30 via-surface-2 to-surface-1 shadow-lg max-w-lg mx-auto my-6">
-					<div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-md">
+				<div
+					class="mx-auto my-6 flex max-w-lg flex-col items-center justify-center gap-5 rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/30 via-surface-2 to-surface-1 p-8 text-center shadow-lg"
+				>
+					<div
+						class="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/20 text-emerald-400 shadow-md"
+					>
 						<Icon name="beatport" class="h-8 w-8 fill-current" />
 					</div>
 					<div class="space-y-1.5">
-						<Text variant="header-2" weight="bold" class="text-text-primary">
-							Connexion Beatport requise
-						</Text>
+						<Text variant="header-2" weight="bold" class="text-text-primary">Connexion Beatport requise</Text>
 						<Text variant="body-2" class="text-text-secondary">
-							Pour rechercher automatiquement les versions FLAC Lossless de vos MP3 et synchroniser les métadonnées officielles, vous devez être connecté à votre compte Beatport.
+							Pour rechercher automatiquement les versions FLAC Lossless de vos MP3 et synchroniser les métadonnées
+							officielles, vous devez être connecté à votre compte Beatport.
 						</Text>
 					</div>
 					<Button
 						variant="primary"
-						class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs py-2.5 px-5 shadow-lg shadow-emerald-950/50 flex items-center gap-2"
+						class="flex items-center gap-2 bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-emerald-950/50 hover:bg-emerald-500"
 						onclick={handleConnectBeatport}
 					>
 						<Icon name="beatport" class="h-4 w-4 fill-current" />
@@ -276,38 +285,43 @@
 					</Button>
 				</div>
 			{:else if $isUpgraderLoading && $upgraderMatches.length === 0}
-				<div class="flex h-80 flex-col items-center justify-center gap-4 text-center px-4">
+				<div class="flex h-80 flex-col items-center justify-center gap-4 px-4 text-center">
 					<div class="relative flex h-16 w-16 items-center justify-center">
-						<div class="absolute inset-0 rounded-full border-3 border-emerald-500/20 animate-ping"></div>
-						<div class="h-14 w-14 animate-spin rounded-full border-3 border-emerald-500 border-t-transparent shadow-lg shadow-emerald-500/20"></div>
-						<Icon name="sparkles" class="absolute h-6 w-6 text-emerald-400 animate-pulse" />
+						<div class="absolute inset-0 animate-ping rounded-full border-3 border-emerald-500/20"></div>
+						<div
+							class="h-14 w-14 animate-spin rounded-full border-3 border-emerald-500 border-t-transparent shadow-lg shadow-emerald-500/20"
+						></div>
+						<Icon name="sparkles" class="absolute h-6 w-6 animate-pulse text-emerald-400" />
 					</div>
 					<div class="space-y-1">
-						<Text variant="header-2" weight="bold" class="text-text-primary">
-							Scan de la bibliothèque en cours...
-						</Text>
-						<Text variant="body-2" class="text-text-secondary max-w-md mx-auto">
+						<Text variant="header-2" weight="bold" class="text-text-primary">Scan de la bibliothèque en cours...</Text>
+						<Text variant="body-2" class="mx-auto max-w-md text-text-secondary">
 							Recherche multi-passes haute fidélité sur le catalogue Beatport avec scoring multi-critères (&ge; 75%).
 						</Text>
 					</div>
 				</div>
 			{:else if $upgraderMatches.length === 0}
-				<div class="flex h-80 flex-col items-center justify-center gap-4 text-center px-4">
-					<div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-lg">
+				<div class="flex h-80 flex-col items-center justify-center gap-4 px-4 text-center">
+					<div
+						class="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/20 text-emerald-400 shadow-lg"
+					>
 						<Icon name="check" class="h-8 w-8 stroke-[3]" />
 					</div>
 					<div>
-						<Text variant="header-2" weight="bold" class="text-text-primary mb-1">
+						<Text variant="header-2" weight="bold" class="mb-1 text-text-primary">
 							Toute votre bibliothèque est en qualité maximale !
 						</Text>
-						<Text variant="body-1" class="text-text-secondary max-w-md mx-auto">
-							Aucun fichier MP3 à mettre à niveau trouvé sur Beatport. Votre collection est au meilleur niveau de fidélité audio.
+						<Text variant="body-1" class="mx-auto max-w-md text-text-secondary">
+							Aucun fichier MP3 à mettre à niveau trouvé sur Beatport. Votre collection est au meilleur niveau de
+							fidélité audio.
 						</Text>
 					</div>
 				</div>
 			{:else}
 				{#if $isUpgraderLoading}
-					<div class="flex items-center justify-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-3.5 py-2 text-xs font-medium text-emerald-400 animate-pulse mb-2">
+					<div
+						class="mb-2 flex animate-pulse items-center justify-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-3.5 py-2 text-xs font-medium text-emerald-400"
+					>
 						<Icon name="refresh-cw" class="h-3.5 w-3.5 animate-spin" />
 						<span>Actualisation de la recherche en cours...</span>
 					</div>
@@ -316,28 +330,35 @@
 					{@const isSelected = $upgraderStore.selectedMatchTrackIds.has(match.track_id)}
 					{@const isLocalCurrent = $playbackSource === 'library' && $currentTrack?.id === match.track_id}
 					{@const isLocalPlaying = isLocalCurrent && $isPlaying}
-					{@const isBpCurrent = $playbackSource === 'beatport' && $currentBeatportTrack?.id?.toString() === match.beatport_track.id.toString()}
+					{@const isBpCurrent =
+						$playbackSource === 'beatport' &&
+						$currentBeatportTrack?.id?.toString() === match.beatport_track.id.toString()}
 					{@const isBpPlaying = isBpCurrent && $isPlaying}
-					{@const localProgress = isLocalCurrent ? Math.min(100, Math.max(0, ($playbackPosition / (match.current_duration_ms || 1)) * 100)) : 0}
+					{@const localProgress = isLocalCurrent
+						? Math.min(100, Math.max(0, ($playbackPosition / (match.current_duration_ms || 1)) * 100))
+						: 0}
 
 					<div
-						class="rounded-xl border bg-surface-2/70 p-4 shadow-sm transition-all hover:border-stroke-strong
+						class="hover:border-stroke-strong rounded-xl border bg-surface-2/70 p-4 shadow-sm transition-all
 						{isSelected ? 'border-emerald-500/40 bg-emerald-950/10' : 'border-stroke'}"
 					>
 						<!-- Match Header: Track Title + Confidence Score + Ignore Button -->
-						<div class="flex items-center justify-between pb-3 mb-3 border-b border-stroke/40">
-							<div class="flex items-center gap-3 min-w-0">
+						<div class="mb-3 flex items-center justify-between border-b border-stroke/40 pb-3">
+							<div class="flex min-w-0 items-center gap-3">
 								<Text variant="body-2" weight="bold" class="truncate text-text-primary">
 									{match.artist} — {match.title}
 								</Text>
 
 								<!-- Confidence Score Badge -->
 								<span
-									class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-mono font-bold shrink-0 border
+									class="inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 font-mono text-[11px] font-bold
 									{match.confidence_score >= 90
-										? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-										: 'bg-teal-500/15 border-teal-500/30 text-teal-300'}"
-									title="Score de confiance multi-critères : {match.confidence_score}% (Titre: {match.score_breakdown.title_score}/40, Artiste: {match.score_breakdown.artist_score}/30, Durée: {match.score_breakdown.duration_score}/15, BPM: {match.score_breakdown.bpm_score}/10, Clé: {match.score_breakdown.key_score}/5)"
+										? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-400'
+										: 'border-teal-500/30 bg-teal-500/15 text-teal-300'}"
+									title="Score de confiance multi-critères : {match.confidence_score}% (Titre: {match.score_breakdown
+										.title_score}/40, Artiste: {match.score_breakdown.artist_score}/30, Durée: {match.score_breakdown
+										.duration_score}/15, BPM: {match.score_breakdown.bpm_score}/10, Clé: {match.score_breakdown
+										.key_score}/5)"
 								>
 									<Icon name="sparkles" class="h-3 w-3" />
 									{match.confidence_score}% de correspondance
@@ -346,7 +367,7 @@
 
 							<button
 								type="button"
-								class="bg-surface-2 hover:bg-surface-3 border border-stroke/50 text-text-secondary hover:text-text-primary text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
+								class="hover:bg-surface-3 shrink-0 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
 								onclick={() => upgraderStore.ignoreMatch(match)}
 								title="Ne plus proposer d'upgrade pour ce morceau"
 							>
@@ -355,12 +376,14 @@
 						</div>
 
 						<!-- Side-by-Side Comparison Grid (3 columns) -->
-						<div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-center">
+						<div class="grid grid-cols-1 items-center gap-3.5 lg:grid-cols-12">
 							<!-- Left Column: Current MP3 -->
-							<div class="lg:col-span-5 rounded-xl border border-stroke/60 bg-surface-1/80 p-3.5 space-y-2.5">
+							<div class="space-y-2.5 rounded-xl border border-stroke/60 bg-surface-1/80 p-3.5 lg:col-span-5">
 								<div class="flex items-center justify-between">
-									<span class="text-[11px] font-bold uppercase tracking-wider text-amber-400/90 flex items-center gap-1.5">
-										<span class="h-2 w-2 rounded-full bg-amber-400 inline-block"></span>
+									<span
+										class="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-amber-400/90 uppercase"
+									>
+										<span class="inline-block h-2 w-2 rounded-full bg-amber-400"></span>
 										Actuel (MP3)
 									</span>
 									<span class="font-mono text-xs text-text-secondary tabular-nums">
@@ -382,7 +405,7 @@
 										{#if isLocalPlaying}
 											<Icon name="pause" class="h-4 w-4" fill />
 										{:else}
-											<Icon name="play" class="h-4 w-4 group-hover:scale-110 transition-transform ml-0.5" fill />
+											<Icon name="play" class="ml-0.5 h-4 w-4 transition-transform group-hover:scale-110" fill />
 										{/if}
 									</button>
 
@@ -391,7 +414,8 @@
 											{match.title}
 										</Text>
 										<Text variant="caption" class="truncate text-text-secondary">
-											{match.artist} {match.album ? `• ${match.album}` : ''}
+											{match.artist}
+											{match.album ? `• ${match.album}` : ''}
 										</Text>
 									</div>
 								</div>
@@ -400,7 +424,7 @@
 								<div
 									role="button"
 									tabindex="0"
-									class="group/wave relative flex h-8 w-full cursor-pointer items-center justify-between gap-[2px] rounded-lg border border-stroke/40 bg-surface-0/70 px-2 py-1 transition-all hover:border-[#00E5FF]/40 hover:bg-surface-0 select-none"
+									class="group/wave relative flex h-8 w-full cursor-pointer items-center justify-between gap-[2px] rounded-lg border border-stroke/40 bg-surface-0/70 px-2 py-1 transition-all select-none hover:border-[#00E5FF]/40 hover:bg-surface-0"
 									onclick={(e) => handleWaveformClickLocal(e, match)}
 									onkeydown={(e) => {
 										if (e.key === 'Enter' || e.key === ' ') {
@@ -409,10 +433,10 @@
 									}}
 									title="Cliquer pour naviguer dans l'audio local"
 								>
-									{#each getBarsForTrack(match.track_id) as barHeight, barIdx}
+									{#each getBarsForTrack(match.track_id) as barHeight, barIdx (barIdx)}
 										{@const barPercent = (barIdx / 48) * 100}
 										{@const isPast = isLocalCurrent && barPercent <= localProgress}
-										<div class="h-full flex-1 flex items-center justify-center">
+										<div class="flex h-full flex-1 items-center justify-center">
 											<div
 												class="w-full rounded-full transition-all duration-75 {isPast
 													? 'bg-[#00E5FF] shadow-[0_0_6px_rgba(0,229,255,0.7)]'
@@ -431,9 +455,12 @@
 								</div>
 
 								<!-- Badges row -->
-								<div class="flex items-center gap-1.5 flex-wrap">
-									<span class="inline-flex h-[20px] items-center px-1.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300 bg-amber-500/15 border border-amber-500/30">
-										{match.current_format.toUpperCase()} {match.current_bitrate ? `${match.current_bitrate} kbps` : ''}
+								<div class="flex flex-wrap items-center gap-1.5">
+									<span
+										class="inline-flex h-[20px] items-center rounded border border-amber-500/30 bg-amber-500/15 px-1.5 font-mono text-[10px] font-bold tracking-wider text-amber-300 uppercase"
+									>
+										{match.current_format.toUpperCase()}
+										{match.current_bitrate ? `${match.current_bitrate} kbps` : ''}
 									</span>
 
 									{#if match.current_key}
@@ -441,7 +468,7 @@
 										{@const formattedKey = formatCamelotKey(match.current_key)}
 										{#if camelot}
 											<span
-												class="inline-flex h-[20px] min-w-[30px] px-1.5 items-center justify-center rounded text-[10px] font-mono font-bold"
+												class="inline-flex h-[20px] min-w-[30px] items-center justify-center rounded px-1.5 font-mono text-[10px] font-bold"
 												style="background-color: {camelot.bg}; color: {camelot.text};"
 											>
 												{formattedKey}
@@ -450,55 +477,68 @@
 									{/if}
 
 									{#if match.current_bpm}
-										<span class="inline-flex h-[20px] items-center px-1.5 rounded text-[10px] font-mono text-text-secondary bg-surface-2 border border-stroke/50">
+										<span
+											class="inline-flex h-[20px] items-center rounded border border-stroke/50 bg-surface-2 px-1.5 font-mono text-[10px] text-text-secondary"
+										>
 											{Math.round(match.current_bpm)} bpm
 										</span>
 									{/if}
 
 									{#if match.current_energy}
-										<span class="inline-flex h-[20px] items-center px-1.5 rounded text-[10px] font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30">
+										<span
+											class="inline-flex h-[20px] items-center rounded border border-amber-500/30 bg-amber-500/10 px-1.5 font-mono text-[10px] font-bold text-amber-400"
+										>
 											⚡ {match.current_energy}
 										</span>
 									{/if}
 								</div>
 
 								<!-- File Path -->
-								<div class="flex items-center gap-1.5 text-[11px] text-text-tertiary font-mono truncate" title={match.file_path}>
-									<Icon name="folder" class="h-3 w-3 shrink-0 text-text-disabled" />
+								<div
+									class="flex items-center gap-1.5 truncate font-mono text-[11px] text-text-tertiary"
+									title={match.file_path}
+								>
+									<Icon name="folder" class="text-text-disabled h-3 w-3 shrink-0" />
 									<span class="truncate">{match.file_path}</span>
 								</div>
 							</div>
 
 							<!-- Center Column: Transformation Arrow & Quality Benefit -->
-							<div class="lg:col-span-2 flex flex-col items-center justify-center py-2 text-center gap-2">
-								<div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-emerald-400/30 border border-emerald-500/40 text-emerald-400 shadow-md">
+							<div class="flex flex-col items-center justify-center gap-2 py-2 text-center lg:col-span-2">
+								<div
+									class="flex h-10 w-10 items-center justify-center rounded-full border border-emerald-500/40 bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-emerald-400/30 text-emerald-400 shadow-md"
+								>
 									<Icon name="arrow-right" class="h-5 w-5 stroke-[2.5]" />
 								</div>
 								<div class="space-y-0.5">
-									<span class="text-[11px] font-mono font-bold text-emerald-400 tracking-wide uppercase">
+									<span class="font-mono text-[11px] font-bold tracking-wide text-emerald-400 uppercase">
 										MP3 ➔ FLAC
 									</span>
-									<p class="text-[10px] text-text-tertiary font-medium">
-										Lossless Studio
-									</p>
+									<p class="text-[10px] font-medium text-text-tertiary">Lossless Studio</p>
 								</div>
 							</div>
 
 							<!-- Right Column: Beatport FLAC Lossless Version -->
-							<div class="lg:col-span-5 rounded-xl border border-emerald-500/40 bg-surface-1/90 p-3.5 space-y-2.5 shadow-sm">
+							<div
+								class="space-y-2.5 rounded-xl border border-emerald-500/40 bg-surface-1/90 p-3.5 shadow-sm lg:col-span-5"
+							>
 								<div class="flex items-center justify-between">
-									<span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-										<span class="h-2 w-2 rounded-full bg-emerald-400 inline-block"></span>
+									<span
+										class="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-emerald-400 uppercase"
+									>
+										<span class="inline-block h-2 w-2 rounded-full bg-emerald-400"></span>
 										Beatport (FLAC Lossless)
 									</span>
-									<span class="font-mono text-xs text-emerald-400 font-semibold tabular-nums">
+									<span class="font-mono text-xs font-semibold text-emerald-400 tabular-nums">
 										{match.beatport_track.duration_formatted || formatDurationCompact(match.beatport_track.duration_ms)}
 									</span>
 								</div>
 
 								<div class="flex items-start gap-3">
 									<!-- Beatport Artwork or Play Button -->
-									<div class="relative group h-11 w-11 shrink-0 rounded-lg overflow-hidden border border-emerald-500/30 bg-surface-2">
+									<div
+										class="group relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-emerald-500/30 bg-surface-2"
+									>
 										{#if match.beatport_track.artwork_url}
 											<img
 												src={match.beatport_track.artwork_url}
@@ -509,14 +549,14 @@
 										<button
 											type="button"
 											class="absolute inset-0 flex items-center justify-center bg-black/60 transition-opacity hover:cursor-pointer
-											{isBpPlaying ? 'opacity-100 bg-[#00FF96]/80 text-black' : 'opacity-0 group-hover:opacity-100 text-white'}"
+											{isBpPlaying ? 'bg-[#00FF96]/80 text-black opacity-100' : 'text-white opacity-0 group-hover:opacity-100'}"
 											onclick={() => handleTogglePlayBeatport(match)}
-											title={isBpPlaying ? 'Mettre en pause' : 'Écouter l\'extrait Beatport'}
+											title={isBpPlaying ? 'Mettre en pause' : "Écouter l'extrait Beatport"}
 										>
 											{#if isBpPlaying}
 												<Icon name="pause" class="h-4 w-4" fill />
 											{:else}
-												<Icon name="play" class="h-4 w-4 ml-0.5" fill />
+												<Icon name="play" class="ml-0.5 h-4 w-4" fill />
 											{/if}
 										</button>
 									</div>
@@ -527,7 +567,7 @@
 												{match.beatport_track.title}
 											</Text>
 											{#if match.beatport_track.mix_name}
-												<span class="text-xs text-text-tertiary truncate">
+												<span class="truncate text-xs text-text-tertiary">
 													({match.beatport_track.mix_name})
 												</span>
 											{/if}
@@ -539,8 +579,10 @@
 								</div>
 
 								<!-- Badges row -->
-								<div class="flex items-center gap-1.5 flex-wrap">
-									<span class="inline-flex h-[20px] items-center px-1.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/15 border border-emerald-500/30">
+								<div class="flex flex-wrap items-center gap-1.5">
+									<span
+										class="inline-flex h-[20px] items-center rounded border border-emerald-500/30 bg-emerald-500/15 px-1.5 font-mono text-[10px] font-bold tracking-wider text-emerald-400 uppercase"
+									>
 										FLAC LOSSLESS (24-bit / 44.1kHz)
 									</span>
 
@@ -549,7 +591,7 @@
 										{@const formattedKey = formatCamelotKey(match.beatport_track.key)}
 										{#if camelot}
 											<span
-												class="inline-flex h-[20px] min-w-[30px] px-1.5 items-center justify-center rounded text-[10px] font-mono font-bold"
+												class="inline-flex h-[20px] min-w-[30px] items-center justify-center rounded px-1.5 font-mono text-[10px] font-bold"
 												style="background-color: {camelot.bg}; color: {camelot.text};"
 											>
 												{formattedKey}
@@ -558,41 +600,50 @@
 									{/if}
 
 									{#if match.beatport_track.bpm}
-										<span class="inline-flex h-[20px] items-center px-1.5 rounded text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30">
+										<span
+											class="inline-flex h-[20px] items-center rounded border border-emerald-500/30 bg-emerald-500/10 px-1.5 font-mono text-[10px] text-emerald-400"
+										>
 											{Math.round(match.beatport_track.bpm)} bpm
 										</span>
 									{/if}
 
 									{#if match.beatport_track.genre}
-										<span class="inline-flex h-[20px] items-center px-1.5 rounded text-[10px] text-text-tertiary bg-surface-2/70 border border-stroke/40">
+										<span
+											class="inline-flex h-[20px] items-center rounded border border-stroke/40 bg-surface-2/70 px-1.5 text-[10px] text-text-tertiary"
+										>
 											{match.beatport_track.genre}
 										</span>
 									{/if}
 								</div>
 
 								<!-- Beatport Release Info / URL -->
-								<div class="flex items-center gap-1.5 text-[11px] text-text-tertiary truncate">
+								<div class="flex items-center gap-1.5 truncate text-[11px] text-text-tertiary">
 									<Icon name="beatport" class="h-3 w-3 shrink-0 text-emerald-400" />
 									<span class="truncate">
-										{match.beatport_track.release_name || 'Catalogue Officiel Beatport'} {match.beatport_track.release_date ? `(${match.beatport_track.release_date.slice(0, 4)})` : ''}
+										{match.beatport_track.release_name || 'Catalogue Officiel Beatport'}
+										{match.beatport_track.release_date ? `(${match.beatport_track.release_date.slice(0, 4)})` : ''}
 									</span>
 								</div>
 							</div>
 						</div>
 
 						<!-- Card Bottom: Checkbox -->
-						<div class="pt-3 mt-3 border-t border-stroke/40 flex items-center justify-between">
-							<label class="flex items-center gap-2 text-xs font-medium hover:cursor-pointer select-none {isSelected ? 'text-emerald-400' : 'text-text-secondary'}">
+						<div class="mt-3 flex items-center justify-between border-t border-stroke/40 pt-3">
+							<label
+								class="flex items-center gap-2 text-xs font-medium select-none hover:cursor-pointer {isSelected
+									? 'text-emerald-400'
+									: 'text-text-secondary'}"
+							>
 								<input
 									type="checkbox"
 									checked={isSelected}
 									onchange={() => upgraderStore.toggleMatchSelection(match.track_id)}
-									class="h-4 w-4 rounded border-stroke bg-surface-2 text-emerald-500 focus:ring-emerald-500 hover:cursor-pointer"
+									class="h-4 w-4 rounded border-stroke bg-surface-2 text-emerald-500 hover:cursor-pointer focus:ring-emerald-500"
 								/>
 								<span>Remplacer ce MP3 par la version FLAC Lossless</span>
 							</label>
 
-							<span class="text-[11px] text-text-tertiary font-mono">
+							<span class="font-mono text-[11px] text-text-tertiary">
 								Suppression propre + Import synchronisé MIK
 							</span>
 						</div>
@@ -602,16 +653,18 @@
 		</div>
 
 		<!-- Footer -->
-		<div class="flex-shrink-0 flex items-center justify-between border-t border-stroke px-6 py-3.5 bg-surface-2/95 sticky bottom-0 z-10">
+		<div
+			class="sticky bottom-0 z-10 flex flex-shrink-0 items-center justify-between border-t border-stroke bg-surface-2/95 px-6 py-3.5"
+		>
 			<div class="text-xs">
 				<span class="text-text-secondary">Sélectionnés pour upgrade :</span>
-				<span class="font-bold text-emerald-400 ml-1 font-mono">{$selectedUpgradeCount}</span>
+				<span class="ml-1 font-mono font-bold text-emerald-400">{$selectedUpgradeCount}</span>
 			</div>
 
 			<div class="flex items-center gap-3">
 				<button
 					type="button"
-					class="bg-surface-2 hover:bg-surface-3 border border-stroke/50 text-text-secondary hover:text-text-primary text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+					class="hover:bg-surface-3 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
 					onclick={onClose}
 				>
 					Fermer
@@ -621,7 +674,7 @@
 					variant="primary"
 					onclick={handleExecuteUpgrade}
 					disabled={$selectedUpgradeCount === 0 || $isUpgrading || isAuthRequired}
-					class="font-semibold shadow-md shadow-emerald-950/40 text-xs py-1.5 bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
+					class="border-emerald-500 bg-emerald-600 py-1.5 text-xs font-semibold shadow-md shadow-emerald-950/40 hover:bg-emerald-500"
 				>
 					{#if $isUpgrading}
 						<Icon name="refresh-cw" class="mr-2 h-3.5 w-3.5 animate-spin" />

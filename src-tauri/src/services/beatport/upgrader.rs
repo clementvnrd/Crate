@@ -1,11 +1,11 @@
+use base64::Engine;
+use regex::Regex;
+use rusqlite::Connection;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, LazyLock};
+use std::sync::{Arc, LazyLock, Mutex};
 use tokio::sync::Mutex as TokioMutex;
-use rusqlite::Connection;
-use regex::Regex;
 use unicode_normalization::UnicodeNormalization;
-use base64::Engine;
 
 use crate::error::{CrateError, Result};
 use crate::models::{
@@ -13,25 +13,26 @@ use crate::models::{
     UpgradeScoreBreakdown,
 };
 use crate::services::beatport::client::{BeatportClient, BeatportTrack};
-use crate::services::beatport::downloader::{discard_staging, move_into_destination, BeatportDownloader};
-use crate::services::duplicate::{artists_match, keys_match, normalize_artist, normalize_title, ARTIST_DELIM_RE};
+use crate::services::beatport::downloader::{
+    discard_staging, move_into_destination, BeatportDownloader,
+};
+use crate::services::duplicate::{
+    artists_match, keys_match, normalize_artist, normalize_title, ARTIST_DELIM_RE,
+};
 use crate::services::library::LibraryService;
 
 static FEAT_PAREN_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\s*[\(\[](?:feat\.?|ft\.?|featuring)\s+[^)\]]+[\)\]]").unwrap()
 });
-static FEAT_INLINE_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)\s+\b(?:feat\.?|ft\.?|featuring)\b.*$").unwrap()
-});
+static FEAT_INLINE_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)\s+\b(?:feat\.?|ft\.?|featuring)\b.*$").unwrap());
 static MIX_PAREN_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\s*[\(\[][^)\]]*(?:mix|edit|version|remaster|cut|dirty|clean|extended|short|outro|intro|dub|vip|remix|bootleg|mashup|acoustic|radio|club|original)[^)\]]*[\)\]]").unwrap()
 });
 static MIX_DASH_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\s+-\s+.*(?:mix|edit|version|remaster|cut|dirty|clean|extended|short|outro|intro|dub|vip|remix|bootleg|mashup|acoustic|radio|club|original|clean|dirty|explicit).*$").unwrap()
 });
-static WHITESPACE_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\s+").unwrap()
-});
+static WHITESPACE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap());
 
 /// Minimum confidence score for an upgrade proposal.
 const MIN_CONFIDENCE: i32 = 75;
@@ -41,7 +42,9 @@ pub fn extract_main_artist(artist: &str) -> String {
     let s_nfc: String = artist.nfc().collect();
     let parts: Vec<&str> = ARTIST_DELIM_RE.split(&s_nfc).collect();
     if let Some(first) = parts.first() {
-        let trimmed = first.trim().trim_matches(|c: char| c == '"' || c == '\'' || c == ',' || c == ';');
+        let trimmed = first
+            .trim()
+            .trim_matches(|c: char| c == '"' || c == '\'' || c == ',' || c == ';');
         let collapsed = WHITESPACE_RE.replace_all(trimmed, " ");
         return collapsed.trim().to_string();
     }
@@ -58,7 +61,9 @@ pub fn clean_title(title: &str) -> String {
     let collapsed = WHITESPACE_RE.replace_all(&no_mix_dash, " ");
     collapsed
         .trim()
-        .trim_matches(|c: char| c == '-' || c == '_' || c == '/' || c == ':' || c == '"' || c == '\'')
+        .trim_matches(|c: char| {
+            c == '-' || c == '_' || c == '/' || c == ':' || c == '"' || c == '\''
+        })
         .trim()
         .to_string()
 }
@@ -117,7 +122,8 @@ pub fn build_search_queries(title: &str, artist: &str) -> Vec<String> {
 fn is_jwt_expired(token: &str) -> bool {
     let parts: Vec<&str> = token.split('.').collect();
     if parts.len() >= 2 {
-        let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(parts[1])
+        let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(parts[1])
             .or_else(|_| base64::engine::general_purpose::URL_SAFE.decode(parts[1]))
             .or_else(|_| base64::engine::general_purpose::STANDARD.decode(parts[1]));
         if let Ok(bytes) = decoded {
@@ -197,7 +203,11 @@ fn mix_kinds(title: &str) -> HashSet<&'static str> {
         ("vip", "vip"),
     ];
     let lower = title.to_lowercase();
-    KINDS.iter().filter(|(needle, _)| lower.contains(needle)).map(|(_, kind)| *kind).collect()
+    KINDS
+        .iter()
+        .filter(|(needle, _)| lower.contains(needle))
+        .map(|(_, kind)| *kind)
+        .collect()
 }
 
 pub fn calculate_confidence_score(
@@ -218,34 +228,38 @@ pub fn calculate_confidence_score(
     let norm_bp_title = normalize_title(&bp_full_title);
     let norm_bp_title_only = normalize_title(&bp.title);
 
-    let title_score: i32 = if norm_local_title == norm_bp_title || norm_local_title == norm_bp_title_only {
-        40
-    } else if norm_local_title.contains(&norm_bp_title_only) || norm_bp_title_only.contains(&norm_local_title) {
-        35
-    } else {
-        let sim = dice_similarity(&norm_local_title, &norm_bp_title)
-            .max(dice_similarity(&norm_local_title, &norm_bp_title_only));
-        if sim >= 0.90 {
-            38
-        } else if sim >= 0.80 {
-            32
-        } else if sim >= 0.65 {
-            25
-        } else if sim >= 0.50 {
-            18
+    let title_score: i32 =
+        if norm_local_title == norm_bp_title || norm_local_title == norm_bp_title_only {
+            40
+        } else if norm_local_title.contains(&norm_bp_title_only)
+            || norm_bp_title_only.contains(&norm_local_title)
+        {
+            35
         } else {
-            (sim * 40.0).round() as i32
-        }
-    };
+            let sim = dice_similarity(&norm_local_title, &norm_bp_title)
+                .max(dice_similarity(&norm_local_title, &norm_bp_title_only));
+            if sim >= 0.90 {
+                38
+            } else if sim >= 0.80 {
+                32
+            } else if sim >= 0.65 {
+                25
+            } else if sim >= 0.50 {
+                18
+            } else {
+                (sim * 40.0).round() as i32
+            }
+        };
 
     // A different mix is a different recording: never swap an extended mix for a radio edit.
     let local_mix = mix_kinds(local_title);
     let bp_mix = mix_kinds(&bp_full_title);
-    let title_score = if !local_mix.is_empty() && !bp_mix.is_empty() && local_mix.is_disjoint(&bp_mix) {
-        0
-    } else {
-        title_score
-    };
+    let title_score =
+        if !local_mix.is_empty() && !bp_mix.is_empty() && local_mix.is_disjoint(&bp_mix) {
+            0
+        } else {
+            title_score
+        };
 
     // 2. Artist Score (max 30)
     let bp_artists_joined = bp
@@ -262,7 +276,9 @@ pub fn calculate_confidence_score(
         30
     } else if artists_match(local_artist, &bp_artists_joined) {
         25
-    } else if norm_local_artist.contains(&norm_bp_artist) || norm_bp_artist.contains(&norm_local_artist) {
+    } else if norm_local_artist.contains(&norm_bp_artist)
+        || norm_bp_artist.contains(&norm_local_artist)
+    {
         20
     } else {
         let sim = dice_similarity(&norm_local_artist, &norm_bp_artist);
@@ -322,7 +338,8 @@ pub fn calculate_confidence_score(
         _ => 3, // Neutral score when key is unanalyzed
     };
 
-    let total_confidence = (title_score + artist_score + duration_score + bpm_score + key_score).clamp(0, 100);
+    let total_confidence =
+        (title_score + artist_score + duration_score + bpm_score + key_score).clamp(0, 100);
 
     let breakdown = UpgradeScoreBreakdown {
         title_score,
@@ -391,8 +408,10 @@ impl BeatportUpgraderService {
             "DELETE FROM upgrade_matches_cache WHERE track_id IN ({})",
             placeholders.join(", ")
         );
-        let params_refs: Vec<&dyn rusqlite::ToSql> =
-            track_ids.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
+        let params_refs: Vec<&dyn rusqlite::ToSql> = track_ids
+            .iter()
+            .map(|s| s as &dyn rusqlite::ToSql)
+            .collect();
         conn.execute(&sql, params_refs.as_slice())?;
         Ok(())
     }
@@ -487,8 +506,7 @@ impl BeatportUpgraderService {
 
     /// Loads persisted auth and ensures token is valid, auto-refreshing if expired
     pub async fn get_active_token(&self) -> Result<String> {
-        let auth = BeatportClient::load_persisted_auth()
-            .ok_or(CrateError::BeatportAuthRequired)?;
+        let auth = BeatportClient::load_persisted_auth().ok_or(CrateError::BeatportAuthRequired)?;
 
         if let Some(token) = auth.token {
             if is_jwt_expired(&token) {
@@ -551,19 +569,20 @@ impl BeatportUpgraderService {
                 WHERE (confidence_score >= ?2 AND scanned_at >= ?1) OR (confidence_score < ?2 AND scanned_at >= ?3)
                 "#,
             )?;
-            let cached_rows = stmt.query_map(rusqlite::params![cutoff, MIN_CONFIDENCE, negative_cutoff], |row| {
-                let track_id: String = row.get(0)?;
-                let bp_json: String = row.get(1)?;
-                let confidence: i32 = row.get(2)?;
-                let breakdown_json: String = row.get(3)?;
-                Ok((track_id, (bp_json, confidence, breakdown_json)))
-            })?;
+            let cached_rows = stmt.query_map(
+                rusqlite::params![cutoff, MIN_CONFIDENCE, negative_cutoff],
+                |row| {
+                    let track_id: String = row.get(0)?;
+                    let bp_json: String = row.get(1)?;
+                    let confidence: i32 = row.get(2)?;
+                    let breakdown_json: String = row.get(3)?;
+                    Ok((track_id, (bp_json, confidence, breakdown_json)))
+                },
+            )?;
 
             let mut cached = HashMap::new();
-            for r in cached_rows {
-                if let Ok((tid, val)) = r {
-                    cached.insert(tid, val);
-                }
+            for (tid, val) in cached_rows.flatten() {
+                cached.insert(tid, val);
             }
 
             (tracks, ignored, cached)
@@ -590,7 +609,9 @@ impl BeatportUpgraderService {
                     serde_json::from_str::<BeatportTrack>(bp_json),
                     serde_json::from_str::<UpgradeScoreBreakdown>(breakdown_json),
                 ) {
-                    if !ignored.contains(&(track.id.clone(), bp_track.id.clone())) && *confidence >= MIN_CONFIDENCE {
+                    if !ignored.contains(&(track.id.clone(), bp_track.id.clone()))
+                        && *confidence >= MIN_CONFIDENCE
+                    {
                         matches.push(UpgradeMatch {
                             track_id: track.id.clone(),
                             file_path: track.file_path.clone(),
@@ -626,8 +647,7 @@ impl BeatportUpgraderService {
                 _ => self.get_active_token().await?,
             };
 
-            let mut network_count = 0;
-            for track in tracks_needing_scan {
+            for (network_count, track) in tracks_needing_scan.into_iter().enumerate() {
                 let title = track.title.as_deref().unwrap_or("").trim();
                 let artist = track.artist.as_deref().unwrap_or("").trim();
 
@@ -635,10 +655,10 @@ impl BeatportUpgraderService {
                 if network_count > 0 && network_count % 4 == 0 {
                     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
                 }
-                network_count += 1;
 
                 let queries = build_search_queries(title, artist);
-                let mut eligible_candidates: Vec<(i32, UpgradeScoreBreakdown, BeatportTrack)> = Vec::new();
+                let mut eligible_candidates: Vec<(i32, UpgradeScoreBreakdown, BeatportTrack)> =
+                    Vec::new();
                 let mut seen_bp_ids: HashSet<String> = HashSet::new();
                 let mut search_failed = false;
 
@@ -646,7 +666,9 @@ impl BeatportUpgraderService {
                     match self.search_with_backoff(&resolved_token, &query).await {
                         Ok(search_res) => {
                             for bp_track in search_res.tracks {
-                                if seen_bp_ids.contains(&bp_track.id) || ignored.contains(&(track.id.clone(), bp_track.id.clone())) {
+                                if seen_bp_ids.contains(&bp_track.id)
+                                    || ignored.contains(&(track.id.clone(), bp_track.id.clone()))
+                                {
                                     continue;
                                 }
 
@@ -700,10 +722,11 @@ impl BeatportUpgraderService {
 
                 if !eligible_candidates.is_empty() {
                     // Sort descending by confidence score
-                    eligible_candidates.sort_by(|a, b| b.0.cmp(&a.0));
+                    eligible_candidates.sort_by_key(|c| std::cmp::Reverse(c.0));
 
                     let (best_score, best_breakdown, best_bp) = eligible_candidates.remove(0);
-                    let alt_tracks: Vec<BeatportTrack> = eligible_candidates.into_iter().map(|(_, _, t)| t).collect();
+                    let alt_tracks: Vec<BeatportTrack> =
+                        eligible_candidates.into_iter().map(|(_, _, t)| t).collect();
 
                     // Persist primary match in cache
                     let now = chrono::Utc::now().to_rfc3339();
@@ -764,7 +787,7 @@ impl BeatportUpgraderService {
         }
 
         // Sort by confidence score descending
-        matches.sort_by(|a, b| b.confidence_score.cmp(&a.confidence_score));
+        matches.sort_by_key(|m| std::cmp::Reverse(m.confidence_score));
 
         let potential_upgrades_count = matches.len();
 
@@ -855,7 +878,8 @@ impl BeatportUpgraderService {
         destination_override: Option<&str>,
         on_progress: &(dyn Fn(UpgradeProgress) + Send + Sync),
     ) -> Result<UpgradeReplacementResult> {
-        let library = library.ok_or_else(|| CrateError::Import("Library service unavailable".to_string()))?;
+        let library =
+            library.ok_or_else(|| CrateError::Import("Library service unavailable".to_string()))?;
         let mut success_count = 0;
         let mut failed_count = 0;
         let mut replaced_tracks = Vec::new();
@@ -864,13 +888,20 @@ impl BeatportUpgraderService {
 
         let total = matches.len();
         for (index, item) in matches.iter().enumerate() {
-            on_progress(UpgradeProgress { current: index + 1, total, title: item.title.clone() });
+            on_progress(UpgradeProgress {
+                current: index + 1,
+                total,
+                title: item.title.clone(),
+            });
             // Never trust the path sent by the webview: read it from the library.
             let old_file_path_str = match library.get_track(&item.track_id) {
                 Ok(track) => track.file_path,
                 Err(e) => {
                     failed_count += 1;
-                    errors.push(format!("'{}' : titre introuvable dans la bibliothèque ({e})", item.title));
+                    errors.push(format!(
+                        "'{}' : titre introuvable dans la bibliothèque ({e})",
+                        item.title
+                    ));
                     continue;
                 }
             };
@@ -882,7 +913,10 @@ impl BeatportUpgraderService {
                 parent.to_path_buf()
             } else {
                 failed_count += 1;
-                errors.push(format!("'{}' : dossier de destination introuvable", item.title));
+                errors.push(format!(
+                    "'{}' : dossier de destination introuvable",
+                    item.title
+                ));
                 continue;
             };
 
@@ -904,7 +938,13 @@ impl BeatportUpgraderService {
                     candidates.len(),
                     candidate.id
                 );
-                let staged = match BeatportDownloader::download_to_staging(std::slice::from_ref(candidate), &dest_dir, None).await {
+                let staged = match BeatportDownloader::download_to_staging(
+                    std::slice::from_ref(candidate),
+                    &dest_dir,
+                    None,
+                )
+                .await
+                {
                     Ok(staged) => staged,
                     Err(e) => {
                         candidate_errors.push(format!("ID {}: {e}", candidate.id));
@@ -915,7 +955,10 @@ impl BeatportUpgraderService {
                     [file] => move_into_destination(file, &dest_dir).map_err(|e| e.to_string()),
                     [] if staged.errors.is_empty() => Err("aucun fichier FLAC valide".to_string()),
                     [] => Err(staged.errors.join("; ")),
-                    _ => Err(format!("{} fichiers reçus pour un seul titre", staged.valid_files.len())),
+                    _ => Err(format!(
+                        "{} fichiers reçus pour un seul titre",
+                        staged.valid_files.len()
+                    )),
                 };
                 discard_staging(&staged.staging_dir);
                 match moved {
@@ -931,9 +974,16 @@ impl BeatportUpgraderService {
             let Some(new_flac) = new_flac else {
                 failed_count += 1;
                 errors.push(if candidate_errors.is_empty() {
-                    format!("Aucun fichier FLAC valide n'a pu être téléchargé pour '{}'", item.title)
+                    format!(
+                        "Aucun fichier FLAC valide n'a pu être téléchargé pour '{}'",
+                        item.title
+                    )
                 } else {
-                    format!("Échec téléchargement FLAC pour '{}' (candidats testés : {})", item.title, candidate_errors.join(" | "))
+                    format!(
+                        "Échec téléchargement FLAC pour '{}' (candidats testés : {})",
+                        item.title,
+                        candidate_errors.join(" | ")
+                    )
                 });
                 continue;
             };
@@ -1074,7 +1124,10 @@ mod tests {
     fn test_extract_main_artist_keeps_names_containing_delimiters() {
         assert_eq!(extract_main_artist("Daft Punk"), "Daft Punk");
         assert_eq!(extract_main_artist("Alex Kennon"), "Alex Kennon");
-        assert_eq!(extract_main_artist("Swedish House Mafia"), "Swedish House Mafia");
+        assert_eq!(
+            extract_main_artist("Swedish House Mafia"),
+            "Swedish House Mafia"
+        );
         assert_eq!(extract_main_artist("Andhim"), "Andhim");
         assert_eq!(extract_main_artist("Fisher ft. Aatig"), "Fisher");
         assert_eq!(extract_main_artist("Chris Lake feat. Aatig"), "Chris Lake");
@@ -1088,8 +1141,14 @@ mod tests {
         let mut radio = sample_beatport_track();
         radio.mix_name = Some("Radio Edit".to_string());
         radio.duration_ms = 558000;
-        let (extended_vs_radio, _) =
-            calculate_confidence_score("Opus (Extended Mix)", "Eric Prydz", 558000, Some(126.0), Some("10B"), &radio);
+        let (extended_vs_radio, _) = calculate_confidence_score(
+            "Opus (Extended Mix)",
+            "Eric Prydz",
+            558000,
+            Some(126.0),
+            Some("10B"),
+            &radio,
+        );
         let (extended_vs_original, _) = calculate_confidence_score(
             "Opus (Extended Mix)",
             "Eric Prydz",
@@ -1098,16 +1157,28 @@ mod tests {
             Some("10B"),
             &sample_beatport_track(),
         );
-        assert!(extended_vs_radio < MIN_CONFIDENCE, "a radio edit must not replace an extended mix");
-        assert!(extended_vs_original >= MIN_CONFIDENCE, "extended and original mix are both full length");
+        assert!(
+            extended_vs_radio < MIN_CONFIDENCE,
+            "a radio edit must not replace an extended mix"
+        );
+        assert!(
+            extended_vs_original >= MIN_CONFIDENCE,
+            "extended and original mix are both full length"
+        );
     }
 
     #[test]
     fn test_confidence_unknown_duration_is_neutral() {
         let mut bp = sample_beatport_track();
         bp.duration_ms = 0;
-        let (_, breakdown) =
-            calculate_confidence_score("Opus (Original Mix)", "Eric Prydz", 558000, Some(126.0), Some("10B"), &bp);
+        let (_, breakdown) = calculate_confidence_score(
+            "Opus (Original Mix)",
+            "Eric Prydz",
+            558000,
+            Some(126.0),
+            Some("10B"),
+            &bp,
+        );
         assert_eq!(breakdown.duration_score, 7);
     }
 
@@ -1156,14 +1227,8 @@ mod tests {
     #[test]
     fn test_calculate_confidence_score_mismatch() {
         let bp = sample_beatport_track();
-        let (score, _) = calculate_confidence_score(
-            "Levels",
-            "Avicii",
-            320000,
-            Some(128.0),
-            Some("4A"),
-            &bp,
-        );
+        let (score, _) =
+            calculate_confidence_score("Levels", "Avicii", 320000, Some(128.0), Some("4A"), &bp);
 
         assert!(score < 75, "Expected mismatch score < 75%, got {score}");
     }
@@ -1192,29 +1257,42 @@ mod tests {
 
     #[test]
     fn test_build_search_queries_sexy_bitch() {
-        let queries = build_search_queries("Sexy Bitch (feat. Akon) (Club Mix)", "David Guetta feat. Akon");
+        let queries = build_search_queries(
+            "Sexy Bitch (feat. Akon) (Club Mix)",
+            "David Guetta feat. Akon",
+        );
         assert_eq!(queries[0], "David Guetta Sexy Bitch");
         assert_eq!(queries[1], "Sexy Bitch");
-        assert!(queries.contains(&"David Guetta feat. Akon Sexy Bitch (feat. Akon) (Club Mix)".to_string()));
+        assert!(queries
+            .contains(&"David Guetta feat. Akon Sexy Bitch (feat. Akon) (Club Mix)".to_string()));
     }
 
     #[test]
     fn test_build_search_queries_resonate() {
-        let queries = build_search_queries("Resonate (feat. Julia Church) (Extended Mix)", "John Summit & Sub Focus ft. Julia Church");
+        let queries = build_search_queries(
+            "Resonate (feat. Julia Church) (Extended Mix)",
+            "John Summit & Sub Focus ft. Julia Church",
+        );
         assert_eq!(queries[0], "John Summit Resonate");
         assert_eq!(queries[1], "Resonate");
     }
 
     #[test]
     fn test_build_search_queries_ocean_drive() {
-        let queries = build_search_queries("Ocean Drive (Original Mix)", "Duke Dumont feat. Boy Matthews");
+        let queries = build_search_queries(
+            "Ocean Drive (Original Mix)",
+            "Duke Dumont feat. Boy Matthews",
+        );
         assert_eq!(queries[0], "Duke Dumont Ocean Drive");
         assert_eq!(queries[1], "Ocean Drive");
     }
 
     #[test]
     fn test_build_search_queries_ma_cherie() {
-        let queries = build_search_queries("Ma Chérie (DJ Antoine vs Mad Mark 2k12 Radio Edit)", "DJ Antoine vs. Timati feat. Kalenna");
+        let queries = build_search_queries(
+            "Ma Chérie (DJ Antoine vs Mad Mark 2k12 Radio Edit)",
+            "DJ Antoine vs. Timati feat. Kalenna",
+        );
         assert_eq!(queries[0], "DJ Antoine Ma Chérie");
         assert_eq!(queries[1], "Ma Chérie");
     }
@@ -1278,7 +1356,9 @@ mod tests {
         assert_eq!(count_info.match_count, 1);
 
         // Test cache invalidation
-        service.invalidate_cache_for_tracks(&["track_mp3_1".to_string()]).unwrap();
+        service
+            .invalidate_cache_for_tracks(&["track_mp3_1".to_string()])
+            .unwrap();
         let count_info_after = service.get_upgrade_count(None).await.unwrap();
         assert_eq!(count_info_after.eligible_mp3_count, 1);
         assert_eq!(count_info_after.match_count, 0);

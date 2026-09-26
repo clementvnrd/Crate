@@ -21,3 +21,6 @@ docs/.astro/
 
 # Svelte
 **/.svelte-kit/
+
+# Test coverage
+coverage/

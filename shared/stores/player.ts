@@ -200,7 +200,7 @@ function createPlayerStore() {
 				libraryApi.getTrackWaveform(trackId).catch(() => null),
 			])
 
-			let computedBars: number[] = []
+			const computedBars: number[] = []
 			if (waveform && waveform.length > 0) {
 				const numBars = 64
 				const step = Math.max(1, Math.floor(waveform.length / numBars))
@@ -466,7 +466,8 @@ function createPlayerStore() {
 
 				update((s) => ({
 					...s,
-					currentTrack: isLibraryTrack || track.is_in_library ? (s.currentTrack?.id === track.id ? s.currentTrack : null) : null,
+					currentTrack:
+						isLibraryTrack || track.is_in_library ? (s.currentTrack?.id === track.id ? s.currentTrack : null) : null,
 					standaloneTrack: track,
 					beatportTrack: null,
 					playbackState,

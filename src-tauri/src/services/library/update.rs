@@ -192,40 +192,6 @@ impl LibraryService {
     }
 
     /// Set rating for a track
-    pub fn set_track_rating(&self, id: &str, rating: i32) -> Result<Track> {
-        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-
-        let now = chrono::Utc::now().to_rfc3339();
-        let hlc = dirty::next_hlc(&conn)?;
-
-        conn.execute(
-            "UPDATE tracks SET rating = ?1, date_modified = ?2, _hlc = ?3 WHERE id = ?4",
-            rusqlite::params![rating, now, hlc, id],
-        )?;
-        dirty::mark_dirty(&conn, &buckets::bucket_for_track_id(id))?;
-
-        drop(conn);
-        self.get_track(id)
-    }
-
-    /// Set color for a track
-    pub fn set_track_color(&self, id: &str, color: Option<String>) -> Result<Track> {
-        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-
-        let now = chrono::Utc::now().to_rfc3339();
-        let hlc = dirty::next_hlc(&conn)?;
-
-        conn.execute(
-            "UPDATE tracks SET color = ?1, date_modified = ?2, _hlc = ?3 WHERE id = ?4",
-            rusqlite::params![color, now, hlc, id],
-        )?;
-        dirty::mark_dirty(&conn, &buckets::bucket_for_track_id(id))?;
-
-        drop(conn);
-        self.get_track(id)
-    }
-
-    /// Set color for multiple tracks (bulk operation)
     pub fn set_track_colors(&self, track_ids: Vec<String>, color: Option<String>) -> Result<()> {
         if track_ids.is_empty() {
             return Ok(());
@@ -434,7 +400,8 @@ impl LibraryService {
             audio.bitrate = props.audio_bitrate().map(|b| b as i32);
             audio.sample_rate = props.sample_rate().map(|s| s as i32);
         } else {
-            let (duration_ms, sample_rate, bitrate) = self.read_audio_properties_symphonia(&path)?;
+            let (duration_ms, sample_rate, bitrate) =
+                self.read_audio_properties_symphonia(&path)?;
             audio.duration_ms = duration_ms;
             audio.sample_rate = sample_rate;
             audio.bitrate = bitrate;
@@ -524,11 +491,22 @@ mod replace_file_tests {
                 |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
             )
             .unwrap();
-        assert_eq!((path.as_str(), format.as_str(), bitrate), ("/music/song.flac", "flac", 1411));
+        assert_eq!(
+            (path.as_str(), format.as_str(), bitrate),
+            ("/music/song.flac", "flac", 1411)
+        );
         assert_eq!((rating, plays), (4, 12));
-        for (table, column) in [("cues", "track_id"), ("track_tags", "track_id"), ("playlist_tracks", "track_id")] {
+        for (table, column) in [
+            ("cues", "track_id"),
+            ("track_tags", "track_id"),
+            ("playlist_tracks", "track_id"),
+        ] {
             let n: i64 = conn
-                .query_row(&format!("SELECT COUNT(*) FROM {table} WHERE {column} = 't1'"), [], |r| r.get(0))
+                .query_row(
+                    &format!("SELECT COUNT(*) FROM {table} WHERE {column} = 't1'"),
+                    [],
+                    |r| r.get(0),
+                )
                 .unwrap();
             assert_eq!(n, 1, "{table} must survive the upgrade");
         }

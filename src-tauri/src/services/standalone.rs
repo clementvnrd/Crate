@@ -133,7 +133,10 @@ impl StandaloneService {
             bitrate = properties.audio_bitrate().map(|b| b as i32);
             sample_rate = properties.sample_rate().map(|s| s as i32);
 
-            if let Some(tag) = tagged_file.primary_tag().or_else(|| tagged_file.first_tag()) {
+            if let Some(tag) = tagged_file
+                .primary_tag()
+                .or_else(|| tagged_file.first_tag())
+            {
                 title = tag.title().map(|s| s.to_string());
                 artist = tag.artist().map(|s| s.to_string());
                 album = tag.album().map(|s| s.to_string());
@@ -150,10 +153,11 @@ impl StandaloneService {
                 energy = Some(e);
             }
 
-            if let Some(art) = self
-                .artwork_service
-                .extract_from_tagged_file_or_folder(&tagged_file, &path, &standalone_id)
-            {
+            if let Some(art) = self.artwork_service.extract_from_tagged_file_or_folder(
+                &tagged_file,
+                &path,
+                &standalone_id,
+            ) {
                 artwork_path = Some(art);
             }
         } else if let Ok((dur, sr, br)) = Self::read_audio_properties_symphonia(&path) {
@@ -206,10 +210,9 @@ impl StandaloneService {
     }
 
     /// Read properties with symphonia fallback
-    fn read_audio_properties_symphonia(
-        path: &Path,
-    ) -> Result<(i64, Option<i32>, Option<i32>)> {
-        let file = File::open(path).map_err(|e| CrateError::Metadata(format!("Failed to open: {e}")))?;
+    fn read_audio_properties_symphonia(path: &Path) -> Result<(i64, Option<i32>, Option<i32>)> {
+        let file =
+            File::open(path).map_err(|e| CrateError::Metadata(format!("Failed to open: {e}")))?;
         let mss = MediaSourceStream::new(Box::new(file), Default::default());
 
         let mut hint = Hint::new();
@@ -315,10 +318,7 @@ impl StandaloneService {
         }
 
         let now = chrono::Utc::now().to_rfc3339();
-        let last_played = track
-            .last_played_at
-            .as_deref()
-            .unwrap_or(&now);
+        let last_played = track.last_played_at.as_deref().unwrap_or(&now);
 
         conn.execute(
             r#"
@@ -383,8 +383,8 @@ impl StandaloneService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rusqlite::Connection;
     use crate::db::schema::get_migrations;
+    use rusqlite::Connection;
 
     fn setup_test_db() -> (Arc<Mutex<Connection>>, StandaloneService) {
         let conn = Connection::open_in_memory().unwrap();
@@ -539,4 +539,3 @@ mod tests {
         assert_eq!(service.get_recent_standalone_tracks(None).unwrap().len(), 0);
     }
 }
-

@@ -6,7 +6,11 @@
 	let showNewPlaylistInput = $state(false)
 	let newPlaylistName = $state('')
 
-	function handleNav(section: BeatportNavSection, playlistId: string | null = null, playlistName: string | null = null) {
+	function handleNav(
+		section: BeatportNavSection,
+		playlistId: string | null = null,
+		playlistName: string | null = null
+	) {
 		beatportStore.setNavSection(section, playlistId, playlistName)
 	}
 
@@ -19,14 +23,17 @@
 	}
 </script>
 
-<div class="flex h-full flex-col justify-between overflow-y-auto bg-surface-0 p-3 select-none text-xs border-r border-stroke">
+<div
+	class="flex h-full flex-col justify-between overflow-y-auto border-r border-stroke bg-surface-0 p-3 text-xs select-none"
+>
 	<div class="space-y-4">
 		<!-- Main Navigation -->
 		<div class="space-y-1">
 			<button
 				type="button"
-				class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 font-medium transition-colors {$beatportStore.navSection === 'home' && !$beatportStore.selectedPlaylistId
-					? 'bg-emerald-500/20 text-emerald-400 font-semibold'
+				class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 font-medium transition-colors {$beatportStore.navSection ===
+					'home' && !$beatportStore.selectedPlaylistId
+					? 'bg-emerald-500/20 font-semibold text-emerald-400'
 					: 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'}"
 				onclick={() => handleNav('home')}
 			>
@@ -38,8 +45,9 @@
 
 			<button
 				type="button"
-				class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 font-medium transition-colors {$beatportStore.navSection === 'purchased'
-					? 'bg-emerald-500/20 text-emerald-400 font-semibold'
+				class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 font-medium transition-colors {$beatportStore.navSection ===
+				'purchased'
+					? 'bg-emerald-500/20 font-semibold text-emerald-400'
 					: 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'}"
 				onclick={() => handleNav('purchased')}
 			>
@@ -48,7 +56,7 @@
 					<span>Purchased tracks</span>
 				</div>
 				{#if $beatportStore.purchases.length > 0}
-					<span class="rounded bg-surface-2 border border-stroke px-1.5 py-0.2 text-[10px] font-mono text-emerald-400">
+					<span class="py-0.2 rounded border border-stroke bg-surface-2 px-1.5 font-mono text-[10px] text-emerald-400">
 						{$beatportStore.purchases.length}
 					</span>
 				{/if}
@@ -56,8 +64,9 @@
 
 			<button
 				type="button"
-				class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 font-medium transition-colors {$beatportStore.navSection === 'offline'
-					? 'bg-emerald-500/20 text-emerald-400 font-semibold'
+				class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 font-medium transition-colors {$beatportStore.navSection ===
+				'offline'
+					? 'bg-emerald-500/20 font-semibold text-emerald-400'
 					: 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'}"
 				onclick={() => handleNav('offline')}
 			>
@@ -69,8 +78,9 @@
 
 			<button
 				type="button"
-				class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 font-medium transition-colors {$beatportStore.navSection === 'favorites'
-					? 'bg-emerald-500/20 text-emerald-400 font-semibold'
+				class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 font-medium transition-colors {$beatportStore.navSection ===
+				'favorites'
+					? 'bg-emerald-500/20 font-semibold text-emerald-400'
 					: 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'}"
 				onclick={() => handleNav('favorites')}
 			>
@@ -78,7 +88,7 @@
 					<Icon name="heart" class="h-3.5 w-3.5 text-red-400" />
 					<span>Favorites</span>
 				</div>
-				<span class="rounded bg-surface-2 border border-stroke px-1.5 py-0.2 text-[10px] font-mono text-emerald-400">
+				<span class="py-0.2 rounded border border-stroke bg-surface-2 px-1.5 font-mono text-[10px] text-emerald-400">
 					{$beatportStore.favorites.length}
 				</span>
 			</button>
@@ -86,7 +96,9 @@
 
 		<!-- Playlists Header -->
 		<div class="pt-2">
-			<div class="flex items-center justify-between px-2.5 pb-1 text-[11px] font-bold tracking-wider text-text-tertiary uppercase">
+			<div
+				class="flex items-center justify-between px-2.5 pb-1 text-[11px] font-bold tracking-wider text-text-tertiary uppercase"
+			>
 				<span>Playlists</span>
 				<div class="flex items-center gap-1">
 					<button
@@ -106,7 +118,7 @@
 						type="text"
 						placeholder="Nouvelle playlist..."
 						bind:value={newPlaylistName}
-						class="w-full rounded bg-surface-2 border border-stroke px-2 py-1 text-xs text-text-primary focus:border-emerald-500 focus:outline-none"
+						class="w-full rounded border border-stroke bg-surface-2 px-2 py-1 text-xs text-text-primary focus:border-emerald-500 focus:outline-none"
 						onkeydown={(e) => e.key === 'Enter' && handleCreatePlaylist()}
 					/>
 				</div>
@@ -126,13 +138,16 @@
 					{#each $beatportStore.userPlaylists as pl (pl.id)}
 						<button
 							type="button"
-							class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 transition-colors {$beatportStore.selectedPlaylistId === String(pl.id)
-								? 'bg-emerald-500/20 text-emerald-400 font-semibold'
+							class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 transition-colors {$beatportStore.selectedPlaylistId ===
+							String(pl.id)
+								? 'bg-emerald-500/20 font-semibold text-emerald-400'
 								: 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'}"
 							onclick={() => handleNav('playlist', String(pl.id), pl.name)}
 						>
 							<span class="truncate">{pl.name}</span>
-							<span class="rounded bg-surface-2 border border-stroke px-1.5 py-0.2 text-[10px] font-mono text-emerald-400">
+							<span
+								class="py-0.2 rounded border border-stroke bg-surface-2 px-1.5 font-mono text-[10px] text-emerald-400"
+							>
 								{pl.track_count}
 							</span>
 						</button>
@@ -144,22 +159,22 @@
 
 	<!-- Bottom Status Line -->
 	{#if $beatportStore.auth.is_authenticated}
-		<div class="flex items-center justify-between border-t border-stroke/60 pt-2.5 pb-1 px-1">
+		<div class="flex items-center justify-between border-t border-stroke/60 px-1 pt-2.5 pb-1">
 			<div
 				class="h-3.5 w-16 bg-text-secondary"
 				style="-webkit-mask-image: url('/beatport-full-logo.png'); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center left; mask-image: url('/beatport-full-logo.png'); mask-size: contain; mask-repeat: no-repeat; mask-position: center left;"
 				title="Beatport Streaming"
 			></div>
-			<div class="flex items-center gap-1.5 text-emerald-500 text-[11px] font-medium">
+			<div class="flex items-center gap-1.5 text-[11px] font-medium text-emerald-500">
 				<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
 				<span>Connecté</span>
 			</div>
 		</div>
 	{:else}
-		<div class="border-t border-stroke/60 pt-2.5 px-1">
+		<div class="border-t border-stroke/60 px-1 pt-2.5">
 			<button
 				type="button"
-				class="flex w-full items-center justify-center gap-2 rounded-lg bg-surface-2 hover:bg-surface-3 border border-stroke py-1.5 text-xs font-semibold text-text-primary transition-all cursor-pointer"
+				class="hover:bg-surface-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-stroke bg-surface-2 py-1.5 text-xs font-semibold text-text-primary transition-all"
 				onclick={() => beatportStore.openLoginModal()}
 			>
 				<div

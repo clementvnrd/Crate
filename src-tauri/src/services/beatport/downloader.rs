@@ -1,9 +1,9 @@
+use crate::services::beatport::client::BeatportTrack;
+use crate::services::library::LibraryService;
 use serde::{Deserialize, Serialize};
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::io::Read;
-use crate::services::library::LibraryService;
-use crate::services::beatport::client::BeatportTrack;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BeatportDownloadResult {
@@ -72,7 +72,10 @@ impl BeatportDownloader {
             format!("{}/.local/bin/beatportdl", home),
             "/usr/local/bin/beatportdl".to_string(),
             "/opt/homebrew/bin/beatportdl".to_string(),
-            format!("{}/.gemini/antigravity-ide/scratch/beatportdl/beatportdl", home),
+            format!(
+                "{}/.gemini/antigravity-ide/scratch/beatportdl/beatportdl",
+                home
+            ),
             "beatportdl".to_string(),
             "beatport-dl".to_string(),
         ];
@@ -113,7 +116,8 @@ impl BeatportDownloader {
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;
-                let _ = std::fs::set_permissions(&config_file, std::fs::Permissions::from_mode(0o600));
+                let _ =
+                    std::fs::set_permissions(&config_file, std::fs::Permissions::from_mode(0o600));
             }
         }
         Some(config_dir)
@@ -129,7 +133,10 @@ impl BeatportDownloader {
                     results.extend(Self::scan_audio_files(&path));
                 } else if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                     let ext_lower = ext.to_lowercase();
-                    if matches!(ext_lower.as_str(), "flac" | "mp3" | "wav" | "aif" | "aiff" | "m4a" | "aac" | "ogg") {
+                    if matches!(
+                        ext_lower.as_str(),
+                        "flac" | "mp3" | "wav" | "aif" | "aiff" | "m4a" | "aac" | "ogg"
+                    ) {
                         results.push(path);
                     }
                 }
@@ -139,6 +146,7 @@ impl BeatportDownloader {
     }
 
     /// Validates FLAC file integrity
+    #[cfg(test)]
     pub fn validate_flac_file(path: &Path) -> bool {
         validate_flac_file(path)
     }
@@ -154,24 +162,38 @@ impl BeatportDownloader {
         custom_dl_path: Option<&str>,
     ) -> Result<StagedDownload, String> {
         let expanded_dest = Self::expand_path(destination_dir);
-        std::fs::create_dir_all(&expanded_dest)
-            .map_err(|e| format!("Failed to create destination folder '{:?}': {e}", expanded_dest))?;
+        std::fs::create_dir_all(&expanded_dest).map_err(|e| {
+            format!(
+                "Failed to create destination folder '{:?}': {e}",
+                expanded_dest
+            )
+        })?;
 
         let staging_dir = expanded_dest.join(format!("{STAGING_PREFIX}{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&staging_dir)
             .map_err(|e| format!("Failed to create staging folder '{:?}': {e}", staging_dir))?;
 
-        let mut staged = StagedDownload { staging_dir: staging_dir.clone(), valid_files: Vec::new(), errors: Vec::new() };
+        let mut staged = StagedDownload {
+            staging_dir: staging_dir.clone(),
+            valid_files: Vec::new(),
+            errors: Vec::new(),
+        };
 
         let Some(bin) = Self::find_beatportdl_binary(custom_dl_path) else {
-            staged.errors.push("beatportdl binary not found on system".to_string());
+            staged
+                .errors
+                .push("beatportdl binary not found on system".to_string());
             return Ok(staged);
         };
         let config_dir = Self::prepare_beatportdl_config(&staging_dir);
 
         let urls: Vec<String> = tracks
             .iter()
-            .map(|t| t.beatport_url.clone().unwrap_or_else(|| format!("https://www.beatport.com/track/_/{}", t.id)))
+            .map(|t| {
+                t.beatport_url
+                    .clone()
+                    .unwrap_or_else(|| format!("https://www.beatport.com/track/_/{}", t.id))
+            })
             .collect();
         if urls.is_empty() {
             return Ok(staged);
@@ -183,7 +205,10 @@ impl BeatportDownloader {
             if let Some(cwd) = config_dir {
                 cmd.current_dir(cwd);
             }
-            cmd.args(&urls).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
+            cmd.args(&urls)
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped());
             cmd.output()
         })
         .await
@@ -231,7 +256,10 @@ impl BeatportDownloader {
         for file in &staged.valid_files {
             match move_into_destination(file, &expanded_dest) {
                 Ok(final_path) => downloaded_files.push(final_path.to_string_lossy().to_string()),
-                Err(e) => errors.push(format!("Could not move '{:?}' into the destination folder: {e}", file.file_name().unwrap_or_default())),
+                Err(e) => errors.push(format!(
+                    "Could not move '{:?}' into the destination folder: {e}",
+                    file.file_name().unwrap_or_default()
+                )),
             }
         }
         discard_staging(&staged.staging_dir);
@@ -239,7 +267,9 @@ impl BeatportDownloader {
         let success_count = downloaded_files.len();
         let failed_count = tracks.len().saturating_sub(success_count);
         if failed_count > 0 && errors.is_empty() {
-            errors.push(format!("Failed to download {failed_count} track(s) in lossless FLAC quality"));
+            errors.push(format!(
+                "Failed to download {failed_count} track(s) in lossless FLAC quality"
+            ));
         }
 
         if let Some(lib) = library {
@@ -251,7 +281,12 @@ impl BeatportDownloader {
             }
         }
 
-        Ok(BeatportDownloadResult { success_count, failed_count, downloaded_files, errors })
+        Ok(BeatportDownloadResult {
+            success_count,
+            failed_count,
+            downloaded_files,
+            errors,
+        })
     }
 }
 
@@ -268,11 +303,14 @@ pub struct StagedDownload {
 
 /// Moves a staged file into `dest_dir` without ever overwriting: `name (1).flac`, `name (2).flac`…
 pub fn move_into_destination(staged: &Path, dest_dir: &Path) -> std::io::Result<PathBuf> {
-    let file_name = staged
-        .file_name()
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "staged file has no name"))?;
+    let file_name = staged.file_name().ok_or_else(|| {
+        std::io::Error::new(std::io::ErrorKind::InvalidInput, "staged file has no name")
+    })?;
     let mut target = dest_dir.join(file_name);
-    let stem = staged.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+    let stem = staged
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_default();
     let ext = staged.extension().map(|e| e.to_string_lossy().to_string());
     let mut n = 1;
     while target.exists() {
@@ -299,7 +337,10 @@ pub fn discard_staging(staging_dir: &Path) {
     if is_ours {
         let _ = std::fs::remove_dir_all(staging_dir);
     } else {
-        log::error!("Refusing to delete {:?}: not a Crate staging folder", staging_dir);
+        log::error!(
+            "Refusing to delete {:?}: not a Crate staging folder",
+            staging_dir
+        );
     }
 }
 
@@ -314,20 +355,33 @@ pub fn verify_flac_decodes(path: &Path, expected_ms: Option<i64>) -> bool {
     use symphonia::core::meta::MetadataOptions;
     use symphonia::core::probe::Hint;
 
-    let Ok(file) = std::fs::File::open(path) else { return false };
+    let Ok(file) = std::fs::File::open(path) else {
+        return false;
+    };
     let mss = MediaSourceStream::new(Box::new(file), Default::default());
     let mut hint = Hint::new();
     hint.with_extension("flac");
-    let Ok(probed) = symphonia::default::get_probe().format(&hint, mss, &FormatOptions::default(), &MetadataOptions::default()) else {
+    let Ok(probed) = symphonia::default::get_probe().format(
+        &hint,
+        mss,
+        &FormatOptions::default(),
+        &MetadataOptions::default(),
+    ) else {
         return false;
     };
     let mut format = probed.format;
-    let Some(track) = format.default_track() else { return false };
+    let Some(track) = format.default_track() else {
+        return false;
+    };
     let track_id = track.id;
-    let Some(sample_rate) = track.codec_params.sample_rate else { return false };
+    let Some(sample_rate) = track.codec_params.sample_rate else {
+        return false;
+    };
     // Total sample count announced by STREAMINFO: a truncated file decodes fewer samples.
     let announced_frames = track.codec_params.n_frames.filter(|n| *n > 0);
-    let Ok(mut decoder) = symphonia::default::get_codecs().make(&track.codec_params, &DecoderOptions { verify: true }) else {
+    let Ok(mut decoder) = symphonia::default::get_codecs()
+        .make(&track.codec_params, &DecoderOptions { verify: true })
+    else {
         return false;
     };
 
@@ -339,7 +393,9 @@ pub fn verify_flac_decodes(path: &Path, expected_ms: Option<i64>) -> bool {
                 Err(_) => return false,
             },
             Ok(_) => {}
-            Err(SymphoniaError::IoError(e)) if e.kind() == std::io::ErrorKind::UnexpectedEof => break,
+            Err(SymphoniaError::IoError(e)) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
+                break
+            }
             Err(_) => return false,
         }
     }
@@ -406,7 +462,10 @@ mod tests {
         std::fs::write(&path, SILENCE_FLAC).unwrap();
         assert!(verify_flac_decodes(&path, None));
         assert!(verify_flac_decodes(&path, Some(1_000)));
-        assert!(!verify_flac_decodes(&path, Some(240_000)), "a 1 s file is not a 4 min track");
+        assert!(
+            !verify_flac_decodes(&path, Some(240_000)),
+            "a 1 s file is not a 4 min track"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -454,7 +513,10 @@ mod tests {
         discard_staging(&user_folder);
         discard_staging(&staging);
 
-        assert!(user_folder.join("cover.jpg").exists(), "a user folder is never deleted");
+        assert!(
+            user_folder.join("cover.jpg").exists(),
+            "a user folder is never deleted"
+        );
         assert!(!staging.exists());
         let _ = std::fs::remove_dir_all(&dir);
     }

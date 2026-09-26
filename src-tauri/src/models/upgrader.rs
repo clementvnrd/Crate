@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::services::beatport::client::BeatportTrack;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpgradeScoreBreakdown {

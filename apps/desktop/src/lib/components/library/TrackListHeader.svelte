@@ -45,13 +45,9 @@
 		{ key: 'file_path', field: 'file_path', labelKey: 'library.columns.filePath', width: 'minmax(140px, 1.5fr)' },
 	]
 
-	const activeColumns = $derived(
-		allColumns.filter((col) => $displaySettingsStore.columns[col.key] ?? false)
-	)
+	const activeColumns = $derived(allColumns.filter((col) => $displaySettingsStore.columns[col.key] ?? false))
 
-	const gridTemplateColumns = $derived(
-		activeColumns.map((col) => col.width).join(' ')
-	)
+	const gridTemplateColumns = $derived(activeColumns.map((col) => col.width).join(' '))
 
 	function handleSort(field: ExtendedTrackSortField) {
 		if (field !== 'tags') {
@@ -69,7 +65,7 @@
 		{#if column.field}
 			<button
 				type="button"
-				class="w-full text-left transition-colors hover:text-text-secondary truncate"
+				class="w-full truncate text-left transition-colors hover:text-text-secondary"
 				onclick={() => column.field && handleSort(column.field)}
 			>
 				{column.labelKey ? $translate(column.labelKey) : ''}

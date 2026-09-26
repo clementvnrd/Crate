@@ -100,24 +100,20 @@
 <div class="rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
 	<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 		<div class="flex items-center gap-2">
-			<div class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></div>
-			<h3 class="text-xs font-bold uppercase tracking-wider text-text-secondary">
-				Répartition Multi-Sources
-			</h3>
+			<div class="h-2 w-2 animate-pulse rounded-full bg-emerald-400"></div>
+			<h3 class="text-xs font-bold tracking-wider text-text-secondary uppercase">Répartition Multi-Sources</h3>
 		</div>
-		<span class="text-xs font-mono text-text-tertiary">
+		<span class="font-mono text-xs text-text-tertiary">
 			{totalMinutes > 0 ? `${totalMinutes.toLocaleString()} min d'écoute totale` : 'Aucune écoute'}
 		</span>
 	</div>
 
 	<!-- Stacked Proportional Horizontal Bar -->
 	{#if sourceBreakdown.length > 0}
-		<div
-			class="relative flex h-3.5 w-full overflow-hidden rounded-full bg-surface-3 p-0.5 shadow-inner"
-		>
+		<div class="bg-surface-3 relative flex h-3.5 w-full overflow-hidden rounded-full p-0.5 shadow-inner">
 			{#each sourceBreakdown as item (item.id)}
 				<div
-					class="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full {item.bgClass} hover:opacity-90 cursor-pointer"
+					class="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full {item.bgClass} cursor-pointer hover:opacity-90"
 					style="width: {item.percentage}%"
 					title="{item.label} : {item.minutes.toLocaleString()} min ({item.percentage}%)"
 				></div>
@@ -128,15 +124,12 @@
 		<div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
 			{#each sourceBreakdown as item (item.id)}
 				<div class="flex items-center gap-2 text-xs">
-					<span
-						class="h-2.5 w-2.5 rounded-full shadow-sm"
-						style="background-color: {item.color}"
-					></span>
+					<span class="h-2.5 w-2.5 rounded-full shadow-sm" style="background-color: {item.color}"></span>
 					<span class="font-medium text-text-primary">{item.label}</span>
 					<span class="font-mono text-[11px] text-text-tertiary">
 						{item.percentage}%
 					</span>
-					<span class="text-[10px] text-text-tertiary/70 font-mono">
+					<span class="font-mono text-[10px] text-text-tertiary/70">
 						({item.minutes >= 60 ? `${Math.floor(item.minutes / 60)}h ${item.minutes % 60}m` : `${item.minutes}m`})
 					</span>
 				</div>

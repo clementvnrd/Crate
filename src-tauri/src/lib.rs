@@ -75,13 +75,25 @@ pub(crate) struct StartupFile {
 
 impl StartupFile {
     pub fn new() -> Self {
-        Self { queue: std::sync::Mutex::new(Vec::new()), frontend_ready: std::sync::atomic::AtomicBool::new(false) }
+        Self {
+            queue: std::sync::Mutex::new(Vec::new()),
+            frontend_ready: std::sync::atomic::AtomicBool::new(false),
+        }
     }
 
     /// Queues the file if the frontend is not ready yet; returns true when it should be emitted.
+    #[cfg_attr(
+        not(any(target_os = "macos", target_os = "ios", target_os = "android")),
+        allow(dead_code)
+    )]
     pub fn offer(&self, path: String) -> bool {
-        let Ok(mut queue) = self.queue.lock() else { return true };
-        if self.frontend_ready.load(std::sync::atomic::Ordering::SeqCst) {
+        let Ok(mut queue) = self.queue.lock() else {
+            return true;
+        };
+        if self
+            .frontend_ready
+            .load(std::sync::atomic::Ordering::SeqCst)
+        {
             return true;
         }
         queue.push(path);
@@ -90,23 +102,26 @@ impl StartupFile {
 
     /// Called once by the frontend after it listens to `open-file`: returns the queued files.
     pub fn drain(&self) -> Vec<String> {
-        let Ok(mut queue) = self.queue.lock() else { return Vec::new() };
-        self.frontend_ready.store(true, std::sync::atomic::Ordering::SeqCst);
+        let Ok(mut queue) = self.queue.lock() else {
+            return Vec::new();
+        };
+        self.frontend_ready
+            .store(true, std::sync::atomic::Ordering::SeqCst);
         std::mem::take(&mut *queue)
     }
 }
 
 use services::{
     discovery::n_transform::NsigSolverState, BackupService, DiscoveryService, FollowService,
-    MikTrackerService, PlayerTrackerService, PlaylistService, RekordboxTrackerService, SettingsService,
-    SpotifyTrackerService, StatsRecorderService, TagService,
+    MikTrackerService, PlayerTrackerService, PlaylistService, RekordboxTrackerService,
+    SettingsService, SpotifyTrackerService, StatsRecorderService, TagService,
 };
 // Desktop-only services and their backing crates are excluded from the mobile build.
 #[cfg(feature = "desktop")]
 use services::{
-    export::CheckpointService, AlbumService, AnalysisService, AudioService, BeatportUpgraderService,
-    DeviceService, DiagnosticsService, DuplicateService, ExportService, LibraryService,
-    MediaControlsService, StandaloneService, SyncService,
+    export::CheckpointService, AlbumService, AnalysisService, AudioService,
+    BeatportUpgraderService, DeviceService, DiagnosticsService, DuplicateService, ExportService,
+    LibraryService, MediaControlsService, StandaloneService, SyncService,
 };
 use tauri::Manager;
 
@@ -859,12 +874,10 @@ pub fn run() {
                         if let Some(mik_path) = crate::services::library::MikDatabaseService::find_mik_db_path() {
                             if let Some(current_mtime) = get_latest_mik_mtime(&mik_path) {
                                 let is_newer = last_synced_mtime != Some(current_mtime);
-                                if is_newer {
-                                    if detected_mtime != Some(current_mtime) {
-                                        detected_mtime = Some(current_mtime);
-                                        last_activity_time = tokio::time::Instant::now();
-                                        pending_change = true;
-                                    }
+                                if is_newer && detected_mtime != Some(current_mtime) {
+                                    detected_mtime = Some(current_mtime);
+                                    last_activity_time = tokio::time::Instant::now();
+                                    pending_change = true;
                                 }
                             }
 
@@ -1001,6 +1014,8 @@ pub fn run() {
         });
 
     app.run(move |app_handle, event| match event {
+        // "Open With" / Dock drops: Tauri only has this event on macOS, iOS and Android.
+        #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
         tauri::RunEvent::Opened { urls } => {
             use tauri::Emitter;
             for url in urls {
@@ -1018,6 +1033,8 @@ pub fn run() {
                 }
             }
         }
-        _ => {}
+        _ => {
+            let _ = app_handle;
+        }
     });
 }

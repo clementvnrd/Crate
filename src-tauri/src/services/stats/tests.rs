@@ -1,9 +1,9 @@
-use std::sync::{Arc, Mutex};
-use rusqlite::Connection;
 use chrono::{Duration, Utc};
+use rusqlite::Connection;
+use std::sync::{Arc, Mutex};
 
 use crate::db::schema::get_migrations;
-use crate::models::stats::{ListenEvent, ListenSource};
+use crate::models::stats::ListenEvent;
 use crate::services::stats::{
     RekordboxTrackerService, SpotifyTrackerService, StatsRecorderService,
 };
@@ -100,7 +100,10 @@ fn test_record_listen_event_validation_and_thresholds() {
         session_id: None,
         metadata_json: None,
     };
-    assert_eq!(recorder.record_listen_event(&sub_second_event).unwrap(), false);
+    assert_eq!(
+        recorder.record_listen_event(&sub_second_event).unwrap(),
+        false
+    );
     assert_eq!(recorder.get_recent_listens(10).unwrap().len(), 0);
 
     // 3. Valid event >= 1s (e.g. 12 seconds) is accepted and recorded
@@ -192,7 +195,10 @@ fn test_anti_duplicate_deduplication() {
         session_id: None,
         metadata_json: None,
     };
-    assert_eq!(recorder.record_listen_event(&duplicate_event).unwrap(), false);
+    assert_eq!(
+        recorder.record_listen_event(&duplicate_event).unwrap(),
+        false
+    );
     assert_eq!(recorder.get_recent_listens(10).unwrap().len(), 1);
 
     // Same track but played 30 minutes later -> valid!
@@ -224,64 +230,70 @@ fn test_stats_summary_and_source_breakdown() {
     let now = Utc::now();
 
     // Event 1: Spotify, 120s (2 mins)
-    recorder.record_listen_event(&ListenEvent {
-        id: "s1".to_string(),
-        source: "spotify".to_string(),
-        track_id: None,
-        title: "Track A".to_string(),
-        artist: "Artist 1".to_string(),
-        album: None,
-        duration_ms: 120000,
-        played_ms: 120000,
-        bpm: Some(124.0),
-        key: Some("8A".to_string()),
-        energy: None,
-        format: None,
-        artwork_url: None,
-        played_at: now.to_rfc3339(),
-        session_id: None,
-        metadata_json: None,
-    }).unwrap();
+    recorder
+        .record_listen_event(&ListenEvent {
+            id: "s1".to_string(),
+            source: "spotify".to_string(),
+            track_id: None,
+            title: "Track A".to_string(),
+            artist: "Artist 1".to_string(),
+            album: None,
+            duration_ms: 120000,
+            played_ms: 120000,
+            bpm: Some(124.0),
+            key: Some("8A".to_string()),
+            energy: None,
+            format: None,
+            artwork_url: None,
+            played_at: now.to_rfc3339(),
+            session_id: None,
+            metadata_json: None,
+        })
+        .unwrap();
 
     // Event 2: Crate Local, 180s (3 mins)
-    recorder.record_listen_event(&ListenEvent {
-        id: "l1".to_string(),
-        source: "crate_local".to_string(),
-        track_id: None,
-        title: "Track B".to_string(),
-        artist: "Artist 2".to_string(),
-        album: None,
-        duration_ms: 180000,
-        played_ms: 180000,
-        bpm: Some(128.0),
-        key: Some("11B".to_string()),
-        energy: None,
-        format: None,
-        artwork_url: None,
-        played_at: (now + Duration::minutes(10)).to_rfc3339(),
-        session_id: None,
-        metadata_json: None,
-    }).unwrap();
+    recorder
+        .record_listen_event(&ListenEvent {
+            id: "l1".to_string(),
+            source: "crate_local".to_string(),
+            track_id: None,
+            title: "Track B".to_string(),
+            artist: "Artist 2".to_string(),
+            album: None,
+            duration_ms: 180000,
+            played_ms: 180000,
+            bpm: Some(128.0),
+            key: Some("11B".to_string()),
+            energy: None,
+            format: None,
+            artwork_url: None,
+            played_at: (now + Duration::minutes(10)).to_rfc3339(),
+            session_id: None,
+            metadata_json: None,
+        })
+        .unwrap();
 
     // Event 3: Rekordbox, 300s (5 mins)
-    recorder.record_listen_event(&ListenEvent {
-        id: "r1".to_string(),
-        source: "rekordbox".to_string(),
-        track_id: None,
-        title: "Track C".to_string(),
-        artist: "Artist 1".to_string(),
-        album: None,
-        duration_ms: 300000,
-        played_ms: 300000,
-        bpm: Some(130.0),
-        key: Some("8A".to_string()),
-        energy: None,
-        format: None,
-        artwork_url: None,
-        played_at: (now + Duration::minutes(20)).to_rfc3339(),
-        session_id: None,
-        metadata_json: None,
-    }).unwrap();
+    recorder
+        .record_listen_event(&ListenEvent {
+            id: "r1".to_string(),
+            source: "rekordbox".to_string(),
+            track_id: None,
+            title: "Track C".to_string(),
+            artist: "Artist 1".to_string(),
+            album: None,
+            duration_ms: 300000,
+            played_ms: 300000,
+            bpm: Some(130.0),
+            key: Some("8A".to_string()),
+            energy: None,
+            format: None,
+            artwork_url: None,
+            played_at: (now + Duration::minutes(20)).to_rfc3339(),
+            session_id: None,
+            metadata_json: None,
+        })
+        .unwrap();
 
     let summary = recorder.get_stats_summary("all").unwrap();
     assert_eq!(summary.total_plays, 3);
@@ -298,63 +310,69 @@ fn test_top_tracks_and_top_artists() {
     let now = Utc::now();
 
     // Artist 1 - Track A played twice (1x spotify, 1x crate_local)
-    recorder.record_listen_event(&ListenEvent {
-        id: "t1".to_string(),
-        source: "spotify".to_string(),
-        track_id: None,
-        title: "Song Alpha".to_string(),
-        artist: "Super Artist".to_string(),
-        album: Some("Greatest Hits".to_string()),
-        duration_ms: 240000,
-        played_ms: 240000,
-        bpm: Some(125.0),
-        key: Some("5A".to_string()),
-        energy: Some(8),
-        format: None,
-        artwork_url: Some("/art/alpha.jpg".to_string()),
-        played_at: now.to_rfc3339(),
-        session_id: None,
-        metadata_json: None,
-    }).unwrap();
+    recorder
+        .record_listen_event(&ListenEvent {
+            id: "t1".to_string(),
+            source: "spotify".to_string(),
+            track_id: None,
+            title: "Song Alpha".to_string(),
+            artist: "Super Artist".to_string(),
+            album: Some("Greatest Hits".to_string()),
+            duration_ms: 240000,
+            played_ms: 240000,
+            bpm: Some(125.0),
+            key: Some("5A".to_string()),
+            energy: Some(8),
+            format: None,
+            artwork_url: Some("/art/alpha.jpg".to_string()),
+            played_at: now.to_rfc3339(),
+            session_id: None,
+            metadata_json: None,
+        })
+        .unwrap();
 
-    recorder.record_listen_event(&ListenEvent {
-        id: "t2".to_string(),
-        source: "crate_local".to_string(),
-        track_id: None,
-        title: "Song Alpha".to_string(),
-        artist: "Super Artist".to_string(),
-        album: Some("Greatest Hits".to_string()),
-        duration_ms: 240000,
-        played_ms: 240000,
-        bpm: Some(125.0),
-        key: Some("5A".to_string()),
-        energy: Some(8),
-        format: None,
-        artwork_url: Some("/art/alpha.jpg".to_string()),
-        played_at: (now + Duration::hours(1)).to_rfc3339(),
-        session_id: None,
-        metadata_json: None,
-    }).unwrap();
+    recorder
+        .record_listen_event(&ListenEvent {
+            id: "t2".to_string(),
+            source: "crate_local".to_string(),
+            track_id: None,
+            title: "Song Alpha".to_string(),
+            artist: "Super Artist".to_string(),
+            album: Some("Greatest Hits".to_string()),
+            duration_ms: 240000,
+            played_ms: 240000,
+            bpm: Some(125.0),
+            key: Some("5A".to_string()),
+            energy: Some(8),
+            format: None,
+            artwork_url: Some("/art/alpha.jpg".to_string()),
+            played_at: (now + Duration::hours(1)).to_rfc3339(),
+            session_id: None,
+            metadata_json: None,
+        })
+        .unwrap();
 
     // Artist 2 - Track B played once
-    recorder.record_listen_event(&ListenEvent {
-        id: "t3".to_string(),
-        source: "crate_beatport".to_string(),
-        track_id: None,
-        title: "Song Beta".to_string(),
-        artist: "Other Artist".to_string(),
-        album: None,
-        duration_ms: 180000,
-        played_ms: 180000,
-        bpm: Some(128.0),
-        key: Some("9A".to_string()),
-        energy: Some(6),
-        format: None,
-        artwork_url: None,
-        played_at: (now + Duration::hours(2)).to_rfc3339(),
-        session_id: None,
-        metadata_json: None,
-    }).unwrap();
+    recorder
+        .record_listen_event(&ListenEvent {
+            id: "t3".to_string(),
+            source: "crate_beatport".to_string(),
+            track_id: None,
+            title: "Song Beta".to_string(),
+            artist: "Other Artist".to_string(),
+            album: None,
+            duration_ms: 180000,
+            played_ms: 180000,
+            bpm: Some(128.0),
+            key: Some("9A".to_string()),
+            energy: Some(6),
+            format: None,
+            artwork_url: None,
+            played_at: (now + Duration::hours(2)).to_rfc3339(),
+            session_id: None,
+            metadata_json: None,
+        })
+        .unwrap();
 
     // Top Tracks check
     let top_tracks = recorder.get_top_tracks("all", 10).unwrap();
@@ -388,24 +406,26 @@ fn test_harmonic_and_bpm_stats() {
     ];
 
     for (i, (title, artist, key, bpm, played_ms)) in tracks.iter().enumerate() {
-        recorder.record_listen_event(&ListenEvent {
-            id: format!("ev_{i}"),
-            source: "crate_local".to_string(),
-            track_id: None,
-            title: title.to_string(),
-            artist: artist.to_string(),
-            album: None,
-            duration_ms: *played_ms,
-            played_ms: *played_ms,
-            bpm: *bpm,
-            key: key.map(|k| k.to_string()),
-            energy: None,
-            format: None,
-            artwork_url: None,
-            played_at: (now + Duration::minutes(i as i64 * 10)).to_rfc3339(),
-            session_id: None,
-            metadata_json: None,
-        }).unwrap();
+        recorder
+            .record_listen_event(&ListenEvent {
+                id: format!("ev_{i}"),
+                source: "crate_local".to_string(),
+                track_id: None,
+                title: title.to_string(),
+                artist: artist.to_string(),
+                album: None,
+                duration_ms: *played_ms,
+                played_ms: *played_ms,
+                bpm: *bpm,
+                key: key.map(|k| k.to_string()),
+                energy: None,
+                format: None,
+                artwork_url: None,
+                played_at: (now + Duration::minutes(i as i64 * 10)).to_rfc3339(),
+                session_id: None,
+                metadata_json: None,
+            })
+            .unwrap();
     }
 
     // Harmonic stats
@@ -439,24 +459,26 @@ fn test_listening_heatmap() {
 
     // Insert listen event on a known date: 2026-09-01T14:30:00Z (Tuesday, Hour 14)
     // 2026-09-01 was a Tuesday (%w = 2)
-    recorder.record_listen_event(&ListenEvent {
-        id: "hm1".to_string(),
-        source: "spotify".to_string(),
-        track_id: None,
-        title: "Afternoon Groove".to_string(),
-        artist: "DJ Heat".to_string(),
-        album: None,
-        duration_ms: 300000,
-        played_ms: 300000,
-        bpm: Some(124.0),
-        key: None,
-        energy: None,
-        format: None,
-        artwork_url: None,
-        played_at: "2026-09-01T14:30:00Z".to_string(),
-        session_id: None,
-        metadata_json: None,
-    }).unwrap();
+    recorder
+        .record_listen_event(&ListenEvent {
+            id: "hm1".to_string(),
+            source: "spotify".to_string(),
+            track_id: None,
+            title: "Afternoon Groove".to_string(),
+            artist: "DJ Heat".to_string(),
+            album: None,
+            duration_ms: 300000,
+            played_ms: 300000,
+            bpm: Some(124.0),
+            key: None,
+            energy: None,
+            format: None,
+            artwork_url: None,
+            played_at: "2026-09-01T14:30:00Z".to_string(),
+            session_id: None,
+            metadata_json: None,
+        })
+        .unwrap();
 
     let heatmap = recorder.get_listening_heatmap("all").unwrap();
     assert_eq!(heatmap.len(), 7 * 24); // Complete 7x24 grid
@@ -520,7 +542,9 @@ fn test_spotify_archive_json_import_extended_history() {
         }
     ]"#;
 
-    let res = spotify_svc.import_streaming_history_json(endsong_json).unwrap();
+    let res = spotify_svc
+        .import_streaming_history_json(endsong_json)
+        .unwrap();
     assert_eq!(res.imported_count, 2);
     assert_eq!(res.skipped_count, 1); // 10s track skipped (<30s)
     assert_eq!(res.total_minutes, 6); // 210s/60 = 3 mins + 180s/60 = 3 mins = 6 mins
@@ -546,7 +570,9 @@ fn test_spotify_archive_json_import_simple_history() {
         }
     ]"#;
 
-    let res = spotify_svc.import_streaming_history_json(simple_json).unwrap();
+    let res = spotify_svc
+        .import_streaming_history_json(simple_json)
+        .unwrap();
     assert_eq!(res.imported_count, 2);
     assert_eq!(res.skipped_count, 0);
     assert_eq!(res.total_minutes, 11); // 6 + 5 = 11 mins
@@ -579,23 +605,6 @@ fn test_rekordbox_history_xml_import() {
     let sessions = rekordbox_svc.get_sessions().unwrap();
     assert_eq!(sessions.len(), 1);
     assert_eq!(sessions[0].total_tracks, 2);
-}
-
-#[test]
-fn test_listen_source_enum_conversion() {
-    assert_eq!(ListenSource::Spotify.as_str(), "spotify");
-    assert_eq!(ListenSource::CrateLocal.as_str(), "crate_local");
-    assert_eq!(ListenSource::CrateBeatport.as_str(), "crate_beatport");
-    assert_eq!(ListenSource::Rekordbox.as_str(), "rekordbox");
-    assert_eq!(ListenSource::MixedInKey.as_str(), "mixed_in_key");
-    assert_eq!(ListenSource::Other("custom".to_string()).as_str(), "custom");
-
-    assert_eq!(ListenSource::from_str("spotify"), ListenSource::Spotify);
-    assert_eq!(ListenSource::from_str("crate_local"), ListenSource::CrateLocal);
-    assert_eq!(ListenSource::from_str("crate_beatport"), ListenSource::CrateBeatport);
-    assert_eq!(ListenSource::from_str("rekordbox"), ListenSource::Rekordbox);
-    assert_eq!(ListenSource::from_str("mixed_in_key"), ListenSource::MixedInKey);
-    assert_eq!(ListenSource::from_str("custom"), ListenSource::Other("custom".to_string()));
 }
 
 #[test]
@@ -700,7 +709,9 @@ fn test_spotify_client_id_persistence() {
 
     assert_eq!(spotify_svc.get_client_id(), None);
 
-    spotify_svc.set_client_id("test-custom-client-id-12345").unwrap();
+    spotify_svc
+        .set_client_id("test-custom-client-id-12345")
+        .unwrap();
     assert_eq!(
         spotify_svc.get_client_id().as_deref(),
         Some("test-custom-client-id-12345")
@@ -720,7 +731,9 @@ fn test_spotify_client_secret_persistence() {
 
     assert_eq!(spotify_svc.get_client_secret(), None);
 
-    spotify_svc.set_client_secret("test-secret-abcdef123456").unwrap();
+    spotify_svc
+        .set_client_secret("test-secret-abcdef123456")
+        .unwrap();
     assert_eq!(
         spotify_svc.get_client_secret().as_deref(),
         Some("test-secret-abcdef123456")
@@ -737,7 +750,11 @@ fn test_spotify_pkce_generation_and_state_pairing() {
     let spotify_svc = SpotifyTrackerService::new(conn_arc, recorder);
 
     let (verifier, challenge) = SpotifyTrackerService::generate_pkce_pair();
-    assert_eq!(verifier.len(), 64, "Code verifier must be 64 characters long");
+    assert_eq!(
+        verifier.len(),
+        64,
+        "Code verifier must be 64 characters long"
+    );
     assert!(!challenge.is_empty(), "Challenge must not be empty");
 
     // Verify all chars in verifier belong to RFC 7636 unreserved set
@@ -764,7 +781,10 @@ fn test_spotify_pkce_state_multi_request_isolation() {
     let url_1 = spotify_svc.get_auth_url(None, None).unwrap();
     let url_2 = spotify_svc.get_auth_url(None, None).unwrap();
 
-    assert_ne!(url_1, url_2, "Two auth URLs must have distinct states and challenges");
+    assert_ne!(
+        url_1, url_2,
+        "Two auth URLs must have distinct states and challenges"
+    );
 
     // Extract state parameters
     let state_1 = url_1.split("state=").nth(1).unwrap().to_string();
@@ -784,7 +804,10 @@ fn test_spotify_pkce_state_multi_request_isolation() {
 #[test]
 fn test_spotify_default_redirect_uri() {
     use crate::services::stats::spotify::DEFAULT_SPOTIFY_REDIRECT_URI;
-    assert_eq!(DEFAULT_SPOTIFY_REDIRECT_URI, "http://127.0.0.1:8888/callback");
+    assert_eq!(
+        DEFAULT_SPOTIFY_REDIRECT_URI,
+        "http://127.0.0.1:8888/callback"
+    );
 }
 
 #[test]
@@ -792,7 +815,8 @@ fn test_split_artists_and_multi_artist_aggregation() {
     let (_conn_arc, recorder) = setup_test_db();
 
     // 1. Test unit splitting
-    let split_1 = StatsRecorderService::split_artists("Calvin Harris, Rihanna", "This Is What You Came For");
+    let split_1 =
+        StatsRecorderService::split_artists("Calvin Harris, Rihanna", "This Is What You Came For");
     assert_eq!(split_1, vec!["Calvin Harris", "Rihanna"]);
 
     let split_2 = StatsRecorderService::split_artists("T.I.", "Live Your Life (feat. Rihanna)");
@@ -847,10 +871,16 @@ fn test_split_artists_and_multi_artist_aggregation() {
     let top_artists = recorder.get_top_artists("all", 10).unwrap();
     // Rihanna must be in the top artists with 2 plays and (222000 + 330000)/60000 = 9 minutes
     let rihanna = top_artists.iter().find(|a| a.artist == "Rihanna");
-    assert!(rihanna.is_some(), "Rihanna must be aggregated from collaborations");
+    assert!(
+        rihanna.is_some(),
+        "Rihanna must be aggregated from collaborations"
+    );
     let r = rihanna.unwrap();
     assert_eq!(r.plays, 2, "Rihanna must have 2 accumulated streams");
-    assert_eq!(r.total_minutes, 9, "Rihanna must have 9 accumulated minutes");
+    assert_eq!(
+        r.total_minutes, 9,
+        "Rihanna must have 9 accumulated minutes"
+    );
 
     // Calvin Harris must have 1 play and 3 minutes
     let calvin = top_artists.iter().find(|a| a.artist == "Calvin Harris");
@@ -864,7 +894,6 @@ fn test_split_artists_and_multi_artist_aggregation() {
     assert_eq!(ti.unwrap().plays, 1);
     assert_eq!(ti.unwrap().total_minutes, 5);
 }
-
 
 fn listen(id: &str, title: &str, played_at: String) -> ListenEvent {
     ListenEvent {
@@ -890,7 +919,9 @@ fn listen(id: &str, title: &str, played_at: String) -> ListenEvent {
 #[test]
 fn test_heatmap_tolerates_an_unparseable_timestamp() {
     let (conn_arc, recorder) = setup_test_db();
-    recorder.record_listen_event(&listen("ok", "Valid", Utc::now().to_rfc3339())).unwrap();
+    recorder
+        .record_listen_event(&listen("ok", "Valid", Utc::now().to_rfc3339()))
+        .unwrap();
     conn_arc
         .lock()
         .unwrap()
@@ -908,10 +939,18 @@ fn test_heatmap_tolerates_an_unparseable_timestamp() {
 fn test_seven_day_filter_handles_offsets() {
     let (_, recorder) = setup_test_db();
     let offset = chrono::FixedOffset::east_opt(2 * 3600).unwrap();
-    let recent = (Utc::now() - Duration::days(3)).with_timezone(&offset).to_rfc3339();
-    let old = (Utc::now() - Duration::days(8)).with_timezone(&offset).to_rfc3339();
-    recorder.record_listen_event(&listen("r", "Recent", recent)).unwrap();
-    recorder.record_listen_event(&listen("o", "Old", old)).unwrap();
+    let recent = (Utc::now() - Duration::days(3))
+        .with_timezone(&offset)
+        .to_rfc3339();
+    let old = (Utc::now() - Duration::days(8))
+        .with_timezone(&offset)
+        .to_rfc3339();
+    recorder
+        .record_listen_event(&listen("r", "Recent", recent))
+        .unwrap();
+    recorder
+        .record_listen_event(&listen("o", "Old", old))
+        .unwrap();
     let top = recorder.get_top_tracks("7d", 10).unwrap();
     assert_eq!(top.len(), 1);
     assert_eq!(top[0].title, "Recent");

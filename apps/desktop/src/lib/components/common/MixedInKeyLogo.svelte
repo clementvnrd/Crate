@@ -10,16 +10,10 @@
 		animated?: boolean
 	}
 
-	let {
-		variant = 'full',
-		size = 'md',
-		class: className = '',
-		showPro = true,
-		animated = false,
-	}: Props = $props()
+	let { variant = 'full', size = 'md', class: className = '', showPro = true, animated = false }: Props = $props()
 
 	const sizeClasses: Record<Size, { icon: string; text: string; pro: string; gap: string }> = {
-		sm: { icon: 'w-4 h-4', text: 'text-[10px]', pro: 'text-[8px] px-1 py-0.2' , gap: 'gap-1.5' },
+		sm: { icon: 'w-4 h-4', text: 'text-[10px]', pro: 'text-[8px] px-1 py-0.2', gap: 'gap-1.5' },
 		md: { icon: 'w-5 h-5', text: 'text-xs', pro: 'text-[9px] px-1.5 py-0.5', gap: 'gap-2' },
 		lg: { icon: 'w-7 h-7', text: 'text-sm', pro: 'text-[10px] px-2 py-0.5', gap: 'gap-2.5' },
 	}
@@ -29,7 +23,9 @@
 	<!-- Mixed In Key Glowing Double-Ring Icon -->
 	<svg
 		viewBox="0 0 100 100"
-		class="{sizeClasses[size].icon} shrink-0 drop-shadow-[0_0_8px_rgba(0,195,255,0.6)] {animated ? 'animate-pulse' : ''}"
+		class="{sizeClasses[size].icon} shrink-0 drop-shadow-[0_0_8px_rgba(0,195,255,0.6)] {animated
+			? 'animate-pulse'
+			: ''}"
 		fill="none"
 		xmlns="http://www.w3.org/2000/svg"
 	>
@@ -60,17 +56,25 @@
 	{#if variant !== 'icon'}
 		<div class="flex items-center {sizeClasses[size].gap}">
 			<div class="flex flex-col leading-none">
-				<span class="font-extrabold tracking-wider text-text-primary {sizeClasses[size].text}" style="font-family: 'Jost', var(--font-family), sans-serif;">
+				<span
+					class="font-extrabold tracking-wider text-text-primary {sizeClasses[size].text}"
+					style="font-family: 'Jost', var(--font-family), sans-serif;"
+				>
 					MIXED
 				</span>
-				<span class="font-extrabold tracking-wider text-sky-500 dark:text-sky-400 {sizeClasses[size].text}" style="font-family: 'Jost', var(--font-family), sans-serif;">
+				<span
+					class="font-extrabold tracking-wider text-sky-500 dark:text-sky-400 {sizeClasses[size].text}"
+					style="font-family: 'Jost', var(--font-family), sans-serif;"
+				>
 					IN KEY
 				</span>
 			</div>
 
 			{#if showPro}
 				<span
-					class="rounded bg-gradient-to-r from-cyan-400 to-sky-500 font-black tracking-wider text-black shadow-[0_0_10px_rgba(56,189,248,0.4)] {sizeClasses[size].pro}"
+					class="rounded bg-gradient-to-r from-cyan-400 to-sky-500 font-black tracking-wider text-black shadow-[0_0_10px_rgba(56,189,248,0.4)] {sizeClasses[
+						size
+					].pro}"
 					style="font-family: 'Jost', var(--font-family), sans-serif;"
 				>
 					PRO
