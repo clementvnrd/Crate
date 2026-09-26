@@ -45,6 +45,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **[F14]** Le bouton de remplacement est désactivé tant que Beatport n'est pas connecté.
 - Tests : 12 nouveaux tests (décodage d'un vrai FLAC de test, fichiers factices et tronqués, déplacement sans écrasement, dossier utilisateur jamais supprimé, remplacement en place qui garde cues/tags/playlists, découpage d'artistes, scoring).
 
+#### Corrigé — Mixed In Key et bibliothèque
+
+- **[B1]** La synchronisation Mixed In Key ne se relance plus en rafale : le watcher ignore le fichier `-shm` (modifié par toute lecture, y compris celle de Crate) et compare date + taille de la base et du WAL. Chaque passage ne réécrit plus que les titres qui changent réellement (clause de comparaison dans l'`UPDATE`), dans une seule transaction, et la recherche de pochettes ne porte plus que sur les titres ajoutés ou modifiés. Vérifié sur une copie de la vraie bibliothèque : 276 titres réécrits à chaque passage avant, 0 au second passage maintenant (~250 ms).
+- **[B1]** Mixed In Key n'écrase plus le titre, l'artiste, l'album, le genre, le label ni l'année d'un titre existant : ces champs ne sont remplis que s'ils sont vides. BPM, tonalité et énergie restent pilotés par Mixed In Key.
+- **[B3]** Les cues Mixed In Key ont un identifiant stable (`mik-<titre>-<n>`) et sont mis à jour sur place au lieu d'être supprimés et recréés à chaque synchro ; les cues créés dans Crate ne sont plus effacés. Les anciennes copies (identifiants aléatoires) sont converties une fois : 2 033 cues convertis sans perte ni doublon sur la copie de test.
+- **[B4]** `get_track_cues` ne relit plus toute la base Mixed In Key à chaque lecture d'un titre sans cues : seuls les fichiers ouverts hors bibliothèque (lecteur autonome) y sont cherchés, et hors du verrou de la base Crate.
+- **[B6]** Résolution des signets macOS sans interface ni montage de volume (un disque débranché ne déclenche plus de tentative de montage), libération des `CFError` ; `create_bookmark` réservé aux tests.
+- **[B7]** L'empreinte (`file_hash`) est de nouveau enregistrée à l'import ; réimporter un fichier déjà présent ne plante plus (les cues sont rattachés au titre existant, qui garde son identifiant).
+- **[B8]** Parseur Serato Markers2 recalé sur le format réel (index, position, couleur, nom) : les cues importés depuis les tags n'étaient pas au bon endroit. La couleur des cues est désormais lue.
+- **[B9]** La colonne `energy` est incluse dans les sauvegardes et la synchronisation cloud (les anciennes sauvegardes restent lisibles).
+- Tests : 7 nouveaux tests (synchro idempotente, métadonnées utilisateur conservées, cues stables et cues utilisateur gardés, réimport, parseur Serato sur une entrée construite selon le format).
+
 #### Documentation
 
 - **[L6]** Le README annonce désormais les 15 langues réellement livrées (au lieu de 11) et décrit le fork, les tests et le suivi.

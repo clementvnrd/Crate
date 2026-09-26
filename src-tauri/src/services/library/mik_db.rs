@@ -292,6 +292,61 @@ impl MikDatabaseService {
         Ok(count)
     }
 
+    /// Mirrors the Mixed In Key cues of one track, touching only cues that came from Mixed In Key.
+    ///
+    /// MIK cues get a deterministic id (`mik-<track>-<n>`), so re-syncing updates them in place
+    /// instead of recreating them; cues created in Crate are left alone. Legacy copies of MIK cues
+    /// (random ids from earlier builds, same position) are replaced once. Returns true on change.
+    pub(crate) fn sync_mik_cues(crate_conn: &Connection, track_id: &str, mik_cues: &[MikDbCue]) -> Result<bool> {
+        let prefix = format!("mik-{track_id}-");
+        let mut changed = false;
+        let mut wanted_ids = Vec::with_capacity(mik_cues.len());
+
+        for (idx, mik_cue) in mik_cues.iter().enumerate() {
+            let cue_id = format!("{prefix}{idx}");
+            let pos_ms = (mik_cue.time_secs * 1000.0).max(0.0).round() as i64;
+            let hot_index = (idx as i32) + 1;
+            let name = mik_cue
+                .name
+                .clone()
+                .or_else(|| mik_cue.energy_level.map(|e| format!("Hot Cue {} (Energy {})", idx + 1, e)))
+                .or_else(|| Some(format!("Hot Cue {}", idx + 1)));
+
+            // Legacy copy of this MIK cue with a random id: same position, not ours.
+            changed |= crate_conn.execute(
+                "DELETE FROM cues WHERE track_id = ?1 AND id NOT LIKE ?2 AND ABS(position_ms - ?3) <= 2",
+                rusqlite::params![track_id, format!("{prefix}%"), pos_ms],
+            )? > 0;
+
+            let hlc = dirty::next_hlc(crate_conn)?;
+            changed |= crate_conn.execute(
+                r#"
+                INSERT INTO cues (id, track_id, position_ms, type, loop_end_ms, hot_cue_index, name, color, _hlc)
+                VALUES (?1, ?2, ?3, 'hot', NULL, ?4, ?5, NULL, ?6)
+                ON CONFLICT(id) DO UPDATE SET
+                    position_ms = excluded.position_ms, hot_cue_index = excluded.hot_cue_index,
+                    name = excluded.name, _hlc = excluded._hlc
+                WHERE position_ms IS NOT excluded.position_ms OR hot_cue_index IS NOT excluded.hot_cue_index
+                    OR name IS NOT excluded.name
+                "#,
+                rusqlite::params![cue_id, track_id, pos_ms, hot_index, name, hlc],
+            )? > 0;
+            wanted_ids.push(cue_id);
+        }
+
+        // MIK cues that no longer exist in Mixed In Key
+        let mut stmt = crate_conn.prepare("SELECT id FROM cues WHERE track_id = ?1 AND id LIKE ?2")?;
+        let existing: Vec<String> = stmt
+            .query_map(rusqlite::params![track_id, format!("{prefix}%")], |r| r.get(0))?
+            .flatten()
+            .collect();
+        for id in existing.iter().filter(|id| !wanted_ids.contains(id)) {
+            crate_conn.execute("DELETE FROM cues WHERE id = ?1", [id])?;
+            changed = true;
+        }
+        Ok(changed)
+    }
+
     /// Returns the Crate track matching this title and artist, only if exactly one track matches.
     fn unique_title_artist_match(
         crate_conn: &Connection,
@@ -329,6 +384,12 @@ impl MikDatabaseService {
     ) -> Result<MikSyncResult> {
         let mut result = MikSyncResult::default();
         result.total = mik_songs.len();
+
+        // One transaction for the whole pass: atomic, and far fewer disk syncs.
+        let tx = crate_conn.unchecked_transaction()?;
+        let crate_conn: &Connection = &tx;
+        let mut cues_changed = false;
+        let mut touched_ids: Vec<String> = Vec::new();
 
         let now = chrono::Utc::now().to_rfc3339();
         let mut valid_mik_paths = HashSet::new();
@@ -462,19 +523,21 @@ impl MikDatabaseService {
                 let normalized_bitrate = song.bitrate.map(|b| if b > 10000 { (b + 500) / 1000 } else { b });
                 let hlc = dirty::next_hlc(crate_conn)?;
 
-                // Update primary track with latest MIK metadata, artwork & ensure path is normalized NFC
-                crate_conn.execute(
+                // Enrich the existing track. Analysis data (BPM, key, energy) follows Mixed In Key;
+                // descriptive tags only fill empty fields, so edits made in Crate are never overwritten.
+                // The WHERE clause skips the write entirely when nothing would change.
+                let changed = crate_conn.execute(
                     r#"
                     UPDATE tracks
                     SET bpm = COALESCE(?1, bpm),
                         key = COALESCE(?2, key),
                         energy = COALESCE(?3, energy),
-                        title = COALESCE(?4, title),
-                        artist = COALESCE(?5, artist),
-                        album = COALESCE(?6, album),
-                        genre = COALESCE(?7, genre),
-                        label = COALESCE(?8, label),
-                        year = COALESCE(?9, year),
+                        title = COALESCE(title, ?4),
+                        artist = COALESCE(artist, ?5),
+                        album = COALESCE(album, ?6),
+                        genre = COALESCE(genre, ?7),
+                        label = COALESCE(label, ?8),
+                        year = COALESCE(year, ?9),
                         file_path = ?10,
                         artwork_path = COALESCE(?11, artwork_path),
                         artwork_source = COALESCE(?12, artwork_source),
@@ -482,7 +545,17 @@ impl MikDatabaseService {
                         analysis_source = CASE WHEN ?14 = 1 THEN 'mixed_in_key' ELSE analysis_source END,
                         date_modified = ?15,
                         _hlc = ?16
-                    WHERE id = ?17
+                    WHERE id = ?17 AND (
+                        bpm IS NOT COALESCE(?1, bpm) OR key IS NOT COALESCE(?2, key)
+                        OR energy IS NOT COALESCE(?3, energy)
+                        OR (title IS NULL AND ?4 IS NOT NULL) OR (artist IS NULL AND ?5 IS NOT NULL)
+                        OR (album IS NULL AND ?6 IS NOT NULL) OR (genre IS NULL AND ?7 IS NOT NULL)
+                        OR (label IS NULL AND ?8 IS NOT NULL) OR (year IS NULL AND ?9 IS NOT NULL)
+                        OR file_path IS NOT ?10
+                        OR artwork_path IS NOT COALESCE(?11, artwork_path)
+                        OR bitrate IS NOT COALESCE(?13, bitrate)
+                        OR (?14 = 1 AND analysis_source IS NOT 'mixed_in_key')
+                    )
                     "#,
                     rusqlite::params![
                         song.tempo,
@@ -505,38 +578,15 @@ impl MikDatabaseService {
                     ],
                 )?;
 
-                // Sync cue points for primary track
-                if !song.cues.is_empty() {
-                    crate_conn.execute("DELETE FROM cues WHERE track_id = ?1", [&primary_id])?;
+                let track_cues_changed = Self::sync_mik_cues(crate_conn, &primary_id, &song.cues)?;
+                cues_changed |= track_cues_changed;
 
-                    for (idx, mik_cue) in song.cues.iter().enumerate() {
-                        let cue_hlc = dirty::next_hlc(crate_conn)?;
-                        let pos_ms = (mik_cue.time_secs * 1000.0).max(0.0).round() as i64;
-                        let cue_id = uuid::Uuid::new_v4().to_string();
-                        let cue_name = mik_cue.name.clone().or_else(|| {
-                            mik_cue.energy_level.map(|e| format!("Hot Cue {} (Energy {})", idx + 1, e))
-                        }).or_else(|| Some(format!("Hot Cue {}", idx + 1)));
-
-                        crate_conn.execute(
-                            r#"
-                            INSERT INTO cues (id, track_id, position_ms, type, loop_end_ms, hot_cue_index, name, color, _hlc)
-                            VALUES (?1, ?2, ?3, 'hot', NULL, ?4, ?5, NULL, ?6)
-                            "#,
-                            rusqlite::params![
-                                cue_id,
-                                primary_id,
-                                pos_ms,
-                                (idx as i32) + 1,
-                                cue_name,
-                                cue_hlc,
-                            ],
-                        )?;
-                    }
+                if changed > 0 || track_cues_changed {
+                    dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(&primary_id))?;
+                    touched_ids.push(primary_id.clone());
+                    result.updated += 1;
                 }
-
-                dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(&primary_id))?;
                 synced_track_ids.insert(primary_id);
-                result.updated += 1;
             } else {
                 // Clean up any stale track that might hold nfc_path_str before new insert
                 crate_conn.execute("DELETE FROM cues WHERE track_id IN (SELECT id FROM tracks WHERE file_path = ?1)", [&nfc_path_str])?;
@@ -680,32 +730,10 @@ impl MikDatabaseService {
                     ],
                 )?;
 
-                // Insert cues if any
-                for (idx, mik_cue) in song.cues.iter().enumerate() {
-                    let cue_hlc = dirty::next_hlc(crate_conn)?;
-                    let pos_ms = (mik_cue.time_secs * 1000.0).max(0.0).round() as i64;
-                    let cue_id = uuid::Uuid::new_v4().to_string();
-                    let cue_name = mik_cue.name.clone().or_else(|| {
-                        mik_cue.energy_level.map(|e| format!("Hot Cue {} (Energy {})", idx + 1, e))
-                    }).or_else(|| Some(format!("Hot Cue {}", idx + 1)));
-
-                    crate_conn.execute(
-                        r#"
-                        INSERT INTO cues (id, track_id, position_ms, type, loop_end_ms, hot_cue_index, name, color, _hlc)
-                        VALUES (?1, ?2, ?3, 'hot', NULL, ?4, ?5, NULL, ?6)
-                        "#,
-                        rusqlite::params![
-                            cue_id,
-                            track_id,
-                            pos_ms,
-                            (idx as i32) + 1,
-                            cue_name,
-                            cue_hlc,
-                        ],
-                    )?;
-                }
+                cues_changed |= Self::sync_mik_cues(crate_conn, &track_id, &song.cues)?;
 
                 dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(&track_id))?;
+                touched_ids.push(track_id.clone());
                 synced_track_ids.insert(track_id);
                 result.added += 1;
             }
@@ -718,28 +746,22 @@ impl MikDatabaseService {
             log::debug!("{untouched} Crate track(s) are not in Mixed In Key and were left untouched");
         }
 
-        // Final artwork extraction pass for any tracks with missing artwork
+        // Artwork pass limited to the tracks added or changed by this sync (not the whole library).
         if let Some(art_svc) = artwork_service {
-            if let Ok(mut missing_stmt) = crate_conn.prepare("SELECT id, file_path FROM tracks WHERE artwork_path IS NULL") {
-                let missing_rows: Vec<(String, String)> = missing_stmt
-                    .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
-                    .map(|iter| iter.flatten().collect())
-                    .unwrap_or_default();
-
-                for (tid, fpath) in missing_rows {
-                    let p = PathBuf::from(&fpath);
-                    if p.exists() {
-                        if let Some(tagged) = MikService::read_metadata_lenient(&p) {
-                            if let Some(art_path) = art_svc.extract_from_tagged_file_or_folder(&tagged, &p, &tid) {
-                                if let Ok(hlc) = dirty::next_hlc(crate_conn) {
-                                    let _ = crate_conn.execute(
-                                        "UPDATE tracks SET artwork_path = ?1, artwork_source = 'extracted', _hlc = ?2 WHERE id = ?3",
-                                        rusqlite::params![art_path, hlc, tid],
-                                    );
-                                    let _ = dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(&tid));
-                                }
-                            }
-                        }
+            for tid in &touched_ids {
+                let missing: Option<String> = crate_conn
+                    .query_row("SELECT file_path FROM tracks WHERE id = ?1 AND artwork_path IS NULL", [tid], |r| r.get(0))
+                    .ok();
+                let Some(fpath) = missing else { continue };
+                let p = PathBuf::from(&fpath);
+                if let Some(tagged) = MikService::read_metadata_lenient(&p) {
+                    if let Some(art_path) = art_svc.extract_from_tagged_file_or_folder(&tagged, &p, tid) {
+                        let hlc = dirty::next_hlc(crate_conn)?;
+                        crate_conn.execute(
+                            "UPDATE tracks SET artwork_path = ?1, artwork_source = 'extracted', _hlc = ?2 WHERE id = ?3",
+                            rusqlite::params![art_path, hlc, tid],
+                        )?;
+                        dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(tid))?;
                     }
                 }
             }
@@ -754,7 +776,10 @@ impl MikDatabaseService {
             [],
         );
 
-        dirty::mark_dirty(crate_conn, buckets::CUES)?;
+        if cues_changed {
+            dirty::mark_dirty(crate_conn, buckets::CUES)?;
+        }
+        tx.commit()?;
 
         log::info!(
             "Mixed In Key DB Sync complete: {} added, {} updated, {} removed out of {} MIK songs",
@@ -903,6 +928,72 @@ mod tests {
         assert_eq!(path, new_path, "the existing track follows its file instead of being re-imported");
         let tags: i64 = conn.query_row("SELECT COUNT(*) FROM track_tags WHERE track_id = 'keep-me'", [], |r| r.get(0)).unwrap();
         assert_eq!(tags, 1, "tags stay attached to the relocated track");
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    fn cue(time_secs: f64) -> MikDbCue {
+        MikDbCue { z_pk: 0, time_secs, energy_level: None, name: None }
+    }
+
+    #[test]
+    fn test_second_sync_changes_nothing() {
+        let dir = temp_library("idempotent");
+        let conn = crate_db();
+        let path = touch(&dir, "track.mp3");
+        insert_track(&conn, "t", &path, "Track", "Artist");
+        let mut song = mik_song(&path, "Track", "Artist");
+        song.cues = vec![cue(1.0), cue(32.5)];
+
+        let first = MikDatabaseService::apply_mik_songs(&conn, vec![song.clone()], None).unwrap();
+        let second = MikDatabaseService::apply_mik_songs(&conn, vec![song], None).unwrap();
+
+        assert_eq!(first.updated, 1);
+        assert_eq!(second.updated, 0, "an unchanged Mixed In Key library must not rewrite tracks");
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_sync_does_not_overwrite_user_metadata() {
+        let dir = temp_library("user_meta");
+        let conn = crate_db();
+        let path = touch(&dir, "track.mp3");
+        insert_track(&conn, "t", &path, "My Edited Title", "Artist");
+
+        MikDatabaseService::apply_mik_songs(&conn, vec![mik_song(&path, "Tag Title", "Artist")], None).unwrap();
+
+        let (title, bpm): (String, f64) =
+            conn.query_row("SELECT title, bpm FROM tracks WHERE id = 't'", [], |r| Ok((r.get(0)?, r.get(1)?))).unwrap();
+        assert_eq!(title, "My Edited Title");
+        assert_eq!(bpm, 124.0, "analysis data still comes from Mixed In Key");
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn test_mik_cues_are_stable_and_keep_user_cues() {
+        let dir = temp_library("cues");
+        let conn = crate_db();
+        let path = touch(&dir, "track.mp3");
+        insert_track(&conn, "t", &path, "Track", "Artist");
+        // A cue created in Crate, and a legacy copy of a MIK cue (random id, same position)
+        conn.execute_batch(
+            "INSERT INTO cues (id, track_id, position_ms, type, hot_cue_index, name) VALUES ('user-cue', 't', 90000, 'memory', NULL, 'Drop');
+             INSERT INTO cues (id, track_id, position_ms, type, hot_cue_index, name) VALUES ('legacy-uuid', 't', 1000, 'hot', 1, 'Hot Cue 1');",
+        )
+        .unwrap();
+        let mut song = mik_song(&path, "Track", "Artist");
+        song.cues = vec![cue(1.0), cue(32.5)];
+
+        MikDatabaseService::apply_mik_songs(&conn, vec![song.clone()], None).unwrap();
+        let ids = |conn: &Connection| -> Vec<String> {
+            let mut stmt = conn.prepare("SELECT id FROM cues WHERE track_id = 't' ORDER BY id").unwrap();
+            stmt.query_map([], |r| r.get(0)).unwrap().flatten().collect()
+        };
+        assert_eq!(ids(&conn), vec!["mik-t-0", "mik-t-1", "user-cue"]);
+
+        // A cue removed in Mixed In Key disappears; the user cue stays.
+        song.cues = vec![cue(1.0)];
+        MikDatabaseService::apply_mik_songs(&conn, vec![song], None).unwrap();
+        assert_eq!(ids(&conn), vec!["mik-t-0", "user-cue"]);
         let _ = std::fs::remove_dir_all(dir);
     }
 

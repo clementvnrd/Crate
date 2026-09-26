@@ -61,6 +61,8 @@ impl LibraryService {
             format.clone(),
             0, // Duration will be set below
         );
+        // Content hash, stored with the track for future relocation matching
+        track.file_hash = compute_audio_hash(path).ok();
 
         if let Some(tagged_file) = self.read_metadata_lenient(path) {
             // Successfully read with lofty
@@ -105,12 +107,20 @@ impl LibraryService {
                 track.artwork_source = Some("extracted".to_string());
             }
 
-            // Insert into database
-            self.insert_track(&track)?;
+            // Insert into database (a re-imported file keeps its existing id)
+            track.id = self.insert_track(&track)?;
 
-            // Insert any extracted hot cues
+            // Insert any extracted hot cues, attached to the stored track
             if !mik_data.cues.is_empty() {
-                self.insert_cues(&mik_data.cues)?;
+                let cues: Vec<Cue> = mik_data
+                    .cues
+                    .into_iter()
+                    .map(|mut cue| {
+                        cue.track_id = track.id.clone();
+                        cue
+                    })
+                    .collect();
+                self.insert_cues(&cues)?;
             }
         } else {
             // Lofty failed completely, use symphonia fallback
@@ -125,12 +135,7 @@ impl LibraryService {
             track.bitrate = br;
 
             // Insert into database
-            self.insert_track(&track)?;
-        }
-
-        // Compute file hash for future relocation matching
-        if let Ok(hash) = compute_audio_hash(path) {
-            track.file_hash = Some(hash);
+            track.id = self.insert_track(&track)?;
         }
 
         Ok(track)
@@ -200,12 +205,20 @@ impl LibraryService {
                 track.artwork_source = Some("extracted".to_string());
             }
 
-            // Insert into database
-            self.insert_track(&track)?;
+            // Insert into database (a re-imported file keeps its existing id)
+            track.id = self.insert_track(&track)?;
 
-            // Insert any extracted hot cues
+            // Insert any extracted hot cues, attached to the stored track
             if !mik_data.cues.is_empty() {
-                self.insert_cues(&mik_data.cues)?;
+                let cues: Vec<Cue> = mik_data
+                    .cues
+                    .into_iter()
+                    .map(|mut cue| {
+                        cue.track_id = track.id.clone();
+                        cue
+                    })
+                    .collect();
+                self.insert_cues(&cues)?;
             }
         } else {
             // Lofty failed completely, use symphonia fallback
@@ -220,7 +233,7 @@ impl LibraryService {
             track.bitrate = br;
 
             // Insert into database
-            self.insert_track(&track)?;
+            track.id = self.insert_track(&track)?;
         }
 
         Ok(track)
@@ -351,7 +364,9 @@ impl LibraryService {
         Ok((duration_ms, sample_rate, bitrate))
     }
 
-    fn insert_track(&self, track: &Track) -> Result<()> {
+    /// Inserts or updates (same file path) a track and returns the id of the stored row: on a
+    /// re-import this is the existing track's id, not the freshly generated one.
+    fn insert_track(&self, track: &Track) -> Result<String> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
         let hlc = dirty::next_hlc(&conn)?;
@@ -380,6 +395,7 @@ impl LibraryService {
                 ?29, ?30, ?31
             )
             ON CONFLICT(file_path) DO UPDATE SET
+                file_hash = COALESCE(excluded.file_hash, tracks.file_hash),
                 title = excluded.title,
                 artist = excluded.artist,
                 album = excluded.album,
@@ -431,10 +447,15 @@ impl LibraryService {
             ],
         )?;
 
-        dirty::mark_dirty(&conn, &buckets::bucket_for_track_id(&track.id))?;
+        let stored_id: String = conn.query_row(
+            "SELECT id FROM tracks WHERE file_path = ?1",
+            [&track.file_path],
+            |r| r.get(0),
+        )?;
+        dirty::mark_dirty(&conn, &buckets::bucket_for_track_id(&stored_id))?;
         drop(conn);
 
-        Ok(())
+        Ok(stored_id)
     }
 
     fn insert_cues(&self, cues: &[Cue]) -> Result<()> {
@@ -481,5 +502,46 @@ impl LibraryService {
 
     fn extract_key(&self, tag: &Tag) -> Option<String> {
         MikService::extract_key(tag)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SILENCE_FLAC: &[u8] = include_bytes!("../../../test-fixtures/silence-1s.flac");
+
+    fn library(suffix: &str) -> (LibraryService, PathBuf) {
+        let dir = std::env::temp_dir().join(format!("crate_import_{suffix}_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let conn = Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        (LibraryService::new(Arc::new(Mutex::new(conn)), dir.clone()), dir)
+    }
+
+    #[test]
+    fn test_import_stores_hash_and_reimport_keeps_identity() {
+        let (lib, dir) = library("reimport");
+        let path = dir.join("silence.flac");
+        std::fs::write(&path, SILENCE_FLAC).unwrap();
+
+        let first = lib.import_tracks(vec![path.clone()]).unwrap();
+        assert_eq!(first.failed_count, 0, "{:?}", first.errors);
+        let id = first.tracks[0].id.clone();
+        let stored_hash: Option<String> = lib
+            .conn
+            .lock()
+            .unwrap()
+            .query_row("SELECT file_hash FROM tracks WHERE id = ?1", [&id], |r| r.get(0))
+            .unwrap();
+        assert!(stored_hash.is_some(), "the content hash must be saved at import");
+
+        let second = lib.import_tracks(vec![path]).unwrap();
+        assert_eq!(second.failed_count, 0, "re-importing a file must not fail: {:?}", second.errors);
+        assert_eq!(second.tracks[0].id, id, "a re-imported file keeps its track id");
+        let count: i64 = lib.conn.lock().unwrap().query_row("SELECT COUNT(*) FROM tracks", [], |r| r.get(0)).unwrap();
+        assert_eq!(count, 1);
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

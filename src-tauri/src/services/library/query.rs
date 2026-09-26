@@ -296,45 +296,32 @@ impl LibraryService {
         })?;
 
         let mut cues: Vec<Cue> = rows.flatten().collect();
+        drop(stmt);
 
-        // If cues are empty or if track_id_or_path is a path, check Mixed In Key database directly
-        if cues.is_empty() {
-            let target_path_buf = if let Ok(fp) = conn.query_row(
-                "SELECT file_path FROM tracks WHERE id = ?1",
-                rusqlite::params![track_id_or_path],
-                |r| r.get::<_, String>(0),
-            ) {
-                Some(std::path::PathBuf::from(fp))
-            } else {
-                let p = std::path::PathBuf::from(track_id_or_path);
-                if p.exists() {
-                    Some(p)
-                } else {
-                    None
-                }
-            };
+        // Library tracks already carry their Mixed In Key cues (imported by the sync). Only a file
+        // opened from outside the library (standalone player) is looked up in Mixed In Key, and
+        // that happens after releasing the library lock.
+        let is_library_track = conn
+            .query_row("SELECT 1 FROM tracks WHERE id = ?1", [track_id_or_path], |_| Ok(()))
+            .is_ok();
+        drop(conn);
 
-            if let Some(target_path) = target_path_buf {
-                if let Ok(mik_songs) = crate::services::library::MikDatabaseService::read_all_songs() {
-                    for song in mik_songs {
-                        if let Some(ref sp) = song.file_path {
-                            if sp == &target_path {
-                                for (idx, mc) in song.cues.into_iter().enumerate() {
-                                    let hot_idx = (idx as i32) + 1;
-                                    cues.push(Cue {
-                                        id: format!("mik-{}-{}", song.z_pk, mc.z_pk),
-                                        track_id: track_id_or_path.to_string(),
-                                        position_ms: (mc.time_secs * 1000.0).round() as i64,
-                                        cue_type: CueType::Hot,
-                                        loop_end_ms: None,
-                                        hot_cue_index: Some(hot_idx),
-                                        name: mc.name.or_else(|| Some(format!("Hot Cue {hot_idx}"))),
-                                        color: None,
-                                    });
-                                }
-                                break;
-                            }
-                        }
+        let external_path = std::path::PathBuf::from(track_id_or_path);
+        if cues.is_empty() && !is_library_track && external_path.is_file() {
+            if let Ok(mik_songs) = crate::services::library::MikDatabaseService::read_all_songs() {
+                if let Some(song) = mik_songs.into_iter().find(|s| s.file_path.as_ref() == Some(&external_path)) {
+                    for (idx, mc) in song.cues.into_iter().enumerate() {
+                        let hot_idx = (idx as i32) + 1;
+                        cues.push(Cue {
+                            id: format!("mik-{}-{}", song.z_pk, mc.z_pk),
+                            track_id: track_id_or_path.to_string(),
+                            position_ms: (mc.time_secs * 1000.0).round() as i64,
+                            cue_type: CueType::Hot,
+                            loop_end_ms: None,
+                            hot_cue_index: Some(hot_idx),
+                            name: mc.name.or_else(|| Some(format!("Hot Cue {hot_idx}"))),
+                            color: None,
+                        });
                     }
                 }
             }

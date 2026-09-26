@@ -34,6 +34,9 @@ pub struct BackupTrack {
     pub artwork_path: Option<String>,
     pub artwork_source: Option<String>,
     pub color: Option<String>,
+    /// Energy level 1–10 (Mixed In Key). Absent from backups made before the fork added it.
+    #[serde(default)]
+    pub energy: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

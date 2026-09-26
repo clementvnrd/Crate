@@ -1,15 +1,25 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+#[cfg(test)]
+use std::path::Path;
 
 #[cfg(target_os = "macos")]
 pub mod native {
     use super::*;
     use core_foundation::base::{kCFAllocatorDefault, TCFType};
     use core_foundation::data::CFData;
+    #[cfg(test)]
     use core_foundation::string::CFString;
     use core_foundation::url::{kCFURLPOSIXPathStyle, CFURL};
 
+    /// Resolve without showing any UI (no "locate file" dialog) and without mounting volumes:
+    /// an unplugged drive must not trigger a mount attempt during a background sync.
+    const RESOLUTION_WITHOUT_UI: usize = 1 << 8;
+    const RESOLUTION_WITHOUT_MOUNTING: usize = 1 << 9;
+
     #[link(name = "CoreFoundation", kind = "framework")]
     extern "C" {
+        fn CFRelease(cf: *const std::ffi::c_void);
+
         fn CFURLCreateByResolvingBookmarkData(
             allocator: core_foundation::base::CFAllocatorRef,
             bookmark: core_foundation::data::CFDataRef,
@@ -20,6 +30,7 @@ pub mod native {
             error: *mut *mut std::ffi::c_void,
         ) -> core_foundation::url::CFURLRef;
 
+        #[cfg(test)]
         fn CFURLCreateBookmarkData(
             allocator: core_foundation::base::CFAllocatorRef,
             url: core_foundation::url::CFURLRef,
@@ -44,13 +55,17 @@ pub mod native {
             let url_ref = CFURLCreateByResolvingBookmarkData(
                 kCFAllocatorDefault,
                 data.as_concrete_TypeRef(),
-                0,
+                RESOLUTION_WITHOUT_UI | RESOLUTION_WITHOUT_MOUNTING,
                 std::ptr::null(),
                 std::ptr::null(),
                 &mut is_stale,
                 &mut err_ptr,
             );
 
+            // The CFError is returned under the create rule: release it to avoid a leak.
+            if !err_ptr.is_null() {
+                CFRelease(err_ptr);
+            }
             if url_ref.is_null() {
                 return None;
             }
@@ -67,7 +82,8 @@ pub mod native {
         }
     }
 
-    /// Create an Apple CFURL BookmarkData binary blob for a given file path
+    /// Create an Apple CFURL BookmarkData binary blob for a given file path (tests only)
+    #[cfg(test)]
     pub fn create_bookmark(path: &Path) -> Option<Vec<u8>> {
         let path_str = path.to_str()?;
         let cf_path = CFString::new(path_str);
@@ -85,6 +101,9 @@ pub mod native {
                 &mut err_ptr,
             );
 
+            if !err_ptr.is_null() {
+                CFRelease(err_ptr);
+            }
             if data_ref.is_null() {
                 return None;
             }
@@ -108,6 +127,7 @@ pub fn resolve_bookmark(bookmark_bytes: &[u8]) -> Option<PathBuf> {
     }
 }
 
+#[cfg(test)]
 pub fn create_bookmark(path: &Path) -> Option<Vec<u8>> {
     #[cfg(target_os = "macos")]
     {

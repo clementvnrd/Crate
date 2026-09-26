@@ -807,31 +807,29 @@ pub fn run() {
                         }
                     }
 
-                    fn get_latest_mik_mtime(db_path: &std::path::Path) -> Option<std::time::SystemTime> {
+                    /// Fingerprint of the Mixed In Key database: modification time and size of the
+                    /// main file and its WAL. The `-shm` file is ignored on purpose: SQLite touches it
+                    /// on every read (including Crate's own read-only sync), which re-triggered syncs.
+                    fn get_latest_mik_mtime(db_path: &std::path::Path) -> Option<(std::time::SystemTime, u64)> {
                         let wal_path = std::path::PathBuf::from(format!("{}-wal", db_path.to_string_lossy()));
-                        let shm_path = std::path::PathBuf::from(format!("{}-shm", db_path.to_string_lossy()));
-
-                        let paths = [db_path, wal_path.as_path(), shm_path.as_path()];
                         let mut latest: Option<std::time::SystemTime> = None;
-
-                        for p in paths {
+                        let mut total_size = 0u64;
+                        for p in [db_path, wal_path.as_path()] {
                             if let Ok(meta) = std::fs::metadata(p) {
+                                total_size += meta.len();
                                 if let Ok(mtime) = meta.modified() {
-                                    latest = Some(match latest {
-                                        Some(prev) => prev.max(mtime),
-                                        None => mtime,
-                                    });
+                                    latest = Some(latest.map_or(mtime, |prev| prev.max(mtime)));
                                 }
                             }
                         }
-                        latest
+                        latest.map(|mtime| (mtime, total_size))
                     }
 
-                    let mut last_synced_mtime: Option<std::time::SystemTime> = crate::services::library::MikDatabaseService::find_mik_db_path()
+                    let mut last_synced_mtime: Option<(std::time::SystemTime, u64)> = crate::services::library::MikDatabaseService::find_mik_db_path()
                         .and_then(|p| get_latest_mik_mtime(&p));
 
                     let mut pending_change = false;
-                    let mut detected_mtime: Option<std::time::SystemTime> = None;
+                    let mut detected_mtime: Option<(std::time::SystemTime, u64)> = None;
                     let mut last_activity_time = tokio::time::Instant::now();
 
                     loop {
@@ -839,7 +837,7 @@ pub fn run() {
 
                         if let Some(mik_path) = crate::services::library::MikDatabaseService::find_mik_db_path() {
                             if let Some(current_mtime) = get_latest_mik_mtime(&mik_path) {
-                                let is_newer = last_synced_mtime.map_or(true, |last| current_mtime > last);
+                                let is_newer = last_synced_mtime != Some(current_mtime);
                                 if is_newer {
                                     if detected_mtime != Some(current_mtime) {
                                         detected_mtime = Some(current_mtime);

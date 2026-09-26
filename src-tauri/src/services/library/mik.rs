@@ -276,31 +276,25 @@ impl MikService {
                 let entry_start = i + 8;
                 let entry_end = entry_start + length;
 
-                if entry_end <= decoded.len() && length >= 5 {
-                    let index = decoded[entry_start];
-                    let pos_ms = u32::from_be_bytes([
-                        decoded[entry_start + 1],
-                        decoded[entry_start + 2],
-                        decoded[entry_start + 3],
-                        decoded[entry_start + 4],
-                    ]) as i64;
+                // CUE entry layout (Serato Markers2): [0] padding, [1] index, [2..6] position in ms
+                // (big-endian u32), [6] padding, [7..10] RGB colour, [10..12] padding, [12..] name (NUL-terminated)
+                if entry_end <= decoded.len() && length >= 12 {
+                    let entry = &decoded[entry_start..entry_end];
+                    let index = entry[1];
+                    let pos_ms = u32::from_be_bytes([entry[2], entry[3], entry[4], entry[5]]) as i64;
+                    let color = format!("#{:02X}{:02X}{:02X}", entry[7], entry[8], entry[9]);
+                    let name = entry
+                        .get(12..)
+                        .map(|raw| raw.split(|b| *b == 0).next().unwrap_or_default())
+                        .and_then(|raw| std::str::from_utf8(raw).ok())
+                        .map(str::trim)
+                        .filter(|label| !label.is_empty())
+                        .map(str::to_string);
 
-                    // Extract label if present
-                    let mut name = None;
-                    if length > 9 {
-                        // Skip color bytes (often 3 or 4 bytes), read remainder as string
-                        let str_slice = &decoded[entry_start + 9..entry_end];
-                        if let Ok(label) = std::str::from_utf8(str_slice) {
-                            let clean_label = label.trim_matches('\0').trim();
-                            if !clean_label.is_empty() {
-                                name = Some(clean_label.to_string());
-                            }
-                        }
-                    }
-
-                    if (0..=7).contains(&index) && pos_ms >= 0 {
+                    if (0..=7).contains(&index) {
                         let mut cue = Cue::new_hot(track_id.to_string(), pos_ms, (index as i32) + 1);
                         cue.name = name.or_else(|| Some(format!("Hot Cue {}", index + 1)));
+                        cue.color = Some(color);
                         cues.push(cue);
                     }
                 }
@@ -455,6 +449,37 @@ fn base64_decode(input: &str) -> Option<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Builds a Serato Markers2 CUE entry exactly as Serato/Mixed In Key write it.
+    fn serato_cue_entry(index: u8, position_ms: u32, rgb: [u8; 3], name: &str) -> Vec<u8> {
+        let mut data = vec![0x00, index];
+        data.extend(position_ms.to_be_bytes());
+        data.push(0x00);
+        data.extend(rgb);
+        data.extend([0x00, 0x00]);
+        data.extend(name.as_bytes());
+        data.push(0x00);
+        let mut entry = b"CUE\0".to_vec();
+        entry.extend((data.len() as u32).to_be_bytes());
+        entry.extend(data);
+        entry
+    }
+
+    #[test]
+    fn test_parse_serato_markers_reads_index_position_colour_and_name() {
+        let mut payload = vec![0x01, 0x01];
+        payload.extend(serato_cue_entry(0, 1_234, [0xCC, 0x00, 0x00], "Intro"));
+        payload.extend(serato_cue_entry(3, 95_500, [0x00, 0xCC, 0x00], "Drop"));
+
+        let cues = MikService::parse_serato_markers(&payload, "track");
+
+        assert_eq!(cues.len(), 2);
+        assert_eq!((cues[0].hot_cue_index, cues[0].position_ms), (Some(1), 1_234));
+        assert_eq!(cues[0].name.as_deref(), Some("Intro"));
+        assert_eq!(cues[0].color.as_deref(), Some("#CC0000"));
+        assert_eq!((cues[1].hot_cue_index, cues[1].position_ms), (Some(4), 95_500));
+        assert_eq!(cues[1].name.as_deref(), Some("Drop"));
+    }
 
     #[test]
     fn test_is_camelot_key() {

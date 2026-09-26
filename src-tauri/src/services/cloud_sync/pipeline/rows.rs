@@ -573,7 +573,7 @@ fn read_live_tracks(
         "SELECT id, file_path, file_hash, title, artist, album, year, genre, label, \
          catalog_number, duration_ms, bpm, key, bitrate, sample_rate, format, rating, \
          play_count, date_added, date_modified, last_played, rekordbox_id, artwork_path, \
-         artwork_source, color, _hlc FROM tracks",
+         artwork_source, color, _hlc, energy FROM tracks",
     )?;
     let rows = stmt.query_map([], |r| {
         let t = BackupTrack {
@@ -602,6 +602,7 @@ fn read_live_tracks(
             artwork_path: r.get(22)?,
             artwork_source: r.get(23)?,
             color: r.get(24)?,
+            energy: r.get(26)?,
         };
         let hlc: String = r.get(25)?;
         Ok((t, hlc))

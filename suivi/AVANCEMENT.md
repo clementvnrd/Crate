@@ -5,7 +5,7 @@ Ce fichier est **la** source de vérité du suivi : chaque défaut du [registre]
 Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ = précision ou reste à faire. Le tableau de progression se recalcule avec `yarn suivi`.
 
 <!-- progression:start -->
-**Progression globale : 25 / 106 défauts corrigés (24 %)**
+**Progression globale : 32 / 106 défauts corrigés (30 %)**
 
 | Étape | Corrigés | Progression |
 | --- | --- | --- |
@@ -13,7 +13,7 @@ Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ =
 | Étape 2 — Couper les opérations destructives | 6 / 6 | ██████████ |
 | Étape 3 — Secrets et authentification | 4 / 4 | ██████████ |
 | Étape 4 — Upgrader sûr | 9 / 9 | ██████████ |
-| Étape 5 — Mixed In Key propre | 1 / 8 | █░░░░░░░░░ |
+| Étape 5 — Mixed In Key propre | 8 / 8 | ██████████ |
 | Étape 6 — Statistiques justes | 0 / 10 | ░░░░░░░░░░ |
 | Étape 7 — Fonctions DJ exactes | 0 / 18 | ░░░░░░░░░░ |
 | Étape 8 — Frontend robuste | 2 / 17 | █░░░░░░░░░ |
@@ -88,14 +88,14 @@ _Critère de sortie : Aucun fichier voisin touché, cues et tags conservés._
 
 _Critère de sortie : Une seule synchro, incrémentale, en lecture seule._
 
-- [ ] **B1** — La synchro se redéclenche en rafale : 4 passages en 14 s observés au démarrage, chacun réécrit les 276…
+- [x] **B1** — La synchro se redéclenche en rafale : 4 passages en 14 s observés au démarrage, chacun réécrit les 276… — _vérifié sur une copie de la vraie base : 2e passage « 0 updated » (276 titres réécrits à chaque passage avant)_
 - [x] **B2** — Rattachement par titre et artiste puis réécriture du `file_path` d'un autre titre — _rattachement par titre/artiste limité à une correspondance unique dont le fichier a disparu ; rattachement par hash non fait_
-- [ ] **B3** — Les cues MIK sont recréés avec de nouveaux UUID à chaque synchro, sans tombstones ; les cues utilisateur…
-- [ ] **B4** — `get_track_cues` scanne toute la base MIK et résout tous les signets à chaque lecture, sous le verrou global
-- [ ] **B6** — Signets macOS résolus sans `WithoutMounting` ni `WithoutUI`, fuite de `CFError`
-- [ ] **B7** — `file_hash` n'est plus enregistré à l'import, et réimporter un fichier existant échoue sur une contrainte…
-- [ ] **B8** — Parseur Serato Markers2 décalé d'un octet (index, position, nom)
-- [ ] **B9** — La nouvelle colonne `energy` n'est ni sérialisée ni fusionnée par la synchro cloud
+- [x] **B3** — Les cues MIK sont recréés avec de nouveaux UUID à chaque synchro, sans tombstones ; les cues utilisateur… — _vérifié sur copie : 2 033 cues convertis sans perte ni doublon_
+- [x] **B4** — `get_track_cues` scanne toute la base MIK et résout tous les signets à chaque lecture, sous le verrou global
+- [x] **B6** — Signets macOS résolus sans `WithoutMounting` ni `WithoutUI`, fuite de `CFError`
+- [x] **B7** — `file_hash` n'est plus enregistré à l'import, et réimporter un fichier existant échoue sur une contrainte…
+- [x] **B8** — Parseur Serato Markers2 décalé d'un octet (index, position, nom)
+- [x] **B9** — La nouvelle colonne `energy` n'est ni sérialisée ni fusionnée par la synchro cloud
 
 ### Étape 6 — Statistiques justes
 
@@ -217,3 +217,4 @@ _Critère de sortie : App en anglais : aucune chaîne française._
 | 2026-09-26 | Plus aucune suppression automatique ni écriture dans Mixed In Key ; config prod restaurée | 2 |
 | 2026-09-26 | Session Beatport dans le Trousseau, fin du scraping DJ.Studio, secret Spotify jamais renvoyé au webview | 3 |
 | 2026-09-26 | Upgrader sûr : dossier isolé, remplacement en place, FLAC décodé en entier, scoring corrigé | 4 |
+| 2026-09-26 | Synchro Mixed In Key incrémentale et idempotente, cues stables, import/Serato/énergie corrigés | 5 |
