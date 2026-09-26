@@ -8,6 +8,8 @@
 		type?: 'button' | 'submit' | 'reset'
 		class?: string
 		onclick?: (e: MouseEvent) => void
+		/** Accessible name, required when the visible label can be hidden (icon-only layouts) */
+		'aria-label'?: string
 		children: Snippet
 	}
 
@@ -18,6 +20,7 @@
 		type = 'button',
 		class: className = '',
 		onclick,
+		'aria-label': ariaLabel,
 		children,
 	}: Props = $props()
 
@@ -40,6 +43,12 @@
 	}
 </script>
 
-<button {type} {disabled} class="{baseStyles} {variantStyles[variant]} {sizeStyles[size]} {className}" {onclick}>
+<button
+	{type}
+	{disabled}
+	aria-label={ariaLabel}
+	class="{baseStyles} {variantStyles[variant]} {sizeStyles[size]} {className}"
+	{onclick}
+>
 	{@render children()}
 </button>

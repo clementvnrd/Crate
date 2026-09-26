@@ -133,6 +133,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **[D8]** Polices Jost et DM Sans réellement utilisables (règles `[data-font]` et valeurs acceptées par le backend : le choix était perdu au redémarrage) ; 15 fichiers inutilisés supprimés (5 gardés, 392 Ko), double chargement Google Fonts retiré, licences OFL référencées.
 - **[D9]** Sept icônes manquantes ajoutées (dont `close`, absente dès l'amont) et test Vitest qui échoue sur toute icône inconnue ; logo Beatport dessiné en ligne (il sortait noir sur fond sombre).
 
+#### Corrigé — vues
+
+- **[D4]** En-tête utilisable à toutes les largeurs : sous 1536 px le sélecteur Player/Bibliothèque/Beatport se place après le logo au lieu d'être centré par-dessus les outils ; sous 1400 px le badge Mixed In Key passe en logo compact ; sous 1280 px les boutons Importer/Ajouter deviennent des icônes (avec nom accessible). Vérifié par mesure dans le harnais à 1000, 1280, 1440 et 1600 px.
+- **[D5]** Hero du Player proportionnel à la hauteur de la fenêtre (pochette de 140 à 260 px, colonne à hauteur naturelle, marges réduites sur les écrans bas) : les commandes de lecture ne sont plus recouvertes à 1000×640 ; la liste des récents prend la place restante.
+- **[D6]** Vérifié dans le harnais : bouton « Supprimer » du Duplicate Killer visible à 1400×900 et à 1000×640.
+- **[D12]** Badge « Build 57 » retiré de l'en-tête (la version reste dans « À propos ») et mentions « Pro » retirées des libellés Mixed In Key.
+- `Button` accepte un `aria-label` (boutons réduits à une icône).
+
 #### Documentation
 
 - **[L6]** Le README annonce désormais les 15 langues réellement livrées (au lieu de 11) et décrit le fork, les tests et le suivi.

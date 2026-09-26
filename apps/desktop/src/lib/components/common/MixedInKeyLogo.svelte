@@ -10,7 +10,7 @@
 		animated?: boolean
 	}
 
-	let { variant = 'full', size = 'md', class: className = '', showPro = true, animated = false }: Props = $props()
+	let { variant = 'full', size = 'md', class: className = '', showPro = false, animated = false }: Props = $props()
 
 	const sizeClasses: Record<Size, { icon: string; text: string; pro: string; gap: string }> = {
 		sm: { icon: 'w-4 h-4', text: 'text-[10px]', pro: 'text-[8px] px-1 py-0.2', gap: 'gap-1.5' },

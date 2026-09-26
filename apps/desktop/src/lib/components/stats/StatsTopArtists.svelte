@@ -34,10 +34,10 @@
 		<div class="space-y-3 py-4">
 			{#each Array(5) as _, i (i)}
 				<div class="flex animate-pulse items-center gap-3">
-					<div class="bg-surface-3 h-10 w-10 rounded-full"></div>
+					<div class="h-10 w-10 rounded-full bg-surface-3"></div>
 					<div class="flex-1 space-y-1.5">
-						<div class="bg-surface-3 h-3.5 w-3/4 rounded"></div>
-						<div class="bg-surface-3 h-2.5 w-1/2 rounded"></div>
+						<div class="h-3.5 w-3/4 rounded bg-surface-3"></div>
+						<div class="h-2.5 w-1/2 rounded bg-surface-3"></div>
 					</div>
 				</div>
 			{/each}
@@ -78,7 +78,7 @@
 
 					<!-- Artist Avatar -->
 					<div
-						class="bg-surface-3 relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-stroke/60 shadow-sm"
+						class="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-stroke/60 bg-surface-3 shadow-sm"
 					>
 						{#if artUrl}
 							<img

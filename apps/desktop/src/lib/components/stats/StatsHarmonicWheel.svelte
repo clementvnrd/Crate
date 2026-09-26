@@ -36,7 +36,7 @@
 	{#if isLoading && harmonicStats.length === 0}
 		<div class="space-y-3 py-4">
 			{#each Array(4) as _, i (i)}
-				<div class="bg-surface-3 h-8 animate-pulse rounded-lg"></div>
+				<div class="h-8 animate-pulse rounded-lg bg-surface-3"></div>
 			{/each}
 		</div>
 	{:else if harmonicStats.length === 0}
@@ -75,7 +75,7 @@
 					</div>
 
 					<!-- Progress bar matching key color -->
-					<div class="bg-surface-3 relative h-2 w-full overflow-hidden rounded-full">
+					<div class="relative h-2 w-full overflow-hidden rounded-full bg-surface-3">
 						<div
 							class="h-full rounded-full transition-all duration-500"
 							style="width: {fillPercent}%; background-color: {colorInfo?.dot ?? '#3b82f6'};"

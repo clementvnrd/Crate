@@ -414,19 +414,16 @@
 						style="-webkit-mask-image: url('/crate-logo.svg'); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; mask-image: url('/crate-logo.svg'); mask-size: contain; mask-repeat: no-repeat; mask-position: center;"
 					></div>
 					<Text variant="header-1" as="span" weight="bold">Crate</Text>
-					<span
-						class="bg-brand-primary/20 border-brand-primary/40 rounded border px-1.5 py-0.5 font-mono text-[11px] font-bold tracking-wide text-brand-primary"
-						title="App Build Number"
-					>
-						Build 57
-					</span>
 					{#if $isDev}
 						<span class="rounded bg-amber-500/20 px-1.5 py-0.5 text-xs font-medium text-amber-500">DEV</span>
 					{/if}
 				</div>
 
-				<!-- Segmented control (absolutely centered in full window) -->
-				<div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+				<!-- Segmented control: centred in the window when there is room; below 1536 px it sits in
+				     the flow after the logo so the toolbar icons can never overlap it -->
+				<div
+					class="pointer-events-none absolute inset-0 flex items-center justify-center max-[1535px]:pointer-events-auto max-[1535px]:static max-[1535px]:flex-shrink-0 max-[1535px]:px-2"
+				>
 					<div
 						id="wizard-view-switcher"
 						class="pointer-events-auto relative inline-grid grid-cols-3 items-center rounded-lg bg-surface-2 p-0.5"

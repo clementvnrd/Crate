@@ -165,7 +165,7 @@
 	class="group relative grid items-center gap-2 border-b border-stroke-subtle px-3 py-1.5 text-sm transition-colors select-none {selected
 		? 'bg-brand-muted text-text-primary'
 		: isTagDragHovered
-			? 'bg-brand-muted/50 ring-brand-primary/50 text-text-primary ring-1 ring-inset'
+			? 'bg-brand-muted/50 text-text-primary ring-1 ring-brand-primary/50 ring-inset'
 			: 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'} {isMissing ? 'opacity-60' : ''}"
 	style="grid-template-columns: {gridTemplateColumns};"
 	{onclick}
@@ -269,19 +269,19 @@
 						<span
 							class="relative inline-flex h-[22px] w-11 items-center justify-center rounded font-mono text-[11px] font-bold tracking-tight shadow-sm select-none"
 							style="background-color: {camelotInfo.bg}; color: {camelotInfo.text};"
-							title="{formattedKey} ({camelotInfo.name}) • Mixed In Key 11 Pro"
+							title="{formattedKey} ({camelotInfo.name}) • Mixed In Key"
 						>
 							{formattedKey}
 							<img
 								src="/mik-ring.png"
 								alt="MIK"
 								class="pointer-events-none absolute -top-1.5 -right-1.5 h-3.5 w-3.5 object-contain drop-shadow-[0_0_3px_rgba(56,189,248,0.8)] select-none"
-								title="Mixed In Key 11 Pro Analyzed"
+								title="Mixed In Key Analyzed"
 							/>
 						</span>
 					{:else}
 						<span
-							class="bg-surface-3 relative inline-flex h-[22px] w-11 items-center justify-center rounded border border-stroke font-mono text-[11px] font-medium tracking-tight text-text-secondary select-none"
+							class="relative inline-flex h-[22px] w-11 items-center justify-center rounded border border-stroke bg-surface-3 font-mono text-[11px] font-medium tracking-tight text-text-secondary select-none"
 							title="{formattedKey} • Non analysé par Mixed In Key"
 						>
 							{formattedKey}

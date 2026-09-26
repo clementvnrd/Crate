@@ -44,7 +44,7 @@
 	{#if isLoading && bpmStats.length === 0}
 		<div class="space-y-3 py-4">
 			{#each Array(4) as _, i (i)}
-				<div class="bg-surface-3 h-8 animate-pulse rounded-lg"></div>
+				<div class="h-8 animate-pulse rounded-lg bg-surface-3"></div>
 			{/each}
 		</div>
 	{:else if bpmStats.length === 0}
@@ -79,7 +79,7 @@
 					</div>
 
 					<!-- Progress bar -->
-					<div class="bg-surface-3 relative h-2 w-full overflow-hidden rounded-full">
+					<div class="relative h-2 w-full overflow-hidden rounded-full bg-surface-3">
 						<div
 							class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 shadow-sm transition-all duration-500"
 							style="width: {fillPercent}%"

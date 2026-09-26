@@ -65,7 +65,7 @@
 	>
 		<div class="flex items-center gap-3">
 			<div
-				class="bg-brand-primary/15 border-brand-primary/30 flex h-9 w-9 items-center justify-center rounded-xl border text-brand-primary shadow-sm"
+				class="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-primary/30 bg-brand-primary/15 text-brand-primary shadow-sm"
 			>
 				<Icon name="chart" class="h-5 w-5 text-brand-primary" />
 			</div>
@@ -73,7 +73,7 @@
 				<div class="flex items-center gap-2">
 					<h1 class="text-base font-bold tracking-tight text-text-primary">Crate Pulse & Stats</h1>
 					<span
-						class="bg-brand-primary/20 border-brand-primary/40 rounded-full border px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-brand-primary uppercase"
+						class="rounded-full border border-brand-primary/40 bg-brand-primary/20 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-brand-primary uppercase"
 					>
 						Live
 					</span>
@@ -106,7 +106,7 @@
 						type="button"
 						class="cursor-pointer rounded-lg px-3 py-1 text-xs font-semibold transition-all {$statsSelectedRange ===
 						r.id
-							? 'border-stroke-strong/60 border bg-surface-0 text-text-primary shadow-sm'
+							? 'border border-stroke-strong/60 bg-surface-0 text-text-primary shadow-sm'
 							: 'text-text-tertiary hover:text-text-secondary'}"
 						onclick={() => handleRangeChange(r.id)}
 					>
@@ -118,7 +118,7 @@
 			<!-- Refresh Button -->
 			<button
 				type="button"
-				class="hover:border-stroke-strong hover:bg-surface-3 flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-stroke bg-surface-2 text-text-secondary shadow-sm transition-all hover:text-text-primary active:scale-95"
+				class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-stroke bg-surface-2 text-text-secondary shadow-sm transition-all hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary active:scale-95"
 				onclick={handleRefresh}
 				title="Rafraîchir les statistiques"
 				disabled={$isStatsLoading}

@@ -184,7 +184,7 @@
 								</span>
 							{:else}
 								<span
-									class="bg-surface-3 rounded-full border border-stroke px-2 py-0.5 text-[10px] font-medium text-text-tertiary"
+									class="rounded-full border border-stroke bg-surface-3 px-2 py-0.5 text-[10px] font-medium text-text-tertiary"
 								>
 									Non connecté
 								</span>
@@ -209,7 +209,7 @@
 					{#if spotifyNowPlaying.artwork_url}
 						<img src={spotifyNowPlaying.artwork_url} alt="" class="h-9 w-9 rounded-lg object-cover shadow-sm" />
 					{:else}
-						<div class="bg-surface-3 flex h-9 w-9 items-center justify-center rounded-lg text-[#1DB954]">
+						<div class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-3 text-[#1DB954]">
 							<Icon name="music-note" class="h-4 w-4" />
 						</div>
 					{/if}
@@ -260,7 +260,7 @@
 
 			<button
 				type="button"
-				class="hover:border-stroke-strong hover:bg-surface-3 flex cursor-pointer items-center gap-1.5 rounded-xl border border-stroke bg-surface-2/80 px-3 py-1.5 text-xs font-semibold text-text-primary transition-all active:scale-95"
+				class="flex cursor-pointer items-center gap-1.5 rounded-xl border border-stroke bg-surface-2/80 px-3 py-1.5 text-xs font-semibold text-text-primary transition-all hover:border-stroke-strong hover:bg-surface-3 active:scale-95"
 				onclick={handleTriggerFilePicker}
 				disabled={$isImportingSpotify}
 			>
@@ -299,7 +299,7 @@
 								</span>
 							{:else}
 								<span
-									class="bg-surface-3 rounded-full border border-stroke px-2 py-0.5 text-[10px] font-medium text-text-tertiary"
+									class="rounded-full border border-stroke bg-surface-3 px-2 py-0.5 text-[10px] font-medium text-text-tertiary"
 								>
 									Non détecté
 								</span>
@@ -339,7 +339,7 @@
 		</div>
 	</div>
 
-	<!-- 3. Mixed In Key 11 Pro Integration Card -->
+	<!-- 3. Mixed In Key Integration Card -->
 	<div
 		class="relative flex flex-col justify-between space-y-4 overflow-hidden rounded-2xl border border-[#00D2FF]/25 bg-gradient-to-b from-[#0c1a24]/60 to-surface-1/80 p-5 shadow-lg backdrop-blur-xl"
 	>
@@ -353,7 +353,7 @@
 					</div>
 					<div>
 						<div class="flex items-center gap-2">
-							<h3 class="text-sm font-bold text-text-primary">Mixed In Key 11 Pro</h3>
+							<h3 class="text-sm font-bold text-text-primary">Mixed In Key</h3>
 							{#if mikDetected}
 								<span
 									class="inline-flex items-center gap-1 rounded-full border border-[#00D2FF]/40 bg-[#00D2FF]/20 px-2 py-0.5 text-[10px] font-bold text-[#00D2FF]"
@@ -363,7 +363,7 @@
 								</span>
 							{:else}
 								<span
-									class="bg-surface-3 rounded-full border border-stroke px-2 py-0.5 text-[10px] font-medium text-text-tertiary"
+									class="rounded-full border border-stroke bg-surface-3 px-2 py-0.5 text-[10px] font-medium text-text-tertiary"
 								>
 									Détecteur actif
 								</span>
@@ -435,7 +435,7 @@
 				</div>
 				<button
 					type="button"
-					class="hover:bg-surface-3 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface-2 text-text-tertiary transition-colors hover:text-white"
+					class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface-2 text-text-tertiary transition-colors hover:bg-surface-3 hover:text-white"
 					onclick={closeSpotifyModal}
 					aria-label="Fermer"
 				>
@@ -455,7 +455,7 @@
 						<div class="flex items-center gap-2">
 							<button
 								type="button"
-								class="bg-surface-3 hover:bg-surface-4 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-emerald-500/20 px-2.5 py-1 text-[11px] font-medium text-emerald-400 transition-all"
+								class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-surface-3 px-2.5 py-1 text-[11px] font-medium text-emerald-400 transition-all hover:bg-surface-4"
 								onclick={handleOpenDeveloperDashboard}
 							>
 								<span>Spotify Developer Dashboard</span>
@@ -485,7 +485,7 @@
 							</code>
 							<button
 								type="button"
-								class="bg-surface-3 hover:bg-surface-4 cursor-pointer rounded px-2 py-0.5 text-[10px] font-semibold text-text-primary transition-colors"
+								class="cursor-pointer rounded bg-surface-3 px-2 py-0.5 text-[10px] font-semibold text-text-primary transition-colors hover:bg-surface-4"
 								onclick={handleCopyRedirectUri}
 							>
 								{isCopiedRedirectUri ? '✓ Copié' : 'Copier'}
@@ -620,7 +620,7 @@
 			<div class="flex items-center justify-end gap-3 pt-2">
 				<button
 					type="button"
-					class="hover:bg-surface-3 cursor-pointer rounded-xl border border-stroke bg-surface-2 px-4 py-2 text-xs font-semibold text-text-secondary transition-colors hover:text-text-primary"
+					class="cursor-pointer rounded-xl border border-stroke bg-surface-2 px-4 py-2 text-xs font-semibold text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 					onclick={closeSpotifyModal}
 				>
 					Annuler

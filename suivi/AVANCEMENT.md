@@ -5,7 +5,7 @@ Ce fichier est **la** source de vérité du suivi : chaque défaut du [registre]
 Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ = précision ou reste à faire. Le tableau de progression se recalcule avec `yarn suivi`.
 
 <!-- progression:start -->
-**Progression globale : 90 / 106 défauts corrigés (85 %)**
+**Progression globale : 93 / 106 défauts corrigés (88 %)**
 
 | Étape | Corrigés | Progression |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ =
 | Étape 8 — Frontend robuste | 17 / 17 | ██████████ |
 | Étape 9 — Hygiène et outillage | 11 / 14 | ████████░░ |
 | Étape 10 — Fondations visuelles | 5 / 5 | ██████████ |
-| Étape 11 — Conformité vue par vue | 0 / 7 | ░░░░░░░░░░ |
+| Étape 11 — Conformité vue par vue | 3 / 7 | ████░░░░░░ |
 | Étape 12 — Traduction | 1 / 6 | ██░░░░░░░░ |
 <!-- progression:end -->
 
@@ -191,12 +191,12 @@ _Critère de sortie : Aucun élément invisible en clair ou sombre._
 _Critère de sortie : Règles de design strictes respectées._
 
 - [ ] **D3** — Thème clair cassé : cartes d'intégration de Pulse sombres en haut et claires en bas ; badges de l'en-tête…
-- [ ] **D4** — En-tête à la largeur minimale (1000 px) : les icônes chevauchent le contrôle segmenté…
-- [ ] **D5** — Hero du Player à hauteur fixe (`h-[225px]` pour environ 260 px de contenu) : à 1000×640 le transport est…
+- [x] **D4** — En-tête à la largeur minimale (1000 px) : les icônes chevauchent le contrôle segmenté… — _vérifié par mesure dans le harnais à 1000, 1280, 1440 et 1600 px : aucun chevauchement, tous les outils visibles_
+- [x] **D5** — Hero du Player à hauteur fixe (`h-[225px]` pour environ 260 px de contenu) : à 1000×640 le transport est… — _transport jamais recouvert (vérifié à 1000×640) ; à cette taille la liste des récents garde ~2 lignes_
 - [ ] **D7** — Tableau Beatport à 1000 px : la colonne titre se réduit à un caractère
 - [ ] **D10** — Accessibilité : environ 25 boutons icône sans nom (transport, segments, badge MIK, actions des récents) ;…
 - [ ] **D11** — Composants réinventés au lieu des communs : 4 contrôles segmentés, checkbox, select, spinner, tooltip et…
-- [ ] **D12** — Badge « Build 57 » permanent à côté du logo et libellés « PRO » sur les marques tierces
+- [x] **D12** — Badge « Build 57 » permanent à côté du logo et libellés « PRO » sur les marques tierces
 
 ### Étape 12 — Traduction
 

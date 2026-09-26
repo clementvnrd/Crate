@@ -149,7 +149,7 @@
 							<div class="flex items-center gap-2">
 								<Text variant="body-2" class="font-medium">{device.name}</Text>
 								{#if isCurrentDevice}
-									<span class="bg-brand-primary/20 rounded-full px-2 py-0.5 text-xs font-medium text-brand-primary">
+									<span class="rounded-full bg-brand-primary/20 px-2 py-0.5 text-xs font-medium text-brand-primary">
 										{$translate('cloudSync.devices.thisDevice')}
 									</span>
 								{/if}

@@ -103,7 +103,7 @@
 			/>
 		{:else}
 			<div
-				class="bg-surface-3 flex h-8 w-8 items-center justify-center rounded-md border border-stroke/40 text-[10px] font-bold text-[#00FF96]"
+				class="flex h-8 w-8 items-center justify-center rounded-md border border-stroke/40 bg-surface-3 text-[10px] font-bold text-[#00FF96]"
 			>
 				BP
 			</div>
@@ -186,7 +186,7 @@
 		<!-- Cart / Selection -->
 		<button
 			type="button"
-			class="hover:bg-surface-3 flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors {inCart
+			class="flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors hover:bg-surface-3 {inCart
 				? 'font-bold text-emerald-400'
 				: 'text-text-tertiary hover:text-text-primary'}"
 			onclick={toggleCart}
@@ -198,7 +198,7 @@
 		<!-- Favorite -->
 		<button
 			type="button"
-			class="hover:bg-surface-3 flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors {isFavorite
+			class="flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors hover:bg-surface-3 {isFavorite
 				? 'font-bold text-red-500'
 				: 'text-text-tertiary hover:text-red-400'}"
 			onclick={toggleFav}
@@ -210,7 +210,7 @@
 		<!-- Add to Playlist / Cart Checkmark -->
 		<button
 			type="button"
-			class="hover:bg-surface-3 flex h-6 w-6 cursor-pointer items-center justify-center rounded text-text-tertiary transition-colors hover:text-text-primary"
+			class="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-text-tertiary transition-colors hover:bg-surface-3 hover:text-text-primary"
 			onclick={toggleCart}
 			title={inCart ? 'Dans le panier (cliquer pour retirer)' : 'Ajouter au panier'}
 		>

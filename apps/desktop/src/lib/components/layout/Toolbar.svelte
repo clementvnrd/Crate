@@ -108,15 +108,22 @@
 	}
 </script>
 
-<div class="flex flex-1 items-center justify-end gap-2 rounded-bl-md py-4 pr-3 pl-4">
-	<Tooltip text="Synchronisé en direct avec Mixed In Key 11 Pro (Cliquer pour forcer)" position="bottom" delay={250}>
+<div
+	class="flex flex-1 items-center justify-end gap-1.5 rounded-bl-md py-4 pr-3 pl-2 min-[1280px]:gap-2 min-[1280px]:pl-4"
+>
+	<Tooltip text="Synchronisé en direct avec Mixed In Key (Cliquer pour forcer)" position="bottom" delay={250}>
 		<button
 			type="button"
 			class="group flex items-center gap-2 rounded-lg border border-sky-500/30 bg-surface-2/80 px-2.5 py-1 text-xs shadow-sm transition-all hover:cursor-pointer hover:border-sky-400/60 hover:bg-sky-950/40 active:scale-95"
 			onclick={handleSyncMik}
 			disabled={syncingMik}
 		>
-			<MixedInKeyLogo variant="full" size="sm" showPro animated={syncingMik} />
+			<span class="hidden min-[1400px]:inline-flex">
+				<MixedInKeyLogo variant="full" size="sm" animated={syncingMik} />
+			</span>
+			<span class="inline-flex min-[1400px]:hidden" aria-label="Mixed In Key">
+				<MixedInKeyLogo variant="icon" size="sm" animated={syncingMik} />
+			</span>
 			<div class="h-3 w-px bg-stroke"></div>
 			<Icon
 				name="refresh-cw"
@@ -140,7 +147,7 @@
 			class="relative flex h-8 w-8 items-center justify-center rounded-lg border shadow-sm transition-all hover:cursor-pointer active:scale-95
 			{$duplicateGroupCount > 0
 				? 'border-amber-500/40 bg-amber-950/30 text-amber-300 hover:border-amber-400 hover:bg-amber-900/40'
-				: 'hover:border-stroke-strong hover:bg-surface-3 border-stroke bg-surface-2/80 text-text-secondary hover:text-text-primary'}"
+				: 'border-stroke bg-surface-2/80 text-text-secondary hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary'}"
 			onclick={onOpenDuplicates}
 			aria-label="Gestion des doublons"
 		>
@@ -168,7 +175,7 @@
 			class="relative flex h-8 w-8 items-center justify-center rounded-lg border shadow-sm transition-all hover:cursor-pointer active:scale-95
 			{$upgraderMatchCount > 0
 				? 'border-emerald-500/40 bg-emerald-950/30 text-emerald-300 hover:border-emerald-400 hover:bg-emerald-900/40'
-				: 'hover:border-stroke-strong hover:bg-surface-3 border-stroke bg-surface-2/80 text-text-secondary hover:text-text-primary'}"
+				: 'border-stroke bg-surface-2/80 text-text-secondary hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary'}"
 			onclick={onOpenUpgrader}
 			aria-label="Beatport Quality Upgrader"
 		>
@@ -190,7 +197,7 @@
 			class="relative flex h-8 w-8 items-center justify-center rounded-lg border shadow-sm transition-all hover:cursor-pointer active:scale-95
 			{activeView === 'discovery'
 				? 'border-brand-primary/60 bg-brand-primary/20 text-brand-primary'
-				: 'hover:border-stroke-strong hover:bg-surface-3 border-stroke bg-surface-2/80 text-text-secondary hover:text-text-primary'}"
+				: 'border-stroke bg-surface-2/80 text-text-secondary hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary'}"
 			onclick={() => onViewChange?.('discovery')}
 			aria-label={$translate('nav.discovery')}
 		>
@@ -205,7 +212,7 @@
 			class="relative flex h-8 w-8 items-center justify-center rounded-lg border shadow-sm transition-all hover:cursor-pointer active:scale-95
 			{activeView === 'stats'
 				? 'border-brand-primary/60 bg-brand-primary/20 text-brand-primary'
-				: 'hover:border-stroke-strong hover:bg-surface-3 border-stroke bg-surface-2/80 text-text-secondary hover:text-text-primary'}"
+				: 'border-stroke bg-surface-2/80 text-text-secondary hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary'}"
 			onclick={() => onViewChange?.('stats')}
 			aria-label="Statistiques"
 		>
@@ -230,14 +237,14 @@
 	</Tooltip>
 
 	{#if onAddRelease}
-		<Button variant="primary" size="sm" onclick={onAddRelease}>
-			<Icon name="plus" class="mr-1.5 h-4 w-4" />
-			{$translate('discovery.addRelease')}
+		<Button variant="primary" size="sm" onclick={onAddRelease} aria-label={$translate('discovery.addRelease')}>
+			<Icon name="plus" class="h-4 w-4 min-[1280px]:mr-1.5" />
+			<span class="hidden min-[1280px]:inline">{$translate('discovery.addRelease')}</span>
 		</Button>
 	{:else if onImport}
-		<Button variant="primary" size="sm" onclick={onImport}>
-			<Icon name="upload" class="mr-1.5 h-4 w-4" />
-			{$translate('library.importTracks')}
+		<Button variant="primary" size="sm" onclick={onImport} aria-label={$translate('library.importTracks')}>
+			<Icon name="upload" class="h-4 w-4 min-[1280px]:mr-1.5" />
+			<span class="hidden min-[1280px]:inline">{$translate('library.importTracks')}</span>
 		</Button>
 	{/if}
 	<SyncStatusIndicator onclick={onCloudSync} />

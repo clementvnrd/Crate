@@ -84,7 +84,7 @@
 	</div>
 
 	{#if isLoading && heatmap.length === 0}
-		<div class="bg-surface-3 h-48 w-full animate-pulse rounded-xl"></div>
+		<div class="h-48 w-full animate-pulse rounded-xl bg-surface-3"></div>
 	{:else}
 		<div class="overflow-x-auto pb-2">
 			<div class="min-w-[700px] space-y-1.5">
@@ -140,7 +140,7 @@
 			<div class="mt-4 flex items-center justify-end gap-2 text-[10px] font-medium text-text-tertiary">
 				<span>Moins d'écoute</span>
 				<div class="flex items-center gap-1">
-					<div class="bg-surface-3/40 h-3 w-3 rounded border border-stroke/40"></div>
+					<div class="h-3 w-3 rounded border border-stroke/40 bg-surface-3/40"></div>
 					<div class="h-3 w-3 rounded border border-emerald-500/30 bg-emerald-500/25"></div>
 					<div class="h-3 w-3 rounded border border-emerald-500/50 bg-emerald-500/50"></div>
 					<div class="h-3 w-3 rounded border border-emerald-400 bg-emerald-500/75"></div>

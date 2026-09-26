@@ -322,14 +322,14 @@
 	<!-- 1. PLAYER HERO (STYLE APPLE MUSIC MACOS)                              -->
 	<!-- ===================================================================== -->
 	<div
-		class="relative z-20 w-full flex-shrink-0 border-b border-stroke-subtle bg-surface-1/60 p-6 shadow-xl backdrop-blur-xl md:p-8 dark:shadow-2xl"
+		class="relative z-20 w-full flex-shrink-0 border-b border-stroke-subtle bg-surface-1/60 px-6 py-4 shadow-xl backdrop-blur-xl dark:shadow-2xl [@media(min-height:820px)]:p-8"
 	>
 		<div class="mx-auto w-full max-w-7xl">
 			{#if activeHeroTrack}
 				<div class="flex w-full items-center gap-6 md:gap-8">
-					<!-- 225x225px Artwork Cover -->
+					<!-- Artwork: scales with the window height (140–260 px) instead of a fixed 225 px -->
 					<div
-						class="group relative h-[225px] w-[225px] flex-shrink-0 overflow-hidden rounded-2xl border border-stroke-subtle bg-surface-2/60 shadow-2xl shadow-black/20 dark:shadow-black/60"
+						class="group relative size-[clamp(140px,22vh,260px)] flex-shrink-0 overflow-hidden rounded-2xl border border-stroke-subtle bg-surface-2/60 shadow-2xl shadow-black/20 dark:shadow-black/60"
 					>
 						{#if heroArtworkUrl}
 							<img
@@ -359,7 +359,7 @@
 					</div>
 
 					<!-- Metadata, Waveform & Controls Column -->
-					<div class="flex h-[225px] min-w-0 flex-1 flex-col justify-between">
+					<div class="flex min-h-[clamp(140px,22vh,260px)] min-w-0 flex-1 flex-col justify-between gap-3">
 						<!-- Top Part: Micro-pills Badges (Left) & Controls/Mode Toggle (Right) -->
 						<div class="flex w-full items-center justify-between gap-4">
 							<!-- Badges micro-pills horizontaux -->
@@ -367,7 +367,7 @@
 								<!-- Source -->
 								{#if activeHeroTrack.is_in_library}
 									<span
-										class="bg-brand-primary/15 border-brand-primary/30 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold text-brand-primary"
+										class="inline-flex items-center gap-1 rounded-full border border-brand-primary/30 bg-brand-primary/15 px-2.5 py-0.5 text-[10px] font-semibold text-brand-primary"
 									>
 										<Icon name="library" class="h-2.5 w-2.5" />
 										Bibliothèque Crate
@@ -488,7 +488,7 @@
 								{#if !activeHeroTrack.is_in_library}
 									<button
 										type="button"
-										class="shadow-brand-primary/20 flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-primary px-3 py-1.5 text-xs font-semibold text-black shadow-md transition-all hover:brightness-110 active:scale-95 disabled:opacity-50"
+										class="flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-primary px-3 py-1.5 text-xs font-semibold text-black shadow-md shadow-brand-primary/20 transition-all hover:brightness-110 active:scale-95 disabled:opacity-50"
 										onclick={handleImportToLibrary}
 										disabled={isImporting}
 									>
@@ -503,7 +503,7 @@
 								<Tooltip text="Révéler dans le Finder" position="bottom">
 									<button
 										type="button"
-										class="hover:bg-surface-3 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-secondary transition-all hover:text-text-primary active:scale-95"
+										class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-secondary transition-all hover:bg-surface-3 hover:text-text-primary active:scale-95"
 										onclick={() => handleRevealInFinder(activeHeroTrack.file_path)}
 										aria-label="Révéler dans le Finder"
 									>
@@ -636,7 +636,7 @@
 							<div class="flex items-center justify-center gap-3">
 								<button
 									type="button"
-									class="hover:bg-surface-3 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-secondary shadow-xs transition-all hover:text-text-primary active:scale-95"
+									class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-secondary shadow-xs transition-all hover:bg-surface-3 hover:text-text-primary active:scale-95"
 									onclick={() => handleSeek(0)}
 									title="Revenir au début"
 								>
@@ -654,7 +654,7 @@
 
 								<button
 									type="button"
-									class="hover:bg-surface-3 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-secondary shadow-xs transition-all hover:text-text-primary active:scale-95"
+									class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-secondary shadow-xs transition-all hover:bg-surface-3 hover:text-text-primary active:scale-95"
 									onclick={handleStop}
 									title="Arrêter la lecture"
 								>
@@ -778,7 +778,7 @@
 		</div>
 
 		<!-- LISTE DÉFILANTE DES SONS UNIQUEMENT (flex-1 overflow-y-auto) -->
-		<div class="flex-1 overflow-y-auto scroll-smooth px-6 py-1">
+		<div class="min-h-0 flex-1 overflow-y-auto scroll-smooth px-6 py-1">
 			{#if $recentTracksLoading}
 				<div class="flex h-32 items-center justify-center gap-2 text-text-tertiary">
 					<Icon name="loader" class="h-4 w-4 animate-spin" />

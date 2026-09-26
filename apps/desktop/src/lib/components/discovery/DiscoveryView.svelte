@@ -232,10 +232,10 @@
 	<!-- Drop overlay -->
 	{#if isDragOver}
 		<div
-			class="border-brand-primary/50 bg-brand-primary/5 pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-md border-2 border-dashed"
+			class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-md border-2 border-dashed border-brand-primary/50 bg-brand-primary/5"
 		>
 			<div class="flex flex-col items-center gap-2">
-				<Icon name="globe" class="text-brand-primary/70 h-10 w-10" />
+				<Icon name="globe" class="h-10 w-10 text-brand-primary/70" />
 				<Text weight="medium" color="secondary">{$translate('discovery.dropHint')}</Text>
 			</div>
 		</div>

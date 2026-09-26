@@ -174,7 +174,7 @@
 		<div class="border-t border-stroke/60 px-1 pt-2.5">
 			<button
 				type="button"
-				class="hover:bg-surface-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-stroke bg-surface-2 py-1.5 text-xs font-semibold text-text-primary transition-all"
+				class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-stroke bg-surface-2 py-1.5 text-xs font-semibold text-text-primary transition-all hover:bg-surface-3"
 				onclick={() => beatportStore.openLoginModal()}
 			>
 				<div

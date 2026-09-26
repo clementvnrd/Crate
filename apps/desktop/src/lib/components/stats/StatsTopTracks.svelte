@@ -33,7 +33,7 @@
 <div class="flex h-full flex-col rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
 	<div class="mb-4 flex items-center justify-between">
 		<div class="flex items-center gap-2">
-			<div class="bg-brand-primary/15 flex h-7 w-7 items-center justify-center rounded-lg text-brand-primary">
+			<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-primary/15 text-brand-primary">
 				<Icon name="music-note" class="h-4 w-4" />
 			</div>
 			<div>
@@ -52,10 +52,10 @@
 		<div class="space-y-3 py-4">
 			{#each Array(5) as _, i (i)}
 				<div class="flex animate-pulse items-center gap-3">
-					<div class="bg-surface-3 h-10 w-10 rounded-lg"></div>
+					<div class="h-10 w-10 rounded-lg bg-surface-3"></div>
 					<div class="flex-1 space-y-1.5">
-						<div class="bg-surface-3 h-3.5 w-3/4 rounded"></div>
-						<div class="bg-surface-3 h-2.5 w-1/2 rounded"></div>
+						<div class="h-3.5 w-3/4 rounded bg-surface-3"></div>
+						<div class="h-2.5 w-1/2 rounded bg-surface-3"></div>
 					</div>
 				</div>
 			{/each}
@@ -99,7 +99,7 @@
 
 					<!-- Artwork Thumbnail -->
 					<div
-						class="bg-surface-3 relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg border border-stroke/60 shadow-sm"
+						class="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg border border-stroke/60 bg-surface-3 shadow-sm"
 					>
 						{#if artUrl}
 							<img
@@ -133,7 +133,7 @@
 					<div class="flex flex-shrink-0 items-center gap-2">
 						{#if track.bpm}
 							<span
-								class="bg-surface-3 rounded border border-stroke px-1.5 py-0.5 font-mono text-[10px] text-text-secondary"
+								class="rounded border border-stroke bg-surface-3 px-1.5 py-0.5 font-mono text-[10px] text-text-secondary"
 							>
 								{Math.round(track.bpm)} BPM
 							</span>
