@@ -2,6 +2,7 @@ import { writable, derived } from 'svelte/store'
 import type { TagCategory, Tag, TagSelectionState, Track } from '../types'
 import * as tagsApi from '../api/tags'
 import { toastStore } from './toast'
+import { toErrorMessage } from '../utils/errors'
 
 // =============================================================================
 // State
@@ -43,7 +44,7 @@ function createTagsStore() {
 					loading: false,
 				}))
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : 'Failed to load tags'
+				const errorMessage = toErrorMessage(error, 'Failed to load tags')
 				update((state) => ({
 					...state,
 					loading: false,
@@ -67,7 +68,7 @@ function createTagsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to create category',
+					error: toErrorMessage(error, 'Failed to create category'),
 				}))
 				return null
 			}
@@ -87,7 +88,7 @@ function createTagsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to update category',
+					error: toErrorMessage(error, 'Failed to update category'),
 				}))
 				return null
 			}
@@ -106,7 +107,7 @@ function createTagsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to delete category',
+					error: toErrorMessage(error, 'Failed to delete category'),
 				}))
 			}
 		},
@@ -130,7 +131,7 @@ function createTagsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to create tag',
+					error: toErrorMessage(error, 'Failed to create tag'),
 				}))
 				return null
 			}
@@ -153,7 +154,7 @@ function createTagsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to update tag',
+					error: toErrorMessage(error, 'Failed to update tag'),
 				}))
 				return null
 			}
@@ -195,7 +196,7 @@ function createTagsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to delete tag',
+					error: toErrorMessage(error, 'Failed to delete tag'),
 				}))
 			}
 		},
@@ -209,7 +210,7 @@ function createTagsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to assign tags',
+					error: toErrorMessage(error, 'Failed to assign tags'),
 				}))
 			}
 		},
@@ -223,7 +224,7 @@ function createTagsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to remove tags',
+					error: toErrorMessage(error, 'Failed to remove tags'),
 				}))
 			}
 		},

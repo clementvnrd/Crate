@@ -651,7 +651,7 @@ function createBeatportStore() {
 			const token = await this.getValidToken()
 
 			try {
-				const searchData = await beatportApi.searchBeatport(token, query, searchType)
+				const searchData = await beatportApi.searchBeatport(token, query)
 				update((s) => ({
 					...s,
 					searchResults: searchData.tracks,

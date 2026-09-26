@@ -23,9 +23,10 @@
 		s.removeProperty('--text-primary')
 		s.removeProperty('--text-tertiary')
 
+		// Failsafe only: initialization normally dismisses the splash once settings are loaded
 		const fallback = setTimeout(() => {
 			dismissSplash()
-		}, 2000)
+		}, 10000)
 		return () => clearTimeout(fallback)
 	})
 </script>

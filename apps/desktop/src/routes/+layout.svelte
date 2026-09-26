@@ -296,6 +296,14 @@
 			unlistenMenuAction = unlisten
 		})
 
+		// Library changed in the backend (e.g. after an MP3 → FLAC upgrade)
+		let unlistenLibraryUpdated: (() => void) | null = null
+		listen('library-updated', () => {
+			libraryStore.reloadWithCurrentFilter()
+		}).then((unlisten) => {
+			unlistenLibraryUpdated = unlisten
+		})
+
 		// Real-time live sync with Mixed In Key database
 		let unlistenMikSync: (() => void) | null = null
 		listen('mik-database-synced', () => {
@@ -367,6 +375,7 @@
 			cleanupErrorHandler()
 			unlistenMenuAction?.()
 			unlistenMikSync?.()
+			unlistenLibraryUpdated?.()
 			unlistenDuplicates?.()
 			unlistenUpgrades?.()
 			unlistenOpenFile?.()

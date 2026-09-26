@@ -4,6 +4,7 @@ import { checkForUpdate, relaunch } from '$shared/api/updater'
 import { appVersion, isDev } from '$lib/stores/app'
 import { toastStore } from '$shared/stores/toast'
 import { translate } from '$shared/i18n'
+import { toErrorMessage } from '$shared/utils/errors'
 
 // =============================================================================
 // Types
@@ -78,7 +79,7 @@ function createUpdaterStore() {
 					update((s) => ({ ...s, status: 'upToDate', update: null }))
 				}
 			} catch (error) {
-				const message = error instanceof Error ? error.message : String(error)
+				const message = toErrorMessage(error, 'Unknown error')
 				update((s) => ({ ...s, status: 'error', error: message }))
 				if (!silent) {
 					toastStore.error(get(translate)('errors.updateCheckFailed'))
@@ -116,7 +117,7 @@ function createUpdaterStore() {
 
 				await relaunch()
 			} catch (error) {
-				const message = error instanceof Error ? error.message : String(error)
+				const message = toErrorMessage(error, 'Unknown error')
 				update((s) => ({ ...s, status: 'error', error: message }))
 				toastStore.error(get(translate)('errors.updateInstallFailed'))
 			}

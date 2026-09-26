@@ -7,6 +7,7 @@ import { toastStore } from '$shared/stores/toast'
 import { autoAnalyzeOnImport } from '$shared/stores/settings'
 import { analysisStore } from './analysis'
 import { syncStore } from './sync'
+import { toErrorMessage } from '$shared/utils/errors'
 
 // =============================================================================
 // State
@@ -60,7 +61,7 @@ function createLibraryStore() {
 					filter: filter ?? {},
 				}))
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : 'Failed to load tracks'
+				const errorMessage = toErrorMessage(error, 'Failed to load tracks')
 				update((state) => ({
 					...state,
 					loading: false,
@@ -130,7 +131,7 @@ function createLibraryStore() {
 
 				return result
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : 'Failed to import tracks'
+				const errorMessage = toErrorMessage(error, 'Failed to import tracks')
 				update((state) => ({
 					...state,
 					loading: false,
@@ -155,7 +156,7 @@ function createLibraryStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to delete tracks',
+					error: toErrorMessage(error, 'Failed to delete tracks'),
 				}))
 			}
 		},
@@ -230,7 +231,7 @@ function createLibraryStore() {
 				update((state) => ({
 					...state,
 					loading: false,
-					error: error instanceof Error ? error.message : 'Failed to load playlist tracks',
+					error: toErrorMessage(error, 'Failed to load playlist tracks'),
 				}))
 			}
 		},
@@ -253,7 +254,7 @@ function createLibraryStore() {
 				update((state) => ({
 					...state,
 					loading: false,
-					error: error instanceof Error ? error.message : 'Failed to load smart playlist tracks',
+					error: toErrorMessage(error, 'Failed to load smart playlist tracks'),
 				}))
 			}
 		},

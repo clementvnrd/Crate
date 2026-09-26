@@ -16,6 +16,7 @@ import type {
 import * as settingsApi from '../api/settings'
 import { rebuildMenu, type MenuTranslations } from '../api/app'
 import { setLanguage as setI18nLanguage, translate } from '../i18n'
+import { toErrorMessage } from '../utils/errors'
 
 // =============================================================================
 // State
@@ -335,7 +336,7 @@ function createSettingsStore() {
 				update((s) => ({
 					...s,
 					loading: false,
-					error: error instanceof Error ? error.message : 'Failed to load settings',
+					error: toErrorMessage(error, 'Failed to load settings'),
 				}))
 
 				// Apply defaults on error

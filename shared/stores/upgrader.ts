@@ -3,6 +3,7 @@ import { listen } from '@tauri-apps/api/event'
 import type { UpgradeMatch, UpgradeScanResult, UpgradeCountInfo, UpgradeReplacementResult, UpgradeProgress } from '../types'
 import * as upgraderApi from '../api/upgrader'
 import { toastStore } from './toast'
+import { toErrorMessage } from '../utils/errors'
 
 export interface UpgraderState {
 	matches: UpgradeMatch[]
@@ -59,7 +60,7 @@ function createUpgraderStore() {
 				}))
 				return result
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : "Erreur lors du scan d'upgrade"
+				const errorMsg = toErrorMessage(error, "Erreur lors du scan d'upgrade")
 				update((s) => ({ ...s, loading: false, error: errorMsg }))
 				toastStore.error(errorMsg)
 				return null
@@ -142,7 +143,7 @@ function createUpgraderStore() {
 				})
 				toastStore.success('Morceau ignoré pour les futures améliorations')
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : "Erreur lors de l'ignorance du morceau"
+				const errorMsg = toErrorMessage(error, "Erreur lors de l'ignorance du morceau")
 				toastStore.error(errorMsg)
 			}
 		},
@@ -177,7 +178,7 @@ function createUpgraderStore() {
 				await this.load()
 				return result
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : 'Erreur lors de la mise à niveau'
+				const errorMsg = toErrorMessage(error, 'Erreur lors de la mise à niveau')
 				toastStore.error(errorMsg)
 				return null
 			} finally {

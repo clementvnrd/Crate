@@ -178,8 +178,9 @@ export async function getMikDatabaseStatus(): Promise<import('../types').MikData
 /**
  * Full synchronization directly with Mixed In Key 11 database (Collection11.mikdb)
  */
-export async function syncFromMikDatabase(): Promise<import('../types').MikSyncResult> {
-	return invoke<import('../types').MikSyncResult>('sync_from_mik_database')
+/** Syncs from Mixed In Key: all tracks, or only `trackIds` when given. */
+export async function syncFromMikDatabase(trackIds?: string[]): Promise<import('../types').MikSyncResult> {
+	return invoke<import('../types').MikSyncResult>('sync_from_mik_database', { trackIds: trackIds ?? null })
 }
 
 /**

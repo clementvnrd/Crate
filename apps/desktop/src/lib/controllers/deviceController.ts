@@ -4,6 +4,7 @@ import type { devicesStore as DevicesStoreType } from '$lib/stores/devices'
 import type { settingsStore as SettingsStoreType } from '$shared/stores/settings'
 import type { toastStore as ToastStoreType } from '$shared/stores/toast'
 import * as devicesApi from '$shared/api/devices'
+import { toErrorMessage } from '$shared/utils/errors'
 
 // =============================================================================
 // Types
@@ -89,7 +90,7 @@ export function createDeviceController(
 			await devicesApi.reformatDevice(device.mount_point, volumeName)
 			toastStore.success(`Device reformatted as "${volumeName}"`)
 		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error)
+			const message = toErrorMessage(error, 'Unknown error')
 			// Handle user cancellation gracefully - don't show error toast or log
 			if (message.includes('cancelled') || message.includes('canceled')) {
 				return

@@ -49,9 +49,25 @@ impl LibraryService {
         Ok(MikDatabaseService::get_status(&conn))
     }
 
-    pub fn sync_from_mik_database(&self) -> Result<MikSyncResult> {
+    /// Syncs from Mixed In Key: the whole library, or only the given tracks (context menu).
+    pub fn sync_from_mik_database(&self, track_ids: Option<&[String]>) -> Result<MikSyncResult> {
+        let mut songs = MikDatabaseService::read_all_songs()?;
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-        MikDatabaseService::sync_all_from_mik_db(&conn, Some(&self.artwork_service))
+        if let Some(ids) = track_ids.filter(|ids| !ids.is_empty()) {
+            use unicode_normalization::UnicodeNormalization;
+            let mut paths = std::collections::HashSet::new();
+            for id in ids {
+                if let Ok(path) = conn.query_row("SELECT file_path FROM tracks WHERE id = ?1", [id], |r| r.get::<_, String>(0)) {
+                    paths.insert(path.nfc().collect::<String>());
+                }
+            }
+            songs.retain(|song| {
+                song.file_path
+                    .as_ref()
+                    .is_some_and(|p| paths.contains(&p.to_string_lossy().nfc().collect::<String>()))
+            });
+        }
+        MikDatabaseService::apply_mik_songs(&conn, songs, Some(&self.artwork_service))
     }
 }
 

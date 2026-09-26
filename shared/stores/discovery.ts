@@ -14,6 +14,7 @@ import { discoveryPlaylistStore } from './discoveryPlaylist'
 import { uiStore } from './ui'
 import { toastStore } from './toast'
 import { translate } from '../i18n'
+import { toErrorMessage } from '../utils/errors'
 
 // =============================================================================
 // State
@@ -80,7 +81,7 @@ function createDiscoveryStore() {
 				update((state) => ({
 					...state,
 					loading: false,
-					error: typeof error === 'string' ? error : error instanceof Error ? error.message : 'Failed to load releases',
+					error: typeof error === 'string' ? error : toErrorMessage(error, 'Failed to load releases'),
 				}))
 			}
 		},
@@ -98,7 +99,7 @@ function createDiscoveryStore() {
 				return release
 			} catch (error) {
 				toastStore.error(
-					typeof error === 'string' ? error : error instanceof Error ? error.message : 'Failed to add release'
+					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to add release')
 				)
 				return null
 			}
@@ -114,7 +115,7 @@ function createDiscoveryStore() {
 				return release
 			} catch (error) {
 				toastStore.error(
-					typeof error === 'string' ? error : error instanceof Error ? error.message : 'Failed to update release'
+					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to update release')
 				)
 				return null
 			}
@@ -129,7 +130,7 @@ function createDiscoveryStore() {
 				}))
 			} catch (error) {
 				toastStore.error(
-					typeof error === 'string' ? error : error instanceof Error ? error.message : 'Failed to delete release'
+					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to delete release')
 				)
 			}
 		},
@@ -143,7 +144,7 @@ function createDiscoveryStore() {
 					releases: state.releases.filter((r) => !idSet.has(r.id)),
 				}))
 			} catch (error) {
-				toastStore.error(error instanceof Error ? error.message : 'Failed to delete releases')
+				toastStore.error(toErrorMessage(error, 'Failed to delete releases'))
 			}
 		},
 
@@ -153,7 +154,7 @@ function createDiscoveryStore() {
 				await this.loadReleases()
 			} catch (error) {
 				toastStore.error(
-					typeof error === 'string' ? error : error instanceof Error ? error.message : 'Failed to assign tags'
+					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to assign tags')
 				)
 			}
 		},
@@ -169,7 +170,7 @@ function createDiscoveryStore() {
 				return release
 			} catch (error) {
 				toastStore.error(
-					typeof error === 'string' ? error : error instanceof Error ? error.message : 'Failed to refresh metadata'
+					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to refresh metadata')
 				)
 				return null
 			} finally {
@@ -187,7 +188,7 @@ function createDiscoveryStore() {
 				await this.loadReleases()
 			} catch (error) {
 				toastStore.error(
-					typeof error === 'string' ? error : error instanceof Error ? error.message : 'Failed to remove tags'
+					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to remove tags')
 				)
 			}
 		},
@@ -209,7 +210,7 @@ function createDiscoveryStore() {
 				return result
 			} catch (error) {
 				toastStore.error(
-					typeof error === 'string' ? error : error instanceof Error ? error.message : 'Failed to import release'
+					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to import release')
 				)
 				return null
 			}
@@ -275,7 +276,7 @@ function createDiscoveryStore() {
 				}))
 			} catch (error) {
 				toastStore.error(
-					typeof error === 'string' ? error : error instanceof Error ? error.message : 'Failed to update release'
+					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to update release')
 				)
 			}
 		},
@@ -321,7 +322,7 @@ function createDiscoveryStore() {
 				return merged
 			} catch (error) {
 				toastStore.error(
-					typeof error === 'string' ? error : error instanceof Error ? error.message : 'Failed to merge releases'
+					typeof error === 'string' ? error : toErrorMessage(error, 'Failed to merge releases')
 				)
 				return null
 			}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { toErrorMessage } from '$shared/utils/errors'
 	import type {
 		DiscoveryRelease,
 		DiscoveryReleaseCreate,
@@ -170,7 +171,7 @@
 				scannedPage = page
 				isBulkMode = true
 			} catch (error) {
-				fetchError = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Scan failed'
+				fetchError = typeof error === 'string' ? error : toErrorMessage(error, 'Scan failed')
 			} finally {
 				scanning = false
 			}
@@ -230,7 +231,7 @@
 				// Non-blocking: if match check fails, just continue without showing matches
 			}
 		} catch (error) {
-			fetchError = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Fetch failed'
+			fetchError = typeof error === 'string' ? error : toErrorMessage(error, 'Fetch failed')
 		} finally {
 			fetching = false
 		}

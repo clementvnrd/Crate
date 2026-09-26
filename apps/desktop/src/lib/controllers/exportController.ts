@@ -6,6 +6,7 @@ import type { toastStore as ToastStoreType } from '$shared/stores/toast'
 import { isExporting } from '$lib/stores/export'
 import { exportFormat } from '$shared/stores/settings'
 import * as exportApi from '$shared/api/export'
+import { toErrorMessage } from '$shared/utils/errors'
 
 // =============================================================================
 // Types
@@ -113,7 +114,7 @@ export function createExportController(
 				modalActions.openExportFailureModal(errorMsg, request.device_id, request.mount_point, result.tracks_copied)
 			}
 		} catch (error) {
-			const errorMsg = error instanceof Error ? error.message : 'Export failed'
+			const errorMsg = toErrorMessage(error, 'Export failed')
 			exportStore.failExport(errorMsg)
 			modalActions.openExportFailureModal(errorMsg, request.device_id, request.mount_point, 0)
 		}

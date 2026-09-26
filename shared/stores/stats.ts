@@ -16,6 +16,7 @@ import type {
 import * as statsApi from '../api/stats'
 import { toastStore } from './toast'
 import { openUrl } from '@tauri-apps/plugin-opener'
+import { toErrorMessage } from '../utils/errors'
 
 export interface StatsState {
 	summary: StatsSummary | null
@@ -142,7 +143,7 @@ function createStatsStore() {
 							: s.mikDetected,
 				}))
 			} catch (err) {
-				const errorMsg = err instanceof Error ? err.message : 'Erreur lors du chargement des statistiques'
+				const errorMsg = toErrorMessage(err, 'Erreur lors du chargement des statistiques')
 				update((s) => ({ ...s, isLoading: false, error: errorMsg }))
 				toastStore.error(errorMsg)
 			}
@@ -233,7 +234,7 @@ function createStatsStore() {
 				await this.refreshAll()
 				return result
 			} catch (err) {
-				const errorMsg = err instanceof Error ? err.message : "Erreur lors de l'import de l'archive Spotify"
+				const errorMsg = toErrorMessage(err, "Erreur lors de l'import de l'archive Spotify")
 				update((s) => ({ ...s, isImportingSpotify: false }))
 				toastStore.error(errorMsg)
 				return null
@@ -253,7 +254,7 @@ function createStatsStore() {
 				return count
 			} catch (err) {
 				const errorMsg =
-					err instanceof Error ? err.message : 'Erreur lors de la synchronisation avec Rekordbox'
+					toErrorMessage(err, 'Erreur lors de la synchronisation avec Rekordbox')
 				update((s) => ({ ...s, isSyncingRekordbox: false }))
 				toastStore.error(errorMsg)
 				return null

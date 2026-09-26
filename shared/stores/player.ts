@@ -17,6 +17,7 @@ import {
 	getStoredBoolean,
 	setStoredBoolean,
 } from '../utils/storage'
+import { toErrorMessage } from '../utils/errors'
 
 // =============================================================================
 // State
@@ -418,7 +419,7 @@ function createPlayerStore() {
 				startPositionTracking()
 				loadTrackCuesAndWaveform(track.id)
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : 'Failed to play track'
+				const errorMsg = toErrorMessage(error, 'Failed to play track')
 				if (errorMsg.toLowerCase().includes('file not found') || errorMsg.toLowerCase().includes('filenotfound')) {
 					onTrackMissing?.(track.id)
 				}
@@ -480,7 +481,7 @@ function createPlayerStore() {
 					}
 				}
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : 'Failed to play track'
+				const errorMsg = toErrorMessage(error, 'Failed to play track')
 				update((s) => ({ ...s, error: errorMsg }))
 			}
 		},
@@ -540,7 +541,7 @@ function createPlayerStore() {
 					previewLoadingReleaseId: null,
 				}))
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : 'Failed to fetch preview stream'
+				const errorMsg = toErrorMessage(error, 'Failed to fetch preview stream')
 				update((s) => ({ ...s, error: errorMsg, previewLoadingReleaseId: null }))
 				toastStore.error(get(translate)('errors.previewStreamFailed'))
 			}
@@ -607,7 +608,7 @@ function createPlayerStore() {
 					},
 				}))
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : 'Erreur lecture Beatport'
+				const errorMsg = toErrorMessage(error, 'Erreur lecture Beatport')
 				update((s) => ({ ...s, error: errorMsg }))
 			}
 		},
@@ -637,7 +638,7 @@ function createPlayerStore() {
 			} catch (error) {
 				update((s) => ({
 					...s,
-					error: error instanceof Error ? error.message : 'Failed to pause',
+					error: toErrorMessage(error, 'Failed to pause'),
 				}))
 			}
 		},
@@ -720,7 +721,7 @@ function createPlayerStore() {
 					}
 					startPositionTracking()
 				} catch (error) {
-					const errorMsg = error instanceof Error ? error.message : 'Failed to play track'
+					const errorMsg = toErrorMessage(error, 'Failed to play track')
 					if (errorMsg.toLowerCase().includes('file not found') || errorMsg.toLowerCase().includes('filenotfound')) {
 						onTrackMissing?.(state.currentTrack.id)
 					}
@@ -736,7 +737,7 @@ function createPlayerStore() {
 			} catch (error) {
 				update((s) => ({
 					...s,
-					error: error instanceof Error ? error.message : 'Failed to resume',
+					error: toErrorMessage(error, 'Failed to resume'),
 				}))
 			}
 		},
@@ -809,7 +810,7 @@ function createPlayerStore() {
 			} catch (error) {
 				update((s) => ({
 					...s,
-					error: error instanceof Error ? error.message : 'Failed to stop',
+					error: toErrorMessage(error, 'Failed to stop'),
 				}))
 			}
 		},
@@ -841,7 +842,7 @@ function createPlayerStore() {
 			} catch (error) {
 				update((s) => ({
 					...s,
-					error: error instanceof Error ? error.message : 'Failed to seek',
+					error: toErrorMessage(error, 'Failed to seek'),
 				}))
 			}
 		},
@@ -869,7 +870,7 @@ function createPlayerStore() {
 			} catch (error) {
 				update((s) => ({
 					...s,
-					error: error instanceof Error ? error.message : 'Failed to set volume',
+					error: toErrorMessage(error, 'Failed to set volume'),
 				}))
 			}
 		},
@@ -901,7 +902,7 @@ function createPlayerStore() {
 			} catch (error) {
 				update((s) => ({
 					...s,
-					error: error instanceof Error ? error.message : 'Failed to set speed',
+					error: toErrorMessage(error, 'Failed to set speed'),
 				}))
 			}
 		},
@@ -1110,6 +1111,17 @@ function createPlayerStore() {
 			setStoredNumber('player.positionMs', 0)
 			setStoredNumber('player.durationMs', 0)
 			set(initialState)
+		},
+
+		/**
+		 * Marks the standalone file as imported into the library (updates the store, never a copy).
+		 */
+		markStandaloneInLibrary(filePath: string) {
+			update((s) =>
+				s.standaloneTrack?.file_path === filePath
+					? { ...s, standaloneTrack: { ...s.standaloneTrack, is_in_library: true } }
+					: s
+			)
 		},
 
 		/**

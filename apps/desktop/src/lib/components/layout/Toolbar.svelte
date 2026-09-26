@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { toErrorMessage } from '$shared/utils/errors'
 	import { onMount } from 'svelte'
 	import { listen } from '@tauri-apps/api/event'
 	import { Button, IconButton, Tooltip, MixedInKeyLogo } from '$lib/components/common'
@@ -52,9 +53,11 @@
 		}
 	})
 
+	// Refresh the duplicate badge only when the number of tracks changes (imports, deletions);
+	// edits are covered by the backend `duplicates-updated` event handled in the layout.
+	const trackCount = $derived($libraryStore.tracks.length)
 	$effect(() => {
-		// Periodically refresh duplicate counts when library changes
-		if ($libraryStore.tracks.length > 0) {
+		if (trackCount > 0) {
 			duplicateStore.loadCount()
 		}
 	})
@@ -99,7 +102,7 @@
 			const count = await exportApi.exportRekordboxXml(path)
 			toastStore.success(`Export Rekordbox XML réussi : ${count} morceaux exportés avec grilles, clés et cues MIK !`)
 		} catch (err) {
-			const message = err instanceof Error ? err.message : String(err)
+			const message = toErrorMessage(err, 'Unknown error')
 			toastStore.error(`Échec de l'export Rekordbox : ${message}`)
 		} finally {
 			exportingXml = false

@@ -92,6 +92,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **[B35]** Le compteur de doublons de la barre d'outils est mis en cache selon une empreinte de la bibliothèque : le scan complet ne tourne plus à chaque événement `duplicates-updated`, seulement quand la bibliothèque a changé.
 - Tests : 9 nouveaux tests Rust (recherche, encodage des chemins, marques de cue, XML valide avec caractères spéciaux, pics de waveform) et 5 tests Vitest (pads de hot cues, raccourcis 1–8 limités aux bonnes vues).
 
+#### Corrigé — frontend
+
+- **[I1]** Les messages d'erreur du backend s'affichent enfin : Tauri rejette une commande avec une *chaîne*, que tous les `error instanceof Error ? … : 'message générique'` jetaient. Nouveau helper partagé `toErrorMessage()` utilisé par tous les stores et composants (~85 occurrences, amont compris).
+- **[I2]** Onglet Beatport : les réglages sans effet (qualité AAC/MP3, synchro Mixed In Key automatique) sont remplacés par une information exacte — téléchargements FLAC vérifiés uniquement, analyse Mixed In Key récupérée automatiquement par la surveillance de sa base.
+- **[I7]** L'événement `library-updated` (émis après un upgrade) est écouté et rafraîchit la bibliothèque ; paramètre `searchType` inutilisé retiré de la recherche Beatport.
+- **[F4]** Initialisation : une étape qui dépasse son délai ne perd plus sa fonction de nettoyage (écouteurs de menu, touches média, initialisation) ; elle est exécutée à la fermeture, et les échecs sont journalisés avec le nom de l'étape.
+- **[F5]** L'écran de démarrage se ferme quand l'initialisation (réglages compris) est terminée, et non plus après un minuteur fixe de 1,5 s qui pouvait faire apparaître l'onboarding par erreur ; filet de sécurité à 10 s.
+- **[F7]** Le badge « doublons » de la barre d'outils ne relance le comptage que lorsque le nombre de titres change, plus à chaque modification de la liste.
+- **[F10]** Ajout d'un fichier du lecteur à la bibliothèque : le store source est mis à jour au lieu de modifier une valeur dérivée.
+- **[F13]** « Synchroniser avec Mixed In Key » dans le menu contextuel ne synchronise que les titres sélectionnés.
+- **[F15]** Les infobulles se ferment au clic, à la sortie du pointeur et quand la fenêtre perd le focus (celle du badge Mixed In Key restait affichée quand le bouton se désactivait pendant la synchro).
+- Tests : 3 tests Vitest pour `toErrorMessage`.
+
 #### Documentation
 
 - **[L6]** Le README annonce désormais les 15 langues réellement livrées (au lieu de 11) et décrit le fork, les tests et le suivi.

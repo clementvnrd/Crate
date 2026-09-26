@@ -1,6 +1,7 @@
 import { writable, derived } from 'svelte/store'
 import type { StandaloneTrack } from '$shared/types'
 import * as standaloneApi from '$shared/api/standalone'
+import { toErrorMessage } from '$shared/utils/errors'
 
 interface RecentTracksState {
 	tracks: StandaloneTrack[]
@@ -29,7 +30,7 @@ function createRecentTracksStore() {
 				const tracks = await standaloneApi.getRecentStandaloneTracks(limit)
 				update((s) => ({ ...s, tracks, loading: false }))
 			} catch (err) {
-				const error = err instanceof Error ? err.message : 'Failed to load recent tracks'
+				const error = toErrorMessage(err, 'Failed to load recent tracks')
 				update((s) => ({ ...s, error, loading: false }))
 			}
 		},

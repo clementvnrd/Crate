@@ -11,6 +11,7 @@ import type {
 } from '../types'
 import * as playlistsApi from '../api/playlists'
 import { toastStore } from './toast'
+import { toErrorMessage } from '../utils/errors'
 
 // =============================================================================
 // State
@@ -67,7 +68,7 @@ function createPlaylistsStore() {
 					loading: false,
 				}))
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : 'Failed to load playlists'
+				const errorMessage = toErrorMessage(error, 'Failed to load playlists')
 				update((state) => ({
 					...state,
 					loading: false,
@@ -91,7 +92,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to create playlist',
+					error: toErrorMessage(error, 'Failed to create playlist'),
 				}))
 				return null
 			}
@@ -111,7 +112,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to create folder',
+					error: toErrorMessage(error, 'Failed to create folder'),
 				}))
 				return null
 			}
@@ -135,7 +136,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to rename',
+					error: toErrorMessage(error, 'Failed to rename'),
 				}))
 				return null
 			}
@@ -168,7 +169,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to delete',
+					error: toErrorMessage(error, 'Failed to delete'),
 				}))
 			}
 		},
@@ -187,7 +188,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to move playlist',
+					error: toErrorMessage(error, 'Failed to move playlist'),
 				}))
 				return null
 			}
@@ -211,7 +212,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to move playlist',
+					error: toErrorMessage(error, 'Failed to move playlist'),
 				}))
 				return null
 			}
@@ -226,7 +227,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to get playlist tracks',
+					error: toErrorMessage(error, 'Failed to get playlist tracks'),
 				}))
 				return []
 			}
@@ -249,7 +250,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to add tracks',
+					error: toErrorMessage(error, 'Failed to add tracks'),
 				}))
 			}
 		},
@@ -271,7 +272,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to remove tracks',
+					error: toErrorMessage(error, 'Failed to remove tracks'),
 				}))
 			}
 		},
@@ -288,7 +289,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to reorder tracks',
+					error: toErrorMessage(error, 'Failed to reorder tracks'),
 				}))
 			}
 		},
@@ -306,7 +307,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to add releases',
+					error: toErrorMessage(error, 'Failed to add releases'),
 				}))
 			}
 		},
@@ -324,7 +325,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to remove releases',
+					error: toErrorMessage(error, 'Failed to remove releases'),
 				}))
 			}
 		},
@@ -338,7 +339,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to get playlist releases',
+					error: toErrorMessage(error, 'Failed to get playlist releases'),
 				}))
 				return []
 			}
@@ -363,7 +364,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to create smart playlist',
+					error: toErrorMessage(error, 'Failed to create smart playlist'),
 				}))
 				return null
 			}
@@ -383,7 +384,7 @@ function createPlaylistsStore() {
 			} catch (error) {
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Failed to update smart rules',
+					error: toErrorMessage(error, 'Failed to update smart rules'),
 				}))
 				return null
 			}

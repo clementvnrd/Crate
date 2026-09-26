@@ -221,10 +221,11 @@ pub async fn get_mik_database_status(
 
 #[tauri::command]
 pub async fn sync_from_mik_database(
+    track_ids: Option<Vec<String>>,
     app: tauri::AppHandle,
     library: State<'_, LibraryService>,
 ) -> Result<crate::services::library::MikSyncResult> {
-    let res = library.sync_from_mik_database()?;
+    let res = library.sync_from_mik_database(track_ids.as_deref())?;
     if res.added > 0 || res.updated > 0 || res.removed > 0 {
         let _ = app.emit("duplicates-updated", ());
     }

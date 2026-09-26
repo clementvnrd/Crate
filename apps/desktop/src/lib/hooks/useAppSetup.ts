@@ -65,6 +65,7 @@ import { useMediaKeys } from './useMediaKeys'
 import { useDragDropCoordination } from './useDragDropCoordination'
 import { translate } from '$shared/i18n'
 import * as playlistsApi from '$shared/api/playlists'
+import { toErrorMessage } from '$shared/utils/errors'
 
 // =============================================================================
 // Types
@@ -749,10 +750,43 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 	// Mount Setup
 	// =========================================================================
 
+	let tornDown = false
+
+	/**
+	 * Waits at most `ms` for a setup step that returns a cleanup function, without ever losing that
+	 * cleanup: if the step finishes after the timeout, its cleanup still runs at teardown (or right
+	 * away if teardown already happened). Failures are logged with the step name.
+	 */
+	function cleanupWhenReady(promise: Promise<() => void>, ms: number, label: string): Promise<() => void> {
+		let cleanupFn: (() => void) | null = null
+		const cleanup = () => {
+			cleanupFn?.()
+			cleanupFn = null
+		}
+		const settled = promise
+			.then((fn) => {
+				if (tornDown) fn()
+				else cleanupFn = fn
+			})
+			.catch((err) => console.warn(`${label} failed:`, err))
+		return Promise.race([
+			settled.then(() => cleanup),
+			new Promise<() => void>((resolve) =>
+				setTimeout(() => {
+					if (!cleanupFn) console.warn(`${label} still initializing after ${ms} ms; continuing`)
+					resolve(cleanup)
+				}, ms)
+			),
+		])
+	}
+
 	function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
 		let timer: ReturnType<typeof setTimeout>
 		const timeoutPromise = new Promise<T>((resolve) => {
-			timer = setTimeout(() => resolve(fallback), ms)
+			timer = setTimeout(() => {
+				console.warn(`Setup step still running after ${ms} ms; continuing`)
+				resolve(fallback)
+			}, ms)
 		})
 		return Promise.race([
 			promise.then((res) => {
@@ -777,7 +811,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 		try {
 			await withTimeout(exportStore.startListening(), 1500, undefined)
 
-			cleanupApp = await withTimeout(
+			cleanupApp = await cleanupWhenReady(
 				useAppInitialization({
 					stores: {
 						appStore,
@@ -794,7 +828,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 					onDragStateChange: (dragOver) => setIsDragOver(dragOver),
 				}),
 				2500,
-				() => {}
+				'App initialization'
 			)
 
 			// Wire shared stores to their desktop-only collaborators
@@ -971,7 +1005,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 				onRefreshMetadata: handlers.refreshMetadata,
 			})
 
-			cleanupMenu = await withTimeout(
+			cleanupMenu = await cleanupWhenReady(
 				useMenuActions({
 					onImport: handlers.import,
 					onAddRelease: handlers.addRelease,
@@ -1002,17 +1036,17 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 					onRefreshMetadata: handlers.refreshMetadata,
 				}),
 				1500,
-				() => {}
+				'Menu actions'
 			)
 
-			cleanupMediaKeys = await withTimeout(
+			cleanupMediaKeys = await cleanupWhenReady(
 				useMediaKeys({
 					onPlayPause: handlers.playPause,
 					onNextTrack: playNextTrack,
 					onPreviousTrack: playPreviousTrack,
 				}),
 				1500,
-				() => {}
+				'Media keys'
 			)
 
 			if ('mediaSession' in navigator) {
@@ -1050,6 +1084,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 		}
 
 		return () => {
+			tornDown = true
 			cleanupApp()
 			cleanupKeyboard()
 			cleanupMenu()
@@ -1102,7 +1137,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 					discoveryStore.updateTagCategory(tagId, targetCategoryId)
 					discoveryPlaylistStore.updateTagCategory(tagId, targetCategoryId)
 				} catch (error) {
-					const message = error instanceof Error ? error.message : get(translate)('errors.tagNameConflict')
+					const message = toErrorMessage(error, get(translate)('errors.tagNameConflict'))
 					toastStore.error(message)
 				}
 			},

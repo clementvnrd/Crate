@@ -2,7 +2,7 @@
 	import { beatportStore } from '$shared/stores/beatport'
 	import { settingsStore } from '$shared/stores/settings'
 	import * as settingsApi from '$shared/api/settings'
-	import { Button, Text, Icon, ToggleSwitch } from '$lib/components/common'
+	import { Button, Text, Icon } from '$lib/components/common'
 	import { toastStore } from '$shared/stores/toast'
 	import { open } from '@tauri-apps/plugin-dialog'
 	import { withNativeDialog } from '$shared/utils'
@@ -11,10 +11,6 @@
 		$settingsStore.beatportDownloadDestination ||
 		$beatportStore.downloadDestination ||
 		'~/Music/My Library/FLAC'
-	)
-	let autoSyncMik = $state($settingsStore.beatportAutoSyncMik ?? true)
-	let selectedAudioQuality = $state<'flac' | 'aac' | 'mp3'>(
-		($settingsStore.beatportAudioQuality as 'flac' | 'aac' | 'mp3') || 'flac'
 	)
 	let isSaving = $state(false)
 
@@ -36,10 +32,6 @@
 		try {
 			await settingsStore.setBeatportDownloadDestination(downloadDest)
 			await settingsApi.setSetting('beatport_download_destination', downloadDest)
-			await settingsStore.setBeatportAudioQuality(selectedAudioQuality)
-			await settingsApi.setSetting('beatport_audio_quality', selectedAudioQuality)
-			await settingsStore.setBeatportAutoSyncMik(autoSyncMik)
-			await settingsApi.setSetting('beatport_auto_sync_mik', autoSyncMik ? 'true' : 'false')
 			beatportStore.setDownloadDestination(downloadDest)
 			toastStore.success('Paramètres Beatport enregistrés avec succès')
 		} catch (e: any) {
@@ -94,42 +86,12 @@
 		</div>
 	</div>
 
-	<!-- Section 2: Format & Qualité Audio -->
+	<!-- Section 2: Format -->
 	<div>
-		<div class="text-xs font-semibold text-text-primary mb-1">Qualité audio</div>
-		<p class="text-[11px] text-text-tertiary mb-2">
-			Qualité appliquée pour la lecture en streaming et les téléchargements.
+		<div class="text-xs font-semibold text-text-primary mb-1">Format des téléchargements</div>
+		<p class="text-[11px] text-text-tertiary">
+			FLAC lossless uniquement : chaque fichier est décodé en entier et sa durée vérifiée avant d'être gardé.
 		</p>
-
-		<div class="inline-flex rounded-lg bg-surface-2 p-1 border border-stroke/60 gap-1">
-			<button
-				type="button"
-				class="rounded-md px-3 py-1.5 text-xs font-medium transition-all cursor-pointer {selectedAudioQuality === 'flac'
-					? 'bg-surface-0 text-text-primary font-semibold shadow-xs border border-stroke/50'
-					: 'text-text-secondary hover:text-text-primary'}"
-				onclick={() => (selectedAudioQuality = 'flac')}
-			>
-				FLAC Lossless
-			</button>
-			<button
-				type="button"
-				class="rounded-md px-3 py-1.5 text-xs font-medium transition-all cursor-pointer {selectedAudioQuality === 'aac'
-					? 'bg-surface-0 text-text-primary font-semibold shadow-xs border border-stroke/50'
-					: 'text-text-secondary hover:text-text-primary'}"
-				onclick={() => (selectedAudioQuality = 'aac')}
-			>
-				AAC 256k
-			</button>
-			<button
-				type="button"
-				class="rounded-md px-3 py-1.5 text-xs font-medium transition-all cursor-pointer {selectedAudioQuality === 'mp3'
-					? 'bg-surface-0 text-text-primary font-semibold shadow-xs border border-stroke/50'
-					: 'text-text-secondary hover:text-text-primary'}"
-				onclick={() => (selectedAudioQuality = 'mp3')}
-			>
-				MP3 320k
-			</button>
-		</div>
 	</div>
 
 	<!-- Section 3: Dossier de téléchargement -->
@@ -154,14 +116,11 @@
 		</div>
 	</div>
 
-	<!-- Section 4: Synchronisation Mixed In Key & Crate -->
-	<div class="flex items-center justify-between rounded-lg border border-stroke/60 bg-surface-1 p-3">
-		<div>
-			<div class="text-xs font-medium text-text-primary">Import & synchronisation automatique</div>
-			<div class="text-[11px] text-text-tertiary">Importer dans la bibliothèque Crate et Mixed In Key après téléchargement</div>
-		</div>
-		<ToggleSwitch checked={autoSyncMik} onchange={(v) => (autoSyncMik = v)} />
-	</div>
+	<!-- Section 4: Import -->
+	<p class="text-[11px] text-text-tertiary">
+		Les FLAC téléchargés sont importés dans la bibliothèque Crate. Leur analyse Mixed In Key (tonalité,
+		énergie, cues) est récupérée automatiquement dès que Mixed In Key les a analysés.
+	</p>
 
 	<!-- Save Action -->
 	<div class="pt-2">

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { toErrorMessage } from '$shared/utils/errors'
 	import { open } from '@tauri-apps/plugin-dialog'
 	import { withNativeDialog } from '$shared/utils'
 	import Modal from '$lib/components/common/Modal.svelte'
@@ -88,7 +89,7 @@
 		try {
 			validationResult = await libraryApi.validateReplacementFile(track.id, selectedPath)
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to validate file'
+			error = toErrorMessage(e, 'Failed to validate file')
 		} finally {
 			validating = false
 		}
@@ -117,7 +118,7 @@
 				onClose()
 			}
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to relocate track'
+			error = toErrorMessage(e, 'Failed to relocate track')
 		} finally {
 			relocating = false
 		}

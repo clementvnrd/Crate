@@ -76,15 +76,11 @@ export async function getBeatportArtistDetail(
 	})
 }
 
-export async function searchBeatport(
-	token: string | null | undefined,
-	query: string,
-	searchType?: string
-): Promise<BeatportSearchResult> {
+/** Searches the Beatport catalog; the result always contains both tracks and artists. */
+export async function searchBeatport(token: string | null | undefined, query: string): Promise<BeatportSearchResult> {
 	return invoke<BeatportSearchResult>('beatport_search', {
 		token: token ?? null,
 		query,
-		searchType: searchType ?? null,
 	})
 }
 

@@ -84,7 +84,7 @@ pub async fn beatport_get_artist_detail(token: Option<String>, artist_id: i64) -
 }
 
 #[tauri::command]
-pub async fn beatport_search(token: Option<String>, query: String, _search_type: Option<String>) -> Result<BeatportSearchResult, String> {
+pub async fn beatport_search(token: Option<String>, query: String) -> Result<BeatportSearchResult, String> {
     let client = BeatportClient::new();
     client.search_catalog_full(token.as_deref(), &query).await
 }

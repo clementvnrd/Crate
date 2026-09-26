@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { toErrorMessage } from '$shared/utils/errors'
 	import type { Language, DateFormat, BackupFrequency, BackupStatus } from '$shared/types'
 	import { Button, Select, Text } from '$lib/components/common'
 	import ConfirmModal from '$lib/components/common/ConfirmModal.svelte'
@@ -94,7 +95,7 @@
 			await backupApi.createBackup(path)
 			await settingsStore.load()
 		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error)
+			const message = toErrorMessage(error, 'Unknown error')
 			backupStore.fail(message)
 			toastStore.error(message)
 		}
@@ -133,7 +134,7 @@
 			// its derived/cached state needs a clean slate.
 			window.location.reload()
 		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error)
+			const message = toErrorMessage(error, 'Unknown error')
 			backupStore.fail(message)
 			toastStore.error(message)
 		}

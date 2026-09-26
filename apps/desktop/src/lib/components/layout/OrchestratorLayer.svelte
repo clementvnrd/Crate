@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { toErrorMessage } from '$shared/utils/errors'
 	import { get } from 'svelte/store'
 
 	import type {
@@ -119,7 +120,7 @@
 
 	async function handleTrackResyncMik(tracks: Track[]) {
 		try {
-			const res = await libraryApi.syncFromMikDatabase()
+			const res = await libraryApi.syncFromMikDatabase(tracks.map((t) => t.id))
 			await libraryStore.reloadWithCurrentFilter()
 			toastStore.success(`Synchronisé avec Mixed In Key (${res.updated} morceau${res.updated > 1 ? 'x' : ''} mis à jour)`)
 		} catch (error) {
@@ -255,7 +256,7 @@
 			discoveryStore.updateTagCategory(tag.id, targetCategoryId)
 			discoveryPlaylistStore.updateTagCategory(tag.id, targetCategoryId)
 		} catch (error) {
-			const message = error instanceof Error ? error.message : get(translate)('errors.tagNameConflict')
+			const message = toErrorMessage(error, get(translate)('errors.tagNameConflict'))
 			toastStore.error(message)
 		}
 	}}
@@ -451,7 +452,7 @@
 			toastStore.success(count === 1 ? '1 morceau supprimé (mis à la corbeille)' : `${count} morceaux supprimés (mis à la corbeille)`)
 		} catch (err) {
 			console.error('Failed to delete track and file:', err)
-			toastStore.error(err instanceof Error ? err.message : 'Échec de la suppression')
+			toastStore.error(toErrorMessage(err, 'Échec de la suppression'))
 		}
 	}}
 	onMoveConflictOverwrite={async (movingItemId, targetParentId) => {

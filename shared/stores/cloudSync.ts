@@ -4,6 +4,7 @@ import type { CloudSyncStatus, CloudSyncPhase, CloudDeviceRecord, LibraryRoot } 
 import * as cloudSyncApi from '../api/cloudSync'
 import { translate } from '../i18n'
 import { toastStore } from './toast'
+import { toErrorMessage } from '../utils/errors'
 
 /** Payload of the backend `cloud-sync-override` event (one per discarded local edit). */
 type OverrideNotice = { label: string; device: string }
@@ -75,7 +76,7 @@ function createCloudSyncStore() {
 				update((s) => ({
 					...s,
 					loading: false,
-					error: error instanceof Error ? error.message : 'Failed to load sync status',
+					error: toErrorMessage(error, 'Failed to load sync status'),
 				}))
 			}
 		},
@@ -115,7 +116,7 @@ function createCloudSyncStore() {
 				update((s) => ({
 					...s,
 					signingIn: false,
-					error: error instanceof Error ? error.message : 'Sign-in failed',
+					error: toErrorMessage(error, 'Sign-in failed'),
 				}))
 			}
 		},

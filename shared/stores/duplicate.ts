@@ -3,6 +3,7 @@ import type { DuplicateGroup, DuplicateScanResult, DuplicateCountInfo } from '..
 import * as duplicateApi from '../api/duplicate'
 import * as libraryApi from '../api/library'
 import { toastStore } from './toast'
+import { toErrorMessage } from '../utils/errors'
 
 export interface DuplicateState {
 	groups: DuplicateGroup[]
@@ -58,7 +59,7 @@ function createDuplicateStore() {
 				}))
 				return result
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : 'Erreur lors du scan des doublons'
+				const errorMsg = toErrorMessage(error, 'Erreur lors du scan des doublons')
 				update((s) => ({ ...s, loading: false, error: errorMsg }))
 				toastStore.error(errorMsg)
 				return null
@@ -184,7 +185,7 @@ function createDuplicateStore() {
 				})
 				toastStore.success('Groupe de doublons ignoré')
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : "Erreur lors de l'ignorance du groupe"
+				const errorMsg = toErrorMessage(error, "Erreur lors de l'ignorance du groupe")
 				toastStore.error(errorMsg)
 			}
 		},
@@ -211,7 +212,7 @@ function createDuplicateStore() {
 				)
 				await this.load()
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : 'Erreur lors de la suppression des doublons'
+				const errorMsg = toErrorMessage(error, 'Erreur lors de la suppression des doublons')
 				update((s) => ({ ...s, loading: false }))
 				toastStore.error(errorMsg)
 			}

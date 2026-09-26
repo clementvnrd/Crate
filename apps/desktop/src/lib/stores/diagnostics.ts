@@ -1,6 +1,7 @@
 import { writable, derived } from 'svelte/store'
 import type { DiagnosticEntry, DiagnosticsReport, SystemInfo } from '$shared/types'
 import * as diagnosticsApi from '$shared/api/diagnostics'
+import { toErrorMessage } from '$shared/utils/errors'
 
 // =============================================================================
 // State
@@ -52,7 +53,7 @@ function createDiagnosticsStore() {
 				update((s) => ({
 					...s,
 					loading: false,
-					error: error instanceof Error ? error.message : 'Failed to load diagnostics',
+					error: toErrorMessage(error, 'Failed to load diagnostics'),
 				}))
 			}
 		},

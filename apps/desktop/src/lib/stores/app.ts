@@ -1,6 +1,7 @@
 import { writable, derived } from 'svelte/store'
 import type { AppInfo } from '$shared/api/app'
 import * as appApi from '$shared/api/app'
+import { toErrorMessage } from '$shared/utils/errors'
 
 // =============================================================================
 // State
@@ -43,7 +44,7 @@ function createAppStore() {
 				update((s) => ({
 					...s,
 					loading: false,
-					error: error instanceof Error ? error.message : 'Failed to load app info',
+					error: toErrorMessage(error, 'Failed to load app info'),
 				}))
 			}
 		},

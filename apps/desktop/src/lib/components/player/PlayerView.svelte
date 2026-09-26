@@ -272,9 +272,11 @@
 			const res = await libraryApi.importTracks([activeHeroTrack.file_path])
 			if (res.tracks.length > 0) {
 				await libraryStore.reloadWithCurrentFilter()
-				await recentTracksStore.removeTrack(activeHeroTrack.id)
-				activeHeroTrack.is_in_library = true
-				toastStore.success(`"${activeHeroTrack.title || 'Morceau'}" ajouté à la bibliothèque Crate`)
+				const imported = activeHeroTrack
+				await recentTracksStore.removeTrack(imported.id)
+				// Update the source store: the hero track is a $derived value and must not be mutated
+				playerStore.markStandaloneInLibrary(imported.file_path)
+				toastStore.success(`"${imported.title || 'Morceau'}" ajouté à la bibliothèque Crate`)
 			} else if (res.errors.length > 0) {
 				toastStore.error(`Échec de l'import: ${res.errors[0]}`)
 			}

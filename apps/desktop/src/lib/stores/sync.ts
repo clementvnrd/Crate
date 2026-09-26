@@ -3,6 +3,7 @@ import type { UsbDevice } from '$shared/types'
 import * as syncApi from '$shared/api/sync'
 import { devicesStore } from './devices'
 import { settingsStore } from '$shared/stores/settings'
+import { toErrorMessage } from '$shared/utils/errors'
 
 // =============================================================================
 // Constants
@@ -144,7 +145,7 @@ function createSyncStore() {
 				console.error(`Failed to sync device ${device.id}:`, error)
 				update((state) => ({
 					...state,
-					error: error instanceof Error ? error.message : 'Sync failed',
+					error: toErrorMessage(error, 'Sync failed'),
 				}))
 			} finally {
 				// Remove device from syncing list

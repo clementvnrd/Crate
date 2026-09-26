@@ -3,6 +3,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type { AnalysisResult, AnalysisStatus, TrackAnalysisEvent } from '$shared/types'
 import * as analysisApi from '$shared/api/analysis'
 import { libraryStore } from './library'
+import { toErrorMessage } from '$shared/utils/errors'
 
 // =============================================================================
 // State
@@ -105,7 +106,7 @@ function createAnalysisStore() {
 				// Call backend - returns immediately, results come via events
 				await analysisApi.analyzeTracks(trackIds)
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : 'Analysis failed'
+				const errorMessage = toErrorMessage(error, 'Analysis failed')
 
 				update((state) => ({
 					...state,

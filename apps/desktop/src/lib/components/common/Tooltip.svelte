@@ -154,6 +154,14 @@
 		visible = false
 	}
 
+	// A control that becomes disabled after a click (e.g. while syncing) stops receiving mouse
+	// events, so `mouseleave` may never fire: also hide on click (above) and when the window blurs.
+	$effect(() => {
+		const hideOnBlur = () => handleMouseLeave()
+		window.addEventListener('blur', hideOnBlur)
+		return () => window.removeEventListener('blur', hideOnBlur)
+	})
+
 	// Cleanup all timers on destroy
 	$effect(() => {
 		return () => {
@@ -169,6 +177,8 @@
 	role="group"
 	onmouseenter={handleMouseEnter}
 	onmouseleave={handleMouseLeave}
+	onpointerleave={handleMouseLeave}
+	onpointerdown={handleMouseLeave}
 >
 	{@render children()}
 
