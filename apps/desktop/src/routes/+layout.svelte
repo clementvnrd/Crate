@@ -347,22 +347,21 @@
 			}
 		}
 
-		// Cold start check
-		standaloneApi.getStartupFile().then((path) => {
-			if (path) {
-				handleOpenFile(path)
-			}
-		})
-
-		// Live open-file listener
+		// Live open-file listener first, then the files queued during the cold start (each file
+		// reaches the UI exactly once, and several files opened at once are all handled)
 		let unlistenOpenFile: (() => void) | null = null
 		listen<string>('open-file', (event) => {
 			if (event.payload) {
 				handleOpenFile(event.payload)
 			}
-		}).then((unlisten) => {
-			unlistenOpenFile = unlisten
 		})
+			.then(async (unlisten) => {
+				unlistenOpenFile = unlisten
+				for (const path of await standaloneApi.takeStartupFiles()) {
+					await handleOpenFile(path)
+				}
+			})
+			.catch((err) => console.error('Open-file wiring failed:', err))
 
 		return () => {
 			cleanupErrorHandler()

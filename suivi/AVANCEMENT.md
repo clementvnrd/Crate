@@ -5,7 +5,7 @@ Ce fichier est **la** source de vérité du suivi : chaque défaut du [registre]
 Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ = précision ou reste à faire. Le tableau de progression se recalcule avec `yarn suivi`.
 
 <!-- progression:start -->
-**Progression globale : 55 / 106 défauts corrigés (52 %)**
+**Progression globale : 59 / 106 défauts corrigés (56 %)**
 
 | Étape | Corrigés | Progression |
 | --- | --- | --- |
@@ -15,7 +15,7 @@ Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ =
 | Étape 4 — Upgrader sûr | 9 / 9 | ██████████ |
 | Étape 5 — Mixed In Key propre | 8 / 8 | ██████████ |
 | Étape 6 — Statistiques justes | 10 / 10 | ██████████ |
-| Étape 7 — Fonctions DJ exactes | 13 / 18 | ███████░░░ |
+| Étape 7 — Fonctions DJ exactes | 17 / 18 | █████████░ |
 | Étape 8 — Frontend robuste | 2 / 17 | █░░░░░░░░░ |
 | Étape 9 — Hygiène et outillage | 0 / 14 | ░░░░░░░░░░ |
 | Étape 10 — Fondations visuelles | 0 / 5 | ░░░░░░░░░░ |
@@ -124,12 +124,12 @@ _Critère de sortie : Touche 3 = cue 3, recherche « You'll », XML valide._
 - [x] **B27** — Aucun code n'écrit `waveform_data` : la waveform affichée est toujours le motif factice de 64 barres — _calcul à la demande (86 ms pour un MP3 de 2,4 Mo), mis en cache_
 - [x] **B28** — FTS5 : la sanitisation rend introuvables les titres avec apostrophe, tiret ou slash, et `AND`, `OR`, `NOT`…
 - [x] **B29** — Position de lecture = horloge murale × vitesse, périmée en fin de piste (pas d'horloge CoreAudio… — _position rodio exacte à vitesse normale ; estimation horloge × vitesse conservée quand le tempo est modifié_
-- [ ] **B30** — Associations de fichiers en `rank: Default` avec le parapluie `public.audio` ; bundle `com.crate.app`…
-- [ ] **B31** — `StartupFile` : course au démarrage, plusieurs fichiers ouverts s'écrasent
-- [ ] **B32** — `delete_tracks_and_files` : corbeille via `osascript` par fichier, échecs silencieux, suppression…
-- [ ] **B33** — I/O bloquantes, sous-processus (`beatportdl`, `lsof`, `osascript`) et rusqlite sous `std::sync::Mutex`…
+- [x] **B30** — Associations de fichiers en `rank: Default` avec le parapluie `public.audio` ; bundle `com.crate.app`… — _Crate apparaît dans « Ouvrir avec » sans devenir le lecteur par défaut (question ouverte du rapport)_
+- [x] **B31** — `StartupFile` : course au démarrage, plusieurs fichiers ouverts s'écrasent
+- [x] **B32** — `delete_tracks_and_files` : corbeille via `osascript` par fichier, échecs silencieux, suppression…
+- [ ] **B33** — I/O bloquantes, sous-processus (`beatportdl`, `lsof`, `osascript`) et rusqlite sous `std::sync::Mutex`… — _partiel : beatportdl hors du runtime async, lecture MIK et décodage de waveform hors du verrou ; les commandes restent synchrones sous le capot_
 - [x] **B34** — Services instanciés deux fois : l'état géré par Tauri n'est pas celui des tâches de fond
-- [ ] **B35** — `get_duplicate_count` lance un scan complet des doublons à chaque événement `duplicates-updated`
+- [x] **B35** — `get_duplicate_count` lance un scan complet des doublons à chaque événement `duplicates-updated`
 - [x] **F1** — Touches 1 à 8 capturées partout, sans condition de vue ni de modificateur
 - [x] **F2** — Espace en vue Player lance un titre récent au lieu de mettre en pause la préécoute ; logique dupliquée
 - [x] **F3** — Espace ou Entrée sur une ligne focalisée déclenche la lecture et le raccourci global
@@ -219,3 +219,4 @@ _Critère de sortie : App en anglais : aucune chaîne française._
 | 2026-09-26 | Upgrader sûr : dossier isolé, remplacement en place, FLAC décodé en entier, scoring corrigé | 4 |
 | 2026-09-26 | Synchro Mixed In Key incrémentale et idempotente, cues stables, import/Serato/énergie corrigés | 5 |
 | 2026-09-26 | Statistiques justes : une écoute Spotify = une ligne, pauses exclues, sets Rekordbox datés | 6 |
+| 2026-09-26 | Fonctions DJ exactes : hot cues, XML, waveform réelle, recherche, position, régressions, corbeille | 7 |

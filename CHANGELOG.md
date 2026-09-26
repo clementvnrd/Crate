@@ -86,6 +86,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **[F2]** Espace dans la vue Player met en pause ce qui joue (y compris une préécoute) au lieu de lancer un fichier récent.
 - **[F3]** Espace/Entrée sur une ligne de la bibliothèque ne déclenche plus en même temps le raccourci global.
 - **[F11]** Cues et waveform chargés pour un fichier ouvert hors bibliothèque (recherche par chemin au lieu d'un identifiant inexistant).
+- **[B30]** Associations de fichiers audio en rang `Alternate` sans le parapluie `public.audio` : Crate apparaît dans « Ouvrir avec » sans s'imposer comme lecteur par défaut. Suppression de la commande `set_as_default_audio_player` (jamais appelée, visant un bundle `com.crate.app` inexistant) et du script `scripts/set_default_player.swift`.
+- **[B31]** Fichiers ouverts avec Crate au démarrage : file d'attente côté Rust vidée une seule fois par l'interface une fois prête (`take_startup_files`) ; un fichier n'est plus ouvert deux fois et plusieurs fichiers ouverts ensemble sont tous pris en compte.
+- **[B32]** Suppression de titres avec leurs fichiers : mise à la corbeille via Finder (chemin passé en argument, jamais interpolé dans le script), un titre ne quitte la bibliothèque que si son fichier est bien parti à la corbeille, les échecs sont signalés, et plus aucune suppression définitive hors macOS (module `services/trash.rs`, aussi utilisé par l'upgrader).
+- **[B35]** Le compteur de doublons de la barre d'outils est mis en cache selon une empreinte de la bibliothèque : le scan complet ne tourne plus à chaque événement `duplicates-updated`, seulement quand la bibliothèque a changé.
 - Tests : 9 nouveaux tests Rust (recherche, encodage des chemins, marques de cue, XML valide avec caractères spéciaux, pics de waveform) et 5 tests Vitest (pads de hot cues, raccourcis 1–8 limités aux bonnes vues).
 
 #### Documentation

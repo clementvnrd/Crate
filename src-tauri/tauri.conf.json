@@ -40,10 +40,9 @@
         "ext": ["mp3", "flac", "wav", "aif", "aiff", "m4a", "aac", "ogg", "alac", "wma", "opus", "oga", "caf", "weba"],
         "name": "Audio File",
         "role": "Viewer",
-        "rank": "Default",
+        "rank": "Alternate",
         "mimeType": "audio/*",
         "contentTypes": [
-          "public.audio",
           "public.mp3",
           "public.wave-format",
           "com.microsoft.waveform-audio",

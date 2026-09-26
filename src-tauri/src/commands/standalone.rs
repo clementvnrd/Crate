@@ -46,15 +46,11 @@ pub async fn clear_recent_standalone_tracks(
     standalone.clear_recent_standalone_tracks()
 }
 
+/// Returns the files opened before the frontend was ready (in order) and switches to live
+/// `open-file` events. Call it after subscribing to `open-file`.
 #[tauri::command]
-pub async fn get_startup_file(
-    startup_file: State<'_, StartupFile>,
-) -> Result<Option<String>> {
-    let mut file = startup_file
-        .0
-        .lock()
-        .map_err(|_| crate::error::CrateError::LockPoisoned)?;
-    Ok(file.take())
+pub async fn take_startup_files(startup_file: State<'_, StartupFile>) -> Result<Vec<String>> {
+    Ok(startup_file.drain())
 }
 
 #[tauri::command]
@@ -94,78 +90,3 @@ pub async fn play_standalone_track(
     }
     audio.play_track(track_id, PathBuf::from(&path), resolved_duration)
 }
-
-
-#[cfg(target_os = "macos")]
-mod macos_default {
-    use core_foundation::base::TCFType;
-    use core_foundation::string::CFString;
-
-    #[link(name = "CoreServices", kind = "framework")]
-    extern "C" {
-        fn LSSetDefaultRoleHandlerForContentType(
-            inContentType: core_foundation::string::CFStringRef,
-            inRole: u32,
-            inHandlerBundleID: core_foundation::string::CFStringRef,
-        ) -> i32;
-    }
-
-    const AUDIO_UTIS: &[&str] = &[
-        "public.mp3",
-        "com.apple.m4a-audio",
-        "public.wave-format",
-        "com.microsoft.waveform-audio",
-        "public.flac-audio",
-        "org.xiph.flac",
-        "public.aiff-audio",
-        "public.aac-audio",
-        "org.xiph.ogg-audio",
-        "public.audio",
-    ];
-
-    const BUNDLE_IDS: &[&str] = &[
-        "com.crate.app",
-        "com.bbx-audio.crate",
-    ];
-
-    const LSR_ROLES_ALL: u32 = 0xFFFFFFFF;
-    const LSR_ROLES_VIEWER: u32 = 0x00000002;
-
-    pub fn set_default_player() {
-        for &bundle_id in BUNDLE_IDS {
-            let bundle_cf = CFString::new(bundle_id);
-            for &uti in AUDIO_UTIS {
-                let uti_cf = CFString::new(uti);
-                unsafe {
-                    let _ = LSSetDefaultRoleHandlerForContentType(
-                        uti_cf.as_concrete_TypeRef(),
-                        LSR_ROLES_ALL,
-                        bundle_cf.as_concrete_TypeRef(),
-                    );
-                    let _ = LSSetDefaultRoleHandlerForContentType(
-                        uti_cf.as_concrete_TypeRef(),
-                        LSR_ROLES_VIEWER,
-                        bundle_cf.as_concrete_TypeRef(),
-                    );
-                }
-            }
-        }
-
-        let lsregister_path = "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister";
-        if std::path::Path::new(lsregister_path).exists() {
-            let _ = std::process::Command::new(lsregister_path)
-                .args(["-f", "/Applications/Crate.app"])
-                .status();
-        }
-    }
-}
-
-#[tauri::command]
-pub async fn set_as_default_audio_player() -> Result<()> {
-    #[cfg(target_os = "macos")]
-    {
-        macos_default::set_default_player();
-    }
-    Ok(())
-}
-

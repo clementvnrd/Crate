@@ -39,8 +39,9 @@ export async function clearRecentStandaloneTracks(): Promise<void> {
 /**
  * Get startup file path if opened at launch.
  */
-export async function getStartupFile(): Promise<string | null> {
-	return invoke<string | null>('get_startup_file')
+/** Files opened with Crate before the UI was ready (drains the queue; call after listening to `open-file`). */
+export async function takeStartupFiles(): Promise<string[]> {
+	return invoke<string[]>('take_startup_files')
 }
 
 /**
@@ -48,12 +49,5 @@ export async function getStartupFile(): Promise<string | null> {
  */
 export async function playStandaloneTrack(path: string, id?: string, durationMs?: number): Promise<PlaybackState> {
 	return invoke<PlaybackState>('play_standalone_track', { path, id, durationMs })
-}
-
-/**
- * Set Crate as default audio player for all common audio formats on macOS.
- */
-export async function setAsDefaultAudioPlayer(): Promise<void> {
-	return invoke<void>('set_as_default_audio_player')
 }
 

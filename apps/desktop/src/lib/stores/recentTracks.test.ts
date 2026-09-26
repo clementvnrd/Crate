@@ -14,7 +14,7 @@ vi.mock('$shared/api/standalone', () => ({
 	addRecentStandaloneTrack: vi.fn(),
 	removeRecentStandaloneTrack: vi.fn(),
 	clearRecentStandaloneTracks: vi.fn(),
-	getStartupFile: vi.fn(),
+	takeStartupFiles: vi.fn().mockResolvedValue([]),
 	playStandaloneTrack: vi.fn(),
 }))
 

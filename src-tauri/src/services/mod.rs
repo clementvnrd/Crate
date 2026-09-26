@@ -23,6 +23,8 @@ pub mod follow;
 #[cfg(feature = "desktop")]
 pub mod hash;
 #[cfg(feature = "desktop")]
+pub mod trash;
+#[cfg(feature = "desktop")]
 pub mod library;
 #[cfg(feature = "desktop")]
 pub mod media_controls;

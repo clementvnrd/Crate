@@ -948,21 +948,12 @@ impl BeatportUpgraderService {
                 continue;
             }
 
-            if old_path.exists() && old_path != new_flac.as_path() {
-                #[cfg(target_os = "macos")]
-                {
-                    let script = format!(
-                        "tell application \"Finder\" to delete POSIX file \"{}\"",
-                        old_file_path_str.replace('"', "\\\"")
-                    );
-                    let trashed = std::process::Command::new("osascript").arg("-e").arg(&script).output();
-                    if !matches!(trashed, Ok(ref out) if out.status.success()) {
-                        errors.push(format!("'{}' remplacé, mais l'ancien MP3 n'a pas pu être mis à la corbeille : {}", item.title, old_file_path_str));
-                    }
-                }
-                #[cfg(not(target_os = "macos"))]
-                {
-                    let _ = std::fs::remove_file(old_path);
+            if old_path != new_flac.as_path() {
+                if let Err(e) = crate::services::trash::move_to_trash(old_path) {
+                    errors.push(format!(
+                        "'{}' remplacé, mais l'ancien MP3 n'a pas pu être mis à la corbeille ({e}) : {}",
+                        item.title, old_file_path_str
+                    ));
                 }
             }
 

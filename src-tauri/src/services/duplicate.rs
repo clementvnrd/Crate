@@ -295,11 +295,28 @@ struct RawTrackRecord {
 
 pub struct DuplicateService {
     conn: Arc<Mutex<Connection>>,
+    /// Last count and the library fingerprint it was computed for (see `library_fingerprint`).
+    count_cache: Mutex<Option<(String, DuplicateCountInfo)>>,
 }
 
 impl DuplicateService {
     pub fn new(conn: Arc<Mutex<Connection>>) -> Self {
-        Self { conn }
+        Self { conn, count_cache: Mutex::new(None) }
+    }
+
+    /// Cheap summary of everything the duplicate scan depends on: any added, removed, edited or
+    /// moved track, or any (un)ignored pair, changes it.
+    fn library_fingerprint(&self) -> Result<String> {
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        let fingerprint = conn.query_row(
+            "SELECT COUNT(*) || ':' || COALESCE(MAX(rowid), 0) || ':' || COALESCE(MAX(date_modified), '') || ':'
+                    || COALESCE(SUM(LENGTH(file_path)), 0) || ':'
+                    || (SELECT COUNT(*) FROM ignored_duplicate_pairs)
+             FROM tracks",
+            [],
+            |r| r.get::<_, String>(0),
+        )?;
+        Ok(fingerprint)
     }
 
     /// Load all ignored pairs as canonical tuples `(min(id_a, id_b), max(id_a, id_b))`
@@ -674,13 +691,27 @@ impl DuplicateService {
     }
 
     /// Fast count of duplicate groups and reclaimable bytes
+    /// Duplicate counters for the toolbar badge. The full scan only runs when the library changed
+    /// since the last call (every `duplicates-updated` event used to trigger a full scan).
     pub fn get_duplicate_count(&self) -> Result<DuplicateCountInfo> {
+        let fingerprint = self.library_fingerprint()?;
+        if let Ok(cache) = self.count_cache.lock() {
+            if let Some((cached_fp, info)) = cache.as_ref() {
+                if *cached_fp == fingerprint {
+                    return Ok(info.clone());
+                }
+            }
+        }
         let scan = self.get_duplicate_groups()?;
-        Ok(DuplicateCountInfo {
+        let info = DuplicateCountInfo {
             group_count: scan.total_groups,
             track_count: scan.total_duplicate_tracks,
             reclaimable_bytes: scan.total_reclaimable_bytes,
-        })
+        };
+        if let Ok(mut cache) = self.count_cache.lock() {
+            *cache = Some((fingerprint, info.clone()));
+        }
+        Ok(info)
     }
 
     /// Ignore a group of tracks so they will no longer be flagged as duplicates of each other
@@ -865,6 +896,24 @@ mod tests {
         assert_eq!(res.total_groups, 1);
         assert_eq!(res.groups[0].tracks.len(), 2);
         assert_eq!(res.groups[0].match_type, DuplicateMatchType::ExactHash);
+    }
+
+    #[test]
+    fn test_duplicate_count_cache_follows_library_changes() {
+        let conn = setup_test_db();
+        conn.execute_batch(
+            "INSERT INTO tracks (id, file_path, file_hash, title, artist, duration_ms, format, date_added, date_modified)
+               VALUES ('t1', '/path/1.mp3', 'h', 'A', 'X', 200000, 'mp3', '2026-01-01', '2026-01-01');
+             INSERT INTO tracks (id, file_path, file_hash, title, artist, duration_ms, format, date_added, date_modified)
+               VALUES ('t2', '/path/2.mp3', 'h', 'B', 'Y', 200000, 'mp3', '2026-01-01', '2026-01-01');",
+        )
+        .unwrap();
+        let conn = Arc::new(Mutex::new(conn));
+        let svc = DuplicateService::new(conn.clone());
+        assert_eq!(svc.get_duplicate_count().unwrap().group_count, 1);
+        assert_eq!(svc.get_duplicate_count().unwrap().group_count, 1, "served from the cache");
+        conn.lock().unwrap().execute("DELETE FROM tracks WHERE id = 't2'", []).unwrap();
+        assert_eq!(svc.get_duplicate_count().unwrap().group_count, 0, "a deletion invalidates the cache");
     }
 
     #[test]

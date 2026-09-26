@@ -351,7 +351,7 @@ impl LibraryService {
     /// Delete tracks from Crate DB and move their audio files to the macOS Trash
     pub fn delete_tracks_and_files(&self, ids: Vec<String>) -> Result<()> {
         // 1. Fetch file paths for all tracks to delete
-        let mut file_paths = Vec::new();
+        let mut id_paths: Vec<(String, String)> = Vec::new();
         {
             let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
             let placeholders: Vec<String> = ids
@@ -360,44 +360,43 @@ impl LibraryService {
                 .map(|(i, _)| format!("?{}", i + 1))
                 .collect();
             let sql = format!(
-                "SELECT file_path FROM tracks WHERE id IN ({})",
+                "SELECT id, file_path FROM tracks WHERE id IN ({})",
                 placeholders.join(", ")
             );
             let params_refs: Vec<&dyn rusqlite::ToSql> =
                 ids.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
             let mut stmt = conn.prepare(&sql)?;
-            let rows = stmt.query_map(params_refs.as_slice(), |row| row.get::<_, String>(0))?;
+            let rows = stmt.query_map(params_refs.as_slice(), |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+            })?;
             for row in rows.flatten() {
-                file_paths.push(row);
+                id_paths.push(row);
             }
         }
 
         // 2. Mixed In Key is read-only for Crate: its own library is left untouched.
 
-        // 3. Move audio files to macOS Trash Bin (or delete on other platforms)
-        for path_str in file_paths {
-            let path = std::path::Path::new(&path_str);
-            if path.exists() {
-                #[cfg(target_os = "macos")]
-                {
-                    let script = format!(
-                        "tell application \"Finder\" to delete POSIX file \"{}\"",
-                        path_str.replace('"', "\\\"")
-                    );
-                    let _ = std::process::Command::new("osascript")
-                        .arg("-e")
-                        .arg(&script)
-                        .output();
-                }
-                #[cfg(not(target_os = "macos"))]
-                {
-                    let _ = std::fs::remove_file(path);
-                }
+        // 3. Move audio files to the Trash; a track leaves the library only if its file did
+        let mut removable = Vec::with_capacity(ids.len());
+        let mut failures = Vec::new();
+        for (id, path_str) in id_paths {
+            match crate::services::trash::move_to_trash(std::path::Path::new(&path_str)) {
+                Ok(()) => removable.push(id),
+                Err(e) => failures.push(format!("{path_str} ({e})")),
             }
         }
 
-        // 3. Delete from Crate DB
-        self.delete_tracks(ids)
+        // 4. Delete from Crate DB, then report files that could not be moved to the Trash
+        self.delete_tracks(removable)?;
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(CrateError::InvalidOperation(format!(
+                "{} file(s) could not be moved to the Trash and were kept in the library: {}",
+                failures.len(),
+                failures.join("; ")
+            )))
+        }
     }
 }
 

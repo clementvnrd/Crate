@@ -65,11 +65,34 @@ impl PrefetchTracker {
 }
 
 /// Stores cold-start file opened from macOS Finder / Open With.
-pub(crate) struct StartupFile(pub Arc<std::sync::Mutex<Option<String>>>);
+/// Files opened with Crate (Finder "Open With", drag on the Dock icon) before the frontend is
+/// ready are queued here; once the frontend has drained the queue, files are only sent as
+/// `open-file` events. This avoids opening a cold-start file twice or losing all but the last one.
+pub(crate) struct StartupFile {
+    queue: std::sync::Mutex<Vec<String>>,
+    frontend_ready: std::sync::atomic::AtomicBool,
+}
 
 impl StartupFile {
     pub fn new() -> Self {
-        Self(Arc::new(std::sync::Mutex::new(None)))
+        Self { queue: std::sync::Mutex::new(Vec::new()), frontend_ready: std::sync::atomic::AtomicBool::new(false) }
+    }
+
+    /// Queues the file if the frontend is not ready yet; returns true when it should be emitted.
+    pub fn offer(&self, path: String) -> bool {
+        let Ok(mut queue) = self.queue.lock() else { return true };
+        if self.frontend_ready.load(std::sync::atomic::Ordering::SeqCst) {
+            return true;
+        }
+        queue.push(path);
+        false
+    }
+
+    /// Called once by the frontend after it listens to `open-file`: returns the queued files.
+    pub fn drain(&self) -> Vec<String> {
+        let Ok(mut queue) = self.queue.lock() else { return Vec::new() };
+        self.frontend_ready.store(true, std::sync::atomic::Ordering::SeqCst);
+        std::mem::take(&mut *queue)
     }
 }
 
@@ -234,11 +257,10 @@ pub fn run() {
             #[cfg(feature = "desktop")]
             commands::standalone::clear_recent_standalone_tracks,
             #[cfg(feature = "desktop")]
-            commands::standalone::get_startup_file,
+            commands::standalone::take_startup_files,
             #[cfg(feature = "desktop")]
             commands::standalone::play_standalone_track,
             #[cfg(feature = "desktop")]
-            commands::standalone::set_as_default_audio_player,
             // Album commands (desktop-only)
             #[cfg(feature = "desktop")]
             commands::album::add_player_album,
@@ -988,12 +1010,12 @@ pub fn run() {
                     url.path().to_string()
                 };
 
-                if let Some(startup_file) = app_handle.try_state::<StartupFile>() {
-                    if let Ok(mut lock) = startup_file.0.lock() {
-                        *lock = Some(file_path.clone());
-                    }
+                let emit_now = app_handle
+                    .try_state::<StartupFile>()
+                    .is_none_or(|startup| startup.offer(file_path.clone()));
+                if emit_now {
+                    let _ = app_handle.emit("open-file", file_path);
                 }
-                let _ = app_handle.emit("open-file", file_path);
             }
         }
         _ => {}
