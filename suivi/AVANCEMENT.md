@@ -5,7 +5,7 @@ Ce fichier est **la** source de vérité du suivi : chaque défaut du [registre]
 Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ = précision ou reste à faire. Le tableau de progression se recalcule avec `yarn suivi`.
 
 <!-- progression:start -->
-**Progression globale : 48 / 106 défauts corrigés (45 %)**
+**Progression globale : 55 / 106 défauts corrigés (52 %)**
 
 | Étape | Corrigés | Progression |
 | --- | --- | --- |
@@ -15,7 +15,7 @@ Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ =
 | Étape 4 — Upgrader sûr | 9 / 9 | ██████████ |
 | Étape 5 — Mixed In Key propre | 8 / 8 | ██████████ |
 | Étape 6 — Statistiques justes | 10 / 10 | ██████████ |
-| Étape 7 — Fonctions DJ exactes | 6 / 18 | ███░░░░░░░ |
+| Étape 7 — Fonctions DJ exactes | 13 / 18 | ███████░░░ |
 | Étape 8 — Frontend robuste | 2 / 17 | █░░░░░░░░░ |
 | Étape 9 — Hygiène et outillage | 0 / 14 | ░░░░░░░░░░ |
 | Étape 10 — Fondations visuelles | 0 / 5 | ░░░░░░░░░░ |
@@ -118,9 +118,9 @@ _Critère de sortie : Touche 3 = cue 3, recherche « You'll », XML valide._
 
 - [x] **C11** — Hot cues décalés d'un cran : le backend indexe en base 1, le front accepte index, index−1 et index+1 ; le… — _les cues existants sont convertis en base 0 automatiquement à la prochaine synchro Mixed In Key_
 - [x] **C12** — Export Rekordbox XML invalide dès qu'un chemin contient `&`, `"` ou `<` ; URL non encodée pour les…
-- [ ] **C13** — Régression : `loadTracks()` sans argument réutilise le filtre courant
-- [ ] **C14** — Régression : glisser un tag sur un titre ne fait plus rien (`data-track-id` retiré)
-- [ ] **C15** — Le moteur Rust et la préécoute HTML peuvent jouer en même temps
+- [x] **C13** — Régression : `loadTracks()` sans argument réutilise le filtre courant
+- [x] **C14** — Régression : glisser un tag sur un titre ne fait plus rien (`data-track-id` retiré)
+- [x] **C15** — Le moteur Rust et la préécoute HTML peuvent jouer en même temps
 - [x] **B27** — Aucun code n'écrit `waveform_data` : la waveform affichée est toujours le motif factice de 64 barres — _calcul à la demande (86 ms pour un MP3 de 2,4 Mo), mis en cache_
 - [x] **B28** — FTS5 : la sanitisation rend introuvables les titres avec apostrophe, tiret ou slash, et `AND`, `OR`, `NOT`…
 - [x] **B29** — Position de lecture = horloge murale × vitesse, périmée en fin de piste (pas d'horloge CoreAudio… — _position rodio exacte à vitesse normale ; estimation horloge × vitesse conservée quand le tempo est modifié_
@@ -130,10 +130,10 @@ _Critère de sortie : Touche 3 = cue 3, recherche « You'll », XML valide._
 - [ ] **B33** — I/O bloquantes, sous-processus (`beatportdl`, `lsof`, `osascript`) et rusqlite sous `std::sync::Mutex`…
 - [x] **B34** — Services instanciés deux fois : l'état géré par Tauri n'est pas celui des tâches de fond
 - [ ] **B35** — `get_duplicate_count` lance un scan complet des doublons à chaque événement `duplicates-updated`
-- [ ] **F1** — Touches 1 à 8 capturées partout, sans condition de vue ni de modificateur
-- [ ] **F2** — Espace en vue Player lance un titre récent au lieu de mettre en pause la préécoute ; logique dupliquée
-- [ ] **F3** — Espace ou Entrée sur une ligne focalisée déclenche la lecture et le raccourci global
-- [ ] **F11** — Cues et waveform jamais chargés pour un fichier externe : un UUID est envoyé à `get_track_cues`
+- [x] **F1** — Touches 1 à 8 capturées partout, sans condition de vue ni de modificateur
+- [x] **F2** — Espace en vue Player lance un titre récent au lieu de mettre en pause la préécoute ; logique dupliquée
+- [x] **F3** — Espace ou Entrée sur une ligne focalisée déclenche la lecture et le raccourci global
+- [x] **F11** — Cues et waveform jamais chargés pour un fichier externe : un UUID est envoyé à `get_track_cues`
 
 ### Étape 8 — Frontend robuste
 

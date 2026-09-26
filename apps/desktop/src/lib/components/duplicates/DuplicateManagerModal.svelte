@@ -107,7 +107,7 @@
 		isDeleting = true
 		try {
 			await duplicateStore.deleteSelected(async () => {
-				await libraryStore.loadTracks()
+				await libraryStore.reloadWithCurrentFilter()
 			})
 		} finally {
 			isDeleting = false

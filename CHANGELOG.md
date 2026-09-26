@@ -79,7 +79,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **[B27]** Waveform réelle : les pics sont calculés depuis le fichier audio au premier affichage (symphonia, 400 barres, ~90 ms pour un MP3 de 2,4 Mo) puis mis en cache ; un fichier illisible affiche une ligne neutre au lieu d'un faux motif, et la waveform du titre précédent n'est plus conservée.
 - **[B28]** Recherche : la requête FTS5 est découpée comme l'index (« You'll » → `"You"* "ll"*`) ; les titres avec apostrophe, tiret ou slash (« You'll », « Jay-Z », « AC/DC ») sont de nouveau trouvés, et `AND`, `OR`, `NOT` tapés en majuscules ne font plus échouer la liste.
 - **[B29]** Position de lecture : position exacte de rodio (`Sink::get_pos`) à vitesse normale ; en fin de piste la position n'est plus figée sur une valeur ancienne.
-- Tests : 9 nouveaux tests Rust (recherche, encodage des chemins, marques de cue, XML valide avec caractères spéciaux, pics de waveform) et 3 tests Vitest (pads de hot cues).
+- **[C13]** `loadTracks()` retrouve le comportement de l'amont (sans argument : tous les titres, filtre remis à zéro) : retirer le dernier tag vide de nouveau le filtre et le filtre « Mix harmonique » ne reste plus collé. Les rafraîchissements en arrière-plan ajoutés par le fork (synchro Mixed In Key, doublons, upgrader, lecteur) utilisent la nouvelle méthode explicite `reloadWithCurrentFilter()`.
+- **[C14]** Glisser un tag sur un titre fonctionne de nouveau (`data-track-id` et surbrillance de survol restaurés sur les lignes).
+- **[C15]** Jamais deux sons à la fois : une préécoute (découverte ou Beatport) arrête le moteur audio natif aussi quand il lit un fichier du lecteur autonome (seules les pistes de bibliothèque étaient arrêtées).
+- **[F1]** Les touches 1 à 8 (hot cues) ne sont actives que dans les vues Player et Bibliothèque, avec un morceau chargé.
+- **[F2]** Espace dans la vue Player met en pause ce qui joue (y compris une préécoute) au lieu de lancer un fichier récent.
+- **[F3]** Espace/Entrée sur une ligne de la bibliothèque ne déclenche plus en même temps le raccourci global.
+- **[F11]** Cues et waveform chargés pour un fichier ouvert hors bibliothèque (recherche par chemin au lieu d'un identifiant inexistant).
+- Tests : 9 nouveaux tests Rust (recherche, encodage des chemins, marques de cue, XML valide avec caractères spéciaux, pics de waveform) et 5 tests Vitest (pads de hot cues, raccourcis 1–8 limités aux bonnes vues).
 
 #### Documentation
 

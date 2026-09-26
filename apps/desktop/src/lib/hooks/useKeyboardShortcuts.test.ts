@@ -164,4 +164,22 @@ describe('useKeyboardShortcuts - Player View Spacebar', () => {
 		expect(preventSpy).toHaveBeenCalled()
 		expect(handlers.onPlayPause).toHaveBeenCalled()
 	})
+
+	it('ignores digit keys outside the Player and Library views', () => {
+		uiStore.setActiveView('discovery')
+		const jumpSpy = vi.spyOn(playerStore, 'jumpToCueIndex')
+		window.dispatchEvent(new KeyboardEvent('keydown', { key: '3', bubbles: true, cancelable: true }))
+		expect(jumpSpy).not.toHaveBeenCalled()
+	})
+
+	it('maps key 3 to hot cue pad 3 in the player view with a track loaded', async () => {
+		uiStore.setActiveView('player')
+		await playerStore.playStandalone(
+			{ id: 'st_2', file_path: '/music/cue.mp3', title: 'Cue', artist: 'A', duration_ms: 200000, format: 'mp3', is_in_library: false },
+			false
+		)
+		const jumpSpy = vi.spyOn(playerStore, 'jumpToCueIndex')
+		window.dispatchEvent(new KeyboardEvent('keydown', { key: '3', bubbles: true, cancelable: true }))
+		expect(jumpSpy).toHaveBeenCalledWith(3)
+	})
 })

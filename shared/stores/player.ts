@@ -237,6 +237,21 @@ function createPlayerStore() {
 		stopPositionTracking()
 	}
 
+	/**
+	 * Stops the Rust audio engine before a preview starts. Library tracks *and* standalone files
+	 * both play through it, so checking only the 'library' source let a standalone file keep
+	 * playing under the HTML preview.
+	 */
+	async function stopNativeEngine(state: PlayerState) {
+		if (state.playbackSource === 'library' || state.playbackSource === 'standalone') {
+			try {
+				await playerApi.stop()
+			} catch {
+				// Best effort
+			}
+		}
+	}
+
 	function wirePreviewEvents() {
 		previewPlayer.setOnTimeUpdate((positionMs: number) => {
 			update((state) => {
@@ -450,7 +465,8 @@ function createPlayerStore() {
 					currentCues: [],
 				}))
 				startPositionTracking()
-				loadTrackCuesAndWaveform(track.id)
+				// A file outside the library has no track id in the database: look it up by path
+				loadTrackCuesAndWaveform(isLibraryTrack || track.is_in_library ? track.id : track.file_path)
 
 				// If not in library, save to recent standalone history
 				if (!track.is_in_library && !isLibraryTrack) {
@@ -481,14 +497,8 @@ function createPlayerStore() {
 			// Clear stale preview events before the async gap
 			clearPreviewEvents()
 
-			// Stop library audio if playing
-			if (state.playbackSource === 'library' && state.playbackState.is_playing) {
-				try {
-					await playerApi.stop()
-				} catch {
-					// Best effort
-				}
-			}
+			// Never two sounds at once: stop the native engine (library or standalone)
+			await stopNativeEngine(state)
 
 			stopPositionTracking()
 			update((s) => ({ ...s, previewLoadingReleaseId: release.id }))
@@ -555,14 +565,8 @@ function createPlayerStore() {
 			// Clear stale preview events
 			clearPreviewEvents()
 
-			// Stop library audio if playing
-			if (state.playbackSource === 'library' && state.playbackState.is_playing) {
-				try {
-					await playerApi.stop()
-				} catch {
-					// Best effort
-				}
-			}
+			// Never two sounds at once: stop the native engine (library or standalone)
+			await stopNativeEngine(state)
 
 			stopPositionTracking()
 

@@ -120,7 +120,7 @@
 	async function handleTrackResyncMik(tracks: Track[]) {
 		try {
 			const res = await libraryApi.syncFromMikDatabase()
-			await libraryStore.loadTracks()
+			await libraryStore.reloadWithCurrentFilter()
 			toastStore.success(`Synchronisé avec Mixed In Key (${res.updated} morceau${res.updated > 1 ? 'x' : ''} mis à jour)`)
 		} catch (error) {
 			console.error('Mixed In Key resync failed:', error)

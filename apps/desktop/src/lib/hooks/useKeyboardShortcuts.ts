@@ -120,7 +120,15 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): () => 
 		if (e.code === 'Space' && !inputFocused) {
 			e.preventDefault()
 			if (get(activeView) === 'player') {
-				const active = get(currentTrack) || get(standaloneTrack)
+				const player = get(playerStore)
+				// Anything loaded or playing (library track, standalone file, Beatport or discovery
+				// preview) is paused/resumed; a recent file is only started when nothing is loaded.
+				const active =
+					player.playbackState.is_playing ||
+					get(currentTrack) ||
+					get(standaloneTrack) ||
+					player.previewInfo ||
+					player.beatportTrack
 				if (active) {
 					playerStore.togglePlayPause()
 				} else {
@@ -211,8 +219,12 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): () => 
 			onPlaySelected()
 		}
 
-		// Number keys 1 to 8: Jump to Hot Cues (when not typing)
-		if (!inputFocused && !e.metaKey && !e.ctrlKey && !e.altKey) {
+		// Number keys 1 to 8: jump to hot cues — only in the Player and Library views, with a track
+		// loaded, and never while typing (other views keep their own use of the digits)
+		const view = get(activeView)
+		const cueKeysActive =
+			(view === 'player' || view === 'library') && !!(get(currentTrack) || get(standaloneTrack))
+		if (cueKeysActive && !inputFocused && !e.metaKey && !e.ctrlKey && !e.altKey) {
 			const num = parseInt(e.key, 10)
 			if (num >= 1 && num <= 8) {
 				e.preventDefault()

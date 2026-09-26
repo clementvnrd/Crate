@@ -156,7 +156,7 @@
 	async function handleExecuteUpgrade() {
 		if ($selectedUpgradeCount === 0 || $isUpgrading || isAuthRequired) return
 		await upgraderStore.executeSelected(async () => {
-			await libraryStore.loadTracks()
+			await libraryStore.reloadWithCurrentFilter()
 		})
 	}
 

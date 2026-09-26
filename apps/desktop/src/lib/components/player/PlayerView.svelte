@@ -271,7 +271,7 @@
 		try {
 			const res = await libraryApi.importTracks([activeHeroTrack.file_path])
 			if (res.tracks.length > 0) {
-				await libraryStore.loadTracks()
+				await libraryStore.reloadWithCurrentFilter()
 				await recentTracksStore.removeTrack(activeHeroTrack.id)
 				activeHeroTrack.is_in_library = true
 				toastStore.success(`"${activeHeroTrack.title || 'Morceau'}" ajouté à la bibliothèque Crate`)

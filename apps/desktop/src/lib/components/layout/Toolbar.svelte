@@ -64,7 +64,7 @@
 		syncingMik = true
 		try {
 			const res = await libraryApi.syncFromMikDatabase()
-			await libraryStore.loadTracks()
+			await libraryStore.reloadWithCurrentFilter()
 			await duplicateStore.loadCount()
 			await upgraderStore.loadCount()
 			const parts: string[] = []

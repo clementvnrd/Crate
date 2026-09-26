@@ -299,7 +299,7 @@
 		// Real-time live sync with Mixed In Key database
 		let unlistenMikSync: (() => void) | null = null
 		listen('mik-database-synced', () => {
-			libraryStore.loadTracks()
+			libraryStore.reloadWithCurrentFilter()
 		}).then((unlisten) => {
 			unlistenMikSync = unlisten
 		})

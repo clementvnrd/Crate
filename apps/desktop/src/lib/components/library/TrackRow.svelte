@@ -165,6 +165,7 @@
 	role="row"
 	tabindex="0"
 	data-track-row
+	data-track-id={track.id}
 	class="group relative grid items-center gap-2 border-b border-stroke-subtle px-3 py-1.5 text-sm transition-colors select-none {selected
 		? 'bg-brand-muted text-text-primary'
 		: isTagDragHovered
@@ -179,8 +180,13 @@
 	onpointerdown={handlePointerDown}
 	onpointermove={handlePointerMove}
 	onpointerup={handlePointerUp}
+	onpointerenter={() => $isDraggingTag && (isTagDragHovered = true)}
+	onpointerleave={() => (isTagDragHovered = false)}
 	onkeydown={(e) => {
 		if (e.key === 'Enter' || e.key === ' ') {
+			// Handled here only: the global Space shortcut must not also toggle playback
+			e.preventDefault()
+			e.stopPropagation()
 			ondblclick?.(e as unknown as MouseEvent)
 		}
 	}}

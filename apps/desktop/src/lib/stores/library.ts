@@ -49,19 +49,15 @@ function createLibraryStore() {
 		 * Load all tracks from the backend
 		 */
 		async loadTracks(filter?: TrackFilter) {
-			let activeFilter: TrackFilter = {}
-			update((state) => {
-				activeFilter = filter ?? state.filter
-				return { ...state, loading: true, error: null }
-			})
+			update((state) => ({ ...state, loading: true, error: null }))
 
 			try {
-				const tracks = await libraryApi.getTracks(activeFilter)
+				const tracks = await libraryApi.getTracks(filter)
 				update((state) => ({
 					...state,
 					tracks,
 					loading: false,
-					filter: activeFilter,
+					filter: filter ?? {},
 				}))
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : 'Failed to load tracks'
@@ -74,6 +70,19 @@ function createLibraryStore() {
 			}
 		},
 
+
+		/**
+		 * Reload the tracks keeping the active filter (search, tags, playlist…), for refreshes
+		 * triggered by background changes. `loadTracks()` without argument shows all tracks.
+		 */
+		async reloadWithCurrentFilter() {
+			let current: TrackFilter = {}
+			update((state) => {
+				current = state.filter
+				return state
+			})
+			await this.loadTracks(current)
+		},
 		/**
 		 * Import tracks from file paths with duplicate detection
 		 * Returns duplicates for the caller to handle via modal

@@ -255,7 +255,15 @@ impl LibraryService {
         if let Some(waveform) = cached.filter(|w| !w.is_empty()) {
             return Ok(Some(waveform));
         }
-        let Some(file_path) = file_path else { return Ok(None) };
+        let Some(file_path) = file_path else {
+            // A file opened outside the library (standalone player) is addressed by its path:
+            // compute its waveform without caching it anywhere.
+            let external = std::path::Path::new(track_id);
+            return Ok(external
+                .is_file()
+                .then(|| super::waveform::compute_peaks(external, super::waveform::WAVEFORM_BARS))
+                .flatten());
+        };
 
         let Some(peaks) = super::waveform::compute_peaks(std::path::Path::new(&file_path), super::waveform::WAVEFORM_BARS) else {
             return Ok(None);
