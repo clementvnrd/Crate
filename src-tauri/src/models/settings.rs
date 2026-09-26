@@ -156,6 +156,8 @@ impl std::str::FromStr for AccentColor {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum Font {
+    Jost,
+    DmSans,
     Inter,
     Nunito,
     #[default]
@@ -168,6 +170,8 @@ pub enum Font {
 impl std::fmt::Display for Font {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Font::Jost => write!(f, "jost"),
+            Font::DmSans => write!(f, "dm-sans"),
             Font::Inter => write!(f, "inter"),
             Font::Nunito => write!(f, "nunito"),
             Font::OpenSans => write!(f, "open-sans"),
@@ -183,6 +187,8 @@ impl std::str::FromStr for Font {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
+            "jost" => Ok(Font::Jost),
+            "dm-sans" => Ok(Font::DmSans),
             "inter" => Ok(Font::Inter),
             "nunito" => Ok(Font::Nunito),
             "open-sans" => Ok(Font::OpenSans),

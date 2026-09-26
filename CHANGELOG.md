@@ -125,6 +125,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **[Q7]** Chemins à risque couverts par des tests sur base et dossiers temporaires : remplacement de fichier, synchro Mixed In Key, trackers d'écoute, import, export, corbeille ; plus aucun test ne lit la vraie base Mixed In Key.
 - **[Q12]** `CLAUDE.md` en place depuis le début du fork (règles de suivi et règles techniques).
 
+#### Corrigé — fondations visuelles
+
+- **[D2]** Tokens de design manquants déclarés pour les thèmes clair et sombre (`surface-3`, `surface-4`, `stroke-strong`, `text-disabled`) : ~70 classes (squelettes de chargement, pistes de progression, survols) qui ne produisaient aucun style s'affichent enfin. La couleur d'accent est exposée en `@theme inline`, ce qui rend fonctionnels les modificateurs d'opacité (`bg-brand-primary/20`…) tout en suivant l'accent choisi en direct.
+- **[D1]** `dark:` suit désormais le thème choisi dans Crate (`[data-theme]`) et non plus celui du système : les styles « mode clair » ajoutés par le fork ne se trompent plus quand macOS et Crate diffèrent.
+- **[D6]** Modales bornées à la fenêtre (largeur et hauteur moins 2rem) ; le Duplicate Killer remplit la modale au lieu de la dépasser, son pied de page et son bouton « Supprimer » restent visibles.
+- **[D8]** Polices Jost et DM Sans réellement utilisables (règles `[data-font]` et valeurs acceptées par le backend : le choix était perdu au redémarrage) ; 15 fichiers inutilisés supprimés (5 gardés, 392 Ko), double chargement Google Fonts retiré, licences OFL référencées.
+- **[D9]** Sept icônes manquantes ajoutées (dont `close`, absente dès l'amont) et test Vitest qui échoue sur toute icône inconnue ; logo Beatport dessiné en ligne (il sortait noir sur fond sombre).
+
 #### Documentation
 
 - **[L6]** Le README annonce désormais les 15 langues réellement livrées (au lieu de 11) et décrit le fork, les tests et le suivi.

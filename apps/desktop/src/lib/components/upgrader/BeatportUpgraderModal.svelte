@@ -189,7 +189,7 @@
 </script>
 
 <Modal {open} {onClose} size="4xl" flush>
-	<div class="flex h-[85vh] max-h-[85vh] flex-col overflow-hidden bg-surface-1">
+	<div class="flex h-[85vh] min-h-0 flex-col overflow-hidden bg-surface-1">
 		<!-- Header -->
 		<div class="flex flex-shrink-0 items-center justify-between border-b border-stroke bg-surface-2/60 px-6 py-4">
 			<div class="flex items-center gap-3">
@@ -220,14 +220,14 @@
 				{#if $upgraderMatchCount > 0}
 					<button
 						type="button"
-						class="hover:bg-surface-3 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
+						class="cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 						onclick={() => upgraderStore.selectAll()}
 					>
 						Tout cocher
 					</button>
 					<button
 						type="button"
-						class="hover:bg-surface-3 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
+						class="cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 						onclick={() => upgraderStore.deselectAll()}
 					>
 						Tout décocher
@@ -236,7 +236,7 @@
 
 				<button
 					type="button"
-					class="hover:bg-surface-3 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary disabled:opacity-50"
+					class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary disabled:opacity-50"
 					onclick={() => upgraderStore.load()}
 					disabled={$isUpgraderLoading}
 					title="Actualiser la recherche des upgrades"
@@ -247,7 +247,7 @@
 
 				<button
 					type="button"
-					class="hover:bg-surface-3 inline-flex cursor-pointer items-center gap-1 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
+					class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 					onclick={onClose}
 					title="Fermer"
 				>
@@ -339,7 +339,7 @@
 						: 0}
 
 					<div
-						class="hover:border-stroke-strong rounded-xl border bg-surface-2/70 p-4 shadow-sm transition-all
+						class="rounded-xl border bg-surface-2/70 p-4 shadow-sm transition-all hover:border-stroke-strong
 						{isSelected ? 'border-emerald-500/40 bg-emerald-950/10' : 'border-stroke'}"
 					>
 						<!-- Match Header: Track Title + Confidence Score + Ignore Button -->
@@ -367,7 +367,7 @@
 
 							<button
 								type="button"
-								class="hover:bg-surface-3 shrink-0 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
+								class="shrink-0 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 								onclick={() => upgraderStore.ignoreMatch(match)}
 								title="Ne plus proposer d'upgrade pour ce morceau"
 							>
@@ -498,7 +498,7 @@
 									class="flex items-center gap-1.5 truncate font-mono text-[11px] text-text-tertiary"
 									title={match.file_path}
 								>
-									<Icon name="folder" class="text-text-disabled h-3 w-3 shrink-0" />
+									<Icon name="folder" class="h-3 w-3 shrink-0 text-text-disabled" />
 									<span class="truncate">{match.file_path}</span>
 								</div>
 							</div>
@@ -664,7 +664,7 @@
 			<div class="flex items-center gap-3">
 				<button
 					type="button"
-					class="hover:bg-surface-3 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
+					class="cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 					onclick={onClose}
 				>
 					Fermer

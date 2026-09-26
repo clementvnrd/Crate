@@ -150,13 +150,14 @@
 </script>
 
 <Modal {open} {onClose} size="4xl" flush>
-	<div class="flex max-h-[88vh] flex-col bg-surface-1">
+	<!-- Fills the modal (bounded to the window) so the footer and its delete button stay visible -->
+	<div class="flex min-h-0 flex-1 flex-col bg-surface-1">
 		<!-- Header -->
 		<div class="flex items-center justify-between border-b border-stroke bg-surface-2/60 px-6 py-4">
 			<div class="flex items-center gap-3">
 				<!-- Modern sleek icon -->
 				<div
-					class="from-brand-primary/20 via-brand-primary/10 border-brand-primary/30 flex h-9 w-9 items-center justify-center rounded-xl border bg-gradient-to-br to-sky-500/10 text-brand-primary shadow-sm"
+					class="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-primary/30 bg-gradient-to-br from-brand-primary/20 via-brand-primary/10 to-sky-500/10 text-brand-primary shadow-sm"
 				>
 					<svg
 						class="h-5 w-5"
@@ -178,7 +179,7 @@
 						<Text variant="header-1" weight="bold">Duplicate Killer</Text>
 						{#if $duplicateGroupCount > 0}
 							<span
-								class="bg-brand-primary/15 border-brand-primary/30 rounded-full border px-2.5 py-0.5 text-xs font-semibold text-brand-primary"
+								class="rounded-full border border-brand-primary/30 bg-brand-primary/15 px-2.5 py-0.5 text-xs font-semibold text-brand-primary"
 							>
 								{$duplicateGroupCount} groupe{$duplicateGroupCount > 1 ? 's' : ''} ({$duplicateTrackCount} doublon{$duplicateTrackCount >
 								1
@@ -195,14 +196,14 @@
 				{#if $duplicateGroupCount > 0}
 					<button
 						type="button"
-						class="hover:bg-surface-3 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
+						class="cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 						onclick={() => duplicateStore.selectAllDuplicates()}
 					>
 						Tout cocher
 					</button>
 					<button
 						type="button"
-						class="hover:bg-surface-3 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
+						class="cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 						onclick={() => duplicateStore.deselectAll()}
 					>
 						Tout décocher
@@ -211,7 +212,7 @@
 
 				<button
 					type="button"
-					class="hover:bg-surface-3 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary disabled:opacity-50"
+					class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary disabled:opacity-50"
 					onclick={() => duplicateStore.load()}
 					disabled={$isDuplicateLoading}
 					title="Actualiser la liste des doublons"
@@ -222,7 +223,7 @@
 
 				<button
 					type="button"
-					class="hover:bg-surface-3 inline-flex cursor-pointer items-center gap-1 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
+					class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 					onclick={onClose}
 					title="Fermer"
 				>
@@ -233,7 +234,7 @@
 		</div>
 
 		<!-- Body Content -->
-		<div class="min-h-[380px] flex-1 space-y-5 overflow-y-auto p-6">
+		<div class="min-h-0 flex-1 space-y-5 overflow-y-auto p-6">
 			{#if $isDuplicateLoading && $duplicateGroups.length === 0}
 				<div class="flex h-72 flex-col items-center justify-center gap-3">
 					<div class="h-10 w-10 animate-spin rounded-full border-3 border-brand-primary border-t-transparent"></div>
@@ -258,7 +259,7 @@
 			{:else}
 				{#each $duplicateGroups as group (group.id)}
 					<div
-						class="hover:border-stroke-strong rounded-xl border border-stroke bg-surface-2/70 p-4 shadow-sm transition-all"
+						class="rounded-xl border border-stroke bg-surface-2/70 p-4 shadow-sm transition-all hover:border-stroke-strong"
 					>
 						<!-- Minimalist Group Header -->
 						<div class="mb-3 flex items-center justify-between border-b border-stroke/40 pb-2.5">
@@ -286,7 +287,7 @@
 
 							<button
 								type="button"
-								class="hover:bg-surface-3 shrink-0 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
+								class="shrink-0 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 								onclick={() => duplicateStore.ignoreGroup(group)}
 							>
 								Ignorer ce groupe
@@ -419,7 +420,7 @@
 													</span>
 												{:else}
 													<span
-														class="bg-surface-3 inline-flex h-[20px] items-center justify-center rounded border border-stroke/50 px-1.5 font-mono text-[10px] text-text-secondary select-none"
+														class="inline-flex h-[20px] items-center justify-center rounded border border-stroke/50 bg-surface-3 px-1.5 font-mono text-[10px] text-text-secondary select-none"
 													>
 														{formattedKey}
 													</span>
@@ -480,7 +481,7 @@
 											class="flex items-center gap-1.5 truncate font-mono text-[11px] text-text-tertiary"
 											title={track.file_path}
 										>
-											<Icon name="folder" class="text-text-disabled h-3 w-3 shrink-0" />
+											<Icon name="folder" class="h-3 w-3 shrink-0 text-text-disabled" />
 											<span class="truncate">{track.file_path}</span>
 										</div>
 									</div>
@@ -519,7 +520,7 @@
 			<div class="flex items-center gap-3">
 				<button
 					type="button"
-					class="hover:bg-surface-3 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:text-text-primary"
+					class="cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 					onclick={onClose}
 				>
 					Fermer

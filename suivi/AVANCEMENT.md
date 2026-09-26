@@ -5,7 +5,7 @@ Ce fichier est **la** source de vérité du suivi : chaque défaut du [registre]
 Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ = précision ou reste à faire. Le tableau de progression se recalcule avec `yarn suivi`.
 
 <!-- progression:start -->
-**Progression globale : 85 / 106 défauts corrigés (80 %)**
+**Progression globale : 90 / 106 défauts corrigés (85 %)**
 
 | Étape | Corrigés | Progression |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ =
 | Étape 7 — Fonctions DJ exactes | 17 / 18 | █████████░ |
 | Étape 8 — Frontend robuste | 17 / 17 | ██████████ |
 | Étape 9 — Hygiène et outillage | 11 / 14 | ████████░░ |
-| Étape 10 — Fondations visuelles | 0 / 5 | ░░░░░░░░░░ |
+| Étape 10 — Fondations visuelles | 5 / 5 | ██████████ |
 | Étape 11 — Conformité vue par vue | 0 / 7 | ░░░░░░░░░░ |
 | Étape 12 — Traduction | 1 / 6 | ██░░░░░░░░ |
 <!-- progression:end -->
@@ -180,11 +180,11 @@ _Critère de sortie : CI verte, fmt/lint propres, builds multiplateformes._
 
 _Critère de sortie : Aucun élément invisible en clair ou sombre._
 
-- [ ] **D1** — `dark:` suit le thème de l'OS, pas celui de l'app : les « corrections mode clair » du build 40 sont…
-- [ ] **D2** — Environ 70 classes référencent des tokens inexistants (`surface-3`, `surface-4`, `stroke-strong`,…
-- [ ] **D6** — Modales plus hautes ou plus larges que la fenêtre : le pied du Duplicate Killer et son bouton « Supprimer…
-- [ ] **D8** — Polices Jost et DM Sans proposées dans les réglages mais non câblées (`[data-font='jost']` absent) ; 15…
-- [ ] **D9** — Six icônes utilisées n'existent pas dans `Icon.svelte` ; le logo Beatport SVG chargé en `<img>` avec…
+- [x] **D1** — `dark:` suit le thème de l'OS, pas celui de l'app : les « corrections mode clair » du build 40 sont… — _variante `dark:` rebranchée sur `[data-theme]` (une ligne CSS) ; le nettoyage des 43 usages se fera vue par vue (étape 11)_
+- [x] **D2** — Environ 70 classes référencent des tokens inexistants (`surface-3`, `surface-4`, `stroke-strong`,…
+- [x] **D6** — Modales plus hautes ou plus larges que la fenêtre : le pied du Duplicate Killer et son bouton « Supprimer…
+- [x] **D8** — Polices Jost et DM Sans proposées dans les réglages mais non câblées (`[data-font='jost']` absent) ; 15… — _licences OFL référencées dans `static/fonts/LICENSES.md` (texte complet via le lien officiel)_
+- [x] **D9** — Six icônes utilisées n'existent pas dans `Icon.svelte` ; le logo Beatport SVG chargé en `<img>` avec… — _nom d’icône non typé, mais un test Vitest échoue sur toute icône inconnue_
 
 ### Étape 11 — Conformité vue par vue
 
@@ -221,3 +221,5 @@ _Critère de sortie : App en anglais : aucune chaîne française._
 | 2026-09-26 | Statistiques justes : une écoute Spotify = une ligne, pauses exclues, sets Rekordbox datés | 6 |
 | 2026-09-26 | Fonctions DJ exactes : hot cues, XML, waveform réelle, recherche, position, régressions, corbeille | 7 |
 | 2026-09-26 | Frontend robuste : erreurs visibles, init sans fuite, panier fiable, options d’affichage sauvegardées | 8 |
+| 2026-09-26 | Hygiène : fmt/clippy/ESLint à zéro, CI Linux, hooks git rétablis | 9 |
+| 2026-09-26 | Fondations visuelles : tokens, `dark:` lié au thème, modales bornées, polices, icônes | 10 |

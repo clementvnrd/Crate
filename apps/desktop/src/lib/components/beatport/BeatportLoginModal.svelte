@@ -49,7 +49,7 @@
 		<!-- Header -->
 		<div class="flex items-center justify-between border-b border-[#252830] px-6 py-4">
 			<div class="flex items-center gap-3">
-				<img src="/beatport-logo.svg" alt="Beatport" class="h-6 w-auto" />
+				<Icon name="beatport" class="h-6 w-6 text-text-primary" />
 				<div>
 					<h2 class="text-base font-semibold text-white">Connexion Beatport Streaming</h2>
 					<p class="text-xs text-neutral-400">Associez votre compte Beatport à Crate</p>

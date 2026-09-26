@@ -106,7 +106,7 @@
 >
 	{#if visible}
 		<div
-			class="fixed top-1/2 left-1/2 flex max-h-[85vh] w-full {sizeClasses[size] ??
+			class="fixed top-1/2 left-1/2 flex max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] {sizeClasses[size] ??
 				'max-w-md'} -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-stroke bg-surface-1 text-text-primary shadow-xl"
 			transition:scale={{ start: 0.95, duration: 200 }}
 			onoutroend={handleOutroEnd}

@@ -99,7 +99,7 @@
 						/>
 						<select
 							bind:value={selectedSearchType}
-							class="bg-surface-3 h-8 cursor-pointer rounded-r-lg border-y border-r border-stroke px-2.5 text-xs text-text-secondary focus:border-emerald-500 focus:outline-none"
+							class="h-8 cursor-pointer rounded-r-lg border-y border-r border-stroke bg-surface-3 px-2.5 text-xs text-text-secondary focus:border-emerald-500 focus:outline-none"
 						>
 							<option value="tracks">Catalogue Global</option>
 							<option value="artists">Artistes</option>
@@ -150,7 +150,7 @@
 						<div
 							class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 shadow-inner"
 						>
-							<img src="/beatport-logo.svg" alt="Beatport" class="h-9 w-9 text-[#00FF96]" />
+							<Icon name="beatport" class="h-9 w-9 text-[#00FF96]" />
 						</div>
 
 						<div class="mx-auto max-w-xl space-y-2">
@@ -207,7 +207,7 @@
 						>
 							<div class="flex flex-col items-center gap-6 sm:flex-row">
 								<div
-									class="bg-surface-3 relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-full border-2 border-[#00FF96] shadow-xl shadow-[#00FF96]/20"
+									class="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-full border-2 border-[#00FF96] bg-surface-3 shadow-xl shadow-[#00FF96]/20"
 								>
 									{#if $beatportStore.selectedArtistImage}
 										<img
@@ -238,7 +238,7 @@
 										<div class="flex flex-wrap items-center justify-center gap-1.5 pt-1 sm:justify-start">
 											{#each $beatportStore.selectedArtistDetail.genres as g, gIdx (gIdx)}
 												<span
-													class="bg-surface-3 rounded border border-stroke px-2 py-0.5 text-[10px] text-text-secondary"
+													class="rounded border border-stroke bg-surface-3 px-2 py-0.5 text-[10px] text-text-secondary"
 												>
 													{g}
 												</span>
@@ -249,7 +249,7 @@
 									<div class="flex flex-wrap items-center justify-center gap-3 pt-2 sm:justify-start">
 										<button
 											type="button"
-											class="bg-surface-3 flex items-center gap-1.5 rounded-lg border border-stroke px-3 py-1 text-xs text-text-secondary transition-colors hover:text-white"
+											class="flex items-center gap-1.5 rounded-lg border border-stroke bg-surface-3 px-3 py-1 text-xs text-text-secondary transition-colors hover:text-white"
 											onclick={() => beatportStore.setNavSection('home')}
 										>
 											← Retour au Catalogue
@@ -285,7 +285,7 @@
 										onclick={() => beatportStore.setNavArtist(artist.id, artist.name, artist.image_url ?? undefined)}
 									>
 										<div
-											class="bg-surface-3 relative h-16 w-16 overflow-hidden rounded-full border border-stroke shadow-md transition-colors group-hover:border-[#00FF96]"
+											class="relative h-16 w-16 overflow-hidden rounded-full border border-stroke bg-surface-3 shadow-md transition-colors group-hover:border-[#00FF96]"
 										>
 											{#if artist.image_url}
 												<img
@@ -328,7 +328,7 @@
 											class="group relative flex cursor-pointer items-center gap-4 rounded-xl border border-stroke/60 bg-surface-1 p-3.5 text-left transition-all hover:scale-[1.02] hover:border-emerald-500/50 hover:bg-surface-2/80"
 											onclick={() => beatportStore.setNavChart(String(chart.id), chart.title)}
 										>
-											<div class="bg-surface-3 relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg shadow-md">
+											<div class="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-surface-3 shadow-md">
 												{#if chart.image_url}
 													<img
 														src={chart.image_url}

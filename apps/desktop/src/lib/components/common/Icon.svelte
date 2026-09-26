@@ -9,6 +9,17 @@
 
 	// Stroke-based icons (default)
 	const strokeIcons: Record<string, string> = {
+		// Icons used by the fork's views (Beatport, upgrader, albums)
+		'alert-triangle':
+			'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
+		'arrow-left': 'M10 19l-7-7m0 0l7-7m-7 7h18',
+		'arrow-right': 'M14 5l7 7m0 0l-7 7m7-7H3',
+		close: 'M6 18L18 6M6 6l12 12',
+		database:
+			'<ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />',
+		'folder-plus': 'M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z',
+		music:
+			'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3',
 		// Context menu icons
 		'arrow-up-from-bracket':
 			'M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5',
