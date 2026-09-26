@@ -31,6 +31,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **[Q1]** `tauri.prod.conf.json` restauré comme en amont (artefacts de mise à jour) ; le build personnel sans signature passe par `yarn build:local` et `tauri.local.conf.json`.
 - Tests : trois nouveaux tests de synchronisation sur base en mémoire et fichiers temporaires (titre absent conservé, homonymes jamais fusionnés, fichier déplacé qui garde son identité) ; le test de nettoyage n'utilise plus un chemin personnel.
 
+#### Corrigé — upgrader Beatport
+
+- **[C6]** L'upgrader et le panier Beatport ne « nettoient » plus le dossier de destination : `beatportdl` télécharge dans un dossier privé `.crate-download-…` créé pour l'occasion, seuls les FLAC validés en sortent, puis ce dossier (et lui seul) est supprimé. Pochettes, playlists `.m3u`, notes et sous-dossiers de ton dossier musique ne sont plus jamais touchés.
+- **[C7]** Seuls les fichiers créés par le téléchargement en cours sont pris en compte (ils sont seuls dans le dossier privé) : un FLAC déjà présent ne peut plus être pris pour le nouveau, et un fichier existant n'est jamais écrasé (`Titre (1).flac`).
+- **[C8]** Un upgrade MP3 → FLAC met à jour le titre **existant** (même identifiant) au lieu de le supprimer puis de le réimporter : cues, tags, playlists, note, couleur, compteur et historique d'écoute sont conservés. Le MP3 ne part à la corbeille qu'une fois la bibliothèque mise à jour ; un échec de mise à la corbeille est signalé.
+- **[B22]** Validation FLAC par décodage complet (symphonia) : un fichier corrompu, tronqué (moins d'échantillons qu'annoncé) ou dont la durée ne correspond pas au titre Beatport (±5 s ou ±3 %) est refusé.
+- **[B23]** Scoring : une version différente (radio edit, dub, instrumental…) ne peut plus remplacer un extended/original mix ; une durée inconnue donne un score neutre au lieu d'un faux accord.
+- **[B24]** Découpage des artistes par mots entiers : « Daft Punk » n'est plus coupé en « Da » (séparateur `ft`), « Alex » garde son x ; le rapprochement d'artistes par inclusion ne compte plus que des mots entiers. Corrige aussi la détection de doublons.
+- **[B25]** Les titres sans équivalent Beatport sont mémorisés 7 jours (plus de nouvelle recherche réseau à chaque ouverture) ; les réponses 429 de Beatport sont réessayées après 1, 2 puis 4 s ; une erreur réseau n'est jamais mémorisée comme « aucun résultat ».
+- **[B26]** Le chemin du MP3 est relu dans la bibliothèque au lieu d'être fourni par le webview ; toutes les erreurs sont remontées.
+- **[I3]** Progression de l'upgrade (`upgrade-progress`) affichée dans le bouton : « Mise à niveau 2/5 — Titre ».
+- **[F14]** Le bouton de remplacement est désactivé tant que Beatport n'est pas connecté.
+- Tests : 12 nouveaux tests (décodage d'un vrai FLAC de test, fichiers factices et tronqués, déplacement sans écrasement, dossier utilisateur jamais supprimé, remplacement en place qui garde cues/tags/playlists, découpage d'artistes, scoring).
+
 #### Documentation
 
 - **[L6]** Le README annonce désormais les 15 langues réellement livrées (au lieu de 11) et décrit le fork, les tests et le suivi.

@@ -5,18 +5,18 @@ Ce fichier est **la** source de vérité du suivi : chaque défaut du [registre]
 Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ = précision ou reste à faire. Le tableau de progression se recalcule avec `yarn suivi`.
 
 <!-- progression:start -->
-**Progression globale : 15 / 106 défauts corrigés (14 %)**
+**Progression globale : 25 / 106 défauts corrigés (24 %)**
 
 | Étape | Corrigés | Progression |
 | --- | --- | --- |
 | Étape 1 — Mise en sûreté | 2 / 2 | ██████████ |
 | Étape 2 — Couper les opérations destructives | 6 / 6 | ██████████ |
 | Étape 3 — Secrets et authentification | 4 / 4 | ██████████ |
-| Étape 4 — Upgrader sûr | 0 / 9 | ░░░░░░░░░░ |
+| Étape 4 — Upgrader sûr | 9 / 9 | ██████████ |
 | Étape 5 — Mixed In Key propre | 1 / 8 | █░░░░░░░░░ |
 | Étape 6 — Statistiques justes | 0 / 10 | ░░░░░░░░░░ |
 | Étape 7 — Fonctions DJ exactes | 0 / 18 | ░░░░░░░░░░ |
-| Étape 8 — Frontend robuste | 1 / 17 | █░░░░░░░░░ |
+| Étape 8 — Frontend robuste | 2 / 17 | █░░░░░░░░░ |
 | Étape 9 — Hygiène et outillage | 0 / 14 | ░░░░░░░░░░ |
 | Étape 10 — Fondations visuelles | 0 / 5 | ░░░░░░░░░░ |
 | Étape 11 — Conformité vue par vue | 0 / 7 | ░░░░░░░░░░ |
@@ -74,15 +74,15 @@ _Critère de sortie : Plus aucun identifiant en clair, une seule source de véri
 
 _Critère de sortie : Aucun fichier voisin touché, cues et tags conservés._
 
-- [ ] **C6** — L'upgrader vide des sous-dossiers et supprime les .jpg, .m3u, .txt du dossier de destination
-- [ ] **C7** — Des FLAC déjà présents dans le dossier sont pris pour le téléchargement, et le MP3 part à la corbeille à tort
-- [ ] **C8** — L'upgrade supprime le titre et le réimporte avec un nouvel identifiant
-- [ ] **B22** — Validation FLAC insuffisante : un fichier tronqué de plus de 3 Mo passe
-- [ ] **B23** — Scoring : un radio edit peut remplacer un extended mix ; valeurs Beatport par défaut fictives (240 000 ms,…
-- [ ] **B24** — Découpage d'artistes par regex sans frontière de mot : « Daft Punk » devient « Da » ; panic par index…
-- [ ] **B25** — Pas de cache négatif ni de gestion des 429 : chaque ouverture relance un scan réseau complet
-- [ ] **B26** — `execute_upgrade_replacements` : ordre non sûr, erreurs ignorées, plusieurs minutes sans progression ni…
-- [ ] **I3** — Aucun événement de progression pour le téléchargement Beatport et l'upgrader : l'UI reste figée plusieurs…
+- [x] **C6** — L'upgrader vide des sous-dossiers et supprime les .jpg, .m3u, .txt du dossier de destination
+- [x] **C7** — Des FLAC déjà présents dans le dossier sont pris pour le téléchargement, et le MP3 part à la corbeille à tort
+- [x] **C8** — L'upgrade supprime le titre et le réimporte avec un nouvel identifiant
+- [x] **B22** — Validation FLAC insuffisante : un fichier tronqué de plus de 3 Mo passe
+- [x] **B23** — Scoring : un radio edit peut remplacer un extended mix ; valeurs Beatport par défaut fictives (240 000 ms,…
+- [x] **B24** — Découpage d'artistes par regex sans frontière de mot : « Daft Punk » devient « Da » ; panic par index… — _le panic par index d’octets n’a pas été retrouvé dans le code actuel_
+- [x] **B25** — Pas de cache négatif ni de gestion des 429 : chaque ouverture relance un scan réseau complet
+- [x] **B26** — `execute_upgrade_replacements` : ordre non sûr, erreurs ignorées, plusieurs minutes sans progression ni… — _chemin relu en base, ordre sûr, erreurs remontées, progression ; annulation non implémentée_
+- [x] **I3** — Aucun événement de progression pour le téléchargement Beatport et l'upgrader : l'UI reste figée plusieurs… — _fait pour l’upgrader (`upgrade-progress`) ; téléchargement du panier Beatport sans progression_
 
 ### Étape 5 — Mixed In Key propre
 
@@ -147,7 +147,7 @@ _Critère de sortie : Erreurs backend visibles, pas d'appel IPC superflu._
 - [ ] **F10** — Mutation d'une valeur `$derived` (`activeHeroTrack.is_in_library = true`)
 - [ ] **F12** — Course de réponses obsolètes dans le suivi de position (intervalle async appelant `getPlaybackState`…
 - [ ] **F13** — « Synchroniser avec Mixed In Key » du menu contextuel ignore la sélection et resynchronise toute la base
-- [ ] **F14** — Upgrader : la confiance s'affiche « 0.96% » au lieu de « 96 % » ; le bouton de remplacement reste actif…
+- [x] **F14** — Upgrader : la confiance s'affiche « 0.96% » au lieu de « 96 % » ; le bouton de remplacement reste actif… — _le « 0.96% » vu à l’audit venait des données fictives du harnais, pas de l’app ; bouton désactivé sans session Beatport_
 - [ ] **F15** — L'infobulle du badge Mixed In Key reste affichée après le départ du pointeur
 - [ ] **I1** — Messages d'erreur backend perdus : Tauri rejette avec une chaîne, et les nouveaux stores testent…
 - [ ] **I2** — Deux réglages Beatport sans effet : le téléchargeur force `lossless` et lance toujours la synchro Mixed In Key
@@ -216,3 +216,4 @@ _Critère de sortie : App en anglais : aucune chaîne française._
 | 2026-09-26 | Sauvegardes, secrets retirés, commit de base, dépôt GitHub, documents de suivi | 1 |
 | 2026-09-26 | Plus aucune suppression automatique ni écriture dans Mixed In Key ; config prod restaurée | 2 |
 | 2026-09-26 | Session Beatport dans le Trousseau, fin du scraping DJ.Studio, secret Spotify jamais renvoyé au webview | 3 |
+| 2026-09-26 | Upgrader sûr : dossier isolé, remplacement en place, FLAC décodé en entier, scoring corrigé | 4 |

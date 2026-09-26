@@ -889,14 +889,20 @@ mod tests {
         let old_path = dir.join("old_folder/track.mp3").to_string_lossy().to_string();
         let new_path = touch(&dir, "track.mp3");
         insert_track(&conn, "keep-me", &old_path, "Track", "Artist");
-        conn.execute("INSERT INTO tags (id, name, color) VALUES ('t1', 'Peak', '#fff')", []).ok();
-        conn.execute("INSERT INTO track_tags (track_id, tag_id) VALUES ('keep-me', 't1')", []).ok();
+        conn.execute_batch(
+            "INSERT INTO tag_categories (id, name) VALUES ('cat', 'Energy');
+             INSERT INTO tags (id, category_id, name, color) VALUES ('t1', 'cat', 'Peak', '#fff');
+             INSERT INTO track_tags (track_id, tag_id) VALUES ('keep-me', 't1');",
+        )
+        .unwrap();
 
         MikDatabaseService::apply_mik_songs(&conn, vec![mik_song(&new_path, "Track", "Artist")], None).unwrap();
 
         assert_eq!(track_count(&conn), 1);
         let path: String = conn.query_row("SELECT file_path FROM tracks WHERE id = 'keep-me'", [], |r| r.get(0)).unwrap();
         assert_eq!(path, new_path, "the existing track follows its file instead of being re-imported");
+        let tags: i64 = conn.query_row("SELECT COUNT(*) FROM track_tags WHERE track_id = 'keep-me'", [], |r| r.get(0)).unwrap();
+        assert_eq!(tags, 1, "tags stay attached to the relocated track");
         let _ = std::fs::remove_dir_all(dir);
     }
 

@@ -55,8 +55,12 @@ pub async fn execute_upgrade_replacements(
 ) -> Result<UpgradeReplacementResult> {
     let current_settings = settings.get_settings().ok();
     let custom_dest = current_settings.and_then(|s| s.beatport_download_destination);
+    let progress_app = app.clone();
+    let on_progress = move |progress: crate::services::beatport::UpgradeProgress| {
+        let _ = progress_app.emit("upgrade-progress", progress);
+    };
     let res = upgrader
-        .execute_upgrade_replacements(&matches, Some(&library), custom_dest.as_deref())
+        .execute_upgrade_replacements(&matches, Some(&library), custom_dest.as_deref(), &on_progress)
         .await?;
     let _ = app.emit("upgrades-updated", ());
     let _ = app.emit("library-updated", ());

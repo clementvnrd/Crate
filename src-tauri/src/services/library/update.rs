@@ -400,3 +400,146 @@ impl LibraryService {
         self.delete_tracks(ids)
     }
 }
+
+/// Audio properties of a file that replaces an existing track's file.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct ReplacementAudio {
+    pub format: String,
+    pub duration_ms: i64,
+    pub bitrate: Option<i32>,
+    pub sample_rate: Option<i32>,
+    pub file_hash: Option<String>,
+}
+
+impl LibraryService {
+    /// Points an existing track at a new audio file (e.g. an MP3 upgraded to FLAC).
+    ///
+    /// The track keeps its id, so its cues, tags, playlists, rating, colour and listening
+    /// history are preserved; only the file-related columns change.
+    pub fn replace_track_file(&self, id: &str, new_path: &std::path::Path) -> Result<Track> {
+        let path = new_path.to_path_buf();
+        let format = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|e| e.to_lowercase())
+            .unwrap_or_default();
+        let mut audio = ReplacementAudio {
+            format,
+            file_hash: compute_audio_hash(&path).ok(),
+            ..Default::default()
+        };
+        if let Some(tagged) = self.read_metadata_lenient(&path) {
+            use lofty::file::AudioFile;
+            let props = tagged.properties();
+            audio.duration_ms = props.duration().as_millis() as i64;
+            audio.bitrate = props.audio_bitrate().map(|b| b as i32);
+            audio.sample_rate = props.sample_rate().map(|s| s as i32);
+        } else {
+            let (duration_ms, sample_rate, bitrate) = self.read_audio_properties_symphonia(&path)?;
+            audio.duration_ms = duration_ms;
+            audio.sample_rate = sample_rate;
+            audio.bitrate = bitrate;
+        }
+
+        {
+            let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+            replace_track_file_in(&conn, id, &path.to_string_lossy(), &audio)?;
+        }
+        self.get_track(id)
+    }
+}
+
+/// Updates the file columns of track `id` in place, within one transaction.
+pub(crate) fn replace_track_file_in(
+    conn: &rusqlite::Connection,
+    id: &str,
+    new_path: &str,
+    audio: &ReplacementAudio,
+) -> Result<()> {
+    let tx = conn.unchecked_transaction()?;
+    let now = chrono::Utc::now().to_rfc3339();
+    let hlc = dirty::next_hlc(&tx)?;
+    let (library_root_id, relative_path) =
+        crate::services::cloud_sync::resolution::assign_root_for_import(&tx, new_path)?;
+    let changed = tx.execute(
+        "UPDATE tracks SET file_path = ?1, format = ?2,
+            duration_ms = CASE WHEN ?3 > 0 THEN ?3 ELSE duration_ms END,
+            bitrate = ?4, sample_rate = ?5, file_hash = ?6, date_modified = ?7, _hlc = ?8,
+            library_root_id = ?9, relative_path = ?10
+         WHERE id = ?11",
+        rusqlite::params![
+            new_path,
+            audio.format,
+            audio.duration_ms,
+            audio.bitrate,
+            audio.sample_rate,
+            audio.file_hash,
+            now,
+            hlc,
+            library_root_id,
+            relative_path,
+            id
+        ],
+    )?;
+    if changed == 0 {
+        return Err(CrateError::TrackNotFound(id.to_string()));
+    }
+    dirty::mark_dirty(&tx, &buckets::bucket_for_track_id(id))?;
+    tx.commit()?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod replace_file_tests {
+    use super::*;
+
+    #[test]
+    fn test_replace_track_file_keeps_identity_cues_tags_and_playlists() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        conn.execute_batch(
+            "INSERT INTO tracks (id, file_path, format, title, artist, duration_ms, bitrate, rating, play_count, date_added, date_modified)
+                VALUES ('t1', '/music/song.mp3', 'mp3', 'Song', 'Artist', 300000, 320, 4, 12, '2026-01-01', '2026-01-01');
+             INSERT INTO cues (id, track_id, position_ms, type, hot_cue_index, name) VALUES ('c1', 't1', 1000, 'hot', 0, 'Intro');
+             INSERT INTO tag_categories (id, name) VALUES ('cat', 'Energy');
+             INSERT INTO tags (id, category_id, name, color) VALUES ('g1', 'cat', 'Peak', '#ffffff');
+             INSERT INTO track_tags (track_id, tag_id) VALUES ('t1', 'g1');
+             INSERT INTO playlists (id, name, date_created, date_modified) VALUES ('p1', 'Set', '2026-01-01', '2026-01-01');
+             INSERT INTO playlist_tracks (playlist_id, track_id, position, date_added) VALUES ('p1', 't1', 0, '2026-01-01');",
+        )
+        .unwrap();
+
+        let audio = ReplacementAudio {
+            format: "flac".into(),
+            duration_ms: 300_500,
+            bitrate: Some(1411),
+            sample_rate: Some(44100),
+            file_hash: Some("abc".into()),
+        };
+        replace_track_file_in(&conn, "t1", "/music/song.flac", &audio).unwrap();
+
+        let (path, format, bitrate, rating, plays): (String, String, i32, i32, i32) = conn
+            .query_row(
+                "SELECT file_path, format, bitrate, rating, play_count FROM tracks WHERE id = 't1'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
+            )
+            .unwrap();
+        assert_eq!((path.as_str(), format.as_str(), bitrate), ("/music/song.flac", "flac", 1411));
+        assert_eq!((rating, plays), (4, 12));
+        for (table, column) in [("cues", "track_id"), ("track_tags", "track_id"), ("playlist_tracks", "track_id")] {
+            let n: i64 = conn
+                .query_row(&format!("SELECT COUNT(*) FROM {table} WHERE {column} = 't1'"), [], |r| r.get(0))
+                .unwrap();
+            assert_eq!(n, 1, "{table} must survive the upgrade");
+        }
+    }
+
+    #[test]
+    fn test_replace_track_file_unknown_track() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        let err = replace_track_file_in(&conn, "missing", "/x.flac", &ReplacementAudio::default());
+        assert!(matches!(err, Err(CrateError::TrackNotFound(_))));
+    }
+}

@@ -47,3 +47,10 @@ export interface UpgradeCountInfo {
 	match_count: number
 	eligible_mp3_count: number
 }
+
+/** Progress event `upgrade-progress`, emitted before each track of an upgrade batch. */
+export interface UpgradeProgress {
+	current: number
+	total: number
+	title: string
+}

@@ -310,7 +310,7 @@ impl LibraryService {
 
     /// Fallback to extract audio properties using symphonia when lofty fails.
     /// Returns (duration_ms, sample_rate, bitrate).
-    fn read_audio_properties_symphonia(
+    pub(super) fn read_audio_properties_symphonia(
         &self,
         path: &PathBuf,
     ) -> Result<(i64, Option<i32>, Option<i32>)> {

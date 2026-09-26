@@ -6,6 +6,7 @@
 		upgraderMatchCount,
 		isUpgraderLoading,
 		isUpgrading,
+		upgradeProgress,
 		selectedUpgradeCount,
 	} from '$shared/stores/upgrader'
 	import {
@@ -153,7 +154,7 @@
 	}
 
 	async function handleExecuteUpgrade() {
-		if ($selectedUpgradeCount === 0 || $isUpgrading) return
+		if ($selectedUpgradeCount === 0 || $isUpgrading || isAuthRequired) return
 		await upgraderStore.executeSelected(async () => {
 			await libraryStore.loadTracks()
 		})
@@ -619,12 +620,16 @@
 				<Button
 					variant="primary"
 					onclick={handleExecuteUpgrade}
-					disabled={$selectedUpgradeCount === 0 || $isUpgrading}
+					disabled={$selectedUpgradeCount === 0 || $isUpgrading || isAuthRequired}
 					class="font-semibold shadow-md shadow-emerald-950/40 text-xs py-1.5 bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
 				>
 					{#if $isUpgrading}
 						<Icon name="refresh-cw" class="mr-2 h-3.5 w-3.5 animate-spin" />
-						Mise à niveau en cours...
+						{#if $upgradeProgress}
+							Mise à niveau {$upgradeProgress.current}/{$upgradeProgress.total} — {$upgradeProgress.title}
+						{:else}
+							Mise à niveau en cours...
+						{/if}
 					{:else}
 						<Icon name="sparkles" class="mr-2 h-3.5 w-3.5" />
 						Remplacer les {$selectedUpgradeCount} morceau{$selectedUpgradeCount > 1 ? 'x' : ''} par FLAC Lossless

@@ -13,8 +13,8 @@ use crate::models::{
     UpgradeScoreBreakdown,
 };
 use crate::services::beatport::client::{BeatportClient, BeatportTrack};
-use crate::services::beatport::downloader::BeatportDownloader;
-use crate::services::duplicate::{artists_match, keys_match, normalize_artist, normalize_title};
+use crate::services::beatport::downloader::{discard_staging, move_into_destination, BeatportDownloader};
+use crate::services::duplicate::{artists_match, keys_match, normalize_artist, normalize_title, ARTIST_DELIM_RE};
 use crate::services::library::LibraryService;
 
 static FEAT_PAREN_RE: LazyLock<Regex> = LazyLock::new(|| {
@@ -29,12 +29,12 @@ static MIX_PAREN_RE: LazyLock<Regex> = LazyLock::new(|| {
 static MIX_DASH_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\s+-\s+.*(?:mix|edit|version|remaster|cut|dirty|clean|extended|short|outro|intro|dub|vip|remix|bootleg|mashup|acoustic|radio|club|original|clean|dirty|explicit).*$").unwrap()
 });
-static ARTIST_DELIM_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)\s*(?:feat\.?|ft\.?|featuring|vs\.?|vs|with|&|\+|\/|;|,|\band\b)\s*").unwrap()
-});
 static WHITESPACE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\s+").unwrap()
 });
+
+/// Minimum confidence score for an upgrade proposal.
+const MIN_CONFIDENCE: i32 = 75;
 
 /// Extract the primary/main artist by splitting on delimiters (feat., ft., vs., with, &, etc.)
 pub fn extract_main_artist(artist: &str) -> String {
@@ -182,6 +182,24 @@ pub fn dice_similarity(s1: &str, s2: &str) -> f64 {
 
 /// Calculate multi-criteria confidence score between a local track and a Beatport track.
 /// Total possible: 100 points. Match threshold: >= 75 points.
+/// Mix/version kinds mentioned in a title ("Extended Mix" → {extended}, "Radio Edit" → {radio}).
+/// "Original Mix" and "Extended Mix" are treated as the same full-length kind.
+fn mix_kinds(title: &str) -> HashSet<&'static str> {
+    const KINDS: [(&str, &str); 9] = [
+        ("extended", "full"),
+        ("original mix", "full"),
+        ("club mix", "full"),
+        ("radio", "radio"),
+        ("short", "radio"),
+        ("dub", "dub"),
+        ("instrumental", "instrumental"),
+        ("acapella", "acapella"),
+        ("vip", "vip"),
+    ];
+    let lower = title.to_lowercase();
+    KINDS.iter().filter(|(needle, _)| lower.contains(needle)).map(|(_, kind)| *kind).collect()
+}
+
 pub fn calculate_confidence_score(
     local_title: &str,
     local_artist: &str,
@@ -220,6 +238,15 @@ pub fn calculate_confidence_score(
         }
     };
 
+    // A different mix is a different recording: never swap an extended mix for a radio edit.
+    let local_mix = mix_kinds(local_title);
+    let bp_mix = mix_kinds(&bp_full_title);
+    let title_score = if !local_mix.is_empty() && !bp_mix.is_empty() && local_mix.is_disjoint(&bp_mix) {
+        0
+    } else {
+        title_score
+    };
+
     // 2. Artist Score (max 30)
     let bp_artists_joined = bp
         .artists
@@ -248,9 +275,11 @@ pub fn calculate_confidence_score(
         }
     };
 
-    // 3. Duration Score (max 15)
+    // 3. Duration Score (max 15) — an unknown duration is neutral, never a match
     let dur_diff_sec = (local_duration_ms - bp.duration_ms).abs() / 1000;
-    let duration_score: i32 = if dur_diff_sec <= 2 {
+    let duration_score: i32 = if local_duration_ms <= 0 || bp.duration_ms <= 0 {
+        7
+    } else if dur_diff_sec <= 2 {
         15
     } else if dur_diff_sec <= 5 {
         12
@@ -322,6 +351,14 @@ struct LocalMp3Track {
     format: String,
     artwork_path: Option<String>,
     file_size_bytes: u64,
+}
+
+/// Progress of an upgrade batch, sent to the UI before each track.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct UpgradeProgress {
+    pub current: usize,
+    pub total: usize,
+    pub title: String,
 }
 
 pub struct BeatportUpgraderService {
@@ -498,6 +535,8 @@ impl BeatportUpgraderService {
         let _scan_guard = self.scan_lock.lock().await;
 
         let cutoff = (chrono::Utc::now() - chrono::Duration::hours(24)).to_rfc3339();
+        // "No match on Beatport" is remembered for a week so each opening does not rescan everything.
+        let negative_cutoff = (chrono::Utc::now() - chrono::Duration::days(7)).to_rfc3339();
 
         // 1. Read MP3 tracks, ignored matches, and cached matches from SQLite
         let (mp3_tracks, ignored, cached_map) = {
@@ -509,10 +548,10 @@ impl BeatportUpgraderService {
                 r#"
                 SELECT track_id, beatport_track_json, confidence_score, score_breakdown_json
                 FROM upgrade_matches_cache
-                WHERE scanned_at >= ?1
+                WHERE (confidence_score >= ?2 AND scanned_at >= ?1) OR (confidence_score < ?2 AND scanned_at >= ?3)
                 "#,
             )?;
-            let cached_rows = stmt.query_map(rusqlite::params![cutoff], |row| {
+            let cached_rows = stmt.query_map(rusqlite::params![cutoff, MIN_CONFIDENCE, negative_cutoff], |row| {
                 let track_id: String = row.get(0)?;
                 let bp_json: String = row.get(1)?;
                 let confidence: i32 = row.get(2)?;
@@ -544,11 +583,14 @@ impl BeatportUpgraderService {
             }
 
             if let Some((bp_json, confidence, breakdown_json)) = cached_map.get(&track.id) {
+                if *confidence < MIN_CONFIDENCE {
+                    continue; // Recently searched, nothing on Beatport
+                }
                 if let (Ok(bp_track), Ok(breakdown)) = (
                     serde_json::from_str::<BeatportTrack>(bp_json),
                     serde_json::from_str::<UpgradeScoreBreakdown>(breakdown_json),
                 ) {
-                    if !ignored.contains(&(track.id.clone(), bp_track.id.clone())) && *confidence >= 75 {
+                    if !ignored.contains(&(track.id.clone(), bp_track.id.clone())) && *confidence >= MIN_CONFIDENCE {
                         matches.push(UpgradeMatch {
                             track_id: track.id.clone(),
                             file_path: track.file_path.clone(),
@@ -598,9 +640,10 @@ impl BeatportUpgraderService {
                 let queries = build_search_queries(title, artist);
                 let mut eligible_candidates: Vec<(i32, UpgradeScoreBreakdown, BeatportTrack)> = Vec::new();
                 let mut seen_bp_ids: HashSet<String> = HashSet::new();
+                let mut search_failed = false;
 
                 for query in queries {
-                    match self.client.search_catalog_full(Some(&resolved_token), &query).await {
+                    match self.search_with_backoff(&resolved_token, &query).await {
                         Ok(search_res) => {
                             for bp_track in search_res.tracks {
                                 if seen_bp_ids.contains(&bp_track.id) || ignored.contains(&(track.id.clone(), bp_track.id.clone())) {
@@ -616,8 +659,7 @@ impl BeatportUpgraderService {
                                     &bp_track,
                                 );
 
-                                // Threshold >= 75%
-                                if confidence >= 75 {
+                                if confidence >= MIN_CONFIDENCE {
                                     seen_bp_ids.insert(bp_track.id.clone());
                                     eligible_candidates.push((confidence, breakdown, bp_track));
                                 }
@@ -632,7 +674,27 @@ impl BeatportUpgraderService {
                             if e.contains("Authentification Beatport requise") {
                                 return Err(CrateError::BeatportAuthRequired);
                             }
+                            log::warn!("Beatport search failed for '{query}': {e}");
+                            search_failed = true;
                         }
+                    }
+                }
+
+                if eligible_candidates.is_empty() && !search_failed {
+                    // Remember the absence of match (a network error is not remembered).
+                    if let Ok(conn) = self.conn.lock() {
+                        let _ = conn.execute(
+                            r#"
+                            INSERT INTO upgrade_matches_cache (
+                                track_id, track_title, track_artist, file_path,
+                                beatport_track_json, confidence_score, score_breakdown_json, scanned_at
+                            ) VALUES (?1, ?2, ?3, ?4, 'null', 0, 'null', ?5)
+                            ON CONFLICT(track_id) DO UPDATE SET
+                                beatport_track_json = 'null', confidence_score = 0,
+                                score_breakdown_json = 'null', scanned_at = excluded.scanned_at
+                            "#,
+                            rusqlite::params![track.id, title, artist, track.file_path, chrono::Utc::now().to_rfc3339()],
+                        );
                     }
                 }
 
@@ -714,6 +776,27 @@ impl BeatportUpgraderService {
         })
     }
 
+    /// Searches the Beatport catalog, waiting 1 s, 2 s then 4 s when rate-limited (HTTP 429).
+    async fn search_with_backoff(
+        &self,
+        token: &str,
+        query: &str,
+    ) -> std::result::Result<crate::services::beatport::client::BeatportSearchResult, String> {
+        let mut delay_ms = 1000;
+        let mut attempt = 0;
+        loop {
+            match self.client.search_catalog_full(Some(token), query).await {
+                Err(e) if e.contains("429") && attempt < 3 => {
+                    log::info!("Beatport rate limit reached, retrying in {delay_ms} ms");
+                    tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;
+                    delay_ms *= 2;
+                    attempt += 1;
+                }
+                other => return other,
+            }
+        }
+    }
+
     /// Alias for find_upgrade_matches
     pub async fn get_upgrade_matches(&self, token: Option<&str>) -> Result<UpgradeScanResult> {
         self.find_upgrade_matches(token).await
@@ -757,39 +840,53 @@ impl BeatportUpgraderService {
         })
     }
 
-    /// Atomically executes replacement of selected MP3 tracks with FLAC Lossless versions:
-    /// 1. Download FLAC Lossless via BeatportDownloader (with automatic alternative candidate fallback if primary fails)
-    /// 2. Validate FLAC integrity (>= 3MB, b"fLaC" magic header)
-    /// 3. Move old MP3 file to macOS Trash (ONLY if FLAC was successfully validated)
-    /// 4. Cascade purge in Mixed In Key 11 database
-    /// 5. Delete from Crate DB, import new FLAC, and sync MIK
-    /// 6. Invalidate upgraded tracks from cache
+    /// Replaces selected MP3 tracks with their FLAC version, one track at a time:
+    /// 1. Download each candidate with beatportdl into a private staging folder (primary first,
+    ///    then alternatives on failure); only files created by this run are considered
+    /// 2. Keep a file only if its FLAC header is valid, it decodes completely and its duration
+    ///    matches the Beatport track
+    /// 3. Move it next to the old file without overwriting anything, then point the *existing*
+    ///    Crate track at it (same id: cues, tags, playlists, rating and history are kept)
+    /// 4. Move the old MP3 to the Trash only once the library points at the FLAC
     pub async fn execute_upgrade_replacements(
         &self,
         matches: &[UpgradeMatch],
         library: Option<&LibraryService>,
         destination_override: Option<&str>,
+        on_progress: &(dyn Fn(UpgradeProgress) + Send + Sync),
     ) -> Result<UpgradeReplacementResult> {
+        let library = library.ok_or_else(|| CrateError::Import("Library service unavailable".to_string()))?;
         let mut success_count = 0;
         let mut failed_count = 0;
         let mut replaced_tracks = Vec::new();
         let mut replaced_ids = Vec::new();
         let mut errors = Vec::new();
 
-        for item in matches {
-            let old_file_path_str = item.file_path.clone();
+        let total = matches.len();
+        for (index, item) in matches.iter().enumerate() {
+            on_progress(UpgradeProgress { current: index + 1, total, title: item.title.clone() });
+            // Never trust the path sent by the webview: read it from the library.
+            let old_file_path_str = match library.get_track(&item.track_id) {
+                Ok(track) => track.file_path,
+                Err(e) => {
+                    failed_count += 1;
+                    errors.push(format!("'{}' : titre introuvable dans la bibliothèque ({e})", item.title));
+                    continue;
+                }
+            };
             let old_path = Path::new(&old_file_path_str);
 
-            // Determine download destination folder
             let dest_dir = if let Some(custom) = destination_override {
-                PathBuf::from(custom)
+                BeatportDownloader::expand_path(Path::new(custom))
             } else if let Some(parent) = old_path.parent() {
                 parent.to_path_buf()
             } else {
-                PathBuf::from("~/Music/My Library/FLAC")
+                failed_count += 1;
+                errors.push(format!("'{}' : dossier de destination introuvable", item.title));
+                continue;
             };
 
-            // Build candidate list: primary beatport track first, followed by alternative candidates
+            // Primary Beatport track first, then alternatives (403 territory restrictions, 404…)
             let mut candidates = vec![item.beatport_track.clone()];
             for alt in &item.alternative_candidates {
                 if alt.id != item.beatport_track.id && !candidates.iter().any(|c| c.id == alt.id) {
@@ -797,81 +894,71 @@ impl BeatportUpgraderService {
                 }
             }
 
-            let mut valid_flac_paths: Vec<PathBuf> = Vec::new();
+            let mut new_flac: Option<PathBuf> = None;
             let mut candidate_errors: Vec<String> = Vec::new();
-
-            // Try primary candidate, and automatically fallback to alternative candidates (403 Territory Restricted / 404)
             for (idx, candidate) in candidates.iter().enumerate() {
                 log::info!(
-                    "Attempting FLAC download for '{}' (candidate {}/{}: ID={}, Title='{}')",
+                    "Attempting FLAC download for '{}' (candidate {}/{}: ID={})",
                     item.title,
                     idx + 1,
                     candidates.len(),
-                    candidate.id,
-                    candidate.title
+                    candidate.id
                 );
-
-                match BeatportDownloader::download_and_import_tracks(
-                    vec![candidate.clone()],
-                    &dest_dir,
-                    None,
-                    None, // Don't auto-import yet, we perform atomic sequence below
-                )
-                .await
-                {
-                    Ok(dl_res) => {
-                        let mut verified_files = Vec::new();
-                        for file_str in &dl_res.downloaded_files {
-                            let p = PathBuf::from(file_str);
-                            if p.exists() && BeatportDownloader::validate_flac_file(&p) {
-                                verified_files.push(p);
-                            } else {
-                                log::warn!("Downloaded file {:?} failed FLAC validation, removing", p);
-                                let _ = std::fs::remove_file(&p);
-                            }
-                        }
-
-                        if !verified_files.is_empty() {
-                            valid_flac_paths = verified_files;
-                            break; // Successfully downloaded and verified genuine FLAC!
-                        } else if !dl_res.errors.is_empty() {
-                            candidate_errors.push(format!("ID {}: {}", candidate.id, dl_res.errors.join("; ")));
-                        } else {
-                            candidate_errors.push(format!("ID {}: Aucun fichier FLAC valide", candidate.id));
-                        }
-                    }
+                let staged = match BeatportDownloader::download_to_staging(std::slice::from_ref(candidate), &dest_dir, None).await {
+                    Ok(staged) => staged,
                     Err(e) => {
-                        log::warn!("Candidate ID {} failed: {e}", candidate.id);
                         candidate_errors.push(format!("ID {}: {e}", candidate.id));
+                        continue;
                     }
+                };
+                let moved = match staged.valid_files.as_slice() {
+                    [file] => move_into_destination(file, &dest_dir).map_err(|e| e.to_string()),
+                    [] if staged.errors.is_empty() => Err("aucun fichier FLAC valide".to_string()),
+                    [] => Err(staged.errors.join("; ")),
+                    _ => Err(format!("{} fichiers reçus pour un seul titre", staged.valid_files.len())),
+                };
+                discard_staging(&staged.staging_dir);
+                match moved {
+                    Ok(path) => {
+                        new_flac = Some(path);
+                        break;
+                    }
+                    Err(e) => candidate_errors.push(format!("ID {}: {e}", candidate.id)),
                 }
             }
 
-            // ABSOLUTE SAFETY RULE: If no genuine FLAC was downloaded and validated,
-            // NEVER move old MP3 to Trash and NEVER delete it from database.
-            if valid_flac_paths.is_empty() {
+            // Without a verified FLAC in place, the MP3 and its library entry are left untouched.
+            let Some(new_flac) = new_flac else {
                 failed_count += 1;
-                let err_msg = if !candidate_errors.is_empty() {
-                    format!("Échec téléchargement FLAC pour '{}' (candidats testés: {})", item.title, candidate_errors.join(" | "))
-                } else {
+                errors.push(if candidate_errors.is_empty() {
                     format!("Aucun fichier FLAC valide n'a pu être téléchargé pour '{}'", item.title)
-                };
-                errors.push(err_msg);
+                } else {
+                    format!("Échec téléchargement FLAC pour '{}' (candidats testés : {})", item.title, candidate_errors.join(" | "))
+                });
+                continue;
+            };
+
+            if let Err(e) = library.replace_track_file(&item.track_id, &new_flac) {
+                failed_count += 1;
+                errors.push(format!(
+                    "'{}' : FLAC téléchargé ({}) mais la bibliothèque n'a pas pu être mise à jour : {e}. Le MP3 est conservé.",
+                    item.title,
+                    new_flac.display()
+                ));
                 continue;
             }
 
-            // 2. Move old MP3 file to macOS Trash ONLY after FLAC download and validation succeeded
-            if old_path.exists() {
+            if old_path.exists() && old_path != new_flac.as_path() {
                 #[cfg(target_os = "macos")]
                 {
                     let script = format!(
                         "tell application \"Finder\" to delete POSIX file \"{}\"",
                         old_file_path_str.replace('"', "\\\"")
                     );
-                    let _ = std::process::Command::new("osascript")
-                        .arg("-e")
-                        .arg(&script)
-                        .output();
+                    let trashed = std::process::Command::new("osascript").arg("-e").arg(&script).output();
+                    if !matches!(trashed, Ok(ref out) if out.status.success()) {
+                        errors.push(format!("'{}' remplacé, mais l'ancien MP3 n'a pas pu être mis à la corbeille : {}", item.title, old_file_path_str));
+                    }
                 }
                 #[cfg(not(target_os = "macos"))]
                 {
@@ -879,27 +966,11 @@ impl BeatportUpgraderService {
                 }
             }
 
-            // 3. Mixed In Key is read-only for Crate: its library is not modified here.
-
-            // 4. Delete old MP3 track from Crate and import new FLAC with MIK sync
-            if let Some(lib) = library {
-                let _ = lib.delete_tracks(vec![item.track_id.clone()]);
-                let _ = lib.import_tracks(valid_flac_paths);
-                let _ = lib.sync_from_mik_database();
-            } else {
-                let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-                let _ = conn.execute(
-                    "DELETE FROM tracks WHERE id = ?1",
-                    rusqlite::params![item.track_id],
-                );
-            }
-
             success_count += 1;
             replaced_tracks.push(item.title.clone());
             replaced_ids.push(item.track_id.clone());
         }
 
-        // 5. Invalidate upgraded tracks from cache
         let _ = self.invalidate_cache_for_tracks(&replaced_ids);
 
         Ok(UpgradeReplacementResult {
@@ -1006,6 +1077,47 @@ mod tests {
             in_cart: false,
             beatport_url: Some("https://beatport.com/track/opus/123456".to_string()),
         }
+    }
+
+    #[test]
+    fn test_extract_main_artist_keeps_names_containing_delimiters() {
+        assert_eq!(extract_main_artist("Daft Punk"), "Daft Punk");
+        assert_eq!(extract_main_artist("Alex Kennon"), "Alex Kennon");
+        assert_eq!(extract_main_artist("Swedish House Mafia"), "Swedish House Mafia");
+        assert_eq!(extract_main_artist("Andhim"), "Andhim");
+        assert_eq!(extract_main_artist("Fisher ft. Aatig"), "Fisher");
+        assert_eq!(extract_main_artist("Chris Lake feat. Aatig"), "Chris Lake");
+        assert_eq!(extract_main_artist("Kaskade x Deadmau5"), "Kaskade");
+        assert_eq!(extract_main_artist("Mau P vs Fisher"), "Mau P");
+        assert_eq!(extract_main_artist("Sonny Fodera, Jazzy"), "Sonny Fodera");
+    }
+
+    #[test]
+    fn test_confidence_penalizes_a_different_mix() {
+        let mut radio = sample_beatport_track();
+        radio.mix_name = Some("Radio Edit".to_string());
+        radio.duration_ms = 558000;
+        let (extended_vs_radio, _) =
+            calculate_confidence_score("Opus (Extended Mix)", "Eric Prydz", 558000, Some(126.0), Some("10B"), &radio);
+        let (extended_vs_original, _) = calculate_confidence_score(
+            "Opus (Extended Mix)",
+            "Eric Prydz",
+            558000,
+            Some(126.0),
+            Some("10B"),
+            &sample_beatport_track(),
+        );
+        assert!(extended_vs_radio < MIN_CONFIDENCE, "a radio edit must not replace an extended mix");
+        assert!(extended_vs_original >= MIN_CONFIDENCE, "extended and original mix are both full length");
+    }
+
+    #[test]
+    fn test_confidence_unknown_duration_is_neutral() {
+        let mut bp = sample_beatport_track();
+        bp.duration_ms = 0;
+        let (_, breakdown) =
+            calculate_confidence_score("Opus (Original Mix)", "Eric Prydz", 558000, Some(126.0), Some("10B"), &bp);
+        assert_eq!(breakdown.duration_score, 7);
     }
 
     #[test]

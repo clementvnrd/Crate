@@ -24,8 +24,10 @@ static MIX_PAREN_RE: LazyLock<Regex> = LazyLock::new(|| {
 static MIX_DASH_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\s+-\s+(?:(?:intro|outro|short|quick\s*hit|club|extended|original|radio|clean|dirty|explicit|dj\s*edit|dj\s*intro|re-?drum|transition|bootleg|mashup|slowed(?:\s*\+\s*reverb)?|sped\s*up|speed\s*up|acapella|a\s*cappella|bonus\s*track|instrumental|album|vocal|dub|vip|acoustic|remaster(?:ed)?|live|main)(?:\s+(?:mix|edit|version|remaster|cut|dirty|clean|extended|short|outro|intro|dub|vip))?|clean|dirty|explicit)\s*$").unwrap()
 });
-static ARTIST_DELIM_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)\s*(?:feat\.?|ft\.?|featuring|vs\.?|vs|with|x|&|\+|\/|;|,|\band\b)\s*").unwrap()
+/// Separators between artists. Words only match as whole words ("Daft Punk" is one artist,
+/// "Alex" keeps its x): feat./ft./vs., featuring, with, and, a standalone "x", & + / ; ,
+pub(crate) static ARTIST_DELIM_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)\s*(?:\b(?:feat|ft|vs)\b\.?|\b(?:featuring|with|and)\b|&|\+|/|;|,)\s*|\s+x\s+").unwrap()
 });
 static PUNCT_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"[^\p{L}\p{N}\s]").unwrap()
@@ -118,8 +120,12 @@ pub fn artists_match(a1: &str, a2: &str) -> bool {
         return true;
     }
 
-    if !n1.is_empty() && !n2.is_empty() && (n1.contains(&n2) || n2.contains(&n1)) {
-        return true;
+    // Containment only counts whole words: "daft punk" contains "punk", not "da".
+    if !n1.is_empty() && !n2.is_empty() {
+        let (w1, w2) = (format!(" {n1} "), format!(" {n2} "));
+        if w1.contains(&w2) || w2.contains(&w1) {
+            return true;
+        }
     }
 
     false
@@ -948,5 +954,21 @@ mod tests {
         assert!(artists_match("Jamie T, Fred again..", "Fred again.., Jamie T"));
         assert!(artists_match("Jamie T & Fred again..", "Fred again.., Jamie T"));
         assert!(artists_match("Skrillex & Fred again.. feat. Flowdan", "Fred again.., Skrillex, Flowdan"));
+    }
+}
+
+
+#[cfg(test)]
+mod artist_delimiter_tests {
+    use super::*;
+
+    #[test]
+    fn test_artist_tokens_do_not_split_inside_names() {
+        let tokens = normalize_artist_tokens("Daft Punk");
+        assert_eq!(tokens.len(), 1);
+        assert!(tokens.contains("daft punk"));
+        assert_eq!(normalize_artist_tokens("Alex Kennon x Maxinne").len(), 2);
+        assert!(artists_match("Daft Punk", "Daft Punk"));
+        assert!(!artists_match("Daft Punk", "Da"));
     }
 }

@@ -1,5 +1,6 @@
 import { writable, derived, get } from 'svelte/store'
-import type { UpgradeMatch, UpgradeScanResult, UpgradeCountInfo, UpgradeReplacementResult } from '../types'
+import { listen } from '@tauri-apps/api/event'
+import type { UpgradeMatch, UpgradeScanResult, UpgradeCountInfo, UpgradeReplacementResult, UpgradeProgress } from '../types'
 import * as upgraderApi from '../api/upgrader'
 import { toastStore } from './toast'
 
@@ -10,6 +11,7 @@ export interface UpgraderState {
 	potentialUpgradesCount: number
 	loading: boolean
 	upgrading: boolean
+	progress: UpgradeProgress | null
 	error: string | null
 	selectedMatchTrackIds: Set<string>
 }
@@ -21,6 +23,7 @@ const initialState: UpgraderState = {
 	potentialUpgradesCount: 0,
 	loading: false,
 	upgrading: false,
+	progress: null,
 	error: null,
 	selectedMatchTrackIds: new Set(),
 }
@@ -152,7 +155,10 @@ function createUpgraderStore() {
 			const selectedMatches = state.matches.filter((m) => state.selectedMatchTrackIds.has(m.track_id))
 			if (selectedMatches.length === 0) return null
 
-			update((s) => ({ ...s, upgrading: true }))
+			update((s) => ({ ...s, upgrading: true, progress: null }))
+			const unlistenProgress = await listen<UpgradeProgress>('upgrade-progress', (event) => {
+				update((s) => ({ ...s, progress: event.payload }))
+			}).catch(() => null)
 			try {
 				const result = await upgraderApi.executeUpgradeReplacements(selectedMatches)
 				if (onUpgraded) {
@@ -175,7 +181,8 @@ function createUpgraderStore() {
 				toastStore.error(errorMsg)
 				return null
 			} finally {
-				update((s) => ({ ...s, upgrading: false }))
+				unlistenProgress?.()
+				update((s) => ({ ...s, upgrading: false, progress: null }))
 			}
 		},
 
@@ -196,3 +203,4 @@ export const upgraderEligibleCount = derived(upgraderStore, ($s) => $s.totalElig
 export const selectedUpgradeCount = derived(upgraderStore, ($s) => $s.selectedMatchTrackIds.size)
 export const isUpgraderLoading = derived(upgraderStore, ($s) => $s.loading)
 export const isUpgrading = derived(upgraderStore, ($s) => $s.upgrading)
+export const upgradeProgress = derived(upgraderStore, ($s) => $s.progress)
