@@ -5,9 +5,10 @@ use crate::models::stats::{
     BpmBucketItem, HarmonicStatsItem, HeatmapCell, ListenEvent, RekordboxSession, SpotifyAuthState,
     SpotifyImportResult, SpotifyNowPlaying, StatsSummary, TopArtistItem, TopTrackItem,
 };
+use crate::services::stats::recap::Recap;
 use crate::services::stats::{
-    HistoryExportFormat, MikTrackerService, RekordboxTrackerService, SpotifyTrackerService,
-    StatsRecorderService,
+    HistoryExportFormat, MikTrackerService, RecapPeriod, RekordboxTrackerService,
+    SpotifyTrackerService, StatsRecorderService,
 };
 
 // ==========================================
@@ -84,6 +85,20 @@ pub async fn export_listening_history(
     run_blocking(move || {
         app.state::<StatsRecorderService>()
             .export_listen_history(format, std::path::Path::new(&path))
+    })
+    .await
+}
+
+/// The recap of the current week or year (`offset` 0) or of an earlier one (1 = the previous).
+#[tauri::command]
+pub async fn get_recap(
+    app: tauri::AppHandle,
+    period: RecapPeriod,
+    offset: Option<u32>,
+) -> Result<Recap> {
+    run_blocking(move || {
+        app.state::<StatsRecorderService>()
+            .get_recap(period, offset.unwrap_or(0))
     })
     .await
 }

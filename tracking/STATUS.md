@@ -242,3 +242,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Backend work moved off the async runtime; audio reply pairing, analysis cap and USB poller fixed | 7 |
 | 2026-09-30 | Scenario B started: listening-history export to CSV/JSON (backend) | — |
 | 2026-09-30 | Scenario B: smart-playlist listening criteria (backend, migration 16) | — |
+| 2026-09-30 | Scenario B: "Your week / Your year" recap (backend) and exact statistics windows | — |

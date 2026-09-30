@@ -1217,3 +1217,303 @@ mod history_export_tests {
         assert!(!bad.exists());
     }
 }
+
+// ==========================================
+// Exact time windows (`between:<start>,<end>`)
+// ==========================================
+
+mod window_tests {
+    use super::*;
+
+    fn raw(conn: &Arc<Mutex<Connection>>, id: &str, played_at: &str, played_ms: i64) {
+        conn.lock()
+            .unwrap()
+            .execute(
+                "INSERT INTO listen_events (id, source, title, artist, duration_ms, played_ms, played_at)
+                 VALUES (?1, 'spotify', ?1, 'Artist', 200000, ?2, ?3)",
+                rusqlite::params![id, played_ms, played_at],
+            )
+            .unwrap();
+    }
+
+    #[test]
+    fn a_window_includes_its_start_and_excludes_its_end() {
+        let (conn, recorder) = setup_test_db();
+        raw(&conn, "before", "2026-09-20T23:59:59Z", 60_000);
+        raw(&conn, "start", "2026-09-21T00:00:00Z", 60_000);
+        raw(&conn, "inside", "2026-09-25T12:00:00+02:00", 60_000); // 10:00 UTC
+        raw(&conn, "end", "2026-09-28T00:00:00Z", 60_000);
+
+        let summary = recorder
+            .get_stats_summary("between:2026-09-21 00:00:00,2026-09-28 00:00:00")
+            .unwrap();
+        assert_eq!(summary.total_plays, 2, "only `start` and `inside`");
+    }
+
+    #[test]
+    fn a_malformed_window_matches_nothing_instead_of_everything() {
+        let (conn, recorder) = setup_test_db();
+        raw(&conn, "a", "2026-09-21T10:00:00Z", 60_000);
+        for bad in [
+            "between:",
+            "between:2026-09-21",
+            "between:2026-09-21 00:00:00",
+            "between:yesterday,today",
+            "between:2026-09-21 00:00:00,",
+        ] {
+            assert_eq!(
+                recorder.get_stats_summary(bad).unwrap().total_plays,
+                0,
+                "{bad}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_window_cannot_inject_sql() {
+        let (conn, recorder) = setup_test_db();
+        raw(&conn, "a", "2026-09-21T10:00:00Z", 60_000);
+        let hostile =
+            "between:2026-09-21 00:00:00'); DROP TABLE listen_events; --,2026-09-28 00:00:00";
+        assert_eq!(recorder.get_stats_summary(hostile).unwrap().total_plays, 0);
+        let still_there: i64 = conn
+            .lock()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM listen_events", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(still_there, 1, "the table is intact");
+    }
+
+    #[test]
+    fn named_ranges_still_work_next_to_windows() {
+        let (conn, recorder) = setup_test_db();
+        raw(&conn, "old", "2020-01-01T10:00:00Z", 60_000);
+
+        assert_eq!(recorder.get_stats_summary("all").unwrap().total_plays, 1);
+        assert_eq!(recorder.get_stats_summary("30d").unwrap().total_plays, 0);
+    }
+}
+
+// ==========================================
+// Recap ("Your week" / "Your year")
+// ==========================================
+
+mod recap_tests {
+    use super::*;
+    use crate::services::stats::recap::{period_bounds, RecapPeriod};
+    use chrono::{FixedOffset, Local, NaiveDate, TimeZone, Timelike};
+
+    fn at(offset_hours: i32, y: i32, m: u32, d: u32, h: u32) -> chrono::DateTime<FixedOffset> {
+        FixedOffset::east_opt(offset_hours * 3600)
+            .unwrap()
+            .with_ymd_and_hms(y, m, d, h, 0, 0)
+            .unwrap()
+    }
+
+    fn date(y: i32, m: u32, d: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(y, m, d).unwrap()
+    }
+
+    fn utc(text: &str) -> chrono::NaiveDateTime {
+        chrono::NaiveDateTime::parse_from_str(text, "%Y-%m-%d %H:%M:%S").unwrap()
+    }
+
+    #[test]
+    fn a_week_runs_from_monday_to_sunday_in_local_time() {
+        // Wednesday 30 September 2026, 15:00 at UTC+2.
+        let now = at(2, 2026, 9, 30, 15);
+        let week = period_bounds(RecapPeriod::Week, 0, &now).unwrap();
+        assert_eq!(week.first_day, date(2026, 9, 28));
+        assert_eq!(week.last_day, date(2026, 10, 4));
+        // Local midnight is two hours earlier in UTC.
+        assert_eq!(week.start_utc, utc("2026-09-27 22:00:00"));
+        assert_eq!(week.end_utc, utc("2026-10-04 22:00:00"));
+    }
+
+    #[test]
+    fn sunday_belongs_to_the_week_that_started_the_previous_monday() {
+        let sunday = at(0, 2026, 10, 4, 23);
+        let week = period_bounds(RecapPeriod::Week, 0, &sunday).unwrap();
+        assert_eq!(
+            (week.first_day, week.last_day),
+            (date(2026, 9, 28), date(2026, 10, 4))
+        );
+        let monday = at(0, 2026, 10, 5, 0);
+        let next = period_bounds(RecapPeriod::Week, 0, &monday).unwrap();
+        assert_eq!(next.first_day, date(2026, 10, 5));
+    }
+
+    #[test]
+    fn an_offset_steps_back_whole_periods() {
+        let now = at(0, 2026, 9, 30, 12);
+        let previous_week = period_bounds(RecapPeriod::Week, 1, &now).unwrap();
+        assert_eq!(previous_week.first_day, date(2026, 9, 21));
+        assert_eq!(previous_week.last_day, date(2026, 9, 27));
+
+        let last_year = period_bounds(RecapPeriod::Year, 1, &now).unwrap();
+        assert_eq!(last_year.first_day, date(2025, 1, 1));
+        assert_eq!(last_year.last_day, date(2025, 12, 31));
+        assert_eq!(last_year.start_utc, utc("2025-01-01 00:00:00"));
+        assert_eq!(last_year.end_utc, utc("2026-01-01 00:00:00"));
+    }
+
+    #[test]
+    fn a_period_out_of_the_calendar_is_an_error_not_a_panic() {
+        let now = at(0, 2026, 9, 30, 12);
+        assert!(period_bounds(RecapPeriod::Year, u32::MAX, &now).is_err());
+    }
+
+    fn listen_at(
+        conn: &Arc<Mutex<Connection>>,
+        id: &str,
+        title: &str,
+        artist: &str,
+        at: &str,
+        played_ms: i64,
+        key: Option<&str>,
+    ) {
+        conn.lock()
+            .unwrap()
+            .execute(
+                "INSERT INTO listen_events (id, source, title, artist, duration_ms, played_ms, played_at, key)
+                 VALUES (?1, 'spotify', ?2, ?3, 200000, ?4, ?5, ?6)",
+                rusqlite::params![id, title, artist, played_ms, at, key],
+            )
+            .unwrap();
+    }
+
+    #[test]
+    fn a_week_recap_compares_with_the_previous_week_and_counts_discoveries() {
+        let (conn, recorder) = setup_test_db();
+        // "Now" is Wednesday 30 September 2026 noon UTC: the week is 28 Sep to 4 Oct.
+        let now = at(0, 2026, 9, 30, 12);
+
+        // Last week: Song A once (so A is not new this week).
+        listen_at(
+            &conn,
+            "p1",
+            "Song A",
+            "Artist X",
+            "2026-09-22T10:00:00Z",
+            200_000,
+            Some("8A"),
+        );
+        // This week: Song A three times, Song B once (new), one 10 s skip (not a play).
+        for (i, hour) in [9, 10, 11].iter().enumerate() {
+            listen_at(
+                &conn,
+                &format!("a{i}"),
+                "Song A",
+                "Artist X",
+                &format!("2026-09-29T{hour:02}:00:00Z"),
+                200_000,
+                Some("8A"),
+            );
+        }
+        listen_at(
+            &conn,
+            "b",
+            "Song B",
+            "Artist Y",
+            "2026-09-30T08:00:00Z",
+            180_000,
+            Some("5B"),
+        );
+        listen_at(
+            &conn,
+            "skip",
+            "Song C",
+            "Artist Z",
+            "2026-09-30T09:00:00Z",
+            10_000,
+            None,
+        );
+        // After the week.
+        listen_at(
+            &conn,
+            "later",
+            "Song D",
+            "Artist W",
+            "2026-10-06T10:00:00Z",
+            200_000,
+            None,
+        );
+
+        let recap = recorder.recap_at(RecapPeriod::Week, 0, &now).unwrap();
+
+        assert_eq!(
+            (recap.start_date.as_str(), recap.end_date.as_str()),
+            ("2026-09-28", "2026-10-04")
+        );
+        assert_eq!(recap.total_plays, 4);
+        assert_eq!(recap.previous_plays, 1);
+        assert_eq!(recap.unique_tracks, 2, "the 10 s skip is not a listen");
+        assert_eq!(recap.unique_artists, 2);
+        assert_eq!(
+            recap.new_tracks, 1,
+            "only Song B is new; Song A was heard last week"
+        );
+
+        assert_eq!(recap.top_tracks[0].title, "Song A");
+        assert_eq!(recap.top_tracks[0].plays, 3);
+        assert_eq!(recap.top_artists[0].artist, "Artist X");
+        assert_eq!(recap.top_keys[0].key, "8A");
+        assert_eq!(recap.top_keys[0].plays, 3);
+        // 3 x 200 s + 180 s + the 10 s skip = 790 s of Spotify listening = 13 whole minutes.
+        assert_eq!(recap.source_minutes.get("spotify"), Some(&13));
+    }
+
+    #[test]
+    fn peak_times_are_reported_in_local_time() {
+        let (conn, recorder) = setup_test_db();
+        let now = at(0, 2026, 9, 30, 12);
+        // Three plays at the same UTC hour on Tuesday 29 September, one elsewhere.
+        for i in 0..3 {
+            listen_at(
+                &conn,
+                &format!("x{i}"),
+                &format!("T{i}"),
+                "A",
+                "2026-09-29T20:00:00Z",
+                200_000,
+                None,
+            );
+        }
+        listen_at(&conn, "y", "T9", "A", "2026-09-30T07:00:00Z", 200_000, None);
+
+        let recap = recorder.recap_at(RecapPeriod::Week, 0, &now).unwrap();
+
+        let busiest = chrono::Utc
+            .with_ymd_and_hms(2026, 9, 29, 20, 0, 0)
+            .unwrap()
+            .with_timezone(&Local);
+        assert_eq!(recap.peak_hour, Some(busiest.hour() as u8));
+        assert_eq!(
+            recap.busiest_day.as_ref().unwrap().date,
+            busiest.date_naive().to_string()
+        );
+        assert_eq!(recap.busiest_day.unwrap().plays, 3);
+    }
+
+    #[test]
+    fn an_empty_period_is_all_zeros_and_no_peaks() {
+        let (_conn, recorder) = setup_test_db();
+        let now = at(0, 2026, 9, 30, 12);
+        let recap = recorder.recap_at(RecapPeriod::Year, 0, &now).unwrap();
+        assert_eq!(
+            (recap.total_plays, recap.total_minutes, recap.new_tracks),
+            (0, 0, 0)
+        );
+        assert!(
+            recap.top_tracks.is_empty()
+                && recap.top_artists.is_empty()
+                && recap.top_keys.is_empty()
+        );
+        assert_eq!((recap.peak_hour, recap.peak_weekday), (None, None));
+        assert!(recap.busiest_day.is_none());
+        assert_eq!(
+            (recap.start_date.as_str(), recap.end_date.as_str()),
+            ("2026-01-01", "2026-12-31")
+        );
+    }
+}

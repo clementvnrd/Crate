@@ -22,9 +22,34 @@ impl StatsRecorderService {
         Self { conn }
     }
 
+    /// SQL condition for an exact window, written `between:<start>,<end>` with both bounds in UTC
+    /// as `YYYY-MM-DD HH:MM:SS` (start included, end excluded). The bounds are parsed and written
+    /// back, so nothing the caller sent reaches the SQL text; a malformed window matches nothing
+    /// rather than silently widening to "all time".
+    pub(super) fn window_condition(bounds: &str, field_name: &str) -> String {
+        const FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+        let parsed = bounds.split_once(',').and_then(|(start, end)| {
+            let start = chrono::NaiveDateTime::parse_from_str(start.trim(), FORMAT).ok()?;
+            let end = chrono::NaiveDateTime::parse_from_str(end.trim(), FORMAT).ok()?;
+            Some((start, end))
+        });
+        match parsed {
+            Some((start, end)) => format!(
+                "datetime({field_name}) >= datetime('{}') AND datetime({field_name}) < datetime('{}')",
+                start.format(FORMAT),
+                end.format(FORMAT)
+            ),
+            None => "0 = 1".to_string(),
+        }
+    }
+
     /// Helper to convert a time_range string into a SQL WHERE clause fragment.
-    /// Supported values: "today", "7d", "30d", "year", "all".
-    fn time_range_condition(time_range: &str, field_name: &str) -> Option<String> {
+    /// Supported values: "today", "7d", "30d", "year", "all", and an exact window
+    /// `between:<start>,<end>` (see [`Self::window_condition`]).
+    pub(super) fn time_range_condition(time_range: &str, field_name: &str) -> Option<String> {
+        if let Some(bounds) = time_range.strip_prefix("between:") {
+            return Some(Self::window_condition(bounds, field_name));
+        }
         match time_range.to_lowercase().as_str() {
             "today" => Some(format!("datetime({field_name}, 'localtime') >= datetime('now', 'localtime', 'start of day')")),
             // datetime() normalises RFC 3339 values (with a `T`, a `Z` or an offset) to UTC before
