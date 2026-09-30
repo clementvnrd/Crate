@@ -104,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 #### Fixed — frontend
 
+- **[L5]** The interface language now switches synchronously between English and French: `register('en')` and `register('fr')` were removed because `svelte-i18n` sends any locale that has a registered loader through its asynchronous queue, which undid the `addMessages` calls placed just above to avoid that. The other 13 languages stay lazy-loaded and fall back to English. Two Vitest tests in `shared/i18n/index.test.ts` fail without the fix.
 - **[I1]** Backend error messages are finally displayed: Tauri rejects a command with a *string*, which every `error instanceof Error ? … : 'generic message'` threw away. New shared helper `toErrorMessage()` used by all stores and components (~85 occurrences, upstream included).
 - **[I2]** Beatport tab: the settings that had no effect (AAC/MP3 quality, automatic Mixed In Key sync) are replaced by accurate information — verified FLAC downloads only, Mixed In Key analysis picked up automatically by the watcher on its database.
 - **[I7]** The `library-updated` event (emitted after an upgrade) is listened to and refreshes the library; unused `searchType` parameter removed from the Beatport search.

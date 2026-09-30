@@ -5,7 +5,7 @@ This file is **the** source of truth for tracking: every defect in the [register
 Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification or remaining work. The progress table is recomputed with `yarn status` (from the repository root).
 
 <!-- progress:start -->
-**Overall progress: 95 / 107 defects fixed (89%)**
+**Overall progress: 96 / 107 defects fixed (90%)**
 
 | Step | Fixed | Progress |
 | --- | --- | --- |
@@ -20,7 +20,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 9 — Hygiene and tooling | 13 / 15 | █████████░ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
 | Step 11 — View-by-view compliance | 3 / 7 | ████░░░░░░ |
-| Step 12 — Translation | 1 / 6 | ██░░░░░░░░ |
+| Step 12 — Translation | 2 / 6 | ███░░░░░░░ |
 <!-- progress:end -->
 
 ## Owner-only actions
@@ -209,7 +209,7 @@ _Exit criterion: App in English: no French string._
 - [ ] **L2** — 13 locales without the 49 to 53 keys added by the fork
 - [ ] **L3** — Numbers and units formatted the English way in French ("2,310"), "plays" and "écoutes" mixed in Pulse
 - [ ] **L4** — Rust error messages in French
-- [ ] **L5** — `register('en')` and `register('fr')` kept after `addMessages`: initialisation goes back through the…
+- [x] **L5** — `register('en')` and `register('fr')` kept after `addMessages`: initialisation goes back through the… — _removed; two Vitest tests pin the synchronous switch_
 - [x] **L6** — The README advertises 11 languages while the repository contains 15
 
 ## Session log
@@ -234,3 +234,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | **Owner decisions read from Linear**: scenario A then B, French and English complete, macOS only, Mixed In Key read-only; Spotify cleanup, default player, visual language and Beatport still open | — |
 | 2026-09-30 | **Owner decisions read from Linear (2nd pass)**: Beatport download stays while the repository is private (CRA-113), colour families are kept and a graphic charter is written (CRA-115 → CRA-140); Spotify history backed up and verified, deletion awaiting the owner's go (CRA-123) | — |
 | 2026-09-30 | Dev and staging icons recognisable in the Dock (blue `DEV` and purple `STG` bands), all formats regenerated | 9 |
+| 2026-09-30 | Synchronous English/French language switch (two redundant `register` calls removed) | 12 |
