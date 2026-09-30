@@ -507,6 +507,7 @@ pub fn run() {
             commands::stats::get_bpm_stats,
             commands::stats::get_listening_heatmap,
             commands::stats::get_recent_listens,
+            commands::stats::export_listening_history,
             commands::stats::set_spotify_client_id,
             commands::stats::spotify_get_client_id,
             commands::stats::set_spotify_client_secret,

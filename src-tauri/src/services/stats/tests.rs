@@ -969,3 +969,251 @@ fn test_record_listen_events_batch_skips_duplicates() {
         .unwrap();
     assert_eq!(outcomes, vec![true, true, false]);
 }
+
+// ==========================================
+// History export (CSV / JSON)
+// ==========================================
+
+mod history_export_tests {
+    use super::*;
+    use crate::services::stats::history_export::{
+        export_in_chunks_for_test, validate_destination, HistoryExportFormat,
+    };
+    use std::path::PathBuf;
+
+    /// Inserts rows straight into the table: the recorder would skip near-duplicates.
+    fn insert_raw(
+        conn: &Arc<Mutex<Connection>>,
+        id: &str,
+        played_at: &str,
+        title: &str,
+        metadata: Option<&str>,
+    ) {
+        conn.lock()
+            .unwrap()
+            .execute(
+                "INSERT INTO listen_events (id, source, title, artist, duration_ms, played_ms, played_at, metadata_json)
+                 VALUES (?1, 'spotify', ?2, 'Artist', 200000, 180000, ?3, ?4)",
+                rusqlite::params![id, title, played_at, metadata],
+            )
+            .unwrap();
+    }
+
+    struct TempFile(PathBuf);
+    impl TempFile {
+        fn new(name: &str, extension: &str) -> Self {
+            Self(std::env::temp_dir().join(format!(
+                "crate_history_{name}_{}.{extension}",
+                std::process::id()
+            )))
+        }
+    }
+    impl Drop for TempFile {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_file(&self.0);
+            let mut part = self.0.clone().into_os_string();
+            part.push(".part");
+            let _ = std::fs::remove_file(part);
+        }
+    }
+
+    /// Minimal RFC 4180 reader, enough to round-trip what the exporter writes.
+    fn parse_csv(text: &str) -> Vec<Vec<String>> {
+        let mut rows = Vec::new();
+        let mut row = Vec::new();
+        let mut field = String::new();
+        let mut in_quotes = false;
+        let mut chars = text.chars().peekable();
+        while let Some(c) = chars.next() {
+            match (in_quotes, c) {
+                (true, '"') if chars.peek() == Some(&'"') => {
+                    field.push('"');
+                    chars.next();
+                }
+                (true, '"') => in_quotes = false,
+                (true, _) => field.push(c),
+                (false, '"') => in_quotes = true,
+                (false, ',') => row.push(std::mem::take(&mut field)),
+                (false, '\n') => {
+                    row.push(std::mem::take(&mut field));
+                    rows.push(std::mem::take(&mut row));
+                }
+                (false, _) => field.push(c),
+            }
+        }
+        rows
+    }
+
+    #[test]
+    fn csv_round_trips_awkward_values() {
+        let (conn, recorder) = setup_test_db();
+        let awkward = "Hello, \"World\"\nsecond line — é ü 日本";
+        insert_raw(&conn, "a", "2026-01-01T10:00:00Z", awkward, None);
+        insert_raw(
+            &conn,
+            "b",
+            "2026-01-02T10:00:00Z",
+            "Plain",
+            Some(r#"{"uri":"x"}"#),
+        );
+
+        let file = TempFile::new("csv", "csv");
+        let n = recorder
+            .export_listen_history(HistoryExportFormat::Csv, &file.0)
+            .unwrap();
+        assert_eq!(n, 2);
+
+        let rows = parse_csv(&std::fs::read_to_string(&file.0).unwrap());
+        assert_eq!(rows.len(), 3, "header + 2 rows");
+        assert_eq!(rows[0][0], "played_at");
+        assert_eq!(rows[0].len(), 15);
+        let title_col = rows[0].iter().position(|c| c == "title").unwrap();
+        assert_eq!(rows[1][title_col], awkward);
+        assert_eq!(rows[2][title_col], "Plain");
+        let meta_col = rows[0].iter().position(|c| c == "metadata_json").unwrap();
+        assert_eq!(rows[2][meta_col], r#"{"uri":"x"}"#);
+        // Missing values are empty fields, not the word "null".
+        let album_col = rows[0].iter().position(|c| c == "album").unwrap();
+        assert_eq!(rows[1][album_col], "");
+    }
+
+    #[test]
+    fn json_is_valid_typed_and_keeps_nulls() {
+        let (conn, recorder) = setup_test_db();
+        insert_raw(
+            &conn,
+            "a",
+            "2026-01-01T10:00:00Z",
+            "One",
+            Some(r#"{"uri":"x"}"#),
+        );
+        insert_raw(&conn, "b", "2026-01-02T10:00:00Z", "Two", Some("not json"));
+        insert_raw(&conn, "c", "2026-01-03T10:00:00Z", "Three", None);
+
+        let file = TempFile::new("json", "json");
+        assert_eq!(
+            recorder
+                .export_listen_history(HistoryExportFormat::Json, &file.0)
+                .unwrap(),
+            3
+        );
+        let value: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&file.0).unwrap()).unwrap();
+        let items = value.as_array().unwrap();
+        assert_eq!(items.len(), 3);
+        assert_eq!(items[0]["title"], "One");
+        assert_eq!(items[0]["duration_ms"], 200000);
+        assert!(items[0]["album"].is_null());
+        assert_eq!(
+            items[0]["metadata_json"]["uri"], "x",
+            "valid metadata is real JSON"
+        );
+        assert_eq!(
+            items[1]["metadata_json"], "not json",
+            "invalid metadata is kept as text"
+        );
+        assert!(items[2]["metadata_json"].is_null());
+    }
+
+    #[test]
+    fn an_empty_history_gives_valid_empty_files() {
+        let (_conn, recorder) = setup_test_db();
+        let csv = TempFile::new("empty", "csv");
+        let json = TempFile::new("empty", "json");
+        assert_eq!(
+            recorder
+                .export_listen_history(HistoryExportFormat::Csv, &csv.0)
+                .unwrap(),
+            0
+        );
+        assert_eq!(
+            recorder
+                .export_listen_history(HistoryExportFormat::Json, &json.0)
+                .unwrap(),
+            0
+        );
+        assert_eq!(
+            parse_csv(&std::fs::read_to_string(&csv.0).unwrap()).len(),
+            1
+        );
+        let value: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&json.0).unwrap()).unwrap();
+        assert_eq!(value, serde_json::json!([]));
+    }
+
+    #[test]
+    fn chunk_boundaries_lose_and_repeat_nothing_even_with_equal_timestamps() {
+        let (conn, recorder) = setup_test_db();
+        // 11 rows: five share one timestamp, which a chunk boundary will cut through.
+        for i in 0..6 {
+            insert_raw(
+                &conn,
+                &format!("id{i:02}"),
+                &format!("2026-01-0{}T10:00:00Z", i + 1),
+                "t",
+                None,
+            );
+        }
+        for i in 0..5 {
+            insert_raw(
+                &conn,
+                &format!("tie{i}"),
+                "2026-02-01T10:00:00Z",
+                "tie",
+                None,
+            );
+        }
+
+        let file = TempFile::new("chunks", "csv");
+        let n = export_in_chunks_for_test(&recorder, HistoryExportFormat::Csv, &file.0, 3).unwrap();
+        assert_eq!(n, 11);
+
+        let rows = parse_csv(&std::fs::read_to_string(&file.0).unwrap());
+        let id_col = rows[0].iter().position(|c| c == "id").unwrap();
+        let ids: Vec<&str> = rows[1..].iter().map(|r| r[id_col].as_str()).collect();
+        let mut unique = ids.clone();
+        unique.sort();
+        unique.dedup();
+        assert_eq!(unique.len(), 11, "every row exactly once: {ids:?}");
+        let at_col = rows[0].iter().position(|c| c == "played_at").unwrap();
+        let times: Vec<&str> = rows[1..].iter().map(|r| r[at_col].as_str()).collect();
+        assert!(times.windows(2).all(|w| w[0] <= w[1]), "oldest first");
+    }
+
+    #[test]
+    fn destination_must_match_the_format_and_an_existing_folder() {
+        let dir = std::env::temp_dir();
+        assert!(validate_destination(HistoryExportFormat::Csv, &dir.join("h.csv")).is_ok());
+        assert!(validate_destination(HistoryExportFormat::Csv, &dir.join("H.CSV")).is_ok());
+        assert!(validate_destination(HistoryExportFormat::Csv, &dir.join("h.json")).is_err());
+        assert!(validate_destination(HistoryExportFormat::Json, &dir.join("h")).is_err());
+        assert!(validate_destination(
+            HistoryExportFormat::Json,
+            &dir.join("no_such_folder_crate").join("h.json")
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn a_failed_export_leaves_no_file_and_keeps_an_existing_one() {
+        let (conn, recorder) = setup_test_db();
+        insert_raw(&conn, "a", "2026-01-01T10:00:00Z", "One", None);
+
+        // Existing export is replaced atomically by a good one...
+        let file = TempFile::new("atomic", "json");
+        std::fs::write(&file.0, "previous export").unwrap();
+        recorder
+            .export_listen_history(HistoryExportFormat::Json, &file.0)
+            .unwrap();
+        assert!(std::fs::read_to_string(&file.0).unwrap().contains("One"));
+
+        // ...and a destination that cannot be written leaves nothing behind.
+        let bad = std::env::temp_dir()
+            .join("no_such_folder_crate")
+            .join("x.json");
+        assert!(recorder
+            .export_listen_history(HistoryExportFormat::Json, &bad)
+            .is_err());
+        assert!(!bad.exists());
+    }
+}

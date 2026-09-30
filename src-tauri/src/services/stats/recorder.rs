@@ -14,7 +14,7 @@ use crate::models::stats::{
 type ArtistAccumulator = (u64, usize, HashMap<String, (usize, u64)>, Option<String>);
 
 pub struct StatsRecorderService {
-    conn: Arc<Mutex<Connection>>,
+    pub(super) conn: Arc<Mutex<Connection>>,
 }
 
 impl StatsRecorderService {

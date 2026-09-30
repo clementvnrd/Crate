@@ -240,3 +240,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Backend errors in English, frequent ones translated by the interface, Spotify sign-in pages follow the app language | 12 |
 | 2026-09-30 | **Graphic charter** written in `DESIGN.md` (four colour families, scope rules, computed contrast, checklist, deviations); five small choices put to the owner | 11 |
 | 2026-09-30 | Backend work moved off the async runtime; audio reply pairing, analysis cap and USB poller fixed | 7 |
+| 2026-09-30 | Scenario B started: listening-history export to CSV/JSON (backend) | — |

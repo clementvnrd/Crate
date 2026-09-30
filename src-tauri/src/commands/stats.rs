@@ -6,7 +6,8 @@ use crate::models::stats::{
     SpotifyImportResult, SpotifyNowPlaying, StatsSummary, TopArtistItem, TopTrackItem,
 };
 use crate::services::stats::{
-    MikTrackerService, RekordboxTrackerService, SpotifyTrackerService, StatsRecorderService,
+    HistoryExportFormat, MikTrackerService, RekordboxTrackerService, SpotifyTrackerService,
+    StatsRecorderService,
 };
 
 // ==========================================
@@ -69,6 +70,22 @@ pub async fn get_recent_listens(
     stats: State<'_, StatsRecorderService>,
 ) -> Result<Vec<ListenEvent>> {
     stats.get_recent_listens(limit.unwrap_or(50))
+}
+
+/// Writes the whole listening history, oldest first, to `path` as CSV or JSON and returns how
+/// many listens were exported. The path comes from the native save dialog and must end in
+/// `.csv` or `.json` according to `format`.
+#[tauri::command]
+pub async fn export_listening_history(
+    app: tauri::AppHandle,
+    format: HistoryExportFormat,
+    path: String,
+) -> Result<usize> {
+    run_blocking(move || {
+        app.state::<StatsRecorderService>()
+            .export_listen_history(format, std::path::Path::new(&path))
+    })
+    .await
 }
 
 // ==========================================
