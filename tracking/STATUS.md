@@ -129,7 +129,7 @@ _Exit criterion: Key 3 = cue 3, search for "You'll", valid XML._
 - [x] **B30** — File associations with `rank: Default` and the `public.audio` umbrella; bundle `com.crate.app`… — _Crate appears in "Open With" without becoming the default player (open question in the report)_
 - [x] **B31** — `StartupFile`: race at startup, several opened files overwrite each other
 - [x] **B32** — `delete_tracks_and_files`: Trash through `osascript` per file, silent failures, deletion…
-- [x] **B33** — Blocking I/O, subprocesses (`beatportdl`, `lsof`, `osascript`) and rusqlite under `std::sync::Mutex`… — _every heavy command and poller now runs on the blocking pool (`run_blocking`); the lock no longer spans file reads in `resync_mixed_in_key_tracks` and the XML export; also fixed: audio replies paired with the wrong request, unbounded analysis. Left: the MIK startup/watcher sync still holds the lock while it reads files (CRA-142) and smaller items (CRA-143)_
+- [x] **B33** — Blocking I/O, subprocesses (`beatportdl`, `lsof`, `osascript`) and rusqlite under `std::sync::Mutex`… — _every heavy command and poller now runs on the blocking pool (`run_blocking`); the lock no longer spans file reads in `resync_mixed_in_key_tracks` and the XML export; also fixed: audio replies paired with the wrong request, unbounded analysis. Left: the MIK startup/watcher sync still holds the lock while it reads files (CRA-142) bulk playlist and tag writes now run in one transaction; smaller items remain (CRA-143)_
 - [x] **B34** — Services instantiated twice: the state managed by Tauri is not the one used by the background tasks
 - [x] **B35** — `get_duplicate_count` runs a full duplicate scan on every `duplicates-updated` event
 - [x] **F1** — Keys 1 to 8 captured everywhere, with no view or modifier condition
@@ -251,3 +251,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Scenario B: Set mode analysis, bridge tracks and proposed order (backend) | — |
 | 2026-09-30 | **Owner decisions read from Linear (3rd pass)**: Q2 cancelled (macOS only), visual language reopened after "sienne" became "cyan", Spotify reset waiting for a chat approval or the in-app button | — |
 | 2026-09-30 | Shared SegmentedControl, KeyBadge, EnergyBadge and family Button props, dark theme unchanged (D11 partial) | 11 |
+| 2026-09-30 | Bulk playlist and tag writes made atomic (one transaction each, 10 tests) | 7 |

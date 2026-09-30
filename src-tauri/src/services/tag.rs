@@ -341,30 +341,36 @@ impl TagService {
     pub fn delete_tag(&self, id: &str) -> Result<()> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
-        let hlc = dirty::next_hlc(&conn)?;
-        dirty::record_tombstone(&conn, buckets::TAGS, id, &hlc)?;
-        conn.execute("DELETE FROM tags WHERE id = ?1", [id])?;
+        // One transaction: the tombstone and the delete stand or fall together.
+        let tx = conn.unchecked_transaction()?;
+        let hlc = dirty::next_hlc(&tx)?;
+        dirty::record_tombstone(&tx, buckets::TAGS, id, &hlc)?;
+        tx.execute("DELETE FROM tags WHERE id = ?1", [id])?;
         // Cascade removes this tag's track/discovery links; re-serialize them.
-        dirty::mark_dirty(&conn, buckets::TAGS)?;
-        dirty::mark_dirty(&conn, buckets::TRACK_TAGS)?;
-        dirty::mark_dirty(&conn, buckets::DISCOVERY_RELEASE_TAGS)?;
+        dirty::mark_dirty(&tx, buckets::TAGS)?;
+        dirty::mark_dirty(&tx, buckets::TRACK_TAGS)?;
+        dirty::mark_dirty(&tx, buckets::DISCOVERY_RELEASE_TAGS)?;
+        tx.commit()?;
         Ok(())
     }
 
     pub fn assign_tags(&self, track_ids: Vec<String>, tag_ids: Vec<String>) -> Result<()> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
-        let hlc = dirty::next_hlc(&conn)?;
+        // One transaction: tagging 500 tracks is all-or-nothing, and one disk sync instead of 500.
+        let tx = conn.unchecked_transaction()?;
+        let hlc = dirty::next_hlc(&tx)?;
         for track_id in &track_ids {
             for tag_id in &tag_ids {
                 // OR IGNORE preserves an existing link's _hlc; new links are stamped.
-                conn.execute(
+                tx.execute(
                     "INSERT OR IGNORE INTO track_tags (track_id, tag_id, _hlc) VALUES (?1, ?2, ?3)",
                     rusqlite::params![track_id, tag_id, hlc],
                 )?;
             }
         }
-        dirty::mark_dirty(&conn, buckets::TRACK_TAGS)?;
+        dirty::mark_dirty(&tx, buckets::TRACK_TAGS)?;
+        tx.commit()?;
 
         Ok(())
     }
@@ -372,16 +378,18 @@ impl TagService {
     pub fn remove_tags(&self, track_ids: Vec<String>, tag_ids: Vec<String>) -> Result<()> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
-        let hlc = dirty::next_hlc(&conn)?;
+        // One transaction: a link is never deleted without its tombstone.
+        let tx = conn.unchecked_transaction()?;
+        let hlc = dirty::next_hlc(&tx)?;
         for track_id in &track_ids {
             for tag_id in &tag_ids {
-                let deleted = conn.execute(
+                let deleted = tx.execute(
                     "DELETE FROM track_tags WHERE track_id = ?1 AND tag_id = ?2",
                     rusqlite::params![track_id, tag_id],
                 )?;
                 if deleted > 0 {
                     dirty::record_tombstone(
-                        &conn,
+                        &tx,
                         buckets::TRACK_TAGS,
                         &dirty::junction_entity_id(track_id, tag_id),
                         &hlc,
@@ -389,7 +397,8 @@ impl TagService {
                 }
             }
         }
-        dirty::mark_dirty(&conn, buckets::TRACK_TAGS)?;
+        dirty::mark_dirty(&tx, buckets::TRACK_TAGS)?;
+        tx.commit()?;
 
         Ok(())
     }
@@ -405,5 +414,115 @@ impl TagService {
             .collect::<std::result::Result<Vec<String>, _>>()?;
 
         Ok(track_ids)
+    }
+}
+
+#[cfg(test)]
+mod bulk_tests {
+    use super::*;
+    use rusqlite::Connection;
+    use std::sync::{Arc, Mutex};
+
+    fn service() -> (TagService, Arc<Mutex<Connection>>) {
+        let conn = Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        conn.execute_batch(
+            "INSERT INTO tag_categories (id, name) VALUES ('c', 'Energy');
+             INSERT INTO tags (id, category_id, name) VALUES ('g1', 'c', 'Peak'), ('g2', 'c', 'Warm');
+             INSERT INTO tracks (id, file_path, format, title, artist, duration_ms, date_added, date_modified) VALUES
+               ('t1', '/m/1.mp3', 'mp3', 'One', 'A', 1000, '2026-01-01', '2026-01-01'),
+               ('t2', '/m/2.mp3', 'mp3', 'Two', 'A', 1000, '2026-01-01', '2026-01-01'),
+               ('t3', '/m/3.mp3', 'mp3', 'Three', 'A', 1000, '2026-01-01', '2026-01-01');",
+        )
+        .unwrap();
+        let conn = Arc::new(Mutex::new(conn));
+        (TagService::new(conn.clone()), conn)
+    }
+
+    fn count(conn: &Arc<Mutex<Connection>>, sql: &str) -> i64 {
+        conn.lock()
+            .unwrap()
+            .query_row(sql, [], |r| r.get(0))
+            .unwrap()
+    }
+
+    fn ids(list: &[&str]) -> Vec<String> {
+        list.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn assigning_tags_to_many_tracks_is_all_or_nothing() {
+        let (tags, conn) = service();
+        // The write for the third track fails.
+        conn.lock()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER refuse_t3 BEFORE INSERT ON track_tags WHEN NEW.track_id = 't3'
+                 BEGIN SELECT RAISE(ABORT, 'simulated failure'); END;",
+            )
+            .unwrap();
+
+        assert!(tags
+            .assign_tags(ids(&["t1", "t2", "t3"]), ids(&["g1"]))
+            .is_err());
+        assert_eq!(
+            count(&conn, "SELECT COUNT(*) FROM track_tags"),
+            0,
+            "the two writes that worked are rolled back with the failed one"
+        );
+    }
+
+    #[test]
+    fn removing_tags_never_deletes_a_link_without_its_tombstone() {
+        let (tags, conn) = service();
+        conn.lock()
+            .unwrap()
+            .execute_batch(
+                "INSERT INTO track_tags (track_id, tag_id) VALUES ('t1', 'g1'), ('t2', 'g1'), ('t3', 'g1');
+                 CREATE TRIGGER refuse_t3 BEFORE DELETE ON track_tags WHEN OLD.track_id = 't3'
+                 BEGIN SELECT RAISE(ABORT, 'simulated failure'); END;",
+            )
+            .unwrap();
+
+        assert!(tags
+            .remove_tags(ids(&["t1", "t2", "t3"]), ids(&["g1"]))
+            .is_err());
+        assert_eq!(
+            count(&conn, "SELECT COUNT(*) FROM track_tags"),
+            3,
+            "nothing was removed"
+        );
+        assert_eq!(
+            count(&conn, "SELECT COUNT(*) FROM sync_tombstones"),
+            0,
+            "and no tombstone says otherwise to the cloud sync"
+        );
+    }
+
+    #[test]
+    fn a_removal_leaves_one_tombstone_per_link_that_really_went() {
+        let (tags, conn) = service();
+        conn.lock()
+            .unwrap()
+            .execute_batch(
+                "INSERT INTO track_tags (track_id, tag_id) VALUES ('t1', 'g1'), ('t2', 'g1');",
+            )
+            .unwrap();
+
+        // t3 never had the tag: no tombstone for it.
+        tags.remove_tags(ids(&["t1", "t2", "t3"]), ids(&["g1"]))
+            .unwrap();
+
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM track_tags"), 0);
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM sync_tombstones"), 2);
+    }
+
+    #[test]
+    fn assigning_twice_keeps_one_link() {
+        let (tags, conn) = service();
+        tags.assign_tags(ids(&["t1", "t2"]), ids(&["g1", "g2"]))
+            .unwrap();
+        tags.assign_tags(ids(&["t1"]), ids(&["g1"])).unwrap();
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM track_tags"), 4);
     }
 }

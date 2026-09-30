@@ -143,23 +143,28 @@ impl PlaylistService {
             .unwrap_or(-1);
 
         let now = chrono::Utc::now().to_rfc3339();
-        let hlc = dirty::next_hlc(&conn)?;
+
+        // One transaction: a failure part-way leaves the playlist untouched instead of half filled,
+        // and SQLite syncs to disk once instead of once per track.
+        let tx = conn.unchecked_transaction()?;
+        let hlc = dirty::next_hlc(&tx)?;
 
         for (i, track_id) in track_ids.iter().enumerate() {
             let position = max_position + 1 + i as i32;
-            conn.execute(
+            tx.execute(
                 "INSERT OR IGNORE INTO playlist_tracks (playlist_id, track_id, position, date_added, _hlc) VALUES (?1, ?2, ?3, ?4, ?5)",
                 rusqlite::params![playlist_id, track_id, position, now, hlc],
             )?;
         }
 
         // Update playlist modified date
-        conn.execute(
+        tx.execute(
             "UPDATE playlists SET date_modified = ?1, _hlc = ?2 WHERE id = ?3",
             rusqlite::params![now, hlc, playlist_id],
         )?;
-        dirty::mark_dirty(&conn, buckets::PLAYLIST_TRACKS)?;
-        dirty::mark_dirty(&conn, buckets::PLAYLISTS)?;
+        dirty::mark_dirty(&tx, buckets::PLAYLIST_TRACKS)?;
+        dirty::mark_dirty(&tx, buckets::PLAYLISTS)?;
+        tx.commit()?;
 
         // Drop the lock before calling get_playlist which acquires its own lock
         drop(conn);
@@ -171,15 +176,18 @@ impl PlaylistService {
     pub fn remove_tracks(&self, playlist_id: &str, track_ids: Vec<String>) -> Result<Playlist> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
-        let hlc = dirty::next_hlc(&conn)?;
+        // One transaction: a row is never deleted without its tombstone (the cloud sync would bring
+        // the track back), and the renumbering below cannot stop half way.
+        let tx = conn.unchecked_transaction()?;
+        let hlc = dirty::next_hlc(&tx)?;
         for track_id in &track_ids {
-            let deleted = conn.execute(
+            let deleted = tx.execute(
                 "DELETE FROM playlist_tracks WHERE playlist_id = ?1 AND track_id = ?2",
                 rusqlite::params![playlist_id, track_id],
             )?;
             if deleted > 0 {
                 dirty::record_tombstone(
-                    &conn,
+                    &tx,
                     buckets::PLAYLIST_TRACKS,
                     &dirty::junction_entity_id(playlist_id, track_id),
                     &hlc,
@@ -189,7 +197,7 @@ impl PlaylistService {
 
         // Reorder remaining tracks
         let remaining_tracks: Vec<String> = {
-            let mut stmt = conn.prepare(
+            let mut stmt = tx.prepare(
                 "SELECT track_id FROM playlist_tracks WHERE playlist_id = ?1 ORDER BY position",
             )?;
             let tracks = stmt
@@ -199,7 +207,7 @@ impl PlaylistService {
         };
 
         for (i, track_id) in remaining_tracks.iter().enumerate() {
-            conn.execute(
+            tx.execute(
                 "UPDATE playlist_tracks SET position = ?1, _hlc = ?2 WHERE playlist_id = ?3 AND track_id = ?4",
                 rusqlite::params![i as i32, hlc, playlist_id, track_id],
             )?;
@@ -207,12 +215,13 @@ impl PlaylistService {
 
         // Update playlist modified date
         let now = chrono::Utc::now().to_rfc3339();
-        conn.execute(
+        tx.execute(
             "UPDATE playlists SET date_modified = ?1, _hlc = ?2 WHERE id = ?3",
             rusqlite::params![now, hlc, playlist_id],
         )?;
-        dirty::mark_dirty(&conn, buckets::PLAYLIST_TRACKS)?;
-        dirty::mark_dirty(&conn, buckets::PLAYLISTS)?;
+        dirty::mark_dirty(&tx, buckets::PLAYLIST_TRACKS)?;
+        dirty::mark_dirty(&tx, buckets::PLAYLISTS)?;
+        tx.commit()?;
 
         // Drop the lock before calling get_playlist which acquires its own lock
         drop(conn);
@@ -224,9 +233,11 @@ impl PlaylistService {
     pub fn reorder_tracks(&self, playlist_id: &str, track_ids: Vec<String>) -> Result<()> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
-        let hlc = dirty::next_hlc(&conn)?;
+        // One transaction: a failure part-way cannot leave two tracks on the same position.
+        let tx = conn.unchecked_transaction()?;
+        let hlc = dirty::next_hlc(&tx)?;
         for (i, track_id) in track_ids.iter().enumerate() {
-            conn.execute(
+            tx.execute(
                 "UPDATE playlist_tracks SET position = ?1, _hlc = ?2 WHERE playlist_id = ?3 AND track_id = ?4",
                 rusqlite::params![i as i32, hlc, playlist_id, track_id],
             )?;
@@ -234,13 +245,157 @@ impl PlaylistService {
 
         // Update playlist modified date
         let now = chrono::Utc::now().to_rfc3339();
-        conn.execute(
+        tx.execute(
             "UPDATE playlists SET date_modified = ?1, _hlc = ?2 WHERE id = ?3",
             rusqlite::params![now, hlc, playlist_id],
         )?;
-        dirty::mark_dirty(&conn, buckets::PLAYLIST_TRACKS)?;
-        dirty::mark_dirty(&conn, buckets::PLAYLISTS)?;
+        dirty::mark_dirty(&tx, buckets::PLAYLIST_TRACKS)?;
+        dirty::mark_dirty(&tx, buckets::PLAYLISTS)?;
+        tx.commit()?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod bulk_tests {
+    use super::*;
+    use rusqlite::Connection;
+    use std::sync::{Arc, Mutex};
+
+    fn service() -> (PlaylistService, Arc<Mutex<Connection>>) {
+        let conn = Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        conn.execute_batch(
+            "INSERT INTO tracks (id, file_path, format, title, artist, duration_ms, date_added, date_modified) VALUES
+               ('t1', '/m/1.mp3', 'mp3', 'One', 'A', 1000, '2026-01-01', '2026-01-01'),
+               ('t2', '/m/2.mp3', 'mp3', 'Two', 'A', 1000, '2026-01-01', '2026-01-01'),
+               ('t3', '/m/3.mp3', 'mp3', 'Three', 'A', 1000, '2026-01-01', '2026-01-01');
+             INSERT INTO playlists (id, name, date_created, date_modified) VALUES ('p', 'Set', '2026-01-01', '2026-01-01');",
+        )
+        .unwrap();
+        let conn = Arc::new(Mutex::new(conn));
+        (PlaylistService::new(conn.clone()), conn)
+    }
+
+    fn seed_three(conn: &Arc<Mutex<Connection>>) {
+        conn.lock()
+            .unwrap()
+            .execute_batch(
+                "INSERT INTO playlist_tracks (playlist_id, track_id, position, date_added) VALUES
+                   ('p', 't1', 0, '2026-01-01'), ('p', 't2', 1, '2026-01-01'), ('p', 't3', 2, '2026-01-01');",
+            )
+            .unwrap();
+    }
+
+    fn order(conn: &Arc<Mutex<Connection>>) -> Vec<(String, i64)> {
+        let guard = conn.lock().unwrap();
+        let mut stmt = guard
+            .prepare("SELECT track_id, position FROM playlist_tracks WHERE playlist_id = 'p' ORDER BY position")
+            .unwrap();
+        stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+            .unwrap()
+            .map(|row| row.unwrap())
+            .collect()
+    }
+
+    fn tombstones(conn: &Arc<Mutex<Connection>>) -> i64 {
+        conn.lock()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM sync_tombstones", [], |r| r.get(0))
+            .unwrap()
+    }
+
+    fn refuse_writes_for_t3(conn: &Arc<Mutex<Connection>>, event: &str) {
+        let row = if event == "DELETE" { "OLD" } else { "NEW" };
+        conn.lock()
+            .unwrap()
+            .execute_batch(&format!(
+                "CREATE TRIGGER refuse_t3 BEFORE {event} ON playlist_tracks WHEN {row}.track_id = 't3'
+                 BEGIN SELECT RAISE(ABORT, 'simulated failure'); END;"
+            ))
+            .unwrap();
+    }
+
+    fn ids(list: &[&str]) -> Vec<String> {
+        list.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn a_failed_reorder_leaves_the_playlist_as_it_was() {
+        let (playlists, conn) = service();
+        seed_three(&conn);
+        refuse_writes_for_t3(&conn, "UPDATE");
+
+        // t2 and t1 would be moved before the write for t3 fails.
+        assert!(playlists
+            .reorder_tracks("p", ids(&["t2", "t1", "t3"]))
+            .is_err());
+        assert_eq!(
+            order(&conn),
+            [
+                ("t1".to_string(), 0),
+                ("t2".to_string(), 1),
+                ("t3".to_string(), 2)
+            ]
+        );
+    }
+
+    #[test]
+    fn a_failed_removal_keeps_the_track_and_writes_no_tombstone() {
+        let (playlists, conn) = service();
+        seed_three(&conn);
+        // Removing t1 renumbers t2 and t3; the write for t3 fails.
+        refuse_writes_for_t3(&conn, "UPDATE");
+
+        assert!(playlists.remove_tracks("p", ids(&["t1"])).is_err());
+        assert_eq!(order(&conn).len(), 3, "t1 is still in the playlist");
+        assert_eq!(
+            tombstones(&conn),
+            0,
+            "and the cloud sync is not told it left"
+        );
+    }
+
+    #[test]
+    fn a_failed_addition_adds_nothing() {
+        let (playlists, conn) = service();
+        refuse_writes_for_t3(&conn, "INSERT");
+
+        assert!(playlists.add_tracks("p", ids(&["t1", "t2", "t3"])).is_err());
+        assert!(order(&conn).is_empty());
+    }
+
+    #[test]
+    fn removing_a_track_renumbers_the_rest_without_gaps() {
+        let (playlists, conn) = service();
+        seed_three(&conn);
+        playlists.remove_tracks("p", ids(&["t1"])).unwrap();
+        assert_eq!(order(&conn), [("t2".to_string(), 0), ("t3".to_string(), 1)]);
+        assert_eq!(tombstones(&conn), 1);
+    }
+
+    #[test]
+    fn adding_appends_after_the_last_position_and_ignores_duplicates() {
+        let (playlists, conn) = service();
+        playlists.add_tracks("p", ids(&["t2", "t1"])).unwrap();
+        playlists.add_tracks("p", ids(&["t1", "t3"])).unwrap();
+        let tracks: Vec<String> = order(&conn).into_iter().map(|(id, _)| id).collect();
+        assert_eq!(
+            tracks,
+            ["t2", "t1", "t3"],
+            "t1 is already in: it keeps its place"
+        );
+    }
+
+    #[test]
+    fn reordering_follows_the_given_order() {
+        let (playlists, conn) = service();
+        seed_three(&conn);
+        playlists
+            .reorder_tracks("p", ids(&["t3", "t1", "t2"]))
+            .unwrap();
+        let tracks: Vec<String> = order(&conn).into_iter().map(|(id, _)| id).collect();
+        assert_eq!(tracks, ["t3", "t1", "t2"]);
     }
 }
