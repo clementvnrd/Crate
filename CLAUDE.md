@@ -78,6 +78,9 @@ Clément follows the project in **Linear** (workspace "HomeMade", team **Crate A
 
 ## 2. Technical rules
 
+- **Scope: macOS only (Clément, 2026-09-30, CRA-122).** Crate is used on this Mac only; work for other machines or platforms (Windows, Linux, mobile) has no value and is not prioritised. The existing platform guards below stay untouched until Clément decides to remove them.
+- **Interface languages (Clément, 2026-09-30, CRA-114).** French and English are kept complete; the other 13 locales fall back to English, and the fallback is documented.
+- **Overall plan (Clément, 2026-09-30, CRA-112).** Scenario "A then B": finish *Consolidation 0.3.0*, then *Polish & Unify 0.4*. Scenario C (pluggable sources, mobile companion, fingerprinting) is out of scope.
 - Rust desktop (from `src-tauri/`): the `desktop` feature is not a default. `cargo test --features desktop`, `cargo clippy --features desktop -- -D warnings`.
 - Every desktop-only module is guarded by `#[cfg(feature = "desktop")]` (the mobile build uses `--no-default-features --features mobile`).
 - Tauri IPC: Rust parameters in snake_case, JS keys in camelCase; an IPC rejection is a **string**, never an `Error`.
