@@ -1,92 +1,92 @@
 ---
 name: crate-ui-build
-description: Protocole pour créer un composant ou une vue Crate, ou refondre une vue existante (Player, Pulse, Beatport, Upgrader…) — lecture du besoin, mode préserver/refondre, leviers de modernisation dans l'ordre, quatre états, exécution complète sans raccourci, contrôle avant livraison. À utiliser pour toute tâche qui écrit ou réécrit de l'interface.
-argument-hint: "[vue ou composant] [objectif]"
+description: Protocol for creating a Crate component or view, or redesigning an existing view (Player, Pulse, Beatport, Upgrader…) — reading the need, preserve/redesign mode, modernisation levers in order, four states, complete execution without shortcuts, pre-delivery check. Use for any task that writes or rewrites interface code.
+argument-hint: "[view or component] [goal]"
 ---
 
-# Construire ou refondre une interface Crate
+# Building or redesigning a Crate interface
 
-Protocole adapté de taste-skill (lecture du besoin, protocole de refonte, contrôle final), de son skill `redesign-existing-projects` et de `full-output-enforcement` ([Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill), MIT). Les règles de fond sont dans `crate-design-system` et [DESIGN.md](../../../DESIGN.md).
+Protocol adapted from taste-skill (reading the need, redesign protocol, final check), from its `redesign-existing-projects` skill and from `full-output-enforcement` ([Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill), MIT). The substantive rules are in `crate-design-system` and [DESIGN.md](../../../DESIGN.md).
 
-## 1. Lire le besoin avant de coder
+## 1. Read the need before coding
 
-Écrire une ligne, en tête de travail :
+Write one line at the top of the work:
 
-> **Lecture :** <vue/composant> pour <usage DJ concret>, mode <création | refonte-préserver | refonte-structurelle>, cadrans <V/M/D> (référence 2/2/8), composants communs mobilisés : <liste>.
+> **Reading:** <view/component> for <concrete DJ use>, mode <creation | redesign-preserve | redesign-structural>, dials <V/M/D> (reference 2/2/8), common components used: <list>.
 
-Exemple : *« Lecture : cartes KPI de Pulse pour lire d'un coup d'œil son temps d'écoute de la semaine, mode refonte-préserver, cadrans 2/2/8, composants : Text, Icon, Tooltip. »*
+Example: *"Reading: Pulse KPI cards to read this week's listening time at a glance, mode redesign-preserve, dials 2/2/8, components: Text, Icon, Tooltip."*
 
-S'il y a une vraie ambiguïté qui change le résultat, poser **une seule** question. Sinon, déclarer la lecture et avancer.
+If there is a genuine ambiguity that changes the result, ask **a single** question. Otherwise, state the reading and move on.
 
-## 2. Choisir le mode
+## 2. Choose the mode
 
-- **Création** : nouveau composant ou vue. Partir du composant commun le plus proche et des motifs existants (ligne de piste, panneau, modale).
-- **Refonte-préserver** (par défaut pour toute vue existante) : on garde la structure, les contenus, les libellés, les raccourcis ; on ramène l'apparence dans le système.
-- **Refonte-structurelle** : la mise en page elle-même est cassée (débordements, hauteurs fixes, composants réinventés imbriqués). On restructure, en conservant le contenu et le comportement.
+- **Creation**: new component or view. Start from the closest common component and from existing patterns (track row, panel, modal).
+- **Redesign-preserve** (default for any existing view): keep the structure, content, labels and shortcuts; bring the appearance back into the system.
+- **Redesign-structural**: the layout itself is broken (overflows, fixed heights, nested reinvented components). Restructure, keeping the content and behaviour.
 
-Si le mode n'est pas évident : « Faut-il garder la disposition actuelle de <vue>, ou la repenser ? »
+If the mode is not obvious: "Should the current layout of <view> be kept, or rethought?"
 
-## 3. Auditer avant de toucher
+## 3. Audit before touching
 
-Pour une refonte, faire d'abord un audit rapide (skill `crate-ui-audit`, au minimum `yarn design:scan <fichiers> --details`) et noter :
+For a redesign, first do a quick audit (skill `crate-ui-audit`, at minimum `yarn design:scan <files> --details`) and note:
 
-- ce qui marche et doit rester (interactions signatures, ordre des informations, raccourcis) ;
-- ce qui est hors système (tokens, rayons, verre, glow, tailles arbitraires, composants maison) ;
-- les états manquants (chargement, vide, erreur) ;
-- la lecture actuelle des cadrans : les vues des builds 40 à 57 sont souvent à « variance 6 / mouvement 6 / densité 4 », loin de la cible.
+- what works and must stay (signature interactions, order of information, shortcuts);
+- what is outside the system (tokens, radii, glass, glow, arbitrary sizes, home-made components);
+- the missing states (loading, empty, error);
+- the current dial reading: the views from builds 40 to 57 are often at "variance 6 / motion 6 / density 4", far from the target.
 
-## 4. Ne jamais changer en silence
+## 4. Never change silently
 
-Sans accord explicite du propriétaire :
+Without the owner's explicit approval:
 
-- libellés de navigation, noms de vues, raccourcis clavier ;
-- commandes IPC, stores, clés de réglages, clés `localStorage` (`crate-theme`, `crate-accent`, `crate-font`, `crate-language`) ;
-- clés i18n existantes (on en ajoute, on ne renomme pas sans migrer toutes les locales) ;
-- l'ordre ou le sens des colonnes de la bibliothèque, le comportement du transport du Player ;
-- le logo et les marques tierces.
+- navigation labels, view names, keyboard shortcuts;
+- IPC commands, stores, settings keys, `localStorage` keys (`crate-theme`, `crate-accent`, `crate-font`, `crate-language`);
+- existing i18n keys (add new ones; do not rename without migrating every locale);
+- the order or direction of the library columns, the behaviour of the Player's transport;
+- the logo and third-party brands.
 
-## 5. Leviers, dans cet ordre
+## 5. Levers, in this order
 
-S'arrêter dès que l'objectif est atteint (environ 70 % de la valeur pour 40 % du risque avec les trois premiers) :
+Stop as soon as the goal is reached (roughly 70% of the value for 40% of the risk with the first three):
 
-1. **Couleurs → tokens** : palette, hex et `dark:` remplacés (table de conversion de `crate-design-system`) ; couleurs propres à une vue ramenées à l'accent.
-2. **Typographie** : `Text` et échelle Tailwind, fin des tailles arbitraires et des graisses extrêmes, `tabular-nums`.
-3. **Surfaces et formes** : verre, halos, glow et dégradés retirés ; rayons et ombres du système ; un seul niveau d'encadrement.
-4. **Composants communs** : remplacer les contrôles maison (`Button`, `IconButton`, `Select`, `Checkbox`, `Tooltip`, `Spinner`, `Modal`) ; extraire un composant partagé quand un motif est copié (D11 : `SegmentedControl`, `KeyBadge`).
-5. **Mise en page** : hauteurs intrinsèques, `flex-1 min-h-0`, `min-w-0`, grilles `minmax(0, …)`, tenue à 1000×600.
-6. **États** : chargement, vide, erreur, focus, survol, appui, désactivé.
-7. **Mouvement** : retirer l'inutile, garder 150 à 200 ms sur des propriétés listées, `motion-reduce`.
-8. **Remplacement complet d'un bloc** : seulement s'il est irrécupérable.
+1. **Colours → tokens**: palette, hex and `dark:` replaced (conversion table in `crate-design-system`); view-specific colours brought back to the accent.
+2. **Typography**: `Text` and the Tailwind scale, no more arbitrary sizes or extreme weights, `tabular-nums`.
+3. **Surfaces and shapes**: glass, halos, glow and gradients removed; system radii and shadows; a single level of framing.
+4. **Common components**: replace home-made controls (`Button`, `IconButton`, `Select`, `Checkbox`, `Tooltip`, `Spinner`, `Modal`); extract a shared component when a pattern is copied (D11: `SegmentedControl`, `KeyBadge`).
+5. **Layout**: intrinsic heights, `flex-1 min-h-0`, `min-w-0`, `minmax(0, …)` grids, holding up at 1000×600.
+6. **States**: loading, empty, error, focus, hover, press, disabled.
+7. **Motion**: remove the unnecessary, keep 150 to 200 ms on listed properties, `motion-reduce`.
+8. **Full replacement of a block**: only if it cannot be salvaged.
 
-## 6. Écrire
+## 6. Write
 
-- Svelte 5 (runes `$props`, `$state`, `$derived`, `$effect`), TypeScript, Tailwind 4 : suivre le style des fichiers voisins (tabulations, pas de point-virgule, imports `$lib/…` et `$shared/…`).
-- Vérifier `apps/desktop/package.json` avant tout import ; **aucune nouvelle dépendance** (icônes, animation, composants) sans accord.
-- Toute chaîne visible : `{$translate('…')}` et la clé dans `en.json` **et** `fr.json` (les 13 autres locales sont traitées à l'étape 12 du suivi, ne pas y inventer de traductions).
-- Nouvelle couleur sémantique : token dans les deux thèmes de `style.css` (et `app.html` si l'écran de démarrage l'utilise).
-- Commentaires en anglais dans le code, comme le reste du dépôt ; documents et CHANGELOG en français.
+- Svelte 5 (runes `$props`, `$state`, `$derived`, `$effect`), TypeScript, Tailwind 4: follow the style of neighbouring files (tabs, no semicolons, `$lib/…` and `$shared/…` imports).
+- Check `apps/desktop/package.json` before any import; **no new dependency** (icons, animation, components) without approval.
+- Every visible string: `{$translate('…')}` and the key in `en.json` **and** `fr.json` (the other 13 locales are handled in Step 12 — Translation of the tracker; do not invent translations there).
+- New semantic colour: token in both themes of `style.css` (and `app.html` if the splash screen uses it).
+- Comments in English in the code, like the rest of the repository; documents, CHANGELOG and commit messages in English too.
 
-### Exécution complète
+### Complete execution
 
-Un livrable partiel est un livrable cassé. Interdits : `// ...`, `// reste inchangé`, `// TODO`, « même principe pour les autres », squelette à la place d'une implémentation, un exemple suivi d'une description. Avant de rendre la main : recompter les éléments demandés (fichiers, composants, états, clés i18n) et vérifier qu'ils sont tous livrés. Si le travail doit être coupé, s'arrêter à une frontière propre (fin de fichier) et écrire exactement ce qui reste.
+A partial deliverable is a broken deliverable. Forbidden: `// ...`, `// rest unchanged`, `// TODO`, "same principle for the others", a skeleton instead of an implementation, one example followed by a description. Before handing back: recount the requested items (files, components, states, i18n keys) and check that they are all delivered. If the work has to be cut short, stop at a clean boundary (end of a file) and write down exactly what remains.
 
-## 7. Contrôle avant livraison
+## 7. Pre-delivery check
 
-Chaque case doit pouvoir être cochée honnêtement ; sinon ce n'est pas terminé.
+Every box must be honestly tickable; otherwise it is not done.
 
-- [ ] Ligne de lecture écrite, mode déclaré.
-- [ ] `yarn design:scan <fichiers touchés>` : aucune nouvelle occurrence (comparer avant/après), les restantes justifiées.
-- [ ] Aucune classe de palette, hex, `dark:`, `text-[Npx]`, `rounded-xl+`, `backdrop-blur`, glow, dégradé, `transition-all` introduits.
-- [ ] Une seule couleur d'accent (`brand-*`), aucune couleur propre à la vue ; palettes de données via `shared/utils`.
-- [ ] Composants communs utilisés ; aucun contrôle réinventé.
-- [ ] Tout élément cliquable est un bouton avec nom accessible traduit ; focus visible ; clavier possible.
-- [ ] Chargement, vide et erreur traités.
-- [ ] Toutes les chaînes traduites en `en` et `fr` (« … », « », vouvoiement, casse de phrase en français).
-- [ ] Chiffres en `tabular-nums`, nombres et dates via `Intl`.
-- [ ] Tenue à 1000×600 et 1920×1080 ; pas de hauteur fixe sur une zone de contenu.
-- [ ] Animations motivées, 150 à 200 ms, `motion-reduce` sur toute boucle.
-- [ ] Vérification visuelle faite (skill `crate-visual-check`) ou explicitement signalée comme non faite.
-- [ ] `yarn check:svelte` et `yarn test` verts ; `yarn format:check` et `yarn lint:check` sur les fichiers touchés.
-- [ ] Suivi à jour : entrée CHANGELOG (section « Fork personnel », en français, identifiant entre crochets), case cochée dans `suivi/AVANCEMENT.md` avec note si partiel, `yarn suivi` relancé, DESIGN.md mis à jour si une règle a changé.
+- [ ] Reading line written, mode declared.
+- [ ] `yarn design:scan <touched files>`: no new occurrence (compare before/after), remaining ones justified.
+- [ ] No palette class, hex, `dark:`, `text-[Npx]`, `rounded-xl+`, `backdrop-blur`, glow, gradient or `transition-all` introduced.
+- [ ] A single accent colour (`brand-*`), no view-specific colour; data palettes through `shared/utils`.
+- [ ] Common components used; no reinvented control.
+- [ ] Every clickable element is a button with a translated accessible name; visible focus; keyboard operable.
+- [ ] Loading, empty and error handled.
+- [ ] All strings translated in `en` and `fr` ("…", « », formal « vous », sentence case in French).
+- [ ] Figures in `tabular-nums`, numbers and dates through `Intl`.
+- [ ] Holds up at 1000×600 and 1920×1080; no fixed height on a content area.
+- [ ] Animations justified, 150 to 200 ms, `motion-reduce` on every loop.
+- [ ] Visual check done (skill `crate-visual-check`) or explicitly reported as not done.
+- [ ] `yarn check:svelte` and `yarn test` green; `yarn format:check` and `yarn lint:check` on the touched files.
+- [ ] Tracking up to date: CHANGELOG entry (section "Personal fork — change log", in English, identifier in brackets), box ticked in `tracking/STATUS.md` with a note if partial, `yarn status` rerun, DESIGN.md updated if a rule has changed.
 
-Ne pas commiter ni pousser : rendre la main avec la liste des fichiers modifiés, les identifiants traités et le message de commit proposé (`fix(ui): … [D11]`). La session principale relit et commite.
+Do not commit or push: hand back with the list of modified files, the identifiers addressed and the proposed commit message (`fix(ui): … [D11]`). The main session reviews and commits.

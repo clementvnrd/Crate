@@ -7,169 +7,173 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Fork personnel — journal des modifications
+### Personal fork — change log
 
-> Journal tenu en direct depuis l'audit du 25 septembre 2026. Chaque entrée cite l'identifiant du défaut corrigé (voir [suivi/REGISTRE-DEFAUTS.md](suivi/REGISTRE-DEFAUTS.md)) ; l'avancement global est dans [suivi/AVANCEMENT.md](suivi/AVANCEMENT.md). Les entrées les plus récentes sont en haut de chaque rubrique.
+> Log kept live since the audit of 25 September 2026. Each entry cites the identifier of the fixed defect (see [tracking/DEFECTS.md](tracking/DEFECTS.md)); overall progress is in [tracking/STATUS.md](tracking/STATUS.md). The most recent entries are at the top of each section.
 
-#### Sécurité
+#### Process
 
-- **[C2]** Retrait de l'identifiant et du mot de passe Beatport écrits en dur dans `services/beatport/downloader.rs` et `client.rs`, **avant le premier commit** : le secret n'est jamais entré dans l'historique git. La configuration `beatportdl` conserve désormais les lignes `username`/`password` déjà présentes dans le fichier de l'utilisateur (sinon `beatportdl` utilise les jetons OAuth écrits à la connexion), et le fichier est écrit avec les droits `600`. Deux tests couvrent ces cas. _Le mot de passe lui-même doit encore être changé par le propriétaire._
-- **[B19]** La session Beatport (jetons OAuth) est stockée dans le **Trousseau macOS** au lieu d'un fichier JSON en clair (`~/.config/crate/beatport_auth.json`) et du `localStorage` du webview. L'ancien fichier est migré puis supprimé au premier lancement, l'ancienne copie `localStorage` est effacée. Seul `beatportdl-credentials.json`, indispensable à `beatportdl`, reste sur disque : droits `600`, supprimé à la déconnexion.
-- **[B20]** Suppression de la récupération du jeton Beatport dans la configuration locale de DJ.Studio (commande `beatport_auto_detect_session`).
-- **[B21]** Un jeton Beatport collé à la main n'est plus accepté sans vérification : il doit être validé par l'API compte de Beatport.
-- **[I6]** Suppression des commandes Spotify en double (`spotify_set_client_id`, `spotify_set_client_secret`) ; le secret client Spotify n'est plus jamais renvoyé au webview (`spotify_has_client_secret` indique seulement s'il existe, le champ reste vide pour le conserver).
-- **[I5]** Suppression de la commande `record_listen_event`, jamais appelée, qui permettait au webview d'injecter des écoutes arbitraires dans les statistiques.
-- **[C5]** Suppression des tests `test_sync_and_deduplicate_real_db` et `test_prune_missing_tracks_from_mik_db_real`, qui ouvraient la vraie base Crate (avec sa clé) et la vraie base Mixed In Key et y écrivaient à chaque `cargo test`.
+- **2026-09-30 — New way of working.** Everything written in the repository is now in English: the tracking system moved from `suivi/` to `tracking/` (`AVANCEMENT.md` → `STATUS.md`, `REGISTRE-DEFAUTS.md` → `DEFECTS.md`, `RAPPORT-AUDIT.md` → `AUDIT-REPORT.md`, `yarn suivi` → `yarn status`), every earlier document and change-log entry was translated, and commit messages are written in English from now on. `CLAUDE.md` gained standing rules: capture instructions as they are given, reply structure, and a hygiene check after every major task.
 
-#### Corrigé — protection des données
+#### Security
 
-- **[C3]** La synchronisation Mixed In Key ne supprime plus les titres Crate absents de Mixed In Key (« purge stricte » retirée) : Mixed In Key enrichit la bibliothèque, il n'en décide plus le contenu. Un volume démonté ou un titre non analysé ne fait plus disparaître de titres, de tags ni de playlists.
-- **[C4]** Crate n'ouvre plus jamais `Collection11.mikdb` en écriture : suppression des purges en cascade (`purge_tracks_by_pks`, `purge_tracks_by_path`, `prune_missing_tracks_from_mik_db`, `wal_checkpoint(TRUNCATE)`), y compris lors de la suppression d'un titre et après un upgrade FLAC.
-- **[B5]** Plus de suppression au démarrage des titres dont le fichier a disparu (un dossier renommé suffisait à les effacer). La commande reste disponible manuellement.
-- **[B2]** Le rattachement d'un titre Mixed In Key par titre et artiste n'a lieu que s'il existe une seule correspondance dont le fichier a disparu (fichier déplacé) ; il ne supprime plus les autres titres homonymes (version originale, extended…). Les doublons d'un même fichier transfèrent leurs tags et playlists avant d'être fusionnés.
-- **[F6]** Suppression de la synchronisation Mixed In Key complète et du rechargement de la bibliothèque à chaque retour sur la fenêtre : la synchro backend (démarrage + surveillance du fichier) suffit.
-- **[Q1]** `tauri.prod.conf.json` restauré comme en amont (artefacts de mise à jour) ; le build personnel sans signature passe par `yarn build:local` et `tauri.local.conf.json`.
-- Tests : trois nouveaux tests de synchronisation sur base en mémoire et fichiers temporaires (titre absent conservé, homonymes jamais fusionnés, fichier déplacé qui garde son identité) ; le test de nettoyage n'utilise plus un chemin personnel.
+- **[C2]** Removed the Beatport username and password hard-coded in `services/beatport/downloader.rs` and `client.rs`, **before the first commit**: the secret never entered the git history. The `beatportdl` configuration now keeps the `username`/`password` lines already present in the user's file (otherwise `beatportdl` uses the OAuth tokens written at sign-in), and the file is written with `600` permissions. Two tests cover these cases. _The password itself still has to be changed by the owner._
+- **[B19]** The Beatport session (OAuth tokens) is stored in the **macOS Keychain** instead of a plaintext JSON file (`~/.config/crate/beatport_auth.json`) and the webview's `localStorage`. The old file is migrated then deleted on first launch, and the old `localStorage` copy is erased. Only `beatportdl-credentials.json`, which `beatportdl` requires, stays on disk: `600` permissions, deleted on sign-out.
+- **[B20]** Removed the retrieval of the Beatport token from DJ.Studio's local configuration (`beatport_auto_detect_session` command).
+- **[B21]** A Beatport token pasted by hand is no longer accepted without verification: it must be validated by Beatport's account API.
+- **[I6]** Removed the duplicate Spotify commands (`spotify_set_client_id`, `spotify_set_client_secret`); the Spotify client secret is never sent back to the webview any more (`spotify_has_client_secret` only says whether it exists; leaving the field empty keeps it).
+- **[I5]** Removed the `record_listen_event` command, never called, which let the webview inject arbitrary listens into the statistics.
+- **[C5]** Removed the `test_sync_and_deduplicate_real_db` and `test_prune_missing_tracks_from_mik_db_real` tests, which opened the real Crate database (with its key) and the real Mixed In Key database and wrote to them on every `cargo test`.
 
-#### Corrigé — upgrader Beatport
+#### Fixed — data protection
 
-- **[C6]** L'upgrader et le panier Beatport ne « nettoient » plus le dossier de destination : `beatportdl` télécharge dans un dossier privé `.crate-download-…` créé pour l'occasion, seuls les FLAC validés en sortent, puis ce dossier (et lui seul) est supprimé. Pochettes, playlists `.m3u`, notes et sous-dossiers de ton dossier musique ne sont plus jamais touchés.
-- **[C7]** Seuls les fichiers créés par le téléchargement en cours sont pris en compte (ils sont seuls dans le dossier privé) : un FLAC déjà présent ne peut plus être pris pour le nouveau, et un fichier existant n'est jamais écrasé (`Titre (1).flac`).
-- **[C8]** Un upgrade MP3 → FLAC met à jour le titre **existant** (même identifiant) au lieu de le supprimer puis de le réimporter : cues, tags, playlists, note, couleur, compteur et historique d'écoute sont conservés. Le MP3 ne part à la corbeille qu'une fois la bibliothèque mise à jour ; un échec de mise à la corbeille est signalé.
-- **[B22]** Validation FLAC par décodage complet (symphonia) : un fichier corrompu, tronqué (moins d'échantillons qu'annoncé) ou dont la durée ne correspond pas au titre Beatport (±5 s ou ±3 %) est refusé.
-- **[B23]** Scoring : une version différente (radio edit, dub, instrumental…) ne peut plus remplacer un extended/original mix ; une durée inconnue donne un score neutre au lieu d'un faux accord.
-- **[B24]** Découpage des artistes par mots entiers : « Daft Punk » n'est plus coupé en « Da » (séparateur `ft`), « Alex » garde son x ; le rapprochement d'artistes par inclusion ne compte plus que des mots entiers. Corrige aussi la détection de doublons.
-- **[B25]** Les titres sans équivalent Beatport sont mémorisés 7 jours (plus de nouvelle recherche réseau à chaque ouverture) ; les réponses 429 de Beatport sont réessayées après 1, 2 puis 4 s ; une erreur réseau n'est jamais mémorisée comme « aucun résultat ».
-- **[B26]** Le chemin du MP3 est relu dans la bibliothèque au lieu d'être fourni par le webview ; toutes les erreurs sont remontées.
-- **[I3]** Progression de l'upgrade (`upgrade-progress`) affichée dans le bouton : « Mise à niveau 2/5 — Titre ».
-- **[F14]** Le bouton de remplacement est désactivé tant que Beatport n'est pas connecté.
-- Tests : 12 nouveaux tests (décodage d'un vrai FLAC de test, fichiers factices et tronqués, déplacement sans écrasement, dossier utilisateur jamais supprimé, remplacement en place qui garde cues/tags/playlists, découpage d'artistes, scoring).
+- **[C3]** The Mixed In Key sync no longer deletes Crate tracks that are missing from Mixed In Key ("strict purge" removed): Mixed In Key enriches the library, it no longer decides its contents. An unmounted volume or an unanalysed track no longer makes tracks, tags or playlists disappear.
+- **[C4]** Crate never opens `Collection11.mikdb` for writing any more: removed the cascading purges (`purge_tracks_by_pks`, `purge_tracks_by_path`, `prune_missing_tracks_from_mik_db`, `wal_checkpoint(TRUNCATE)`), including when a track is deleted and after a FLAC upgrade.
+- **[B5]** Tracks whose file has disappeared are no longer deleted at startup (a renamed folder was enough to erase them). The command remains available manually.
+- **[B2]** Re-linking a Mixed In Key track by title and artist only happens when there is exactly one match whose file has disappeared (moved file); it no longer deletes the other tracks with the same name (original version, extended…). Duplicates of the same file transfer their tags and playlists before being merged.
+- **[F6]** Removed the full Mixed In Key sync and library reload every time the window regains focus: the backend sync (at startup + file watching) is enough.
+- **[Q1]** `tauri.prod.conf.json` restored as upstream has it (updater artifacts); the personal unsigned build goes through `yarn build:local` and `tauri.local.conf.json`.
+- Tests: three new sync tests on an in-memory database and temporary files (missing track kept, same-name tracks never merged, moved file keeps its identity); the cleanup test no longer uses a personal path.
 
-#### Corrigé — Mixed In Key et bibliothèque
+#### Fixed — Beatport upgrader
 
-- **[B1]** La synchronisation Mixed In Key ne se relance plus en rafale : le watcher ignore le fichier `-shm` (modifié par toute lecture, y compris celle de Crate) et compare date + taille de la base et du WAL. Chaque passage ne réécrit plus que les titres qui changent réellement (clause de comparaison dans l'`UPDATE`), dans une seule transaction, et la recherche de pochettes ne porte plus que sur les titres ajoutés ou modifiés. Vérifié sur une copie de la vraie bibliothèque : 276 titres réécrits à chaque passage avant, 0 au second passage maintenant (~250 ms).
-- **[B1]** Mixed In Key n'écrase plus le titre, l'artiste, l'album, le genre, le label ni l'année d'un titre existant : ces champs ne sont remplis que s'ils sont vides. BPM, tonalité et énergie restent pilotés par Mixed In Key.
-- **[B3]** Les cues Mixed In Key ont un identifiant stable (`mik-<titre>-<n>`) et sont mis à jour sur place au lieu d'être supprimés et recréés à chaque synchro ; les cues créés dans Crate ne sont plus effacés. Les anciennes copies (identifiants aléatoires) sont converties une fois : 2 033 cues convertis sans perte ni doublon sur la copie de test.
-- **[B4]** `get_track_cues` ne relit plus toute la base Mixed In Key à chaque lecture d'un titre sans cues : seuls les fichiers ouverts hors bibliothèque (lecteur autonome) y sont cherchés, et hors du verrou de la base Crate.
-- **[B6]** Résolution des signets macOS sans interface ni montage de volume (un disque débranché ne déclenche plus de tentative de montage), libération des `CFError` ; `create_bookmark` réservé aux tests.
-- **[B7]** L'empreinte (`file_hash`) est de nouveau enregistrée à l'import ; réimporter un fichier déjà présent ne plante plus (les cues sont rattachés au titre existant, qui garde son identifiant).
-- **[B8]** Parseur Serato Markers2 recalé sur le format réel (index, position, couleur, nom) : les cues importés depuis les tags n'étaient pas au bon endroit. La couleur des cues est désormais lue.
-- **[B9]** La colonne `energy` est incluse dans les sauvegardes et la synchronisation cloud (les anciennes sauvegardes restent lisibles).
-- Tests : 7 nouveaux tests (synchro idempotente, métadonnées utilisateur conservées, cues stables et cues utilisateur gardés, réimport, parseur Serato sur une entrée construite selon le format).
+- **[C6]** The upgrader and the Beatport cart no longer "clean" the destination folder: `beatportdl` downloads into a private `.crate-download-…` folder created for the occasion, only validated FLAC files come out of it, then that folder (and only that folder) is deleted. Artwork, `.m3u` playlists, notes and subfolders of your music folder are never touched any more.
+- **[C7]** Only the files created by the current download are taken into account (they are the only ones in the private folder): a FLAC already present can no longer be mistaken for the new one, and an existing file is never overwritten (`Title (1).flac`).
+- **[C8]** An MP3 → FLAC upgrade updates the **existing** track (same identifier) instead of deleting it then re-importing it: cues, tags, playlists, rating, colour, play count and listening history are kept. The MP3 only goes to the Trash once the library has been updated; a failure to move it to the Trash is reported.
+- **[B22]** FLAC validation by full decoding (symphonia): a file that is corrupted, truncated (fewer samples than announced) or whose duration does not match the Beatport track (±5 s or ±3%) is rejected.
+- **[B23]** Scoring: a different version (radio edit, dub, instrumental…) can no longer replace an extended/original mix; an unknown duration gives a neutral score instead of a false match.
+- **[B24]** Artists are split on whole words: "Daft Punk" is no longer cut into "Da" (`ft` separator), "Alex" keeps its x; matching artists by inclusion now only counts whole words. Also fixes duplicate detection.
+- **[B25]** Tracks with no Beatport equivalent are remembered for 7 days (no new network search on every opening); Beatport's 429 responses are retried after 1, 2 then 4 s; a network error is never remembered as "no result".
+- **[B26]** The MP3 path is read back from the library instead of being supplied by the webview; all errors are reported.
+- **[I3]** Upgrade progress (`upgrade-progress`) shown in the button: "Mise à niveau 2/5 — Titre" (Upgrading 2/5 — Title).
+- **[F14]** The replace button is disabled as long as Beatport is not connected.
+- Tests: 12 new tests (decoding a real test FLAC, fake and truncated files, moving without overwriting, user folder never deleted, in-place replacement that keeps cues/tags/playlists, artist splitting, scoring).
 
-#### Corrigé — statistiques d'écoute (Crate Pulse)
+#### Fixed — Mixed In Key and library
 
-- **[C9]** Suppression de la « réparation » lancée à chaque démarrage, qui transformait toute écoute Spotify de moins de 30 s en écoute complète (minutes et streams gonflés). Les écoutes déjà modifiées ne peuvent pas être restaurées.
-- **[C10]** Fin du double comptage Spotify : l'historique officiel « recently played » (toutes les minutes) est désormais la **seule** source ; le poller toutes les 4 s, qui enregistrait la même écoute une seconde fois (et une troisième après une pause), est supprimé. Le temps écouté est la durée du titre, plafonnée par l'écart avec l'écoute précédente (un titre passé au bout de 50 s compte 50 s).
-- **[B12]** Lecteur Crate : seul le temps de lecture réel est compté (pauses et sauts dans le morceau exclus, arrêt en fin de piste détecté) ; l'écoute enregistrée à 30 s est mise à jour avec la durée totale écoutée au changement de titre.
-- **[B11]** Le suivi des écoutes dans Mixed In Key (déduit d'un fichier ouvert, analyse comprise) est **désactivé par défaut** et activable dans Crate Pulse avec un avertissement.
-- **[B13]** Import XML Rekordbox : seuls les playlists d'historique datées (« HISTORY 2026-09-20 ») deviennent des écoutes, datées de la session et dans l'ordre joué — avant, **toute la collection** exportée était comptée comme écoutée le jour de l'import. Une session n'est importée qu'une fois ; les écoutes sans heure réelle sont exclues de la heatmap. Côté `master.db`, les compteurs de session ne gonflent plus à chaque synchro.
-- **[B14]** Filtres « 7 jours » et « 30 jours » : les dates sont normalisées (`datetime()`) avant comparaison, quel que soit leur format ou fuseau ; une date illisible ne fait plus échouer la heatmap.
-- **[B15]** Import de l'historique JSON Spotify : une seule transaction, dates `2024-03-01 20:15` et ISO 8601 gérées, une date mal formée est ignorée au lieu de faire planter l'import.
-- **[B16]** Plus d'inversion d'ordre de verrous entre la déconnexion Spotify et le poller (risque de blocage de toute la base) : le poller n'existe plus.
-- **[B17]** Rafraîchissement du jeton Spotify sérialisé (un seul à la fois) ; un échec sur un jeton expiré est signalé au lieu de renvoyer silencieusement l'ancien jeton.
-- **[B18]** Le serveur OAuth `127.0.0.1:8888` ne tourne plus en permanence : il démarre à la connexion et s'arrête après succès ou 10 minutes ; il exige un `state` généré par Crate ; les paramètres affichés dans la page de retour sont échappés (page de retour ramenée de ~330 à ~40 lignes).
-- **[B34]** Le service Mixed In Key appelé par l'interface est la même instance que le worker de fond.
-- Tests : 11 nouveaux tests (pauses, durée totale mise à jour, fin de piste, temps écouté plafonné, dates d'export, échappement HTML, heatmap tolérante, filtre 7 jours avec fuseau, import par lot, import XML Rekordbox idempotent).
+- **[B1]** The Mixed In Key sync no longer re-runs in bursts: the watcher ignores the `-shm` file (modified by any read, including Crate's) and compares the date + size of the database and the WAL. Each pass now only rewrites the tracks that actually change (comparison clause in the `UPDATE`), in a single transaction, and the artwork search now only covers added or modified tracks. Verified on a copy of the real library: 276 tracks rewritten on every pass before, 0 on the second pass now (~250 ms).
+- **[B1]** Mixed In Key no longer overwrites the title, artist, album, genre, label or year of an existing track: these fields are only filled in when they are empty. BPM, key and energy remain driven by Mixed In Key.
+- **[B3]** Mixed In Key cues have a stable identifier (`mik-<track>-<n>`) and are updated in place instead of being deleted and recreated on every sync; cues created in Crate are no longer erased. The old copies (random identifiers) are converted once: 2,033 cues converted with no loss or duplicate on the test copy.
+- **[B4]** `get_track_cues` no longer re-reads the whole Mixed In Key database every time a track without cues is played: only files opened outside the library (standalone player) are looked up there, and outside the Crate database lock.
+- **[B6]** macOS bookmarks are resolved without UI and without mounting volumes (an unplugged disk no longer triggers a mount attempt), `CFError`s are released; `create_bookmark` is reserved for tests.
+- **[B7]** The fingerprint (`file_hash`) is recorded again on import; re-importing a file that is already present no longer crashes (the cues are attached to the existing track, which keeps its identifier).
+- **[B8]** Serato Markers2 parser realigned with the real format (index, position, colour, name): cues imported from tags were not in the right place. Cue colours are now read.
+- **[B9]** The `energy` column is included in backups and cloud sync (old backups remain readable).
+- Tests: 7 new tests (idempotent sync, user metadata kept, stable cues and user cues kept, re-import, Serato parser on an entry built according to the format).
 
-#### Corrigé — fonctions DJ
+#### Fixed — listening statistics (Crate Pulse)
 
-- **[C11]** Hot cues : numérotation unique en base 0 (A = 0 … H = 7) comme l'amont et Rekordbox, dans la synchro Mixed In Key, le parseur Serato et la lecture des fichiers externes. Côté interface, un utilitaire partagé (`shared/utils/cues.ts`) associe pad ↔ cue : la touche 3 déclenche le cue 3 (et non plus le 2), un cue mémoire n'occupe plus de pad, les repères de la waveform affichent 1–8 pour les hot cues et « M » pour les cues mémoire. Les cues déjà en base sont convertis automatiquement à la prochaine synchro.
-- **[C12]** Export Rekordbox XML valide : chemins `Location` entièrement percent-encodés en UTF-8 (`&`, `#`, `%`, espaces, accents) puis échappés, cues mémoire exportés avec `Num="-1"` (et non plus comme hot cue A), boucles en `Type="4"` avec `End`, couleur des cues reprise, plus de BPM (120) ni de débit (320) inventés pour les valeurs inconnues.
-- **[B27]** Waveform réelle : les pics sont calculés depuis le fichier audio au premier affichage (symphonia, 400 barres, ~90 ms pour un MP3 de 2,4 Mo) puis mis en cache ; un fichier illisible affiche une ligne neutre au lieu d'un faux motif, et la waveform du titre précédent n'est plus conservée.
-- **[B28]** Recherche : la requête FTS5 est découpée comme l'index (« You'll » → `"You"* "ll"*`) ; les titres avec apostrophe, tiret ou slash (« You'll », « Jay-Z », « AC/DC ») sont de nouveau trouvés, et `AND`, `OR`, `NOT` tapés en majuscules ne font plus échouer la liste.
-- **[B29]** Position de lecture : position exacte de rodio (`Sink::get_pos`) à vitesse normale ; en fin de piste la position n'est plus figée sur une valeur ancienne.
-- **[C13]** `loadTracks()` retrouve le comportement de l'amont (sans argument : tous les titres, filtre remis à zéro) : retirer le dernier tag vide de nouveau le filtre et le filtre « Mix harmonique » ne reste plus collé. Les rafraîchissements en arrière-plan ajoutés par le fork (synchro Mixed In Key, doublons, upgrader, lecteur) utilisent la nouvelle méthode explicite `reloadWithCurrentFilter()`.
-- **[C14]** Glisser un tag sur un titre fonctionne de nouveau (`data-track-id` et surbrillance de survol restaurés sur les lignes).
-- **[C15]** Jamais deux sons à la fois : une préécoute (découverte ou Beatport) arrête le moteur audio natif aussi quand il lit un fichier du lecteur autonome (seules les pistes de bibliothèque étaient arrêtées).
-- **[F1]** Les touches 1 à 8 (hot cues) ne sont actives que dans les vues Player et Bibliothèque, avec un morceau chargé.
-- **[F2]** Espace dans la vue Player met en pause ce qui joue (y compris une préécoute) au lieu de lancer un fichier récent.
-- **[F3]** Espace/Entrée sur une ligne de la bibliothèque ne déclenche plus en même temps le raccourci global.
-- **[F11]** Cues et waveform chargés pour un fichier ouvert hors bibliothèque (recherche par chemin au lieu d'un identifiant inexistant).
-- **[B30]** Associations de fichiers audio en rang `Alternate` sans le parapluie `public.audio` : Crate apparaît dans « Ouvrir avec » sans s'imposer comme lecteur par défaut. Suppression de la commande `set_as_default_audio_player` (jamais appelée, visant un bundle `com.crate.app` inexistant) et du script `scripts/set_default_player.swift`.
-- **[B31]** Fichiers ouverts avec Crate au démarrage : file d'attente côté Rust vidée une seule fois par l'interface une fois prête (`take_startup_files`) ; un fichier n'est plus ouvert deux fois et plusieurs fichiers ouverts ensemble sont tous pris en compte.
-- **[B32]** Suppression de titres avec leurs fichiers : mise à la corbeille via Finder (chemin passé en argument, jamais interpolé dans le script), un titre ne quitte la bibliothèque que si son fichier est bien parti à la corbeille, les échecs sont signalés, et plus aucune suppression définitive hors macOS (module `services/trash.rs`, aussi utilisé par l'upgrader).
-- **[B35]** Le compteur de doublons de la barre d'outils est mis en cache selon une empreinte de la bibliothèque : le scan complet ne tourne plus à chaque événement `duplicates-updated`, seulement quand la bibliothèque a changé.
-- Tests : 9 nouveaux tests Rust (recherche, encodage des chemins, marques de cue, XML valide avec caractères spéciaux, pics de waveform) et 5 tests Vitest (pads de hot cues, raccourcis 1–8 limités aux bonnes vues).
+- **[C9]** Removed the "repair" run at every startup, which turned every Spotify listen shorter than 30 s into a full listen (inflated minutes and streams). Listens that were already modified cannot be restored.
+- **[C10]** End of Spotify double counting: the official "recently played" history (every minute) is now the **only** source; the 4-second poller, which recorded the same listen a second time (and a third after a pause), is removed. Listening time is the track duration, capped by the gap with the previous listen (a track skipped after 50 s counts 50 s).
+- **[B12]** Crate player: only actual playback time is counted (pauses and seeks within the track excluded, stop at end of track detected); the listen recorded at 30 s is updated with the total listening time when the track changes.
+- **[B11]** Listen tracking in Mixed In Key (inferred from an opened file, analysis included) is **disabled by default** and can be enabled in Crate Pulse with a warning.
+- **[B13]** Rekordbox XML import: only dated history playlists ("HISTORY 2026-09-20") become listens, dated with the session and in the order played — before, **the whole exported collection** was counted as listened to on the day of the import. A session is only imported once; listens without a real time are excluded from the heatmap. On the `master.db` side, session counters no longer inflate on every sync.
+- **[B14]** "7 jours" and "30 jours" (7 days / 30 days) filters: dates are normalised (`datetime()`) before comparison, whatever their format or time zone; an unreadable date no longer makes the heatmap fail.
+- **[B15]** Spotify JSON history import: a single transaction, `2024-03-01 20:15` and ISO 8601 dates handled, a malformed date is skipped instead of crashing the import.
+- **[B16]** No more lock-order inversion between Spotify sign-out and the poller (risk of blocking the whole database): the poller no longer exists.
+- **[B17]** Spotify token refresh serialised (only one at a time); a failure on an expired token is reported instead of silently returning the old token.
+- **[B18]** The OAuth server on `127.0.0.1:8888` no longer runs permanently: it starts at sign-in and stops after success or 10 minutes; it requires a `state` generated by Crate; the parameters shown on the callback page are escaped (callback page cut from ~330 to ~40 lines).
+- **[B34]** The Mixed In Key service called by the UI is the same instance as the background worker.
+- Tests: 11 new tests (pauses, total duration updated, end of track, capped listening time, export dates, HTML escaping, tolerant heatmap, 7-day filter with time zone, batch import, idempotent Rekordbox XML import).
 
-#### Corrigé — frontend
+#### Fixed — DJ features
 
-- **[I1]** Les messages d'erreur du backend s'affichent enfin : Tauri rejette une commande avec une *chaîne*, que tous les `error instanceof Error ? … : 'message générique'` jetaient. Nouveau helper partagé `toErrorMessage()` utilisé par tous les stores et composants (~85 occurrences, amont compris).
-- **[I2]** Onglet Beatport : les réglages sans effet (qualité AAC/MP3, synchro Mixed In Key automatique) sont remplacés par une information exacte — téléchargements FLAC vérifiés uniquement, analyse Mixed In Key récupérée automatiquement par la surveillance de sa base.
-- **[I7]** L'événement `library-updated` (émis après un upgrade) est écouté et rafraîchit la bibliothèque ; paramètre `searchType` inutilisé retiré de la recherche Beatport.
-- **[F4]** Initialisation : une étape qui dépasse son délai ne perd plus sa fonction de nettoyage (écouteurs de menu, touches média, initialisation) ; elle est exécutée à la fermeture, et les échecs sont journalisés avec le nom de l'étape.
-- **[F5]** L'écran de démarrage se ferme quand l'initialisation (réglages compris) est terminée, et non plus après un minuteur fixe de 1,5 s qui pouvait faire apparaître l'onboarding par erreur ; filet de sécurité à 10 s.
-- **[F7]** Le badge « doublons » de la barre d'outils ne relance le comptage que lorsque le nombre de titres change, plus à chaque modification de la liste.
-- **[F10]** Ajout d'un fichier du lecteur à la bibliothèque : le store source est mis à jour au lieu de modifier une valeur dérivée.
-- **[F13]** « Synchroniser avec Mixed In Key » dans le menu contextuel ne synchronise que les titres sélectionnés.
-- **[F15]** Les infobulles se ferment au clic, à la sortie du pointeur et quand la fenêtre perd le focus (celle du badge Mixed In Key restait affichée quand le bouton se désactivait pendant la synchro).
-- **[F8]** Panier Beatport : téléchargement titre par titre avec progression (« 2/5 : Titre ») ; seuls les titres réellement téléchargés quittent le panier, les échecs y restent avec leur raison. Les favoris et playlists Beatport, uniquement locaux, sont annoncés comme tels (plus de faux « succès »).
-- **[F9]** Plus d'effet de bord à l'import des modules : le minuteur de rafraîchissement du jeton Beatport démarre avec la restauration explicite de la session au lancement.
-- **[F12]** Position de lecture : une réponse du backend demandée avant un saut, un changement de titre ou un arrêt est ignorée (elle faisait reculer la tête de lecture).
-- **[I4]** `BeatportAuthState` n'a plus qu'un schéma, celui du backend (snake_case) ; les champs camelCase en double sont supprimés partout.
-- **[I8]** Les champs optionnels des types Beatport acceptent `null`, la valeur réellement envoyée par le backend (deux accès non protégés corrigés au passage).
-- **[I9]** Les options d'affichage de la bibliothèque (colonnes, zéro Camelot…) sont enregistrées dans la base (donc sauvegardées et restaurées avec elle) ; le `localStorage` ne sert plus que de cache au démarrage.
-- Tests : 3 tests Vitest pour `toErrorMessage`.
+- **[C11]** Hot cues: a single 0-based numbering (A = 0 … H = 7) as upstream and Rekordbox use, in the Mixed In Key sync, the Serato parser and the reading of external files. On the UI side, a shared utility (`shared/utils/cues.ts`) maps pad ↔ cue: key 3 triggers cue 3 (and no longer cue 2), a memory cue no longer takes up a pad, and the waveform markers show 1–8 for hot cues and "M" for memory cues. Cues already in the database are converted automatically on the next sync.
+- **[C12]** Valid Rekordbox XML export: `Location` paths fully percent-encoded in UTF-8 (`&`, `#`, `%`, spaces, accented characters) then escaped, memory cues exported with `Num="-1"` (and no longer as hot cue A), loops as `Type="4"` with `End`, cue colour carried over, no more invented BPM (120) or bitrate (320) for unknown values.
+- **[B27]** Real waveform: peaks are computed from the audio file on first display (symphonia, 400 bars, ~90 ms for a 2.4 MB MP3) then cached; an unreadable file shows a neutral line instead of a fake pattern, and the previous track's waveform is no longer kept.
+- **[B28]** Search: the FTS5 query is tokenised like the index ("You'll" → `"You"* "ll"*`); titles with an apostrophe, hyphen or slash ("You'll", "Jay-Z", "AC/DC") are found again, and `AND`, `OR`, `NOT` typed in capitals no longer make the list fail.
+- **[B29]** Playback position: exact position from rodio (`Sink::get_pos`) at normal speed; at the end of the track the position is no longer frozen on an old value.
+- **[C13]** `loadTracks()` gets back upstream's behaviour (no argument: all tracks, filter reset): removing the last tag empties the filter again and the "Mix harmonique" (harmonic mix) filter no longer stays stuck. The background refreshes added by the fork (Mixed In Key sync, duplicates, upgrader, player) use the new explicit `reloadWithCurrentFilter()` method.
+- **[C14]** Dragging a tag onto a track works again (`data-track-id` and hover highlight restored on the rows).
+- **[C15]** Never two sounds at once: a preview (discovery or Beatport) also stops the native audio engine when it is playing a file from the standalone player (only library tracks were stopped).
+- **[F1]** Keys 1 to 8 (hot cues) are only active in the Player and Library views, with a track loaded.
+- **[F2]** Space in the Player view pauses whatever is playing (including a preview) instead of starting a recent file.
+- **[F3]** Space/Enter on a library row no longer triggers the global shortcut at the same time.
+- **[F11]** Cues and waveform loaded for a file opened outside the library (lookup by path instead of a non-existent identifier).
+- **[B30]** Audio file associations at `Alternate` rank without the `public.audio` umbrella: Crate appears in "Open With" without imposing itself as the default player. Removed the `set_as_default_audio_player` command (never called, targeting a non-existent `com.crate.app` bundle) and the `scripts/set_default_player.swift` script.
+- **[B31]** Files opened with Crate at startup: a Rust-side queue drained only once by the UI when it is ready (`take_startup_files`); a file is no longer opened twice and several files opened together are all taken into account.
+- **[B32]** Deleting tracks along with their files: moved to the Trash via Finder (path passed as an argument, never interpolated into the script), a track only leaves the library if its file actually went to the Trash, failures are reported, and no more permanent deletion outside macOS (`services/trash.rs` module, also used by the upgrader).
+- **[B35]** The toolbar's duplicate counter is cached against a fingerprint of the library: the full scan no longer runs on every `duplicates-updated` event, only when the library has changed.
+- Tests: 9 new Rust tests (search, path encoding, cue marks, valid XML with special characters, waveform peaks) and 5 Vitest tests (hot cue pads, 1–8 shortcuts limited to the right views).
 
-#### Outillage et qualité
+#### Fixed — frontend
 
-- **[Q15]** Agent de design pour les assistants de code, construit à partir de cinq sources (taste-skill, Web Interface Guidelines de Vercel, image-to-code, awesome-design-md, Playwright CLI) et adapté à une app desktop dense :
-  - `DESIGN.md` à la racine (format Stitch/awesome-design-md) : tokens réels de `style.css` pour les deux thèmes, échelle typographique du composant `Text`, rayons, élévation, composants communs, palettes de données Camelot/énergie, à faire / à éviter, lacunes connues (contraste des couleurs d'état en thème clair : ambre mesuré à 2,15:1 sur blanc) ;
-  - agent `design` (`.claude/agents/design.md`, mémoire de projet) qui précharge cinq skills : `crate-design-system` (les douze règles strictes, table de conversion dette → tokens, chargé automatiquement dès qu'un fichier de `apps/desktop/src` est touché), `crate-ui-audit` (audit file:line relié au registre, avec les Web Interface Guidelines adaptées à Svelte/Tauri et les signatures « IA » en app dense), `crate-ui-build` (lecture du besoin, protocole de refonte, leviers ordonnés, contrôle avant livraison), `crate-image-to-code` (analyse d'une capture ou maquette traduite dans les tokens, bibliothèque d'inspiration), `crate-visual-check` (matrice clair/sombre × accents × 1000×600/1400×900/1920×1080 × fr/en avec Playwright CLI) ;
-  - script `ui-audit.js` exécuté dans la page : contraste WCAG réel à travers les couches transparentes, contrôles sans nom, `div` cliquables, chevauchements, modales hors fenêtre, colonnes écrasées, texte sous 12 px (vérifié sur une page piège : 9 défauts sur 9 détectés, aucun faux positif) ;
-  - scanner `yarn design:scan [chemins] [--details] [--strict]` : palette, hex, `dark:`, tailles arbitraires, `transition-all`, rayons, flou/glow, dégradés, graisses, `svelte-ignore a11y`, `outline-none`, animations sans `motion-reduce`, z-index arbitraires, hauteurs fixes, emojis, chaînes en dur, « ... » dans les locales. État de départ : 1 220 lignes en infraction ;
-  - `CLAUDE.md` et README pointent vers `DESIGN.md` et l'agent ; `.playwright-cli/` ignoré par git.
-  _La vérification visuelle automatique nécessite un harnais navigateur (faux backend Tauri) qui reste à versionner._
+- **[I1]** Backend error messages are finally displayed: Tauri rejects a command with a *string*, which every `error instanceof Error ? … : 'generic message'` threw away. New shared helper `toErrorMessage()` used by all stores and components (~85 occurrences, upstream included).
+- **[I2]** Beatport tab: the settings that had no effect (AAC/MP3 quality, automatic Mixed In Key sync) are replaced by accurate information — verified FLAC downloads only, Mixed In Key analysis picked up automatically by the watcher on its database.
+- **[I7]** The `library-updated` event (emitted after an upgrade) is listened to and refreshes the library; unused `searchType` parameter removed from the Beatport search.
+- **[F4]** Initialisation: a step that exceeds its timeout no longer loses its cleanup function (menu listeners, media keys, initialisation); it is run on close, and failures are logged with the step's name.
+- **[F5]** The splash screen closes when initialisation (settings included) is finished, and no longer after a fixed 1.5 s timer that could make the onboarding appear by mistake; 10 s safety net.
+- **[F7]** The toolbar's "doublons" (duplicates) badge only re-runs the count when the number of tracks changes, no longer on every change to the list.
+- **[F10]** Adding a player file to the library: the source store is updated instead of modifying a derived value.
+- **[F13]** "Synchroniser avec Mixed In Key" (Sync with Mixed In Key) in the context menu only syncs the selected tracks.
+- **[F15]** Tooltips close on click, when the pointer leaves and when the window loses focus (the one on the Mixed In Key badge stayed visible when the button became disabled during the sync).
+- **[F8]** Beatport cart: track-by-track download with progress ("2/5 : Titre"); only the tracks actually downloaded leave the cart, failures stay in it with their reason. Beatport favourites and playlists, which are local only, are announced as such (no more fake "success").
+- **[F9]** No more side effects when modules are imported: the Beatport token refresh timer starts with the explicit session restore at launch.
+- **[F12]** Playback position: a backend response requested before a seek, a track change or a stop is ignored (it made the playhead jump back).
+- **[I4]** `BeatportAuthState` now has only one schema, the backend's (snake_case); the duplicate camelCase fields are removed everywhere.
+- **[I8]** Optional fields of the Beatport types accept `null`, the value the backend actually sends (two unguarded accesses fixed along the way).
+- **[I9]** Library display options (columns, Camelot zero…) are saved in the database (and therefore backed up and restored with it); `localStorage` is now only a cache at startup.
+- Tests: 3 Vitest tests for `toErrorMessage`.
 
-- **[Q4]** Rust : `cargo fmt` appliqué (40 fichiers) et `cargo clippy --features desktop -- -D warnings` passe (37 erreurs → 0) : code mort supprimé (`ListenSource`, `set_track_rating`, `set_track_color`, `extract_bpm/key`, `detect_rekordbox_dir`, champs de réponse Spotify inutilisés, réexports inutiles), itérations et tris simplifiés.
-- **[Q5]** TypeScript/Svelte : Prettier appliqué et ESLint à 0 erreur (38 → 0) : clés sur toutes les boucles `{#each}`, plus de `any` explicite, `$derived` modifiable dans la barre de recherche, caches non réactifs documentés.
-- **[Q6]** CI du fork sur Linux : un job frontend (format, lint, types, Vitest) et un job Rust (clippy, tests) à chaque push ; le job Rust vérifie aussi la compilation hors macOS.
-- **[Q3]** `RunEvent::Opened` limité aux plateformes qui le fournissent (macOS, iOS, Android) : le code compile de nouveau sous Windows/Linux.
-- **[Q8]** Dépendances de test épinglées (Vitest 4.1.11, testing-library, jsdom), une seule version de Vite (7.3.0, via `resolutions`) pour l'app et les tests, fournisseur de couverture `@vitest/coverage-v8` ajouté (`yarn test:coverage`).
-- **[Q13]** `yarn dev` compile l'app en debug (reconstructions rapides) avec des dépendances optimisées (`[profile.dev.package."*"]`) pour garder un décodage audio fluide.
-- **[B10]** Migrations : libellés alignés sur leur position réelle (6 à 15) et règle « on ajoute, on ne renumérote jamais » documentée ; l'ordre n'est pas modifié car la base locale les a déjà appliquées.
-- **[Q11]** Script `set_default_player.swift` supprimé ; la synthèse de l'assistant précédent est archivée dans `suivi/historique/`.
-- **[Q10]** Documentation : page des raccourcis clavier corrigée (flèches ±10 s, Cmd+flèches ±1 s, Shift+flèches selon la vue, hot cues 1–8, Shift+Tab).
-- **[Q7]** Chemins à risque couverts par des tests sur base et dossiers temporaires : remplacement de fichier, synchro Mixed In Key, trackers d'écoute, import, export, corbeille ; plus aucun test ne lit la vraie base Mixed In Key.
-- **[Q12]** `CLAUDE.md` en place depuis le début du fork (règles de suivi et règles techniques).
+#### Tooling and quality
 
-#### Corrigé — fondations visuelles
+- **[Q15]** Design agent for coding assistants, built from five sources (taste-skill, Vercel's Web Interface Guidelines, image-to-code, awesome-design-md, Playwright CLI) and adapted to a dense desktop app:
+  - `DESIGN.md` at the root (Stitch/awesome-design-md format): the real tokens from `style.css` for both themes, the typographic scale of the `Text` component, radii, elevation, common components, Camelot/energy data palettes, dos and don'ts, known gaps (contrast of status colours in the light theme: amber measured at 2.15:1 on white);
+  - `design` agent (`.claude/agents/design.md`, project memory) that preloads five skills: `crate-design-system` (the twelve strict rules, debt → tokens conversion table, loaded automatically as soon as a file in `apps/desktop/src` is touched), `crate-ui-audit` (file:line audit linked to the register, with the Web Interface Guidelines adapted to Svelte/Tauri and the "AI" signatures in a dense app), `crate-ui-build` (reading the need, redesign protocol, ordered levers, pre-delivery check), `crate-image-to-code` (analysis of a screenshot or mock-up translated into tokens, inspiration library), `crate-visual-check` (light/dark × accents × 1000×600/1400×900/1920×1080 × fr/en matrix with Playwright CLI);
+  - `ui-audit.js` script run in the page: real WCAG contrast through transparent layers, unnamed controls, clickable `div`s, overlaps, modals outside the window, squashed columns, text under 12 px (checked on a trap page: 9 defects out of 9 detected, no false positives);
+  - `yarn design:scan [paths] [--details] [--strict]` scanner: palette, hex, `dark:`, arbitrary sizes, `transition-all`, radii, blur/glow, gradients, font weights, `svelte-ignore a11y`, `outline-none`, animations without `motion-reduce`, arbitrary z-index values, fixed heights, emojis, hard-coded strings, "..." in the locales. Starting point: 1,220 offending lines;
+  - `CLAUDE.md` and README point to `DESIGN.md` and the agent; `.playwright-cli/` ignored by git.
+  _Automatic visual verification requires a browser harness (fake Tauri backend) that has yet to be versioned._
 
-- **[D2]** Tokens de design manquants déclarés pour les thèmes clair et sombre (`surface-3`, `surface-4`, `stroke-strong`, `text-disabled`) : ~70 classes (squelettes de chargement, pistes de progression, survols) qui ne produisaient aucun style s'affichent enfin. La couleur d'accent est exposée en `@theme inline`, ce qui rend fonctionnels les modificateurs d'opacité (`bg-brand-primary/20`…) tout en suivant l'accent choisi en direct.
-- **[D1]** `dark:` suit désormais le thème choisi dans Crate (`[data-theme]`) et non plus celui du système : les styles « mode clair » ajoutés par le fork ne se trompent plus quand macOS et Crate diffèrent.
-- **[D6]** Modales bornées à la fenêtre (largeur et hauteur moins 2rem) ; le Duplicate Killer remplit la modale au lieu de la dépasser, son pied de page et son bouton « Supprimer » restent visibles.
-- **[D8]** Polices Jost et DM Sans réellement utilisables (règles `[data-font]` et valeurs acceptées par le backend : le choix était perdu au redémarrage) ; 15 fichiers inutilisés supprimés (5 gardés, 392 Ko), double chargement Google Fonts retiré, licences OFL référencées.
-- **[D9]** Sept icônes manquantes ajoutées (dont `close`, absente dès l'amont) et test Vitest qui échoue sur toute icône inconnue ; logo Beatport dessiné en ligne (il sortait noir sur fond sombre).
+- **[Q4]** Rust: `cargo fmt` applied (40 files) and `cargo clippy --features desktop -- -D warnings` passes (37 errors → 0): dead code removed (`ListenSource`, `set_track_rating`, `set_track_color`, `extract_bpm/key`, `detect_rekordbox_dir`, unused Spotify response fields, unneeded re-exports), iterations and sorts simplified.
+- **[Q5]** TypeScript/Svelte: Prettier applied and ESLint at 0 errors (38 → 0): keys on every `{#each}` loop, no more explicit `any`, writable `$derived` in the search bar, non-reactive caches documented.
+- **[Q6]** Fork CI on Linux: a frontend job (format, lint, types, Vitest) and a Rust job (clippy, tests) on every push; the Rust job also checks that the code compiles outside macOS.
+- **[Q3]** `RunEvent::Opened` limited to the platforms that provide it (macOS, iOS, Android): the code compiles again on Windows/Linux.
+- **[Q8]** Test dependencies pinned (Vitest 4.1.11, testing-library, jsdom), a single Vite version (7.3.0, via `resolutions`) for the app and the tests, `@vitest/coverage-v8` coverage provider added (`yarn test:coverage`).
+- **[Q13]** `yarn dev` builds the app in debug (fast rebuilds) with optimised dependencies (`[profile.dev.package."*"]`) to keep audio decoding smooth.
+- **[B10]** Migrations: labels aligned with their actual position (6 to 15) and the "append, never renumber" rule documented; the order is not changed because the local database has already applied them.
+- **[Q11]** `set_default_player.swift` script deleted; the previous assistant's summary is archived in `tracking/history/`.
+- **[Q10]** Documentation: keyboard shortcuts page corrected (arrows ±10 s, Cmd+arrows ±1 s, Shift+arrows depending on the view, hot cues 1–8, Shift+Tab).
+- **[Q7]** Risky paths covered by tests on temporary databases and folders: file replacement, Mixed In Key sync, listen trackers, import, export, Trash; no test reads the real Mixed In Key database any more.
+- **[Q12]** `CLAUDE.md` in place since the start of the fork (tracking rules and technical rules).
 
-#### Corrigé — vues
+#### Fixed — visual foundations
 
-- **[D4]** En-tête utilisable à toutes les largeurs : sous 1536 px le sélecteur Player/Bibliothèque/Beatport se place après le logo au lieu d'être centré par-dessus les outils ; sous 1400 px le badge Mixed In Key passe en logo compact ; sous 1280 px les boutons Importer/Ajouter deviennent des icônes (avec nom accessible). Vérifié par mesure dans le harnais à 1000, 1280, 1440 et 1600 px.
-- **[D5]** Hero du Player proportionnel à la hauteur de la fenêtre (pochette de 140 à 260 px, colonne à hauteur naturelle, marges réduites sur les écrans bas) : les commandes de lecture ne sont plus recouvertes à 1000×640 ; la liste des récents prend la place restante.
-- **[D6]** Vérifié dans le harnais : bouton « Supprimer » du Duplicate Killer visible à 1400×900 et à 1000×640.
-- **[D12]** Badge « Build 57 » retiré de l'en-tête (la version reste dans « À propos ») et mentions « Pro » retirées des libellés Mixed In Key.
-- `Button` accepte un `aria-label` (boutons réduits à une icône).
+- **[D2]** Missing design tokens declared for the light and dark themes (`surface-3`, `surface-4`, `stroke-strong`, `text-disabled`): ~70 classes (loading skeletons, progress tracks, hover states) that produced no style at all are finally rendered. The accent colour is exposed in `@theme inline`, which makes opacity modifiers (`bg-brand-primary/20`…) work while following the chosen accent live.
+- **[D1]** `dark:` now follows the theme chosen in Crate (`[data-theme]`) and no longer the system's: the "light mode" styles added by the fork are no longer wrong when macOS and Crate differ.
+- **[D6]** Modals bounded by the window (width and height minus 2rem); the Duplicate Killer fills the modal instead of overflowing it, and its footer and "Supprimer" (Delete) button stay visible.
+- **[D8]** Jost and DM Sans fonts actually usable (`[data-font]` rules and values accepted by the backend: the choice was lost on restart); 15 unused files deleted (5 kept, 392 KB), duplicate Google Fonts loading removed, OFL licences referenced.
+- **[D9]** Seven missing icons added (including `close`, missing since upstream) and a Vitest test that fails on any unknown icon; Beatport logo drawn inline (it came out black on a dark background).
+
+#### Fixed — views
+
+- **[D4]** Header usable at every width: below 1536 px the Player/Library/Beatport switcher sits after the logo instead of being centred on top of the tools; below 1400 px the Mixed In Key badge switches to a compact logo; below 1280 px the Import/Add buttons become icons (with an accessible name). Verified by measurement in the browser harness at 1000, 1280, 1440 and 1600 px.
+- **[D5]** Player hero proportional to the window height (artwork from 140 to 260 px, column at natural height, reduced margins on short screens): the playback controls are no longer covered at 1000×640; the recent files list takes the remaining space.
+- **[D6]** Verified in the browser harness: the Duplicate Killer's "Supprimer" (Delete) button is visible at 1400×900 and at 1000×640.
+- **[D12]** "Build 57" badge removed from the header (the version remains under "À propos", i.e. About) and "Pro" mentions removed from the Mixed In Key labels.
+- `Button` accepts an `aria-label` (icon-only buttons).
 
 #### Documentation
 
-- **[L6]** Le README annonce désormais les 15 langues réellement livrées (au lieu de 11) et décrit le fork, les tests et le suivi.
+- **[L6]** The README now announces the 15 languages actually shipped (instead of 11) and describes the fork, the tests and the tracking.
 
-#### Outillage et suivi
+#### Tooling and tracking
 
-- Dépôt GitHub personnel privé, documents de suivi dans `suivi/` (avancement, registre, rapport, historique), `CLAUDE.md`, script `yarn suivi` qui recalcule la progression.
-- Workflows amont (`ci.build`, `ci.lint`, `cd.docs`) passés en déclenchement manuel : ils lançaient des builds macOS et Windows à chaque push, coûteux sur un dépôt privé et encore en échec (voir Q2 à Q5). Nouveau workflow `ci.fork.yml` : Vitest à chaque push ; `yarn test` lance d'abord `svelte-kit sync` pour fonctionner sur un clone neuf.
+- Private personal GitHub repository, tracking documents in `tracking/` (status, register, report, history), `CLAUDE.md`, `yarn status` script that recomputes progress.
+- Upstream workflows (`ci.build`, `ci.lint`, `cd.docs`) switched to manual triggering: they ran macOS and Windows builds on every push, which is costly on a private repository and they were still failing (see Q2 to Q5). New `ci.fork.yml` workflow: Vitest on every push; `yarn test` first runs `svelte-kit sync` so that it works on a fresh clone.
 
-#### Travail du fork antérieur à l'audit (builds 36 à 57)
+#### Fork work prior to the audit (builds 36 to 57)
 
-Commité tel quel dans un instantané unique pour ne plus risquer de le perdre (**[C1]**) ; les défauts connus de ce code sont listés dans le registre.
+Committed as is in a single snapshot so as not to risk losing it again (**[C1]**); the known defects of this code are listed in the register.
 
-- Lecteur autonome et association des fichiers audio macOS (vue Player, fichiers récents)
-- Intégration Mixed In Key 11 : lecture de `Collection11.mikdb`, cues, énergie, watcher
-- Beatport Quality Upgrader : recherche, scoring, téléchargement FLAC via `beatportdl`
-- Crate Pulse : statistiques d'écoute multi-sources (Spotify, lecteur local, Mixed In Key, Rekordbox)
-- Duplicate Killer, vue albums, recherche plein texte FTS5, hot cues 1 à 8, mix harmonique, raccourcis DJ, export Rekordbox XML
-- Vitest, testing-library et jsdom ; 144 tests TypeScript
+- Standalone player and macOS audio file association (Player view, recent files)
+- Mixed In Key 11 integration: reading `Collection11.mikdb`, cues, energy, watcher
+- Beatport Quality Upgrader: search, scoring, FLAC download via `beatportdl`
+- Crate Pulse: multi-source listening statistics (Spotify, local player, Mixed In Key, Rekordbox)
+- Duplicate Killer, albums view, FTS5 full-text search, hot cues 1 to 8, harmonic mix, DJ shortcuts, Rekordbox XML export
+- Vitest, testing-library and jsdom; 144 TypeScript tests
 
-### Amont (blackboxaudio)
+### Upstream (blackboxaudio)
 
 ### Added
 

@@ -10,28 +10,28 @@
 
 ---
 
-## 🧰 Fork personnel
+## 🧰 Personal fork
 
-Ce dépôt est un **fork personnel et privé** de [blackboxaudio/crate](https://github.com/blackboxaudio/crate) (remote `upstream`), utilisé sur un seul Mac avec Mixed In Key 11, Rekordbox 7 et Spotify. Il ajoute au socle amont :
+This repository is a **personal, private fork** of [blackboxaudio/crate](https://github.com/blackboxaudio/crate) (remote `upstream`), used on a single Mac with Mixed In Key 11, Rekordbox 7 and Spotify. It adds to the upstream base:
 
-- **Player** : lecteur autonome, fichiers récents, association des fichiers audio macOS, hot cues 1 à 8, mix harmonique, raccourcis DJ
-- **Mixed In Key 11** : lecture de la base `Collection11.mikdb` (cues, énergie, tonalités)
-- **Crate Pulse** : statistiques d'écoute multi-sources (Spotify, lecteur local, Mixed In Key, sessions Rekordbox)
-- **Duplicate Killer**, vue albums, recherche plein texte FTS5, export Rekordbox XML
-- **Beatport Quality Upgrader** : remplacement MP3 → FLAC via l'outil tiers `beatportdl`
+- **Player**: standalone player, recent files, macOS audio file association, hot cues 1 to 8, harmonic mix, DJ shortcuts
+- **Mixed In Key 11**: reading the `Collection11.mikdb` database (cues, energy, keys)
+- **Crate Pulse**: multi-source listening statistics (Spotify, local player, Mixed In Key, Rekordbox sessions)
+- **Duplicate Killer**, albums view, FTS5 full-text search, Rekordbox XML export
+- **Beatport Quality Upgrader**: MP3 → FLAC replacement via the third-party tool `beatportdl`
 
-> ⚠️ **État actuel : en cours de remise en état.** Un audit complet (25 septembre 2026) a relevé ~180 défauts, dont 15 critiques pouvant toucher aux données. Tant que les étapes 1 à 7 du plan ne sont pas cochées, garder des sauvegardes de `crate.db`, `db.key` et `Collection11.mikdb`.
+> ⚠️ **Current state: being repaired.** A full audit (25 September 2026) found ~180 defects, 15 of them critical and able to affect data. Until steps 1 to 7 of the plan are ticked, keep backups of `crate.db`, `db.key` and `Collection11.mikdb`.
 
-| Document | Contenu |
+| Document | Contents |
 | --- | --- |
-| [suivi/AVANCEMENT.md](suivi/AVANCEMENT.md) | Progression, cases à cocher par défaut, actions du propriétaire |
-| [CHANGELOG.md](CHANGELOG.md) | Journal détaillé des modifications |
-| [suivi/REGISTRE-DEFAUTS.md](suivi/REGISTRE-DEFAUTS.md) | Registre des défauts et correctifs prévus |
-| [suivi/RAPPORT-AUDIT.md](suivi/RAPPORT-AUDIT.md) | Rapport d'audit, vision et plan par phases |
-| [DESIGN.md](DESIGN.md) | Système de design : tokens, composants, règles visuelles |
-| [CLAUDE.md](CLAUDE.md) | Règles de travail pour les assistants de code (agent `design` dans `.claude/`) |
+| [tracking/STATUS.md](tracking/STATUS.md) | Progress, checkboxes per defect, actions for the owner |
+| [CHANGELOG.md](CHANGELOG.md) | Detailed change log |
+| [tracking/DEFECTS.md](tracking/DEFECTS.md) | Defect register and planned fixes |
+| [tracking/AUDIT-REPORT.md](tracking/AUDIT-REPORT.md) | Audit report, vision and phased plan |
+| [DESIGN.md](DESIGN.md) | Design system: tokens, components, visual rules |
+| [CLAUDE.md](CLAUDE.md) | Working rules for coding assistants (`design` agent in `.claude/`) |
 
-Le téléchargement Beatport passe par `beatportdl`, qui ne respecte pas les conditions d'utilisation de Beatport : cette partie ne doit jamais être publiée sur un dépôt public.
+Beatport downloading goes through `beatportdl`, which does not comply with Beatport's terms of use: this part must never be published in a public repository.
 
 ---
 
@@ -97,10 +97,10 @@ yarn test                                   # Vitest (TypeScript)
 cd src-tauri && cargo test --features desktop   # Rust
 ```
 
-Les tests n'utilisent que des bases temporaires : ils ne touchent jamais la bibliothèque réelle.
+The tests only use temporary databases: they never touch the real library.
 
 ```bash
-yarn design:scan                            # écarts aux règles de DESIGN.md (tokens, rayons, a11y, i18n…)
+yarn design:scan                            # deviations from the DESIGN.md rules (tokens, radii, a11y, i18n…)
 yarn design:scan apps/desktop/src/lib/components/stats --details
 ```
 
@@ -142,8 +142,8 @@ Platform targets:
 
 ## 🔗 Links
 
-- [Projet amont](https://github.com/blackboxaudio/crate) · [Site officiel](https://crate.bbx-audio.com)
-- [Suivi du fork](suivi/README.md)
+- [Upstream project](https://github.com/blackboxaudio/crate) · [Official website](https://crate.bbx-audio.com)
+- [Fork tracking](tracking/README.md)
 
 ## ⚠️ Disclaimer
 

@@ -12,7 +12,7 @@ async (page) => {
 		const vh = window.innerHeight
 		// A hidden or unsized browser reports 0×0 and every block element measures 0 wide.
 		if (vw === 0 || vh === 0)
-			return { error: 'Fenêtre de 0×0 : donner une taille (playwright-cli resize 1000 600) puis relancer.' }
+			return { error: '0×0 window: set a size (playwright-cli resize 1000 600) and run again.' }
 
 		const parse = (c) => {
 			const m = c.match(/rgba?\(([^)]+)\)/)
@@ -50,7 +50,7 @@ async (page) => {
 		const label = (el) => {
 			const cls = (el.getAttribute('class') || '').split(/\s+/).filter(Boolean).slice(0, 4).join('.')
 			const text = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40)
-			return `${el.tagName.toLowerCase()}${cls ? '.' + cls : ''}${text ? ` « ${text} »` : ''}`
+			return `${el.tagName.toLowerCase()}${cls ? '.' + cls : ''}${text ? ` “${text}”` : ''}`
 		}
 		// Effective background: walk up and blend translucent layers; null when an image/gradient is in the way.
 		const background = (el) => {

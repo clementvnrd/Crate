@@ -1,6 +1,6 @@
 name: Build
 
-# Fork personnel : déclenchement manuel uniquement (builds coûteux sur dépôt privé). Voir ci.fork.yml.
+# Personal fork: manual trigger only (costly builds on a private repository). See ci.fork.yml.
 on:
   workflow_dispatch:
 

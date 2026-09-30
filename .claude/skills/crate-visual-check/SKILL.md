@@ -1,115 +1,115 @@
 ---
 name: crate-visual-check
-description: Vérification visuelle de l'interface Crate avec Playwright CLI — captures en thème clair et sombre, plusieurs accents, tailles de fenêtre 1000×600 / 1400×900 / 1920×1080, français et anglais, mouvement réduit ; audit mesuré dans la page (contraste WCAG, boutons sans nom, chevauchements, modales hors fenêtre, colonnes écrasées, texte sous 12 px) ; session d'annotation avec le propriétaire. À utiliser avant de déclarer terminé un travail d'interface, pour un audit, ou pour comparer avec une maquette.
-argument-hint: "[vue] [clair|sombre|tout]"
+description: Visual check of Crate's interface with Playwright CLI — screenshots in light and dark themes, several accents, window sizes 1000×600 / 1400×900 / 1920×1080, French and English, reduced motion; in-page measured audit (WCAG contrast, unnamed buttons, overlaps, modals outside the window, crushed columns, text under 12 px); annotation session with the owner. Use before declaring interface work done, for an audit, or to compare with a mockup.
+argument-hint: "[view] [light|dark|all]"
 allowed-tools: Bash(playwright-cli:*) Bash(npx playwright:*) Bash(yarn dev:vite)
 ---
 
-# Vérifier l'interface avec Playwright CLI
+# Checking the interface with Playwright CLI
 
-Outil : [microsoft/playwright-cli](https://github.com/microsoft/playwright-cli) (Apache 2.0). Il pilote un vrai navigateur par des commandes courtes et écrit instantanés et captures dans des fichiers, sans remplir le contexte. Référence complète : `playwright-cli --help`.
+Tool: [microsoft/playwright-cli](https://github.com/microsoft/playwright-cli) (Apache 2.0). It drives a real browser through short commands and writes snapshots and screenshots to files, without filling the context. Full reference: `playwright-cli --help`.
 
-## Prérequis
+## Prerequisites
 
-1. **Playwright CLI installé.** Vérifier : `playwright-cli --version`. S'il manque, **demander au propriétaire** avant d'installer quoi que ce soit (installation globale) :
+1. **Playwright CLI installed.** Check: `playwright-cli --version`. If it is missing, **ask the owner** before installing anything (global install):
    ```bash
    npm install -g @playwright/cli@latest
    ```
-2. **Un frontend qui tourne dans un navigateur.** Crate appelle le backend Tauri (`invoke`) dès le démarrage : ouvert tel quel dans un navigateur (`yarn dev:vite`, port 1420), il tombe sur l'écran de crash. Il faut un **harnais** qui remplace le backend par des données fictives (faux IPC via `@tauri-apps/api/mocks`, une quinzaine de pistes, réglages de thème et de langue). Celui de l'audit du 25 septembre n'a pas été versionné.
-   - Si le harnais existe (chercher un script `harness` dans `package.json` ou un dossier `harness/`), le lancer et utiliser son URL.
-   - Sinon, **le dire clairement** dans le compte rendu (« vérification visuelle impossible : pas de harnais ») et se rabattre sur : `yarn design:scan`, relecture du code, et une demande de capture au propriétaire (`yarn dev`, puis capture de la vue concernée en clair et en sombre). Ne jamais prétendre avoir vérifié visuellement.
+2. **A frontend running in a browser.** Crate calls the Tauri backend (`invoke`) right at startup: opened as is in a browser (`yarn dev:vite`, port 1420), it lands on the crash screen. You need a **browser harness** that replaces the backend with mock data (fake IPC through `@tauri-apps/api/mocks`, about fifteen tracks, theme and language settings). The one used for the 25 September audit was not committed.
+   - If the browser harness exists (look for a `harness` script in `package.json` or a `harness/` folder), start it and use its URL.
+   - Otherwise, **say so clearly** in the report ("visual check impossible: no browser harness") and fall back on: `yarn design:scan`, code review, and a screenshot request to the owner (`yarn dev`, then a screenshot of the view concerned in light and dark). Never claim to have checked visually.
 
-Les captures et instantanés vont dans `.playwright-cli/` (ignoré par git).
+Screenshots and snapshots go into `.playwright-cli/` (ignored by git).
 
-## Réglages pilotés par localStorage
+## Settings driven by localStorage
 
-L'app lit ces clés au chargement (`app.html`) ; on les pose puis on recharge :
+The app reads these keys on load (`app.html`); set them, then reload:
 
-| Clé | Valeurs |
+| Key | Values |
 | --- | --- |
 | `crate-theme` | `dark`, `light`, `system` |
 | `crate-accent` | `blue`, `indigo`, `violet`, `purple`, `pink`, `rose`, `orange`, `amber`, `emerald`, `teal` |
 | `crate-font` | `open-sans`, `jost`, `dm-sans`, `inter`, `nunito`, `fira-code`, `ibm-plex-mono`, `source-code-pro` |
-| `crate-language` | `en`, `fr` (et les autres locales) |
+| `crate-language` | `en`, `fr` (and the other locales) |
 
-## Matrice minimale avant « terminé »
+## Minimum matrix before "done"
 
-| # | Thème | Accent | Fenêtre | Langue |
+| # | Theme | Accent | Window | Language |
 | --- | --- | --- | --- | --- |
-| 1 | sombre | blue | 1400×900 | fr |
-| 2 | clair | blue | 1400×900 | fr |
-| 3 | sombre | orange | 1000×600 | en |
-| 4 | clair | amber | 1000×600 | en |
-| 5 | sombre | blue | 1920×1080 | fr |
+| 1 | dark | blue | 1400×900 | fr |
+| 2 | light | blue | 1400×900 | fr |
+| 3 | dark | orange | 1000×600 | en |
+| 4 | light | amber | 1000×600 | en |
+| 5 | dark | blue | 1920×1080 | fr |
 
-Ajouter `set-reduced-motion reduce` sur une des lignes quand des animations sont en jeu, et une police monospace (`fira-code`) quand des largeurs de colonnes sont en jeu.
+Add `set-reduced-motion reduce` on one of the rows when animations are involved, and a monospace font (`fira-code`) when column widths are involved.
 
-## Déroulé
+## Procedure
 
 ```bash
-# 1. ouvrir le harnais (URL à adapter)
+# 1. open the browser harness (adapt the URL)
 playwright-cli open http://localhost:1420/
 playwright-cli resize 1400 900
 
-# 2. poser une combinaison et recharger
+# 2. set a combination and reload
 playwright-cli localstorage-set crate-theme light
 playwright-cli localstorage-set crate-accent amber
 playwright-cli localstorage-set crate-language fr
 playwright-cli reload
 
-# 3. aller sur la vue (refs lues dans l'instantané)
+# 3. go to the view (refs read from the snapshot)
 playwright-cli snapshot
 playwright-cli click e12
 
-# 4. capturer et mesurer
-playwright-cli screenshot --filename=.playwright-cli/pulse-clair-amber-1400.png
+# 4. capture and measure
+playwright-cli screenshot --filename=.playwright-cli/pulse-light-amber-1400.png
 playwright-cli run-code --filename=.claude/skills/crate-visual-check/scripts/ui-audit.js
 
-# 5. recommencer pour chaque ligne de la matrice, puis fermer
+# 5. repeat for each row of the matrix, then close
 playwright-cli close
 ```
 
-Nommer les captures `<vue>-<thème>-<accent>-<largeur>[-<état>].png` pour pouvoir comparer avant/après.
+Name screenshots `<view>-<theme>-<accent>-<width>[-<state>].png` so that before/after can be compared.
 
-### Ce que mesure `ui-audit.js`
+### What `ui-audit.js` measures
 
-Le script s'exécute dans la page et renvoie un rapport JSON :
+The script runs in the page and returns a JSON report:
 
-| Champ | Signification | Défaut du registre |
+| Field | Meaning | Register defect |
 | --- | --- | --- |
-| `lowContrast` | Texte sous 4,5:1 (3:1 pour le grand texte), fond réel calculé à travers les couches transparentes | D3 |
-| `unmeasuredContrast` | Textes posés sur une image ou un dégradé : à regarder sur la capture | D3 |
-| `smallText` | Texte sous 12 px | règle 4 |
-| `unnamedControls` | Bouton, lien ou champ sans nom accessible | D10 |
-| `pointerOnly` | Élément au curseur « main » qui n'est ni bouton ni lien (`div` cliquable) | D10 |
-| `overlaps` | Contrôles qui se chevauchent (barre d'outils à 1000 px) | D4 |
-| `outOfWindow` | Modale, menu ou tooltip qui sort de la fenêtre | D6 |
-| `crushedColumns` | Texte tronqué dans moins de 48 px (colonne écrasée) | D7 |
-| `pageOverflowX` | Défilement horizontal de la page | règle 10 |
+| `lowContrast` | Text under 4.5:1 (3:1 for large text), actual background computed through the transparent layers | D3 |
+| `unmeasuredContrast` | Text placed on an image or a gradient: to be looked at on the screenshot | D3 |
+| `smallText` | Text under 12 px | rule 4 |
+| `unnamedControls` | Button, link or field without an accessible name | D10 |
+| `pointerOnly` | Element with a "hand" cursor that is neither a button nor a link (clickable `div`) | D10 |
+| `overlaps` | Overlapping controls (toolbar at 1000 px) | D4 |
+| `outOfWindow` | Modal, menu or tooltip that extends outside the window | D6 |
+| `crushedColumns` | Text truncated in less than 48 px (crushed column) | D7 |
+| `pageOverflowX` | Horizontal scrolling of the page | rule 10 |
 
-Une fenêtre de 0×0 (navigateur masqué ou sans taille) renvoie une erreur : donner une taille avec `resize` et relancer.
+A 0×0 window (hidden or unsized browser) returns an error: set a size with `resize` and run it again.
 
-### Accessibilité au clavier
+### Keyboard accessibility
 
 ```bash
-playwright-cli press Tab        # répéter et vérifier dans l'instantané que le focus avance de façon logique
-playwright-cli snapshot         # l'arbre d'accessibilité montre les noms des boutons
-playwright-cli find --regex "button \\[ref="   # boutons sans nom (un bouton nommé s'écrit button "Nom" [ref=…])
-playwright-cli press Escape     # une modale doit se fermer et rendre le focus
+playwright-cli press Tab        # repeat and check in the snapshot that focus moves in a logical order
+playwright-cli snapshot         # the accessibility tree shows the button names
+playwright-cli find --regex "button \\[ref="   # unnamed buttons (a named button reads button "Name" [ref=…])
+playwright-cli press Escape     # a modal must close and return focus
 ```
 
-## Retour du propriétaire
+## Feedback from the owner
 
-Pour une revue de design, ouvrir la vue et lancer le tableau d'annotation : le propriétaire encadre des zones et écrit ses remarques, on reçoit la capture annotée, l'instantané de la zone et les notes.
+For a design review, open the view and launch the annotation board: the owner draws boxes around areas and writes their remarks; you receive the annotated screenshot, the snapshot of the area and the notes.
 
 ```bash
 playwright-cli show --annotate
 ```
 
-## Repli sans Playwright CLI
+## Fallback without Playwright CLI
 
-Si Playwright CLI n'est pas disponible mais que le harnais tourne, le navigateur intégré de l'app (outils `mcp__Claude_Browser__*`) permet la même vérification : `resize_window` pour la taille, `javascript_tool` pour poser les clés `localStorage` et exécuter le corps de `ui-audit.js`, `computer` pour les captures. Le préciser dans le compte rendu.
+If Playwright CLI is not available but the browser harness is running, the app's built-in browser (`mcp__Claude_Browser__*` tools) allows the same check: `resize_window` for the size, `javascript_tool` to set the `localStorage` keys and run the body of `ui-audit.js`, `computer` for screenshots. Mention it in the report.
 
-## Compte rendu
+## Report
 
-Pour chaque ligne de la matrice : captures produites (chemins), rapport `ui-audit.js` résumé (compteurs + constats), écarts visibles sur la capture. Terminer par ce qui n'a pas pu être vérifié.
+For each row of the matrix: screenshots produced (paths), summarised `ui-audit.js` report (counts + findings), discrepancies visible on the screenshot. End with what could not be checked.

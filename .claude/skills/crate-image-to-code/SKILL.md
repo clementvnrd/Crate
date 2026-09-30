@@ -1,87 +1,87 @@
 ---
 name: crate-image-to-code
-description: Transformer une image en interface Crate fidèle — capture d'écran d'un bug visuel, maquette, image générée, capture d'une autre app (Rekordbox, Serato, Spotify…) ou fichier DESIGN.md d'inspiration (awesome-design-md). Analyse systématique de l'image, traduction dans les tokens et composants de Crate, implémentation sans dérive, comparaison côte à côte. À utiliser dès qu'une image ou une référence visuelle accompagne la demande.
-argument-hint: "[chemin de l'image ou référence] [vue cible]"
+description: Turn an image into a faithful Crate interface — screenshot of a visual bug, mockup, generated image, screenshot of another app (Rekordbox, Serato, Spotify…) or an inspiration DESIGN.md file (awesome-design-md). Systematic analysis of the image, translation into Crate's tokens and components, implementation without drift, side-by-side comparison. Use as soon as an image or a visual reference comes with the request.
+argument-hint: "[image path or reference] [target view]"
 ---
 
-# De l'image au code, dans le système de Crate
+# From image to code, within Crate's system
 
-Adapté de `image-to-code` ([Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill), MIT) : son idée centrale — l'image est une **spécification** qu'on analyse avant de coder, puis on implémente sans dériver vers un gabarit générique — vaut pour Crate. Sa partie « générer d'abord des maquettes de landing page » ne s'applique pas : Crate a déjà son système, l'image sert à **décider d'une disposition**, pas d'une palette.
+Adapted from `image-to-code` ([Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill), MIT): its central idea — the image is a **specification** that is analysed before coding, then implemented without drifting towards a generic template — holds for Crate. Its "generate landing page mockups first" part does not apply: Crate already has its system, and the image is used to **decide on a layout**, not a palette.
 
-## Sources d'image possibles
+## Possible image sources
 
-| Source | Ce qu'on en prend | Ce qu'on n'en prend jamais |
+| Source | What we take from it | What we never take from it |
 | --- | --- | --- |
-| Capture de Crate (bug, avant/après) | L'état exact à corriger ou à atteindre | — |
-| Maquette ou croquis du propriétaire | Disposition, hiérarchie, contenus, espacements | Couleurs et polices si elles contredisent le système (le signaler) |
-| Capture d'une autre app DJ ou musicale | Idée d'organisation de l'information, densité, motif d'interaction | Palette, police, logo, style de marque |
-| DESIGN.md d'inspiration | Principes (hiérarchie, densité, retenue) | Tokens bruts : on les traduit en tokens Crate |
+| Screenshot of Crate (bug, before/after) | The exact state to fix or to reach | — |
+| Mockup or sketch by the owner | Layout, hierarchy, content, spacing | Colours and fonts if they contradict the system (flag it) |
+| Screenshot of another DJ or music app | Idea for organising information, density, interaction pattern | Palette, font, logo, brand style |
+| Inspiration DESIGN.md | Principles (hierarchy, density, restraint) | Raw tokens: they are translated into Crate tokens |
 
-## 1. Analyser l'image comme une spécification
+## 1. Analyse the image as a specification
 
-Regarder l'image (outil `Read` sur le fichier) et remplir ce tableau **avant** de coder :
+Look at the image (`Read` tool on the file) and fill in this table **before** coding:
 
-| Axe | À relever |
+| Axis | What to record |
 | --- | --- |
-| Rôle | Quelle vue, quelle zone, quelle tâche du DJ |
-| Priorité visuelle | Ce que l'œil voit en premier, deuxième, troisième |
-| Structure | Grille, colonnes, alignements, zones fixes et défilantes |
-| Texte | Tout le texte lisible, mot pour mot (il devient des clés i18n) |
-| Typographie | Rapports de taille et de graisse, lignes, troncatures, chiffres alignés |
-| Espacements | Entre titre et contenu, entre lignes, marges internes, gouttières ; logique, pas pixels |
-| Composants | Boutons (plein, fantôme, icône), badges, champs, séparateurs, menus |
-| Couleur | Où la couleur porte une information et où elle est décorative |
-| États | Survol, sélection, lecture en cours, vide, chargement, erreur visibles ou suggérés |
-| Densité | Nombre d'éléments par écran, comparé à la bibliothèque de Crate |
-| Zones floues | Ce que l'image ne dit pas |
+| Role | Which view, which area, which DJ task |
+| Visual priority | What the eye sees first, second, third |
+| Structure | Grid, columns, alignments, fixed and scrolling areas |
+| Text | All readable text, word for word (it becomes i18n keys) |
+| Typography | Size and weight ratios, lines, truncation, aligned figures |
+| Spacing | Between heading and content, between rows, inner margins, gutters; logic, not pixels |
+| Components | Buttons (solid, ghost, icon), badges, fields, separators, menus |
+| Colour | Where colour carries information and where it is decorative |
+| States | Hover, selection, now playing, empty, loading, error — visible or implied |
+| Density | Number of elements per screen, compared with Crate's library |
+| Blind spots | What the image does not say |
 
-Pour une capture d'une autre app : noter aussi **pourquoi** elle fonctionne (ex. « le BPM et la tonalité sont en colonne fixe à droite, lisibles sans chercher »).
+For a screenshot of another app: also note **why** it works (e.g. "BPM and key sit in a fixed column on the right, readable without searching").
 
-## 2. Traduire dans Crate
+## 2. Translate into Crate
 
-Écrire la table de correspondance :
+Write the mapping table:
 
-| Dans l'image | Dans Crate |
+| In the image | In Crate |
 | --- | --- |
-| Fond, panneaux, contrôles | `surface-0` / `surface-1` / `surface-2` selon l'élévation |
-| Couleur d'accent de la référence | `brand-primary` (l'accent choisi par l'utilisateur) |
-| Couleurs d'information (tonalité, énergie, état) | palettes de données (`getCamelotColor`, `getEnergyInfo`) ou `danger/warning/success` |
-| Police de la référence | police de l'utilisateur (`var(--font-family)`), échelle `Text` |
-| Bouton, champ, menu, modale | `Button`, `Input`, `Select`, `ContextMenu`, `Modal`… |
-| Rayons et ombres | système de DESIGN.md |
-| Icônes | `Icon.svelte` (ajouter celles qui manquent) |
+| Background, panels, controls | `surface-0` / `surface-1` / `surface-2` depending on elevation |
+| Accent colour of the reference | `brand-primary` (the accent chosen by the user) |
+| Information colours (key, energy, status) | data palettes (`getCamelotColor`, `getEnergyInfo`) or `danger/warning/success` |
+| Font of the reference | the user's font (`var(--font-family)`), `Text` scale |
+| Button, field, menu, modal | `Button`, `Input`, `Select`, `ContextMenu`, `Modal`… |
+| Radii and shadows | DESIGN.md system |
+| Icons | `Icon.svelte` (add the missing ones) |
 
-**Ordre de priorité en cas de conflit** : règles de Crate > fidélité à l'image > commodité d'implémentation. Tout écart imposé par le système est listé pour le propriétaire (« la maquette utilise un fond violet ; j'ai gardé l'accent utilisateur »).
+**Order of priority in case of conflict**: Crate's rules > fidelity to the image > ease of implementation. Every discrepancy imposed by the system is listed for the owner ("the mockup uses a purple background; I kept the user accent").
 
-## 3. Implémenter sans dériver
+## 3. Implement without drifting
 
-- Garder la disposition, l'ordre des informations, les rapports de taille et le rythme d'espacement de l'image.
-- Ne pas « simplifier » en gabarit générique, ne pas resserrer un espacement généreux ni aérer une densité voulue, ne pas réintroduire des cartes imbriquées que l'image n'a pas.
-- Zone floue : 1) garder le langage visible, 2) garder la logique d'espacement, 3) garder la famille de composants, 4) choisir la version la plus simple et fidèle — ne pas combler par un défaut générique.
-- Tout le reste suit `crate-ui-build` (i18n, états, exécution complète, contrôle final).
+- Keep the image's layout, order of information, size ratios and spacing rhythm.
+- Do not "simplify" into a generic template, do not tighten generous spacing or loosen an intended density, do not reintroduce nested cards that the image does not have.
+- Blind spot: 1) keep the visible language, 2) keep the spacing logic, 3) keep the component family, 4) choose the simplest and most faithful version — do not fill the gap with a generic default.
+- Everything else follows `crate-ui-build` (i18n, states, complete execution, final check).
 
-## 4. Comparer
+## 4. Compare
 
-Si le harnais est disponible (skill `crate-visual-check`) : capturer le résultat dans la même taille de fenêtre que l'image, les regarder côte à côte, lister les écarts (structure, hiérarchie, espacements, texte) et itérer au plus trois fois. Sinon, décrire les écarts attendus et demander une capture au propriétaire.
+If the browser harness is available (skill `crate-visual-check`): capture the result at the same window size as the image, look at them side by side, list the discrepancies (structure, hierarchy, spacing, text) and iterate at most three times. Otherwise, describe the expected discrepancies and ask the owner for a screenshot.
 
-## Bibliothèque d'inspiration
+## Inspiration library
 
-[awesome-design-md](https://github.com/VoltAgent/awesome-design-md) (MIT, © 2026 VoltAgent) rassemble 73 fichiers DESIGN.md extraits de sites réels. Ils décrivent des **marques**, pas des outils : à lire pour des principes, jamais pour copier des valeurs. Ceux qui parlent à une app comme Crate :
+[awesome-design-md](https://github.com/VoltAgent/awesome-design-md) (MIT, © 2026 VoltAgent) collects 73 DESIGN.md files extracted from real websites. They describe **brands**, not tools: read them for principles, never to copy values. The ones relevant to an app like Crate:
 
-| Fichier | Intérêt pour Crate |
+| File | Interest for Crate |
 | --- | --- |
-| `spotify` | Musique, sombre, pochettes, listes de pistes |
-| `linear.app` | Produit dense et sombre, échelle de surfaces, un seul accent rare |
-| `raycast` | App desktop macOS, clavier d'abord, listes compactes |
-| `superhuman` | Densité et vitesse, raccourcis visibles |
-| `warp` | Outil desktop sombre, lisibilité des données |
-| `elevenlabs` | Audio, formes d'onde, sombre |
-| `sentry`, `posthog` | Tableaux de bord de données, graphiques, statistiques |
+| `spotify` | Music, dark, artwork, track lists |
+| `linear.app` | Dense, dark product, surface scale, a single rare accent |
+| `raycast` | macOS desktop app, keyboard first, compact lists |
+| `superhuman` | Density and speed, visible shortcuts |
+| `warp` | Dark desktop tool, data readability |
+| `elevenlabs` | Audio, waveforms, dark |
+| `sentry`, `posthog` | Data dashboards, charts, statistics |
 
-Lecture à la demande (ne pas les copier dans le dépôt) :
+Read on demand (do not copy them into the repository):
 
 ```bash
 curl -s https://raw.githubusercontent.com/VoltAgent/awesome-design-md/main/design-md/spotify/DESIGN.md
 ```
 
-Pour un format de référence du fichier, voir la structure de [DESIGN.md](../../../DESIGN.md) de Crate, calquée sur ces fichiers (frontmatter de tokens, puis vue d'ensemble, couleurs, typographie, mise en page, élévation, formes, composants, à faire/à éviter, responsive, guide d'itération, lacunes).
+For a reference format of the file, see the structure of Crate's [DESIGN.md](../../../DESIGN.md), modelled on these files (token frontmatter, then overview, colours, typography, layout, elevation, shapes, components, do's and don'ts, responsive, iteration guide, gaps).

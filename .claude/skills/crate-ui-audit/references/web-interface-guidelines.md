@@ -1,153 +1,153 @@
-# Web Interface Guidelines — adaptées à Crate
+# Web Interface Guidelines — adapted to Crate
 
-Source : [vercel-labs/web-interface-guidelines](https://github.com/vercel-labs/web-interface-guidelines) (`command.md`), instantané du 30 septembre 2026, utilisé par le skill `web-design-guidelines` de [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills). Licence MIT, © 2025 Vercel Labs (texte ci-dessous).
+Source: [vercel-labs/web-interface-guidelines](https://github.com/vercel-labs/web-interface-guidelines) (`command.md`), snapshot of 30 September 2026, used by the `web-design-guidelines` skill of [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills). MIT licence, © 2025 Vercel Labs (text below).
 
-Adaptation : syntaxe Svelte 5 (`onclick`, `onkeydown`, `bind:value`), contexte Tauri desktop (pas de SSR, pas de tactile, pas d'URL partageable), règles propres à Crate. Chaque règle porte une étiquette : **[A]** applicable telle quelle, **[C]** adaptée à Crate, **[—]** sans objet (gardée pour mémoire). Pour une version à jour, récupérer l'original : `https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md` et signaler les nouveautés au propriétaire.
+Adaptation: Svelte 5 syntax (`onclick`, `onkeydown`, `bind:value`), Tauri desktop context (no SSR, no touch, no shareable URL), Crate-specific rules. Each rule carries a tag: **[A]** applicable as is, **[C]** adapted to Crate, **[—]** not applicable (kept for reference). For an up-to-date version, fetch the original: `https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md` and report what is new to the owner.
 
-## Accessibilité
+## Accessibility
 
-- [A] Boutons icône : `aria-label` (traduit). Dans Crate : `IconButton` avec `title` **et** nom accessible.
-- [A] Contrôles de formulaire : `<label>` ou `aria-label`.
-- [C] Éléments interactifs : gestion clavier (`onkeydown`) ; waveform, heatmap, roue harmonique et glisser-déposer ont une alternative clavier (flèches, Entrée, menu contextuel).
-- [A] `<button>` pour les actions, `<a>` pour la navigation ; jamais `<div onclick>` (ni `svelte-ignore a11y_click_events_have_key_events` pour le masquer).
-- [A] Images : `alt` (ou `alt=""` si décoratives) ; pochettes : `alt` = titre de la piste, traduit.
-- [A] Icônes décoratives : `aria-hidden="true"`.
-- [A] Mises à jour asynchrones (toasts, validation, progression d'analyse ou d'export) : `aria-live="polite"`.
-- [A] HTML sémantique avant ARIA (`<button>`, `<label>`, `<table>`, `<nav>`, `<main>`).
-- [C] Titres hiérarchiques (`Text variant="header-1"` rend un `h2`) ; pas de lien d'évitement nécessaire dans une app à panneaux, mais le focus doit pouvoir atteindre la zone principale au clavier.
-- [—] `scroll-margin-top` sur ancres de titres.
-- [A] Contrôles média (transport du Player) utilisables au clavier, avec noms accessibles.
+- [A] Icon buttons: `aria-label` (translated). In Crate: `IconButton` with `title` **and** an accessible name.
+- [A] Form controls: `<label>` or `aria-label`.
+- [C] Interactive elements: keyboard handling (`onkeydown`); waveform, heatmap, harmonic wheel and drag-and-drop have a keyboard alternative (arrows, Enter, context menu).
+- [A] `<button>` for actions, `<a>` for navigation; never `<div onclick>` (nor `svelte-ignore a11y_click_events_have_key_events` to hide it).
+- [A] Images: `alt` (or `alt=""` if decorative); artwork: `alt` = track title, translated.
+- [A] Decorative icons: `aria-hidden="true"`.
+- [A] Asynchronous updates (toasts, validation, analysis or export progress): `aria-live="polite"`.
+- [A] Semantic HTML before ARIA (`<button>`, `<label>`, `<table>`, `<nav>`, `<main>`).
+- [C] Hierarchical headings (`Text variant="header-1"` renders an `h2`); no skip link needed in a panel-based app, but focus must be able to reach the main area by keyboard.
+- [—] `scroll-margin-top` on heading anchors.
+- [A] Media controls (the Player's transport) usable by keyboard, with accessible names.
 
 ## Focus
 
-- [A] Focus visible sur tout élément interactif : `:focus-visible` (le contour d'accent global de `style.css`) ou `focus-visible:ring-*`.
-- [A] Jamais `outline-none` sans remplacement visible. Attention : `style.css` met `*:focus { outline: none }` et rétablit `*:focus-visible` ; un composant qui ajoute `focus:outline-none` + `focus:ring-1` affiche un anneau au clic (préférer `focus-visible:`).
-- [A] `:focus-visible` plutôt que `:focus`.
-- [A] `:focus-within` pour les contrôles composés (barre de recherche avec bouton d'effacement).
-- [A] En-têtes, barres et overlays collants ne recouvrent pas l'élément qui a le focus.
-- [C] Modales et panneaux : piège de focus et retour du focus à l'élément d'origine (le `Modal` commun le fait ; les overlays maison non, défaut D10).
+- [A] Visible focus on every interactive element: `:focus-visible` (the global accent outline in `style.css`) or `focus-visible:ring-*`.
+- [A] Never `outline-none` without a visible replacement. Beware: `style.css` sets `*:focus { outline: none }` and restores `*:focus-visible`; a component that adds `focus:outline-none` + `focus:ring-1` shows a ring on click (prefer `focus-visible:`).
+- [A] `:focus-visible` rather than `:focus`.
+- [A] `:focus-within` for compound controls (search bar with a clear button).
+- [A] Sticky headers, bars and overlays do not cover the element that has focus.
+- [C] Modals and panels: focus trap and focus returned to the originating element (the common `Modal` does it; home-made overlays do not, defect D10).
 
-## Formulaires
+## Forms
 
-- [C] `name` explicite ; `autocomplete="off"` sur les champs non liés à un compte (recherche, renommage) pour éviter le gestionnaire de mots de passe.
-- [A] `type` correct (`number`, `url`, `search`) et `inputmode`.
-- [A] Ne jamais bloquer le collage.
-- [A] Libellés cliquables (`for` ou libellé englobant).
-- [A] `spellcheck="false"` sur codes, chemins, URL, identifiants.
-- [A] Checkbox et radio : libellé et contrôle partagent une seule zone de clic.
-- [A] Bouton de validation actif jusqu'au début de la requête, puis indicateur pendant la requête.
-- [A] Erreurs en ligne près du champ ; focus sur la première erreur.
-- [C] Placeholders : exemple de valeur terminé par `…` (« Rechercher un titre, un artiste… »), jamais utilisés comme libellé.
-- [A] Avertir avant de quitter avec des modifications non enregistrées (éditeur de piste, réglages).
+- [C] Explicit `name`; `autocomplete="off"` on fields not tied to an account (search, rename) to avoid the password manager.
+- [A] Correct `type` (`number`, `url`, `search`) and `inputmode`.
+- [A] Never block pasting.
+- [A] Clickable labels (`for` or wrapping label).
+- [A] `spellcheck="false"` on codes, paths, URLs, identifiers.
+- [A] Checkbox and radio: label and control share a single click area.
+- [A] Submit button enabled until the request starts, then an indicator during the request.
+- [A] Inline errors next to the field; focus on the first error.
+- [C] Placeholders: sample value ending with `…` ("Search for a title, an artist…" / « Rechercher un titre, un artiste… »), never used as a label.
+- [A] Warn before leaving with unsaved changes (track editor, settings).
 
 ## Animation
 
-- [A] Respecter `prefers-reduced-motion` : `motion-reduce:animate-none`, `motion-reduce:transition-none`.
-- [A] N'animer que `transform` et `opacity` (et couleur pour les survols).
-- [A] Jamais `transition: all` / `transition-all` : lister les propriétés.
-- [A] `transform-origin` correct.
-- [A] SVG : transformations sur un `<g>` avec `transform-box: fill-box; transform-origin: center`.
-- [A] Animations interruptibles.
-- [C] Aucune animation décorative en boucle ; seuls les spinners et indicateurs de chargement bouclent.
+- [A] Respect `prefers-reduced-motion`: `motion-reduce:animate-none`, `motion-reduce:transition-none`.
+- [A] Animate only `transform` and `opacity` (and colour for hovers).
+- [A] Never `transition: all` / `transition-all`: list the properties.
+- [A] Correct `transform-origin`.
+- [A] SVG: transforms on a `<g>` with `transform-box: fill-box; transform-origin: center`.
+- [A] Interruptible animations.
+- [C] No decorative looping animation; only spinners and loading indicators loop.
 
-## Typographie
+## Typography
 
-- [A] `…` et non `...` (y compris dans `en.json` et `fr.json`).
-- [C] Guillemets typographiques : « » en français, “ ” en anglais ; jamais `"` droits dans un texte visible.
-- [A] Espaces insécables : `10&nbsp;Mo`, `⌘&nbsp;K` ; en français, espace insécable avant `: ; ! ?` et comme séparateur de milliers.
-- [A] États de chargement terminés par `…` : « Chargement… », « Analyse… ».
-- [A] `tabular-nums` pour les colonnes et comparaisons de nombres.
-- [A] `text-wrap: balance` / `text-pretty` sur les titres qui passent à la ligne.
+- [A] `…` and not `...` (including in `en.json` and `fr.json`).
+- [C] Typographic quotes: « » in French, “ ” in English; never straight `"` in visible text.
+- [A] Non-breaking spaces: `10&nbsp;MB` (`10&nbsp;Mo` in French), `⌘&nbsp;K`; in French, a non-breaking space before `: ; ! ?` and as the thousands separator.
+- [A] Loading states end with `…`: "Loading…", "Analysing…" (« Chargement… », « Analyse… »).
+- [A] `tabular-nums` for columns and number comparisons.
+- [A] `text-wrap: balance` / `text-pretty` on headings that wrap.
 
-## Contenus
+## Content
 
-- [A] Conteneurs de texte robustes aux contenus longs : `truncate`, `line-clamp-*`, `break-words` (titres de pistes à rallonge, noms de labels, remixeurs multiples).
-- [A] Enfants flex avec `min-w-0` pour permettre la troncature.
-- [A] États vides gérés : pas d'interface cassée pour une chaîne ou une liste vide (bibliothèque vide, stats sans écoute, playlist vide).
-- [A] Données utilisateur : prévoir court, moyen et très long.
+- [A] Text containers robust to long content: `truncate`, `line-clamp-*`, `break-words` (very long track titles, label names, multiple remixers).
+- [A] Flex children with `min-w-0` to allow truncation.
+- [A] Empty states handled: no broken interface for an empty string or list (empty library, stats with no plays, empty playlist).
+- [A] User data: plan for short, medium and very long.
 
 ## Images
 
-- [A] `<img>` avec `width` et `height` explicites (ou conteneur de taille fixe) pour éviter les sauts de mise en page.
-- [A] Hors écran : `loading="lazy"` (pochettes dans les longues listes).
-- [—] `fetchpriority="high"` sur l'image critique (pas de LCP dans une app locale).
+- [A] `<img>` with explicit `width` and `height` (or a fixed-size container) to avoid layout shifts.
+- [A] Off-screen: `loading="lazy"` (artwork in long lists).
+- [—] `fetchpriority="high"` on the critical image (no LCP in a local app).
 
 ## Performance
 
-- [A] Listes de plus de 50 éléments : virtualisées (`@tanstack/virtual-core`, déjà utilisé par `TrackList`) ou `content-visibility: auto`.
-- [A] Pas de lecture de mise en page pendant le rendu (`getBoundingClientRect`, `offsetHeight`…) ; regrouper lectures et écritures DOM.
-- [A] Champs contrôlés bon marché à chaque frappe (recherche avec anti-rebond).
-- [C] Polices embarquées dans `static/fonts` avec `font-display: swap` ; l'import Google Fonts de `style.css` est un reste à supprimer à terme (app hors ligne).
-- [—] `preconnect` CDN, vidéo plutôt que GIF.
+- [A] Lists of more than 50 items: virtualised (`@tanstack/virtual-core`, already used by `TrackList`) or `content-visibility: auto`.
+- [A] No layout reads during rendering (`getBoundingClientRect`, `offsetHeight`…); batch DOM reads and writes.
+- [A] Controlled fields cheap on every keystroke (search with debounce).
+- [C] Fonts embedded in `static/fonts` with `font-display: swap`; the Google Fonts import in `style.css` is a leftover to be removed eventually (offline app).
+- [—] CDN `preconnect`, video rather than GIF.
 
-## Navigation et état
+## Navigation and state
 
-- [C] Pas d'URL partageable dans une app Tauri : l'état important (vue, filtres, tri, colonnes, largeur des panneaux) est **persisté** dans les réglages ou le store, et restauré au lancement.
-- [A] Actions destructives : `ConfirmModal` ou fenêtre d'annulation, jamais immédiates (supprimer, formater un appareil, remplacer un fichier).
+- [C] No shareable URL in a Tauri app: important state (view, filters, sort, columns, panel widths) is **persisted** in the settings or the store, and restored at launch.
+- [A] Destructive actions: `ConfirmModal` or an undo window, never immediate (delete, format a device, replace a file).
 
 ## Interaction
 
 - [—] `touch-action`, `-webkit-tap-highlight-color` (desktop).
-- [A] `overscroll-behavior: contain` dans les modales, panneaux et menus qui défilent.
-- [A] Pendant un glisser : pas de sélection de texte (déjà `user-select: none` global), élément glissé `inert`.
-- [A] Gestes (glisser, molette sur un curseur) : alternative clic et clavier.
-- [C] `autofocus` uniquement sur le champ principal d'une modale (renommer, créer une playlist).
+- [A] `overscroll-behavior: contain` in scrolling modals, panels and menus.
+- [A] During a drag: no text selection (already a global `user-select: none`), dragged element `inert`.
+- [A] Gestures (drag, mouse wheel on a slider): click and keyboard alternative.
+- [C] `autofocus` only on the main field of a modal (rename, create a playlist).
 
-## Mise en page
+## Layout
 
 - [—] `env(safe-area-inset-*)`.
-- [A] Pas de barre de défilement parasite : corriger le débordement plutôt que masquer (`overflow-x-hidden` en dernier recours).
-- [A] Flex et grid plutôt que mesures JavaScript.
+- [A] No stray scrollbar: fix the overflow rather than hide it (`overflow-x-hidden` as a last resort).
+- [A] Flex and grid rather than JavaScript measurements.
 
-## Thème
+## Theme
 
-- [C] `color-scheme` est posé par `[data-theme]` dans `style.css` : ne pas le surcharger.
+- [C] `color-scheme` is set by `[data-theme]` in `style.css`: do not override it.
 - [—] `<meta name="theme-color">`.
-- [A] `<select>` natif : `background-color` et `color` explicites (le `Select` commun évite le problème).
+- [A] Native `<select>`: explicit `background-color` and `color` (the common `Select` avoids the problem).
 
-## Langue
+## Language
 
-- [A] Dates et heures : `Intl.DateTimeFormat` (via la locale svelte-i18n), jamais de format codé en dur.
-- [A] Nombres : `Intl.NumberFormat` (« 2 310 » en français, pas « 2,310 », défaut L3).
-- [C] Langue : réglage de l'app (`crate-language`), sinon `navigator.languages`.
-- [A] Noms de marques, codes et identifiants (Camelot `8A`, BPM, noms de fichiers) : `translate="no"`.
+- [A] Dates and times: `Intl.DateTimeFormat` (through the svelte-i18n locale), never a hard-coded format.
+- [A] Numbers: `Intl.NumberFormat` (« 2 310 » in French, not « 2,310 », defect L3).
+- [C] Language: the app setting (`crate-language`), otherwise `navigator.languages`.
+- [A] Brand names, codes and identifiers (Camelot `8A`, BPM, file names): `translate="no"`.
 
-## Hydratation
+## Hydration
 
-- [—] Sans objet : `adapter-static` sans rendu serveur.
+- [—] Not applicable: `adapter-static` without server rendering.
 
-## Survol et états interactifs
+## Hover and interactive states
 
-- [A] Boutons et liens ont un état `hover:`.
-- [A] Les états interactifs augmentent le contraste : survol, appui et focus plus marqués que le repos.
+- [A] Buttons and links have a `hover:` state.
+- [A] Interactive states increase contrast: hover, press and focus more pronounced than rest.
 
-## Rédaction
+## Copywriting
 
-- [A] Voix active : « Exporter la playlist » et non « La playlist sera exportée ».
-- [C] Casse : Title Case pour les titres et boutons en anglais (convention de l'amont) ; casse de phrase en français (« Créer une playlist »).
-- [A] Chiffres pour les comptes : « 8 pistes » et non « huit pistes ».
-- [A] Libellés précis : « Supprimer 12 doublons » plutôt que « Continuer ».
-- [A] Les messages d'erreur disent comment corriger, pas seulement ce qui ne va pas.
-- [C] Deuxième personne (« vous » en français, comme tout `fr.json` ; « you » en anglais), pas de première personne.
-- [A] `&` plutôt que « et » quand la place manque (anglais).
+- [A] Active voice: "Export the playlist" and not "The playlist will be exported" (« Exporter la playlist » / « La playlist sera exportée »).
+- [C] Case: Title Case for headings and buttons in English (upstream convention); sentence case in French (« Créer une playlist »).
+- [A] Numerals for counts: "8 tracks" and not "eight tracks" (« 8 pistes » / « huit pistes »).
+- [A] Precise labels: "Delete 12 Duplicates" rather than "Continue" (« Supprimer 12 doublons » / « Continuer »).
+- [A] Error messages say how to fix the problem, not just what is wrong.
+- [C] Second person (« vous » in French, like all of `fr.json`; "you" in English), no first person.
+- [A] `&` rather than "and" when space is short (English).
 
-## Anti-motifs à signaler
+## Anti-patterns to flag
 
-- `user-scalable=no` ou `maximum-scale=1`.
-- Collage bloqué.
+- `user-scalable=no` or `maximum-scale=1`.
+- Blocked pasting.
 - `transition-all`.
-- `outline-none` sans remplacement `focus-visible`.
-- Navigation par `onclick` sans `<a>`.
-- `<div>` ou `<span>` cliquables.
-- Images sans dimensions.
-- Grandes listes sans virtualisation.
-- Champs sans libellé.
-- Boutons icône sans nom accessible.
-- Formats de date ou de nombre codés en dur.
-- `autofocus` injustifié.
-- Action uniquement gestuelle sans alternative clic et clavier.
+- `outline-none` without a `focus-visible` replacement.
+- Navigation through `onclick` without `<a>`.
+- Clickable `<div>` or `<span>`.
+- Images without dimensions.
+- Large lists without virtualisation.
+- Fields without a label.
+- Icon buttons without an accessible name.
+- Hard-coded date or number formats.
+- Unjustified `autofocus`.
+- Gesture-only action without a click and keyboard alternative.
 
-## Licence de la source
+## Source licence
 
 ```
 MIT License

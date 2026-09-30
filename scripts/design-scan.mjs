@@ -24,54 +24,58 @@ const PALETTE =
 const RULES = [
 	{
 		id: 'palette',
-		label: 'Classe de palette Tailwind au lieu d’un token',
+		label: 'Tailwind palette class instead of a token',
 		re: new RegExp(`\\b[a-z-]+-${PALETTE}-\\d{2,3}\\b`),
 	},
-	{ id: 'hex', label: 'Couleur hexadécimale dans un composant', re: /#[0-9a-fA-F]{3,8}\b/ },
-	{ id: 'dark-variant', label: 'Variante dark: (le thème est [data-theme])', re: /\bdark:/ },
-	{ id: 'text-arbitrary', label: 'Taille de police arbitraire text-[Npx]', re: /\btext-\[\d+(\.\d+)?px\]/ },
-	{ id: 'transition-all', label: 'transition-all (lister les propriétés)', re: /\btransition-all\b/ },
-	{ id: 'radius', label: 'Rayon hors système (rounded-xl à 3xl)', re: /\brounded(-[trblse]{1,2})?-(xl|2xl|3xl)\b/ },
+	{ id: 'hex', label: 'Hexadecimal colour in a component', re: /#[0-9a-fA-F]{3,8}\b/ },
+	{ id: 'dark-variant', label: 'dark: variant (the theme is [data-theme])', re: /\bdark:/ },
+	{ id: 'text-arbitrary', label: 'Arbitrary font size text-[Npx]', re: /\btext-\[\d+(\.\d+)?px\]/ },
+	{ id: 'transition-all', label: 'transition-all (list the properties)', re: /\btransition-all\b/ },
+	{
+		id: 'radius',
+		label: 'Radius outside the system (rounded-xl to 3xl)',
+		re: /\brounded(-[trblse]{1,2})?-(xl|2xl|3xl)\b/,
+	},
 	{
 		id: 'blur-glow',
-		label: 'Flou, glow ou ombre colorée',
+		label: 'Blur, glow or coloured shadow',
 		re: /\bbackdrop-blur|\bblur-(sm|md|lg|xl|2xl|3xl)\b|drop-shadow-\[|shadow-\[0_0|\bshadow-2xl\b|\bshadow-[a-z]+-\d{3}/,
 	},
 	{
 		id: 'gradient',
-		label: 'Dégradé décoratif',
+		label: 'Decorative gradient',
 		re: /\bbg-gradient-to-|\bbg-linear-|\bbg-radial|linear-gradient\(|radial-gradient\(/,
 	},
-	{ id: 'font-weight', label: 'Graisse hors système (black, extrabold)', re: /\bfont-(black|extrabold)\b/ },
-	{ id: 'a11y-ignore', label: 'svelte-ignore a11y (élément non accessible masqué)', re: /svelte-ignore a11y/ },
+	{ id: 'font-weight', label: 'Font weight outside the system (black, extrabold)', re: /\bfont-(black|extrabold)\b/ },
+	{ id: 'a11y-ignore', label: 'svelte-ignore a11y (inaccessible element hidden)', re: /svelte-ignore a11y/ },
 	{
 		id: 'outline-none',
-		label: 'outline-none sans focus visible de remplacement',
+		label: 'outline-none without a visible replacement focus',
 		re: /\boutline-none\b/,
 		unless: /focus(-visible)?:(ring|outline|border)/,
 	},
 	{
 		id: 'infinite-motion',
-		label: 'Animation infinie sans motion-reduce',
+		label: 'Infinite animation without motion-reduce',
 		re: /\banimate-(spin|pulse|ping|bounce)\b/,
 		unless: /motion-reduce:/,
 	},
-	{ id: 'z-arbitrary', label: 'z-index arbitraire z-[N]', re: /\bz-\[\d+\]/ },
+	{ id: 'z-arbitrary', label: 'Arbitrary z-index z-[N]', re: /\bz-\[\d+\]/ },
 	{
 		id: 'fixed-height',
-		label: 'Hauteur de viewport ou fixe (h-screen, h-[Npx] ≥ 100)',
+		label: 'Viewport or fixed height (h-screen, h-[Npx] ≥ 100)',
 		re: /\bh-screen\b|\bh-\[[1-9]\d{2,}px\]/,
 	},
-	{ id: 'emoji', label: 'Emoji dans le gabarit', re: /\p{Extended_Pictographic}/u },
+	{ id: 'emoji', label: 'Emoji in the template', re: /\p{Extended_Pictographic}/u },
 	{
 		id: 'hardcoded-text',
-		label: 'Chaîne visible en dur (heuristique)',
+		label: 'Hard-coded visible string (heuristic)',
 		re: />\s*[A-Za-zÀ-ÿ][^<>{}]*[A-Za-zÀ-ÿ]\s*</,
 		unless: /\$translate\(|<(script|style)\b/,
 	},
 	{
 		id: 'hardcoded-attr',
-		label: 'Attribut texte en dur (title, placeholder, aria-label, alt)',
+		label: 'Hard-coded text attribute (title, placeholder, aria-label, alt)',
 		re: /\b(title|placeholder|aria-label|alt)="[^"{]*[A-Za-zÀ-ÿ]{3,}[^"]*"/,
 	},
 ]
@@ -124,7 +128,7 @@ for (const locale of checkLocales ? ['en', 'fr'] : []) {
 }
 const labels = {
 	...Object.fromEntries(RULES.map((r) => [r.id, r.label])),
-	ellipsis: '« ... » au lieu de « … » (en.json, fr.json)',
+	ellipsis: '"..." instead of "…" (en.json, fr.json)',
 }
 
 const total = Object.values(findings).reduce((n, list) => n + list.length, 0)
@@ -132,13 +136,13 @@ const total = Object.values(findings).reduce((n, list) => n + list.length, 0)
 if (flags.has('--json')) {
 	console.log(JSON.stringify({ total, findings }, null, 2))
 } else {
-	console.log(`design-scan : ${total} ligne(s) en infraction dans ${targets.join(', ')}\n`)
+	console.log(`design-scan: ${total} offending line(s) in ${targets.join(', ')}\n`)
 	for (const [id, list] of Object.entries(findings)) {
 		if (list.length === 0) continue
 		console.log(`${String(list.length).padStart(5)}  ${id.padEnd(16)} ${labels[id]}`)
 		if (flags.has('--details')) for (const loc of list) console.log(`         ${loc}`)
 	}
-	if (total === 0) console.log('Aucune violation.')
+	if (total === 0) console.log('No violations.')
 }
 
 if (flags.has('--strict') && total > 0) process.exit(1)
