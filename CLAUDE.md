@@ -96,6 +96,8 @@ Clément follows the project in **Linear** (workspace "HomeMade", team **Crate A
 - **No secrets** in the code (usernames, tokens, passwords).
 - Frontend: theme through `[data-theme]` (no `dark:`), colours through tokens, shared components (`Button`, `Modal`, `Tooltip`…), no hard-coded strings (i18n key in `en.json` + `fr.json`).
 - Design: `DESIGN.md` is authoritative. All interface work (audit, D* fix, redesign, new view, mock-up) is delegated to the `design` agent (`.claude/agents/design.md`); `yarn design:scan <files>` must show no new occurrence.
+- **Visual language (Clément, 2026-09-30, CRA-115).** The existing colour families are **kept**, not merged into one look: the accent-driven colours of the original Crate, the cyan "neon glass" and amber of Player and Pulse, the Beatport neon green. What was missing is limits, so `DESIGN.md` states, for each family, where it applies and where it never appears, plus the rules shared by all (surfaces, borders, radius, typography, contrast in light and dark). Design defects are fixed *against* that charter, never by inventing a new rule per view.
+- **Beatport download stays (Clément, 2026-09-30, CRA-113).** The FLAC download through the third-party `beatportdl` tool is kept as it is, because `origin` is private. Do not isolate, rewire or remove it. It is reconsidered only if the repository ever becomes public.
 - Tests (from the repository root): `yarn test` (Vitest), `yarn check:svelte`.
 
 ## 9. Open questions

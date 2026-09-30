@@ -28,8 +28,8 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 These actions cannot be done on the owner's behalf (personal accounts, decisions).
 
 - [ ] **Change the Beatport account password**: it was in plain text in the code (C2). The code is clean, but the old password must be considered compromised.
-- [ ] **Confirm that Mixed In Key stays read-only** (decision from the report, open comment in the audit document). The step 2 fixes are built on that principle.
-- [ ] **Answer the open questions** in the [report](AUDIT-REPORT.md#decisions-to-make): other machines than this Mac? keep the skewed Spotify history? Crate as the default player or only in "Open With"?
+- [x] **Confirm that Mixed In Key stays read-only** (CRA-110, confirmed 2026-09-30). The step 2 fixes are built on that principle.
+- [ ] **Answer the open questions** in the [report](AUDIT-REPORT.md#decisions-to-make): other machines than this Mac (answered: macOS only, CRA-122) · Crate as the default player (answered: yes, CRA-124) · _the skewed Spotify history: owner wants it emptied (CRA-123), the irreversible deletion is waiting for the owner's go_
 
 ## Outside the register
 
@@ -232,3 +232,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | **Linear adopted as the live board**: team Crate App (`CRA`), 3 projects and 17 milestones, 107 register defects loaded as issues (94 Done), 5 owner actions and decisions, 10 scenario B ideas, beginner's guide, rules in `CLAUDE.md` §1 | — |
 | 2026-09-30 | **Answers in Linear + hourly watch**: owner answers by commenting or closing issues, assistant comments prefixed `🤖 Claude:`, scheduled task `crate-linear-hourly-check` (highest autonomy, one defect per run, ends at In Review) | — |
 | 2026-09-30 | **Owner decisions read from Linear**: scenario A then B, French and English complete, macOS only, Mixed In Key read-only; Spotify cleanup, default player, visual language and Beatport still open | — |
+| 2026-09-30 | **Owner decisions read from Linear (2nd pass)**: Beatport download stays while the repository is private (CRA-113), colour families are kept and a graphic charter is written (CRA-115 → CRA-140); Spotify history backed up and verified, deletion awaiting the owner's go (CRA-123) | — |
