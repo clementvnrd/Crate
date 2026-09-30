@@ -24,6 +24,15 @@ export function formatDurationCompact(ms: number): string {
 }
 
 /**
+ * Format a count for display in the interface language ("2,310" in English, "2 310" in French).
+ * Always pass the app language: without it `Intl` falls back to the system locale, which can
+ * differ from the language chosen in Crate's settings.
+ */
+export function formatNumber(value: number, locale?: string): string {
+	return new Intl.NumberFormat(locale).format(value)
+}
+
+/**
  * Format BPM to display string
  */
 export function formatBpm(bpm: number | null): string {

@@ -58,16 +58,20 @@
 		new Intl.DateTimeFormat($language, { month: 'long' }).format(new Date(viewYear, viewMonth))
 	)
 
-	const monthLabels = Array.from({ length: 12 }, (_, i) =>
-		new Intl.DateTimeFormat(undefined, { month: 'short' }).format(new Date(2024, i))
+	const monthLabels = $derived(
+		Array.from({ length: 12 }, (_, i) =>
+			new Intl.DateTimeFormat($language, { month: 'short' }).format(new Date(2024, i))
+		)
 	)
 
 	const yearRangeStart = $derived(viewYear - (viewYear % 12))
 	const yearRange = $derived(Array.from({ length: 12 }, (_, i) => yearRangeStart + i))
 
 	// Jan 1 2023 is a Sunday — used to generate locale-aware weekday labels
-	const weekDayLabels = Array.from({ length: 7 }, (_, i) =>
-		new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(new Date(2023, 0, 1 + i)).slice(0, 2)
+	const weekDayLabels = $derived(
+		Array.from({ length: 7 }, (_, i) =>
+			new Intl.DateTimeFormat($language, { weekday: 'short' }).format(new Date(2023, 0, 1 + i)).slice(0, 2)
+		)
 	)
 
 	const calendarDays = $derived.by((): CalendarCell[] => {

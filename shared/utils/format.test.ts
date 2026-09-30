@@ -8,6 +8,7 @@ import {
 	formatBitrate,
 	formatFileSize,
 	formatBytes,
+	formatNumber,
 	formatDate,
 	daysUntilRelease,
 	formatRelativeDate,
@@ -16,6 +17,26 @@ import {
 } from './format'
 
 describe('format utils', () => {
+	describe('formatNumber', () => {
+		// Intl separates French thousands with a narrow no-break space; compare on a plain space.
+		const plain = (text: string) => text.replace(/\s/g, ' ')
+
+		it('groups digits the way the interface language does, not the system one', () => {
+			expect(formatNumber(2310, 'en')).toBe('2,310')
+			expect(plain(formatNumber(2310, 'fr'))).toBe('2 310')
+			expect(formatNumber(2310, 'de')).toBe('2.310')
+		})
+
+		it('keeps small numbers and zero untouched', () => {
+			expect(formatNumber(0, 'fr')).toBe('0')
+			expect(formatNumber(999, 'fr')).toBe('999')
+		})
+
+		it('uses the decimal comma in French', () => {
+			expect(formatNumber(12.5, 'fr')).toBe('12,5')
+		})
+	})
+
 	describe('formatDuration', () => {
 		it('formats milliseconds to MM:SS when under an hour', () => {
 			expect(formatDuration(0)).toBe('0:00')

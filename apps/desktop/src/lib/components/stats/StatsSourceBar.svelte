@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { StatsSummary } from '$shared/types'
+	import { language } from '$lib/stores'
+	import { formatNumber } from '$shared/utils/format'
 
 	type Props = {
 		summary: StatsSummary | null
@@ -104,7 +106,7 @@
 			<h3 class="text-xs font-bold tracking-wider text-text-secondary uppercase">Répartition Multi-Sources</h3>
 		</div>
 		<span class="font-mono text-xs text-text-tertiary">
-			{totalMinutes > 0 ? `${totalMinutes.toLocaleString()} min d'écoute totale` : 'Aucune écoute'}
+			{totalMinutes > 0 ? `${formatNumber(totalMinutes, $language)} min d'écoute totale` : 'Aucune écoute'}
 		</span>
 	</div>
 
@@ -115,7 +117,7 @@
 				<div
 					class="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full {item.bgClass} cursor-pointer hover:opacity-90"
 					style="width: {item.percentage}%"
-					title="{item.label} : {item.minutes.toLocaleString()} min ({item.percentage}%)"
+					title="{item.label} : {formatNumber(item.minutes, $language)} min ({item.percentage}%)"
 				></div>
 			{/each}
 		</div>

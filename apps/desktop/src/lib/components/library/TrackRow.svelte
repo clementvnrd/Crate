@@ -6,6 +6,7 @@
 		formatBpm,
 		formatKey,
 		formatBitrate,
+		formatDate,
 		getCamelotColor,
 		formatCamelotKey,
 		getTrackDisplayName,
@@ -14,7 +15,7 @@
 	import { TagChip } from '$lib/components/tags'
 	import Icon from '$lib/components/common/Icon.svelte'
 	import { AlbumArt, AlbumArtModal, Spinner, Text, Tooltip } from '$lib/components/common'
-	import { missingTrackIds, dragStore, isDraggingTag, keyNotationFormat } from '$lib/stores'
+	import { missingTrackIds, dragStore, isDraggingTag, keyNotationFormat, language, dateFormat } from '$lib/stores'
 	import { displaySettingsStore, type ColumnVisibility } from '$shared/stores/displaySettings'
 	import { translate } from '$shared/i18n'
 	import { DRAG_THRESHOLD, getDistance } from '$shared/utils/drag'
@@ -343,7 +344,7 @@
 		{:else if col === 'date_added'}
 			<!-- Date Added -->
 			<div class="truncate text-xs text-text-secondary">
-				{track.date_added ? new Date(track.date_added).toLocaleDateString() : '-'}
+				{track.date_added ? formatDate(track.date_added, $dateFormat, $language) : '-'}
 			</div>
 		{:else if col === 'rating'}
 			<!-- Rating -->

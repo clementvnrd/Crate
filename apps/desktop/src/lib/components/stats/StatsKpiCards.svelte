@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { StatsSummary, TopArtistItem, RekordboxSession } from '$shared/types'
 	import Icon from '$lib/components/common/Icon.svelte'
+	import { language } from '$lib/stores'
+	import { formatNumber } from '$shared/utils/format'
 
 	type Props = {
 		summary: StatsSummary | null
@@ -11,25 +13,25 @@
 
 	let { summary, topArtists, rekordboxSessions, isLoading }: Props = $props()
 
-	function formatTotalTime(minutes: number): { primary: string; secondary: string } {
+	function formatTotalTime(minutes: number, locale: string): { primary: string; secondary: string } {
 		if (!minutes || minutes <= 0) return { primary: '0 min', secondary: "0 h d'écoute" }
 		const hours = Math.floor(minutes / 60)
 		const mins = minutes % 60
 		if (hours > 0) {
 			return {
 				primary: `${hours}h ${mins.toString().padStart(2, '0')}m`,
-				secondary: `${minutes.toLocaleString()} minutes au total`,
+				secondary: `${formatNumber(minutes, locale)} minutes au total`,
 			}
 		}
 		return {
 			primary: `${mins} min`,
-			secondary: `${minutes} minutes au total`,
+			secondary: `${formatNumber(minutes, locale)} minutes au total`,
 		}
 	}
 
-	let timeDisplay = $derived(formatTotalTime(summary?.total_minutes ?? 0))
-	let totalPlays = $derived((summary?.total_plays ?? 0).toLocaleString())
-	let uniqueArtistsCount = $derived(topArtists.length > 0 ? topArtists.length.toLocaleString() : '0')
+	let timeDisplay = $derived(formatTotalTime(summary?.total_minutes ?? 0, $language))
+	let totalPlays = $derived(formatNumber(summary?.total_plays ?? 0, $language))
+	let uniqueArtistsCount = $derived(formatNumber(topArtists.length, $language))
 	let totalRekordboxMs = $derived(rekordboxSessions.reduce((acc, s) => acc + (s.total_played_ms || 0), 0))
 	let rekordboxHours = $derived(Math.round(totalRekordboxMs / 3_600_000))
 </script>

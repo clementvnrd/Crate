@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { TopArtistItem } from '$shared/types'
 	import { getArtworkUrl } from '$shared/utils/artwork'
-	import { appDataDir } from '$lib/stores'
+	import { appDataDir, language } from '$lib/stores'
+	import { formatNumber } from '$shared/utils/format'
 	import Icon from '$lib/components/common/Icon.svelte'
 
 	type Props = {
@@ -110,7 +111,7 @@
 					<!-- Plays & Minutes -->
 					<div class="min-w-[70px] flex-shrink-0 space-y-0.5 text-right">
 						<div class="font-mono text-xs font-bold text-text-primary">
-							{artist.plays.toLocaleString()}
+							{formatNumber(artist.plays, $language)}
 							{artist.plays > 1 ? 'écoutes' : 'écoute'}
 						</div>
 						<div class="font-mono text-[10px] text-text-tertiary">
