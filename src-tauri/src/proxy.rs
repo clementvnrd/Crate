@@ -114,7 +114,7 @@ async fn proxy_http_handler_inner(
         {
             let file_path = discovery.audio_cache_path(release_id, track_position);
 
-            if let Ok(data) = std::fs::read(&file_path) {
+            if let Ok(data) = tokio::fs::read(&file_path).await {
                 if data.len() as i64 == file_size {
                     let cached = Arc::new(CachedAudio { data, content_type });
 
@@ -132,7 +132,7 @@ async fn proxy_http_handler_inner(
                     log::warn!(
                         "Audio cache file size mismatch for {cache_key}, removing stale entry"
                     );
-                    let _ = std::fs::remove_file(&file_path);
+                    let _ = tokio::fs::remove_file(&file_path).await;
                     let _ = discovery.delete_cached_audio_files(release_id);
                 }
             }

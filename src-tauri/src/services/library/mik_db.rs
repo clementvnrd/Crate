@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use lofty::file::AudioFile;
-use rusqlite::{Connection, OpenFlags};
+use rusqlite::{Connection, OpenFlags, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use unicode_normalization::UnicodeNormalization;
 
@@ -250,57 +250,86 @@ impl MikDatabaseService {
         Ok(songs)
     }
 
-    /// Prune tracks from Crate DB whose physical audio files have been deleted on disk.
-    /// Maintains a 100% clean library without ghost tracks.
-    pub fn prune_missing_tracks(
-        crate_conn: &Connection,
-        artwork_service: Option<&ArtworkService>,
-    ) -> Result<usize> {
+    // Pruning the tracks whose audio file was deleted from disk (a library with no ghost tracks)
+    // takes three steps, so that the disk is not checked while the database is locked:
+    // `track_paths` (database), `is_missing_on_disk` (disk), `prune_tracks` (database).
+    // `LibraryService::prune_missing_tracks` runs them with a short lock hold around each
+    // database step.
+
+    /// Step 1 of a prune: every track's `(id, file_path)`. Needs the database, not the disk.
+    pub fn track_paths(crate_conn: &Connection) -> Result<Vec<(String, String)>> {
         let mut stmt = crate_conn.prepare("SELECT id, file_path FROM tracks")?;
         let rows = stmt.query_map([], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
         })?;
+        Ok(rows.flatten().collect())
+    }
 
-        let mut to_delete = Vec::new();
-        for row in rows.flatten() {
-            let (id, file_path) = row;
-            let p = std::path::Path::new(&file_path);
+    /// Step 2 of a prune: whether the file was deleted from a folder that is still there. A folder
+    /// that is gone as well (a drive that is not plugged in) proves nothing, so it is not pruned.
+    /// Touches the disk only: call it without holding the database lock.
+    pub fn is_missing_on_disk(file_path: &str) -> bool {
+        let p = std::path::Path::new(file_path);
+        match p.parent() {
+            Some(parent) => parent.exists() && !p.exists(),
+            None => !p.exists(),
+        }
+    }
 
-            let should_prune = if let Some(parent) = p.parent() {
-                // If parent directory exists, but file itself does not, it was deleted
-                parent.exists() && !p.exists()
-            } else {
-                !p.exists()
-            };
-
-            if should_prune {
-                to_delete.push((id, file_path));
-            }
+    /// Step 3 of a prune: delete the given `(id, file_path)` ghosts in one transaction. A ghost is
+    /// only deleted if the track still has the path it had when the disk was checked, so a track
+    /// that was moved or re-imported in between is never pruned on stale information. Returns how
+    /// many tracks were deleted. A failure part-way deletes nothing, and the artwork files go only
+    /// after the rows are committed.
+    pub fn prune_tracks(
+        crate_conn: &Connection,
+        artwork_service: Option<&ArtworkService>,
+        ghosts: &[(String, String)],
+    ) -> Result<usize> {
+        if ghosts.is_empty() {
+            return Ok(0);
         }
 
-        let count = to_delete.len();
-        if count > 0 {
-            for (id, file_path) in &to_delete {
-                log::info!("Pruning ghost track (file physically deleted from disk): id={id}, path={file_path}");
-                if let Some(art_svc) = artwork_service {
-                    art_svc.delete(id);
-                }
-                crate_conn.execute("DELETE FROM cues WHERE track_id = ?1", [id])?;
-                crate_conn.execute("DELETE FROM track_tags WHERE track_id = ?1", [id])?;
-                crate_conn.execute("DELETE FROM playlist_tracks WHERE track_id = ?1", [id])?;
-                crate_conn.execute("DELETE FROM tracks WHERE id = ?1", [id])?;
-
-                if let Ok(hlc) = dirty::next_hlc(crate_conn) {
-                    let _ = dirty::record_tombstone(crate_conn, buckets::TRACKS_ENTITY, id, &hlc);
-                }
-                let _ = dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(id));
+        let tx = crate_conn.unchecked_transaction()?;
+        let mut pruned_ids: Vec<&str> = Vec::new();
+        for (id, file_path) in ghosts {
+            let current: Option<String> = tx
+                .query_row("SELECT file_path FROM tracks WHERE id = ?1", [id], |r| {
+                    r.get(0)
+                })
+                .optional()?;
+            if current.as_deref() != Some(file_path.as_str()) {
+                continue;
             }
-            let _ = dirty::mark_dirty(crate_conn, buckets::PLAYLIST_TRACKS);
-            let _ = dirty::mark_dirty(crate_conn, buckets::TRACK_TAGS);
-            let _ = dirty::mark_dirty(crate_conn, buckets::CUES);
+
+            log::info!(
+                "Pruning ghost track (file physically deleted from disk): id={id}, path={file_path}"
+            );
+            tx.execute("DELETE FROM cues WHERE track_id = ?1", [id])?;
+            tx.execute("DELETE FROM track_tags WHERE track_id = ?1", [id])?;
+            tx.execute("DELETE FROM playlist_tracks WHERE track_id = ?1", [id])?;
+            tx.execute("DELETE FROM tracks WHERE id = ?1", [id])?;
+
+            if let Ok(hlc) = dirty::next_hlc(&tx) {
+                let _ = dirty::record_tombstone(&tx, buckets::TRACKS_ENTITY, id, &hlc);
+            }
+            let _ = dirty::mark_dirty(&tx, &buckets::bucket_for_track_id(id));
+            pruned_ids.push(id);
         }
 
-        Ok(count)
+        if !pruned_ids.is_empty() {
+            let _ = dirty::mark_dirty(&tx, buckets::PLAYLIST_TRACKS);
+            let _ = dirty::mark_dirty(&tx, buckets::TRACK_TAGS);
+            let _ = dirty::mark_dirty(&tx, buckets::CUES);
+        }
+        tx.commit()?;
+
+        if let Some(art_svc) = artwork_service {
+            for id in &pruned_ids {
+                art_svc.delete(id);
+            }
+        }
+        Ok(pruned_ids.len())
     }
 
     /// Mirrors the Mixed In Key cues of one track, touching only cues that came from Mixed In Key.
@@ -917,6 +946,15 @@ mod tests {
         }
     }
 
+    /// The three steps of a prune in one call, as `LibraryService::prune_missing_tracks` runs them.
+    fn prune_all(conn: &Connection) -> Result<usize> {
+        let ghosts: Vec<(String, String)> = MikDatabaseService::track_paths(conn)?
+            .into_iter()
+            .filter(|(_, path)| MikDatabaseService::is_missing_on_disk(path))
+            .collect();
+        MikDatabaseService::prune_tracks(conn, None, &ghosts)
+    }
+
     fn track_count(conn: &Connection) -> i64 {
         conn.query_row("SELECT COUNT(*) FROM tracks", [], |r| r.get(0))
             .unwrap()
@@ -1120,9 +1158,120 @@ mod tests {
         insert_track(&conn, "ghost-1", &ghost, "Ghost Track", "Ghost Artist");
         insert_track(&conn, "present-1", &present, "Present", "Artist");
 
-        let pruned = MikDatabaseService::prune_missing_tracks(&conn, None).unwrap();
+        let pruned = prune_all(&conn).unwrap();
         assert_eq!(pruned, 1, "Should prune exactly 1 ghost track");
         assert_eq!(track_count(&conn), 1);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    fn count(conn: &Connection, sql: &str) -> i64 {
+        conn.query_row(sql, [], |r| r.get(0)).unwrap()
+    }
+
+    /// A ghost track with a cue and a playlist entry, so a prune has something to cascade over.
+    fn insert_ghost_with_dependants(conn: &Connection, dir: &Path, id: &str) -> String {
+        let path = dir.join(format!("{id}.flac")).to_string_lossy().to_string();
+        insert_track(conn, id, &path, id, "Artist");
+        conn.execute(
+            "INSERT INTO cues (id, track_id, position_ms, type, hot_cue_index, name) VALUES (?1, ?2, 1000, 'hot', 0, 'A')",
+            rusqlite::params![format!("cue-{id}"), id],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT OR IGNORE INTO playlists (id, name, date_created, date_modified) VALUES ('p', 'Set', '2026-01-01', '2026-01-01')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO playlist_tracks (playlist_id, track_id, position, date_added) VALUES ('p', ?1, 0, '2026-01-01')",
+            [id],
+        )
+        .unwrap();
+        path
+    }
+
+    #[test]
+    fn pruning_a_ghost_takes_its_cues_and_playlist_entries_and_leaves_a_tombstone() {
+        let dir = temp_library("prune_cascade");
+        let conn = crate_db();
+        insert_ghost_with_dependants(&conn, &dir, "ghost-1");
+
+        assert_eq!(prune_all(&conn).unwrap(), 1);
+        assert_eq!(track_count(&conn), 0);
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM cues"), 0);
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM playlist_tracks"), 0);
+        assert_eq!(
+            count(
+                &conn,
+                "SELECT COUNT(*) FROM sync_tombstones WHERE entity_id = 'ghost-1'"
+            ),
+            1,
+            "the cloud sync is told the track is gone"
+        );
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_track_on_an_unmounted_folder_is_not_a_ghost() {
+        let dir = temp_library("prune_unmounted");
+        let conn = crate_db();
+        // The whole folder is missing (a disconnected drive): nothing proves the file was deleted.
+        let path = dir
+            .join("not-mounted")
+            .join("track.flac")
+            .to_string_lossy()
+            .to_string();
+        insert_track(&conn, "away", &path, "Away", "Artist");
+
+        assert_eq!(prune_all(&conn).unwrap(), 0);
+        assert_eq!(track_count(&conn), 1);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_failed_prune_changes_nothing() {
+        let dir = temp_library("prune_atomic");
+        let conn = crate_db();
+        insert_ghost_with_dependants(&conn, &dir, "ghost-1");
+        insert_ghost_with_dependants(&conn, &dir, "ghost-2");
+        // The deletion of the second ghost fails after the first one is already gone.
+        conn.execute_batch(
+            "CREATE TRIGGER refuse_ghost_2 BEFORE DELETE ON tracks WHEN OLD.id = 'ghost-2'
+             BEGIN SELECT RAISE(ABORT, 'simulated failure'); END;",
+        )
+        .unwrap();
+
+        assert!(prune_all(&conn).is_err());
+        assert_eq!(track_count(&conn), 2, "both tracks are still there");
+        assert_eq!(
+            count(&conn, "SELECT COUNT(*) FROM cues"),
+            2,
+            "with their cues"
+        );
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM playlist_tracks"), 2);
+        assert_eq!(count(&conn, "SELECT COUNT(*) FROM sync_tombstones"), 0);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_track_relinked_after_the_disk_check_is_left_alone() {
+        let dir = temp_library("prune_relinked");
+        let conn = crate_db();
+        let old_path = dir.join("moved.flac").to_string_lossy().to_string();
+        let new_path = touch(&dir, "moved-back.flac");
+        insert_track(&conn, "t", &new_path, "Track", "Artist");
+
+        // The disk check ran while the row still pointed at `old_path`; it has been re-linked since.
+        let ghosts = vec![("t".to_string(), old_path)];
+        assert_eq!(
+            MikDatabaseService::prune_tracks(&conn, None, &ghosts).unwrap(),
+            0
+        );
+        assert_eq!(
+            track_count(&conn),
+            1,
+            "a track that now points at a real file stays"
+        );
         let _ = std::fs::remove_dir_all(dir);
     }
 }

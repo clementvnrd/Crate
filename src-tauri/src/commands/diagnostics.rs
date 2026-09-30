@@ -1,6 +1,6 @@
-use tauri::State;
+use tauri::{Manager, State};
 
-use crate::error::Result;
+use crate::error::{run_blocking, Result};
 use crate::models::{DiagnosticEntry, DiagnosticLevel, DiagnosticsReport, SystemInfo};
 use crate::services::DiagnosticsService;
 
@@ -12,19 +12,15 @@ pub async fn get_diagnostic_entries(
 }
 
 #[tauri::command]
-pub async fn get_system_info(
-    diagnostics_service: State<'_, DiagnosticsService>,
-) -> Result<SystemInfo> {
-    Ok(diagnostics_service.get_system_info())
+pub async fn get_system_info(app: tauri::AppHandle) -> Result<SystemInfo> {
+    // Refreshing every system counter and walking the data folder to size it is slow work.
+    run_blocking(move || Ok(app.state::<DiagnosticsService>().get_system_info())).await
 }
 
 #[tauri::command]
-pub async fn get_diagnostics_report(
-    app: tauri::AppHandle,
-    diagnostics_service: State<'_, DiagnosticsService>,
-) -> Result<DiagnosticsReport> {
+pub async fn get_diagnostics_report(app: tauri::AppHandle) -> Result<DiagnosticsReport> {
     let version = app.package_info().version.to_string();
-    Ok(diagnostics_service.generate_report(version))
+    run_blocking(move || Ok(app.state::<DiagnosticsService>().generate_report(version))).await
 }
 
 #[tauri::command]

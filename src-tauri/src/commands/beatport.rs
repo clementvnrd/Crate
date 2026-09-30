@@ -1,3 +1,4 @@
+use crate::error::run_blocking;
 use crate::services::beatport::client::{
     BeatportArtistDetail, BeatportAuthState, BeatportChart, BeatportClient, BeatportGenre,
     BeatportPlaylist, BeatportSearchResult, BeatportTrack,
@@ -12,21 +13,34 @@ pub fn beatport_get_pkce_auth_url() -> String {
     BeatportClient::generate_pkce_auth_url()
 }
 
+// The persisted tokens live in the macOS Keychain, which can block (an access prompt, a locked
+// keychain). These commands are async and run on the blocking pool: a synchronous Tauri command
+// would run on the main thread and freeze the window while the Keychain answers.
 #[tauri::command]
-pub fn beatport_get_persisted_auth() -> Option<BeatportAuthState> {
-    BeatportClient::load_persisted_auth()
+pub async fn beatport_get_persisted_auth() -> Result<Option<BeatportAuthState>, String> {
+    run_blocking(|| Ok(BeatportClient::load_persisted_auth()))
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn beatport_save_persisted_auth(auth: BeatportAuthState) -> Result<(), String> {
-    BeatportClient::save_persisted_auth(&auth);
-    Ok(())
+pub async fn beatport_save_persisted_auth(auth: BeatportAuthState) -> Result<(), String> {
+    run_blocking(move || {
+        BeatportClient::save_persisted_auth(&auth);
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn beatport_clear_persisted_auth() -> Result<(), String> {
-    BeatportClient::clear_persisted_auth();
-    Ok(())
+pub async fn beatport_clear_persisted_auth() -> Result<(), String> {
+    run_blocking(|| {
+        BeatportClient::clear_persisted_auth();
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

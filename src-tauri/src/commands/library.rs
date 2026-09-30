@@ -36,11 +36,10 @@ pub async fn import_tracks(app: tauri::AppHandle, paths: Vec<String>) -> Result<
 }
 
 #[tauri::command]
-pub async fn get_tracks(
-    filter: Option<TrackFilter>,
-    library: State<'_, LibraryService>,
-) -> Result<Vec<Track>> {
-    library.get_tracks(filter)
+pub async fn get_tracks(app: tauri::AppHandle, filter: Option<TrackFilter>) -> Result<Vec<Track>> {
+    // The whole library is read and mapped here (tens of milliseconds at 10,000 tracks): that
+    // belongs on the blocking pool, not on a runtime worker.
+    with_library(&app, move |library| library.get_tracks(filter)).await
 }
 
 #[tauri::command]
