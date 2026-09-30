@@ -574,5 +574,13 @@ SELECT rowid, title, artist, album, genre, label FROM tracks;
 CREATE INDEX IF NOT EXISTS idx_listen_events_match
     ON listen_events(lower(trim(artist)), lower(trim(title)), played_at);
 "#,
+        // Migration 17 (fork): the same artist and title matching, from the library and the
+        // discovery side (listening-history matching, discovery funnel, next-track suggestions).
+        r#"
+CREATE INDEX IF NOT EXISTS idx_tracks_match
+    ON tracks(lower(trim(artist)), lower(trim(title)));
+CREATE INDEX IF NOT EXISTS idx_discovery_releases_artist_match
+    ON discovery_releases(lower(trim(artist)));
+"#,
     ]
 }

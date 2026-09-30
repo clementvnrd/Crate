@@ -1,4 +1,5 @@
 mod audio_cache;
+mod funnel;
 mod release_crud;
 mod release_ops;
 mod stream_cache;
@@ -22,6 +23,8 @@ use crate::services::ArtworkService;
 
 use metadata::FetchedTrack;
 use streams::StreamInfo;
+
+pub use funnel::DiscoveryFunnel;
 
 pub struct CachedStream {
     pub stream_url: String,

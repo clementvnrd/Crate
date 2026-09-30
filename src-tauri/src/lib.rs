@@ -400,6 +400,7 @@ pub fn run() {
             commands::analysis::get_analyzed_tracks,
             // Discovery commands
             commands::discovery::toggle_discovery_track_liked,
+            commands::discovery::get_discovery_funnel,
             commands::discovery::create_discovery_release,
             commands::discovery::get_discovery_release,
             commands::discovery::get_discovery_releases,

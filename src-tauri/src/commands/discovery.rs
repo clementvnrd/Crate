@@ -1103,3 +1103,13 @@ async fn transform_youtube_n_params(
         }
     }
 }
+
+/// What the user's discoveries became: found, in the library, played in a Rekordbox set, in total
+/// and by source. `since` (`YYYY-MM-DD`) keeps only releases added on or after that day.
+#[tauri::command]
+pub async fn get_discovery_funnel(
+    since: Option<String>,
+    discovery: State<'_, DiscoveryService>,
+) -> Result<crate::services::discovery::DiscoveryFunnel> {
+    discovery.get_funnel(since.as_deref())
+}
