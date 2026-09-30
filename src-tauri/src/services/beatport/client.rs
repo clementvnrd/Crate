@@ -249,9 +249,7 @@ impl BeatportClient {
             }
         }
 
-        Err(format!(
-            "Failed to obtain a Beatport token: {last_error}"
-        ))
+        Err(format!("Failed to obtain a Beatport token: {last_error}"))
     }
 
     /// Refreshes an expired access token using the refresh token
@@ -865,9 +863,7 @@ impl BeatportClient {
         }
 
         let Some(mut current_token) = active_token else {
-            return Err(
-                auth_required_without_token(),
-            );
+            return Err(auth_required_without_token());
         };
 
         let url = format!(

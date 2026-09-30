@@ -913,10 +913,7 @@ impl BeatportUpgraderService {
                 parent.to_path_buf()
             } else {
                 failed_count += 1;
-                errors.push(format!(
-                    "'{}': destination folder not found",
-                    item.title
-                ));
+                errors.push(format!("'{}': destination folder not found", item.title));
                 continue;
             };
 
