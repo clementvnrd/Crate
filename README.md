@@ -51,7 +51,7 @@ Crate is a cross-platform desktop application for managing DJ audio libraries. I
 - **Device sync** - Detect connected USB devices and sync library changes incrementally
 - **Metadata editing** - Edit track metadata in bulk or individually
 - **Customization** - Themes, accent colors, and font preferences
-- **Localization** - Available in 15 languages (EN, FR, DE, ES, IT, JA, KO, NL, PL, PT, RO, SV, TR, UK, ZH)
+- **Localization** - English and French are complete. The other 13 languages (DE, ES, IT, JA, KO, NL, PL, PT, RO, SV, TR, UK, ZH) are partial and fall back to English for any text not yet translated, so the interface never shows a raw key
 - **Auto-updates** - Stay on the latest version with minimal effort
 
 ## 🚀 Getting Started

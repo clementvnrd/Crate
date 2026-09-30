@@ -622,6 +622,7 @@
 		"trackAddedWithFailed": "{count, plural, =0 {1 piste} =1 {1 piste} other {{count} pistes}} ajoutée(s) à {playlistName}, {failed} échoué(s)",
 		"tracksImported": "{count, plural, =0 {1 piste} =1 {1 piste} other {{count} pistes}} importée(s)",
 		"tracksImportedWithSkipped": "{imported, plural, =0 {1 piste} =1 {1 piste} other {{imported} pistes}} importée(s), {skipped} ignorée(s)",
+		"tracksExported": "{exported, plural, =1 {1 piste exportée} other {{exported} pistes exportées}} vers {deviceName}, {skipped, plural, =1 {1 ignorée} other {{skipped} ignorées}}",
 		"trackRemoved": "{count, plural, =0 {1 piste} =1 {1 piste} other {{count} pistes}} retirée(s) de la playlist",
 		"trackRemovedFromLibrary": "{count, plural, =0 {1 piste} =1 {1 piste} other {{count} pistes}} retirée(s) de la bibliothèque",
 		"movedSuccessfully": "Déplacé avec succès",
