@@ -1,6 +1,6 @@
 ---
 name: tooling-pitfalls
-description: Blind spots of yarn design:scan and flakiness of yarn test:e2e found while fixing D11 (2026-09-30)
+description: Blind spots of design:scan and the e2e audit (overlaps ignore scroll clipping), e2e flakiness, global shortcuts that block button activation
 metadata:
   type: reference
 ---
@@ -9,5 +9,8 @@ metadata:
 - `yarn test:e2e` (74 cases, 4 workers) sometimes fails the last cases of a full run with `waitForApp` timing out on `#wizard-view-switcher` (15 s) under load. Rerun the failing group with `npx playwright test --config e2e/playwright.config.ts -g "<theme> <size> <lang>"` before suspecting the code; it was green on rerun before any change.
 - `e2e/app.ts` and `harness.e2e.ts` locate views by `#wizard-view-switcher button` + text "Player"/"Beatport": keep that id and those labels in both languages.
 - The e2e ratchet counts text under 12 px per element: a shared badge at `text-[11px]` replacing a 12 px copy raises `smallText` (it happened with the harmonic wheel). DESIGN.md's key-badge spec is `text-xs`.
+- `ui-audit.js` `overlaps` ignores scroll clipping and collapsed (0fr) containers: every focusable element (`tabindex="0"`, button) in rows scrolled out of view or collapsed is counted as overlapping whatever sits there (the player bar). Making list rows tab stops or laying "stretched" transparent buttons over rows raised Player 1000 overlaps 2 -> 16 and Discovery 5 -> 81 (D10, 2026-09-30). What passes: one tab stop on the clipped scroll container (grid + aria-activedescendant, rows `tabindex="-1"`), `inert` on collapsed parts.
+- The global shortcuts (`useKeyboardShortcuts.ts`, window keydown) call `preventDefault` on Enter, Space and Shift+Tab whenever no input is focused: outside modals a focused button cannot be activated from the keyboard, and Shift+Tab switches views. New keyboard handlers must `stopPropagation`; test keyboard flows with Tab only (never Shift+Tab) in the harness.
+- `yarn test:e2e` emulates reduced motion, so adding `motion-reduce:animate-none` changes screenshots (static ping/pulse dots). The Pulse screenshots sometimes catch a toolbar tooltip (Duplicate Killer) under the cursor: noise, not a regression. PIL (python3) is available for pixel diffs of `e2e/screenshots/` (copy the before set first; the run overwrites it).
 
 Related: [[charter-contrast-method]].

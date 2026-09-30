@@ -6,6 +6,7 @@
 	import BeatportTrackRow from './BeatportTrackRow.svelte'
 	import BeatportCartDrawer from './BeatportCartDrawer.svelte'
 	import BeatportLoginModal from './BeatportLoginModal.svelte'
+	import { BEATPORT_DATE_CELL, BEATPORT_GENRE_CELL, BEATPORT_TRACK_GRID } from './trackGrid'
 	import { translate } from '$shared/i18n'
 	import { Text, Icon, Spinner, Button } from '$lib/components/common'
 
@@ -423,16 +424,17 @@
 							</div>
 
 							<!-- Tracks Table -->
-							<div class="overflow-hidden rounded-xl border border-stroke/60 bg-surface-1 shadow-sm">
+							<!-- A size container: narrow tables drop the date, then the genre, before the title shrinks (trackGrid.ts) -->
+							<div class="@container overflow-hidden rounded-xl border border-stroke/60 bg-surface-1 shadow-sm">
 								<!-- Table Header -->
 								<div
-									class="grid grid-cols-[36px_40px_1fr_120px_100px_60px_64px_50px_100px] items-center gap-2 border-b border-stroke/80 bg-surface-2/60 px-3 py-2 text-[11px] font-bold tracking-wider text-text-tertiary uppercase select-none"
+									class="grid {BEATPORT_TRACK_GRID} items-center gap-2 border-b border-stroke/80 bg-surface-2/60 px-3 py-2 text-[11px] font-bold tracking-wider text-text-tertiary uppercase select-none"
 								>
 									<div class="text-center">#</div>
 									<div></div>
 									<div>Titre & Artiste</div>
-									<div>Genre</div>
-									<div>Date</div>
+									<div class={BEATPORT_GENRE_CELL}>Genre</div>
+									<div class={BEATPORT_DATE_CELL}>Date</div>
 									<div>Durée</div>
 									<div>Tonalité</div>
 									<div>BPM</div>

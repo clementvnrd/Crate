@@ -2,6 +2,7 @@
 	import { getArtworkUrl } from '$shared/utils'
 	import { appDataDir } from '$lib/stores/app'
 	import Icon from './Icon.svelte'
+	import { translate } from '$shared/i18n'
 
 	type Size = 'xs' | 'sm' | 'md' | 'lg'
 
@@ -57,28 +58,34 @@
 			externalError = true
 		}
 	}
-
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter' || e.key === ' ') {
-			e.preventDefault()
-			onclick?.()
-		}
-	}
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<div
-	class="flex flex-shrink-0 items-center justify-center overflow-hidden rounded bg-surface-2 {sizeClasses[
-		size
-	]} {className}"
-	role={onclick ? 'button' : undefined}
-	tabindex={onclick ? 0 : undefined}
-	{onclick}
-	onkeydown={onclick ? handleKeydown : undefined}
->
+{#snippet artwork(alt: string)}
 	{#if displayUrl}
-		<img src={displayUrl} alt="Album artwork" class="h-full w-full object-cover" onerror={handleError} />
+		<img src={displayUrl} {alt} class="h-full w-full object-cover" onerror={handleError} />
 	{:else}
 		<Icon name="music-note" class="{iconSizes[size]} text-text-tertiary" />
 	{/if}
-</div>
+{/snippet}
+
+<!-- A clickable artwork is a real button (keyboard and name for free); preflight resets its look to the div's. -->
+{#if onclick}
+	<button
+		type="button"
+		aria-label={$translate('common.viewArtwork')}
+		class="flex flex-shrink-0 items-center justify-center overflow-hidden rounded bg-surface-2 {sizeClasses[
+			size
+		]} {className}"
+		{onclick}
+	>
+		{@render artwork('')}
+	</button>
+{:else}
+	<div
+		class="flex flex-shrink-0 items-center justify-center overflow-hidden rounded bg-surface-2 {sizeClasses[
+			size
+		]} {className}"
+	>
+		{@render artwork($translate('common.albumArtwork'))}
+	</div>
+{/if}

@@ -5,7 +5,7 @@ This file is **the** source of truth for tracking: every defect in the [register
 Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification or remaining work. The progress table is recomputed with `yarn status` (from the repository root).
 
 <!-- progress:start -->
-**Overall progress: 99 / 106 defects fixed (93%)**
+**Overall progress: 100 / 106 defects fixed (94%)**
 
 | Step | Fixed | Progress |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 8 — Robust frontend | 17 / 17 | ██████████ |
 | Step 9 — Hygiene and tooling | 13 / 14 | █████████░ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
-| Step 11 — View-by-view compliance | 3 / 7 | ████░░░░░░ |
+| Step 11 — View-by-view compliance | 4 / 7 | ██████░░░░ |
 | Step 12 — Translation | 4 / 6 | ███████░░░ |
 <!-- progress:end -->
 
@@ -195,8 +195,8 @@ _Exit criterion: Strict design rules respected._
 - [ ] **D3** — Broken light theme: Pulse integration cards dark at the top and light at the bottom; header badges…
 - [x] **D4** — Header at minimum width (1000 px): the icons overlap the segmented control… — _verified by measurement in the harness at 1000, 1280, 1440 and 1600 px: no overlap, all tools visible_
 - [x] **D5** — Player hero with a fixed height (`h-[225px]` for about 260 px of content): at 1000×640 the transport is… — _transport never covered (verified at 1000×640); at that size the recents list keeps ~2 rows_
-- [ ] **D7** — Beatport table at 1000 px: the title column shrinks to one character
-- [ ] **D10** — Accessibility: about 25 icon buttons without a name (transport, segments, MIK badge, recents actions);…
+- [x] **D7** — Beatport table at 1000 px: the title column shrinks to one character — _title column 52 to 288 px at 1000 px; date and genre hide below 832 and 720 px; identical from a 1400 px window; the Player recents overflow is fixed too_
+- [ ] **D10** — Accessibility: about 25 icon buttons without a name (transport, segments, MIK badge, recents actions);… — _partial: names, waveform slider, recents grid, switches, focus traps, reduced motion and the keyboard focus outline are done; left: the global shortcuts block Enter and Space on focused buttons (owner decision, CRA-100), 17 `svelte-ignore a11y`, the heatmap is not focusable_
 - [ ] **D11** — Components reinvented instead of the shared ones: 4 segmented controls, checkbox, select, spinner, tooltip and… — _partial: shared SegmentedControl, KeyBadge, EnergyBadge and family Button props replace the copies with the look unchanged; left: Spotify connection modal, Rekordbox sync button, native checkboxes, home-made spinners in untouched files_
 - [x] **D12** — Permanent "Build 57" badge next to the logo and "PRO" labels on third-party brands
 
@@ -256,3 +256,5 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Ghost-track pruning made atomic and lock-free for disk checks; Keychain, diagnostics and get_tracks commands moved to the blocking pool | 7 |
 | 2026-09-30 | Beatport post-download steps and Mixed In Key process probing moved to the blocking pool | 7 |
 | 2026-09-30 | Mixed In Key sync releases the database lock every 50 ms instead of holding it for the whole pass | 7 |
+| 2026-09-30 | Beatport and Player track titles readable at 1000 px (D7) | 11 |
+| 2026-09-30 | Accessible names, keyboard waveform, recents grid, switches, focus traps, reduced motion and focus outline (D10, partial) | 11 |

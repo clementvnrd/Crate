@@ -265,6 +265,7 @@
 				<IconButton
 					icon="x"
 					size="sm"
+					ariaLabel={$translate('devices.unignore')}
 					onclick={(e) => {
 						e.stopPropagation()
 						onUnignore?.()

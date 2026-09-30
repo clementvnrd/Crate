@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { beatportStore, beatportCart, beatportCartCount, beatportCartDuration } from '$shared/stores/beatport'
 	import { formatDurationCompact } from '$shared/utils/format'
-	import { Icon, Spinner } from '$lib/components/common'
+	import { Icon, Spinner, focusTrap } from '$lib/components/common'
 	import { fly, fade } from 'svelte/transition'
 
 	interface Props {
@@ -31,9 +31,13 @@
 	></div>
 
 	<!-- Slide-over Drawer -->
-	<aside
+	<div
 		transition:fly={{ x: 400, duration: 250 }}
-		class="fixed top-0 right-0 bottom-0 z-50 flex w-full max-w-md flex-col border-l border-emerald-500/30 bg-[#121418] shadow-2xl shadow-emerald-500/10 select-none"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="beatport-cart-title"
+		use:focusTrap={{ onEscape: onClose }}
+		class="fixed top-0 right-0 bottom-0 z-50 flex w-full max-w-md flex-col border-l border-emerald-500/30 bg-[#121418] shadow-2xl shadow-emerald-500/10 select-none focus-visible:outline-none"
 	>
 		<!-- Header -->
 		<div class="flex items-center justify-between border-b border-[#252830] bg-[#181a20] px-5 py-4">
@@ -45,7 +49,7 @@
 				</div>
 				<div>
 					<div class="flex items-center gap-2">
-						<h2 class="text-sm font-bold text-white">Panier Beatport</h2>
+						<h2 id="beatport-cart-title" class="text-sm font-bold text-white">Panier Beatport</h2>
 						<span class="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-bold text-emerald-400">
 							{$beatportCartCount} morceau{$beatportCartCount > 1 ? 'x' : ''}
 						</span>
@@ -146,5 +150,5 @@
 				{/if}
 			</div>
 		</div>
-	</aside>
+	</div>
 {/if}

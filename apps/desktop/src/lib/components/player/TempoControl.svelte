@@ -45,12 +45,20 @@
 				bipolar
 				snapToCenter={0.5}
 				{disabled}
+				ariaLabel={$translate('player.tempo')}
+				ariaValueText={formattedPercent}
 				oninput={handleInput}
 				onchange={handleChange}
 			/>
 		</div>
 		<Tooltip text={$translate('player.resetTempo')} position="top" delay={250}>
-			<IconButton icon="reset" size="sm" disabled={disabled || percentage === 0} onclick={handleReset} />
+			<IconButton
+				icon="reset"
+				size="sm"
+				disabled={disabled || percentage === 0}
+				ariaLabel={$translate('player.resetTempo')}
+				onclick={handleReset}
+			/>
 		</Tooltip>
 	</div>
 </div>

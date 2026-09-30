@@ -28,7 +28,15 @@
 <div class="flex items-center gap-1">
 	<!-- Previous -->
 	<Tooltip text={$translate('player.previous')} position="top" delay={250}>
-		<IconButton size="lg" iconClass="h-5 w-5" disabled={!hasTrack} icon="skip-back" fill onclick={onPrevious} />
+		<IconButton
+			size="lg"
+			iconClass="h-5 w-5"
+			disabled={!hasTrack}
+			icon="skip-back"
+			fill
+			ariaLabel={$translate('player.previous')}
+			onclick={onPrevious}
+		/>
 	</Tooltip>
 
 	<!-- Play/Pause -->
@@ -39,6 +47,7 @@
 			disabled={!hasTrack}
 			icon={isPlaying ? 'pause' : 'play'}
 			fill
+			ariaLabel={isPlaying ? $translate('player.pause') : $translate('player.play')}
 			onclick={onPlayPause}
 		/>
 	</Tooltip>
@@ -48,11 +57,27 @@
 
 	<!-- Next -->
 	<Tooltip text={$translate('player.next')} position="top" delay={250}>
-		<IconButton size="lg" iconClass="h-5 w-5" disabled={!hasTrack} icon="skip-forward" fill onclick={onNext} />
+		<IconButton
+			size="lg"
+			iconClass="h-5 w-5"
+			disabled={!hasTrack}
+			icon="skip-forward"
+			fill
+			ariaLabel={$translate('player.next')}
+			onclick={onNext}
+		/>
 	</Tooltip>
 
 	<!-- Shuffle -->
 	<Tooltip text={$translate('player.shuffle')} position="top" delay={250}>
-		<IconButton size="lg" iconClass="h-4 w-4" active={shuffleEnabled} icon="shuffle" onclick={onToggleShuffle} />
+		<IconButton
+			size="lg"
+			iconClass="h-4 w-4"
+			active={shuffleEnabled}
+			pressed={shuffleEnabled}
+			icon="shuffle"
+			ariaLabel={$translate('player.shuffle')}
+			onclick={onToggleShuffle}
+		/>
 	</Tooltip>
 </div>

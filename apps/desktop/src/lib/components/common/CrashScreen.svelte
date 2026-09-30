@@ -89,6 +89,7 @@
 							size="sm"
 							icon={copySuccess ? 'check' : 'copy'}
 							iconClass="h-4 w-4 {copySuccess ? 'text-success' : ''}"
+							ariaLabel={$translate('settings.diagnostics.copyToClipboard')}
 							onclick={handleCopyError}
 						/>
 					</Tooltip>

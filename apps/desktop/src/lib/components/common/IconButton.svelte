@@ -3,6 +3,10 @@
 
 	type Props = {
 		title?: string
+		/** Accessible name, for an icon button whose visible label is a `Tooltip` (no native `title` bubble). */
+		ariaLabel?: string
+		/** Toggle state, announced as pressed / not pressed (a shuffle or follow toggle). */
+		pressed?: boolean
 		disabled?: boolean
 		active?: boolean
 		size?: 'sm' | 'md' | 'lg'
@@ -15,6 +19,8 @@
 
 	let {
 		title = '',
+		ariaLabel,
+		pressed,
 		disabled = false,
 		active = false,
 		size = 'md',
@@ -34,7 +40,9 @@
 
 <button
 	type="button"
-	{title}
+	title={title || undefined}
+	aria-label={ariaLabel || undefined}
+	aria-pressed={pressed}
 	{disabled}
 	class="inline-flex items-center justify-center rounded-md transition-colors focus:ring-2 focus:ring-brand-primary focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 {active
 		? 'bg-brand-muted text-brand-primary hover:cursor-pointer'

@@ -128,7 +128,7 @@
 			<Icon
 				name="refresh-cw"
 				class="h-3 w-3 text-sky-400 {syncingMik
-					? 'animate-spin'
+					? 'animate-spin motion-reduce:animate-none'
 					: 'transition-transform duration-300 group-hover:rotate-180'}"
 			/>
 		</button>
@@ -231,7 +231,7 @@
 		>
 			<Icon
 				name={exportingXml ? 'loader' : 'download'}
-				class="h-4 w-4 text-cyan-400 {exportingXml ? 'animate-spin' : ''}"
+				class="h-4 w-4 text-cyan-400 {exportingXml ? 'animate-spin motion-reduce:animate-none' : ''}"
 			/>
 		</button>
 	</Tooltip>
@@ -250,10 +250,15 @@
 	<SyncStatusIndicator onclick={onCloudSync} />
 	{#if $isDev}
 		<Tooltip text={$translate('common.developerTools')} position="bottom" delay={250}>
-			<IconButton icon="terminal" iconClass="h-5 w-5" onclick={onDevTools} />
+			<IconButton
+				icon="terminal"
+				iconClass="h-5 w-5"
+				ariaLabel={$translate('common.developerTools')}
+				onclick={onDevTools}
+			/>
 		</Tooltip>
 	{/if}
 	<Tooltip text={$translate('settings.title')} position="bottom" delay={250}>
-		<IconButton icon="settings" iconClass="h-5 w-5" onclick={onSettings} />
+		<IconButton icon="settings" iconClass="h-5 w-5" ariaLabel={$translate('settings.title')} onclick={onSettings} />
 	</Tooltip>
 </div>

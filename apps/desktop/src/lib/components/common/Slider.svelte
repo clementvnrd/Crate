@@ -8,6 +8,10 @@
 		bipolar?: boolean
 		snapToCenter?: number
 		class?: string
+		/** Accessible name (the visible label usually sits outside the slider). */
+		ariaLabel?: string
+		/** Spoken value, e.g. "+2.5%" or "80%" (defaults to the raw number). */
+		ariaValueText?: string
 		oninput?: (e: Event) => void
 		onchange?: (e: Event) => void
 	}
@@ -21,6 +25,8 @@
 		bipolar = false,
 		snapToCenter,
 		class: className = '',
+		ariaLabel,
+		ariaValueText,
 		oninput,
 		onchange,
 	}: Props = $props()
@@ -55,6 +61,8 @@
 	{max}
 	{step}
 	{disabled}
+	aria-label={ariaLabel}
+	aria-valuetext={ariaValueText}
 	bind:value
 	class="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50 {className}"
 	style={backgroundStyle}

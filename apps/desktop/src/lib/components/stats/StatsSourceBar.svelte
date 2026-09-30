@@ -102,7 +102,7 @@
 <div class="rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
 	<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 		<div class="flex items-center gap-2">
-			<div class="h-2 w-2 animate-pulse rounded-full bg-emerald-400"></div>
+			<div class="h-2 w-2 animate-pulse rounded-full bg-emerald-400 motion-reduce:animate-none"></div>
 			<h3 class="text-xs font-bold tracking-wider text-text-secondary uppercase">Répartition Multi-Sources</h3>
 		</div>
 		<span class="font-mono text-xs text-text-tertiary">
@@ -117,6 +117,8 @@
 				<div
 					class="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full {item.bgClass} cursor-pointer hover:opacity-90"
 					style="width: {item.percentage}%"
+					role="img"
+					aria-label="{item.label} : {formatNumber(item.minutes, $language)} min ({item.percentage}%)"
 					title="{item.label} : {formatNumber(item.minutes, $language)} min ({item.percentage}%)"
 				></div>
 			{/each}

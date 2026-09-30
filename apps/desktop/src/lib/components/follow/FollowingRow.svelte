@@ -123,14 +123,31 @@
 				</div>
 			{:else}
 				<Tooltip text={$translate('discovery.following.checkNow')} position="top" delay={250}>
-					<IconButton icon="refresh" size="sm" onclick={() => onCheck?.()} />
+					<IconButton
+						icon="refresh"
+						size="sm"
+						ariaLabel={$translate('discovery.following.checkNow')}
+						onclick={() => onCheck?.()}
+					/>
 				</Tooltip>
 			{/if}
 			<Tooltip text={$translate('discovery.openInBrowser')} position="top" delay={250}>
-				<IconButton icon="external-link" size="sm" disabled={checking} onclick={() => onOpen?.()} />
+				<IconButton
+					icon="external-link"
+					size="sm"
+					disabled={checking}
+					ariaLabel={$translate('discovery.openInBrowser')}
+					onclick={() => onOpen?.()}
+				/>
 			</Tooltip>
 			<Tooltip text={$translate('discovery.following.unfollow')} position="top" delay={250}>
-				<IconButton icon="x" size="sm" disabled={checking} onclick={() => onUnfollow?.()} />
+				<IconButton
+					icon="x"
+					size="sm"
+					disabled={checking}
+					ariaLabel={$translate('discovery.following.unfollow')}
+					onclick={() => onUnfollow?.()}
+				/>
 			</Tooltip>
 		</div>
 	</div>

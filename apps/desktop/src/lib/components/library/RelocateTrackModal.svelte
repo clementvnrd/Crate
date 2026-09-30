@@ -186,7 +186,9 @@
 		<!-- Validation Status (device-local file flow only) -->
 		{#if !isCloudSynced && validating}
 			<div class="flex items-center gap-2 text-sm text-text-secondary">
-				<div class="h-4 w-4 animate-spin rounded-full border-2 border-brand-primary border-t-transparent"></div>
+				<div
+					class="h-4 w-4 animate-spin rounded-full border-2 border-brand-primary border-t-transparent motion-reduce:animate-none"
+				></div>
 				Validating file...
 			</div>
 		{:else if !isCloudSynced && validationResult}

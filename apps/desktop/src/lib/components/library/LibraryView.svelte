@@ -110,6 +110,7 @@
 					size="sm"
 					active={editorVisible && hasSelection}
 					disabled={!hasSelection}
+					ariaLabel={editorVisible ? $translate('editor.hideEditor') : $translate('editor.showEditor')}
 					onclick={onToggleEditor}
 				/>
 			</Tooltip>

@@ -24,7 +24,7 @@
 	<svg
 		viewBox="0 0 100 100"
 		class="{sizeClasses[size].icon} shrink-0 drop-shadow-[0_0_8px_rgba(0,195,255,0.6)] {animated
-			? 'animate-pulse'
+			? 'animate-pulse motion-reduce:animate-none'
 			: ''}"
 		fill="none"
 		xmlns="http://www.w3.org/2000/svg"

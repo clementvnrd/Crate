@@ -280,6 +280,7 @@
 			onclick={() => (open = !open)}
 			aria-haspopup="true"
 			aria-expanded={open}
+			aria-label={$translate('filters.title')}
 		>
 			<Icon name="filter" />
 			{#if hasActiveFilters}

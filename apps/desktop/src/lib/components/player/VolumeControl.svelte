@@ -31,7 +31,15 @@
 	<Text variant="header-4">{$translate('player.volume')}</Text>
 	<div class="flex items-center gap-2">
 		<div class="flex h-6 w-24 items-center">
-			<Slider value={volume} min={0} max={1} step={0.01} oninput={handleVolumeChange} />
+			<Slider
+				value={volume}
+				min={0}
+				max={1}
+				step={0.01}
+				ariaLabel={$translate('player.volume')}
+				ariaValueText={`${Math.round(volume * 100)}%`}
+				oninput={handleVolumeChange}
+			/>
 		</div>
 
 		<Tooltip text={isMuted ? $translate('player.unmute') : $translate('player.mute')} position="top" delay={250}>
@@ -39,6 +47,7 @@
 				size="sm"
 				icon={isMuted ? 'volume-muted' : volume < 0.5 ? 'volume-low' : 'volume-full'}
 				fill
+				ariaLabel={isMuted ? $translate('player.unmute') : $translate('player.mute')}
 				onclick={toggleMute}
 			/>
 		</Tooltip>

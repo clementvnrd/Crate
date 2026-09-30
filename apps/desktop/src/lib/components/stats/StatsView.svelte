@@ -88,7 +88,7 @@
 			<!-- Now Playing Spotify Live Pill (if active) -->
 			{#if $spotifyNowPlaying?.is_playing}
 				<div
-					class="hidden animate-pulse items-center gap-2 rounded-full border border-[#1DB954]/40 bg-[#1DB954]/10 px-3 py-1 text-xs font-medium text-[#1DB954] shadow-sm md:flex"
+					class="hidden animate-pulse items-center gap-2 rounded-full border border-[#1DB954]/40 bg-[#1DB954]/10 px-3 py-1 text-xs font-medium text-[#1DB954] shadow-sm motion-reduce:animate-none md:flex"
 				>
 					<span class="h-2 w-2 rounded-full bg-[#1DB954]"></span>
 					<span class="font-bold">Live Spotify :</span>
@@ -115,7 +115,10 @@
 				title="Rafraîchir les statistiques"
 				disabled={$isStatsLoading}
 			>
-				<Icon name="refresh-cw" class="h-4 w-4 {$isStatsLoading ? 'animate-spin text-brand-primary' : ''}" />
+				<Icon
+					name="refresh-cw"
+					class="h-4 w-4 {$isStatsLoading ? 'animate-spin text-brand-primary motion-reduce:animate-none' : ''}"
+				/>
 			</button>
 		</div>
 	</div>

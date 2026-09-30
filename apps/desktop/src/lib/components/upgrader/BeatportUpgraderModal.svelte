@@ -240,7 +240,10 @@
 					disabled={$isUpgraderLoading}
 					title="Actualiser la recherche des upgrades"
 				>
-					<Icon name="refresh-cw" class="h-3.5 w-3.5 {$isUpgraderLoading ? 'animate-spin text-emerald-400' : ''}" />
+					<Icon
+						name="refresh-cw"
+						class="h-3.5 w-3.5 {$isUpgraderLoading ? 'animate-spin text-emerald-400 motion-reduce:animate-none' : ''}"
+					/>
 					<span>Actualiser</span>
 				</button>
 
@@ -286,11 +289,13 @@
 			{:else if $isUpgraderLoading && $upgraderMatches.length === 0}
 				<div class="flex h-80 flex-col items-center justify-center gap-4 px-4 text-center">
 					<div class="relative flex h-16 w-16 items-center justify-center">
-						<div class="absolute inset-0 animate-ping rounded-full border-3 border-emerald-500/20"></div>
 						<div
-							class="h-14 w-14 animate-spin rounded-full border-3 border-emerald-500 border-t-transparent shadow-lg shadow-emerald-500/20"
+							class="absolute inset-0 animate-ping rounded-full border-3 border-emerald-500/20 motion-reduce:animate-none"
 						></div>
-						<Icon name="sparkles" class="absolute h-6 w-6 animate-pulse text-emerald-400" />
+						<div
+							class="h-14 w-14 animate-spin rounded-full border-3 border-emerald-500 border-t-transparent shadow-lg shadow-emerald-500/20 motion-reduce:animate-none"
+						></div>
+						<Icon name="sparkles" class="absolute h-6 w-6 animate-pulse text-emerald-400 motion-reduce:animate-none" />
 					</div>
 					<div class="space-y-1">
 						<Text variant="header-2" weight="bold" class="text-text-primary">Scan de la bibliothèque en cours...</Text>
@@ -319,9 +324,9 @@
 			{:else}
 				{#if $isUpgraderLoading}
 					<div
-						class="mb-2 flex animate-pulse items-center justify-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-3.5 py-2 text-xs font-medium text-emerald-400"
+						class="mb-2 flex animate-pulse items-center justify-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-3.5 py-2 text-xs font-medium text-emerald-400 motion-reduce:animate-none"
 					>
-						<Icon name="refresh-cw" class="h-3.5 w-3.5 animate-spin" />
+						<Icon name="refresh-cw" class="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
 						<span>Actualisation de la recherche en cours...</span>
 					</div>
 				{/if}
@@ -658,7 +663,7 @@
 					class="border-emerald-500 bg-emerald-600 py-1.5 text-xs font-semibold shadow-md shadow-emerald-950/40 hover:bg-emerald-500"
 				>
 					{#if $isUpgrading}
-						<Icon name="refresh-cw" class="mr-2 h-3.5 w-3.5 animate-spin" />
+						<Icon name="refresh-cw" class="mr-2 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
 						{#if $upgradeProgress}
 							Mise à niveau {$upgradeProgress.current}/{$upgradeProgress.total} — {$upgradeProgress.title}
 						{:else}

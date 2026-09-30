@@ -20,7 +20,9 @@
 		"folder": "folder",
 		"playlist": "playlist",
 		"next": "Next",
-		"back": "Back"
+		"back": "Back",
+		"viewArtwork": "View artwork",
+		"albumArtwork": "Album artwork"
 	},
 	"nav": {
 		"library": "Library",
@@ -269,7 +271,8 @@
 			"confirmTitle": "Delete cloud vault?",
 			"confirmMessage": "This permanently deletes all your synced data from the cloud and signs you out. Your local library stays intact. This can't be undone.",
 			"error": "Couldn't delete your cloud vault"
-		}
+		},
+		"indicatorLabel": "Cloud sync: {status}"
 	},
 	"player": {
 		"play": "Play",
@@ -294,6 +297,15 @@
 			"removeTitle": "Remove this album?",
 			"removeMessage": "The album is removed from the Crate player. The files on your disk are not deleted.",
 			"removeConfirm": "Remove album"
+		},
+		"waveform": {
+			"label": "Playback position",
+			"position": "{position} of {duration}"
+		},
+		"recent": {
+			"reveal": "Reveal in Finder",
+			"remove": "Remove from history",
+			"list": "Recent files"
 		}
 	},
 	"library": {
@@ -323,7 +335,8 @@
 			"sampleRate": "Sample Rate",
 			"genre": "Genre",
 			"label": "Label",
-			"year": "Year"
+			"year": "Year",
+			"color": "Color"
 		},
 		"track": "track",
 		"tracks": "tracks",
@@ -466,7 +479,10 @@
 				"urlPlaceholder": "Paste a Bandcamp, SoundCloud, or Discogs artist/label page URL",
 				"urlInfo": "We'll detect the platform and whether it's an artist or label, then watch for new releases from now on. Older releases won't be added."
 			}
-		}
+		},
+		"cancelRefresh": "Cancel metadata refresh",
+		"showTracks": "Show tracks",
+		"hideTracks": "Hide tracks"
 	},
 	"filters": {
 		"title": "Filters",

@@ -193,7 +193,7 @@
 				: $translate('editor.tracksCount', { values: { count: selectedTracks.length } })}
 		</Text>
 		<Tooltip text={$translate('common.close')} position="bottom" delay={250}>
-			<IconButton icon="x" size="sm" onclick={handleClose} />
+			<IconButton icon="x" size="sm" ariaLabel={$translate('common.close')} onclick={handleClose} />
 		</Tooltip>
 	</div>
 

@@ -187,17 +187,35 @@
 				onToggleNewFilter={() => discoveryStore.toggleNewFilter()}
 			/>
 			<Tooltip text={$translate('discovery.expandAll')} position="bottom" delay={250}>
-				<IconButton icon="unfold-vertical" size="sm" disabled={!hasExpandableReleases} onclick={handleExpandAll} />
+				<IconButton
+					icon="unfold-vertical"
+					size="sm"
+					disabled={!hasExpandableReleases}
+					ariaLabel={$translate('discovery.expandAll')}
+					onclick={handleExpandAll}
+				/>
 			</Tooltip>
 			<Tooltip text={$translate('discovery.collapseAll')} position="bottom" delay={250}>
-				<IconButton icon="fold-vertical" size="sm" disabled={!hasExpandableReleases} onclick={handleCollapseAll} />
+				<IconButton
+					icon="fold-vertical"
+					size="sm"
+					disabled={!hasExpandableReleases}
+					ariaLabel={$translate('discovery.collapseAll')}
+					onclick={handleCollapseAll}
+				/>
 			</Tooltip>
 			<Tooltip
 				text={editorVisible ? $translate('editor.hideEditor') : $translate('editor.showEditor')}
 				position="bottom"
 				delay={250}
 			>
-				<IconButton icon="panel-right" size="sm" disabled={!hasSelection} onclick={onToggleEditor} />
+				<IconButton
+					icon="panel-right"
+					size="sm"
+					disabled={!hasSelection}
+					ariaLabel={editorVisible ? $translate('editor.hideEditor') : $translate('editor.showEditor')}
+					onclick={onToggleEditor}
+				/>
 			</Tooltip>
 		</div>
 	</div>

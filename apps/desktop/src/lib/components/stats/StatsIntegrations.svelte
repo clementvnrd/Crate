@@ -4,7 +4,7 @@
 	import * as statsApi from '$shared/api/stats'
 	import Icon from '$lib/components/common/Icon.svelte'
 	import ToggleSwitch from '$lib/components/common/ToggleSwitch.svelte'
-	import { Button, Spinner } from '$lib/components/common'
+	import { Button, Spinner, focusTrap } from '$lib/components/common'
 	import { openUrl } from '@tauri-apps/plugin-opener'
 	import { toastStore } from '$shared/stores/toast'
 	import { listen } from '@tauri-apps/api/event'
@@ -179,7 +179,7 @@
 								<span
 									class="inline-flex items-center gap-1 rounded-full border border-[#1DB954]/40 bg-[#1DB954]/20 px-2 py-0.5 text-[10px] font-bold text-[#1DB954]"
 								>
-									<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1DB954]"></span>
+									<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1DB954] motion-reduce:animate-none"></span>
 									En direct
 								</span>
 							{:else}
@@ -362,7 +362,7 @@
 								<span
 									class="inline-flex items-center gap-1 rounded-full border border-[#00D2FF]/40 bg-[#00D2FF]/20 px-2 py-0.5 text-[10px] font-bold text-[#00D2FF]"
 								>
-									<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#00D2FF]"></span>
+									<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#00D2FF] motion-reduce:animate-none"></span>
 									En direct
 								</span>
 							{:else}
@@ -390,7 +390,10 @@
 
 		<!-- Status Label -->
 		<div class="flex items-center gap-2 pt-1 text-xs text-text-secondary">
-			<span class="inline-block h-2 w-2 rounded-full {mikDetected ? 'animate-ping bg-[#00D2FF]' : 'bg-surface-4'}"
+			<span
+				class="inline-block h-2 w-2 rounded-full {mikDetected
+					? 'animate-ping bg-[#00D2FF] motion-reduce:animate-none'
+					: 'bg-surface-4'}"
 			></span>
 			<span class="text-[11px]">
 				{#if !mikTrackerEnabled}
@@ -410,10 +413,11 @@
 <!-- ========================================================================= -->
 {#if showSpotifyModal}
 	<div
-		class="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md duration-200"
+		class="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md duration-200 focus-visible:outline-none"
 		role="dialog"
 		aria-modal="true"
 		tabindex="-1"
+		use:focusTrap
 		onclick={(e) => {
 			if (e.target === e.currentTarget) closeSpotifyModal()
 		}}

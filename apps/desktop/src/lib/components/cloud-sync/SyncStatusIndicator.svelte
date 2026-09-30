@@ -46,10 +46,11 @@
 		<button
 			type="button"
 			class="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:cursor-pointer hover:bg-surface-2 {iconColor}"
+			aria-label={$translate('cloudSync.indicatorLabel', { values: { status: tooltipText } })}
 			{onclick}
 		>
 			{#if $syncPhase === 'syncing'}
-				<Icon name="loader" class="h-[18px] w-[18px] animate-spin" />
+				<Icon name="loader" class="h-[18px] w-[18px] animate-spin motion-reduce:animate-none" />
 			{:else if $syncPhase === 'error' || $syncPhase === 'offline'}
 				<Icon name="cloud-off" class="h-[18px] w-[18px]" />
 			{:else if $isSignedIn}

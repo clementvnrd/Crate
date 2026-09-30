@@ -216,7 +216,12 @@
 					disabled={$isDuplicateLoading}
 					title="Actualiser la liste des doublons"
 				>
-					<Icon name="refresh-cw" class="h-3.5 w-3.5 {$isDuplicateLoading ? 'animate-spin text-brand-primary' : ''}" />
+					<Icon
+						name="refresh-cw"
+						class="h-3.5 w-3.5 {$isDuplicateLoading
+							? 'animate-spin text-brand-primary motion-reduce:animate-none'
+							: ''}"
+					/>
 					<span>Actualiser</span>
 				</button>
 
@@ -236,7 +241,9 @@
 		<div class="min-h-0 flex-1 space-y-5 overflow-y-auto p-6">
 			{#if $isDuplicateLoading && $duplicateGroups.length === 0}
 				<div class="flex h-72 flex-col items-center justify-center gap-3">
-					<div class="h-10 w-10 animate-spin rounded-full border-3 border-brand-primary border-t-transparent"></div>
+					<div
+						class="h-10 w-10 animate-spin rounded-full border-3 border-brand-primary border-t-transparent motion-reduce:animate-none"
+					></div>
 					<Text variant="body-1" class="font-medium text-text-secondary">Analyse et recherche des doublons...</Text>
 				</div>
 			{:else if $duplicateGroups.length === 0}
@@ -516,7 +523,7 @@
 					class="py-1.5 text-xs font-semibold shadow-md shadow-rose-950/40"
 				>
 					{#if isDeleting}
-						<Icon name="refresh-cw" class="mr-2 h-3.5 w-3.5 animate-spin" />
+						<Icon name="refresh-cw" class="mr-2 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
 						Suppression en cours...
 					{:else}
 						<Icon name="trash" class="mr-2 h-3.5 w-3.5" />

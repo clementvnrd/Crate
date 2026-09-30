@@ -272,4 +272,21 @@
 	.animate-eq-3 {
 		animation: eq-pulse-3 0.8s ease-in-out infinite 0.3s;
 	}
+	/* Reduced motion: the equaliser stands still at mid height instead of looping. */
+	@media (prefers-reduced-motion: reduce) {
+		.animate-eq-1,
+		.animate-eq-2,
+		.animate-eq-3 {
+			animation: none;
+		}
+		.animate-eq-1 {
+			height: 9px;
+		}
+		.animate-eq-2 {
+			height: 12px;
+		}
+		.animate-eq-3 {
+			height: 7px;
+		}
+	}
 </style>

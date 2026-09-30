@@ -44,7 +44,7 @@
 	{#if isLoading && bpmStats.length === 0}
 		<div class="space-y-3 py-4">
 			{#each Array(4) as _, i (i)}
-				<div class="h-8 animate-pulse rounded-lg bg-surface-3"></div>
+				<div class="h-8 animate-pulse rounded-lg bg-surface-3 motion-reduce:animate-none"></div>
 			{/each}
 		</div>
 	{:else if bpmStats.length === 0}

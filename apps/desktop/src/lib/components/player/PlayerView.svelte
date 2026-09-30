@@ -39,6 +39,8 @@
 	import type { SegmentOption } from '$lib/components/common'
 	import AlbumGridView from './AlbumGridView.svelte'
 	import AlbumDetailView from './AlbumDetailView.svelte'
+	import { waveformSeekTarget } from './waveformSeek'
+	import { recentRowForKey } from './recentKeys'
 
 	// =========================================================================
 	// State & Derived Track
@@ -52,6 +54,15 @@
 	let waveformDragMs = $state<number | null>(null)
 	let waveformContainer: HTMLDivElement | null = $state(null)
 	let recentSearchQuery = $state('')
+	// Keyboard navigation of the recent files (see recentKeys.ts): the list is one tab stop with an active row.
+	let activeRecentIndex = $state(0)
+	let recentListEl: HTMLDivElement | null = $state(null)
+
+	// Keep the active row inside the list when the filter shortens it.
+	$effect(() => {
+		const count = filteredRecentTracks.length
+		if (activeRecentIndex > 0 && activeRecentIndex >= count) activeRecentIndex = Math.max(0, count - 1)
+	})
 
 	const filteredRecentTracks = $derived.by(() => {
 		const q = recentSearchQuery.trim().toLowerCase()
@@ -260,6 +271,16 @@
 		isHoveringWaveform = false
 	}
 
+	// Keyboard seeking on the focused waveform (same steps as the global shortcuts, see waveformSeek.ts). The event
+	// is stopped so the global arrow shortcut does not seek a second time.
+	function handleWaveformKeydown(e: KeyboardEvent) {
+		const target = waveformSeekTarget(e, currentDisplayPosition, effectiveDuration)
+		if (target === null) return
+		e.preventDefault()
+		e.stopPropagation()
+		playerStore.seek(target)
+	}
+
 	async function handleImportToLibrary() {
 		if (!activeHeroTrack || activeHeroTrack.is_in_library || isImporting) return
 		isImporting = true
@@ -290,6 +311,41 @@
 			console.error('Reveal in finder error:', err)
 			toastStore.error('Impossible de révéler le fichier dans le Finder')
 		}
+	}
+
+	// A click on a row plays it, except in the row's action cell (reveal, remove), even between its two buttons.
+	function handleRecentListClick(e: MouseEvent) {
+		const target = e.target as HTMLElement
+		if (target.closest('[data-row-actions]')) return
+		const row = target.closest<HTMLElement>('[data-recent-index]')
+		if (!row) return
+		const index = Number(row.dataset.recentIndex)
+		const track = filteredRecentTracks[index]
+		if (!track) return
+		activeRecentIndex = index
+		handlePlayTrack(track)
+	}
+
+	// Keys on the focused list: arrows, Home and End move the active row, Enter or Space plays it. Only for keyboard
+	// focus (a list focused by a mouse click leaves the arrows to the global volume and seek shortcuts, as before);
+	// handled keys are stopped so the global Enter / Space / arrow shortcuts do not also run.
+	function handleRecentListKeydown(e: KeyboardEvent) {
+		if (e.target !== e.currentTarget || !recentListEl?.matches(':focus-visible')) return
+		const count = filteredRecentTracks.length
+		if (count === 0) return
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault()
+			e.stopPropagation()
+			const track = filteredRecentTracks[Math.min(activeRecentIndex, count - 1)]
+			if (track) handlePlayTrack(track)
+			return
+		}
+		const next = recentRowForKey(e.key, activeRecentIndex, count)
+		if (next === null) return
+		e.preventDefault()
+		e.stopPropagation()
+		activeRecentIndex = next
+		document.getElementById(`recent-row-${next}`)?.scrollIntoView({ block: 'nearest' })
 	}
 
 	async function handleRemoveRecent(e: MouseEvent, id: string) {
@@ -469,7 +525,7 @@
 									>
 										<Icon
 											name={isImporting ? 'loader' : 'plus'}
-											class="h-3.5 w-3.5 {isImporting ? 'animate-spin' : ''}"
+											class="h-3.5 w-3.5 {isImporting ? 'animate-spin motion-reduce:animate-none' : ''}"
 										/>
 										<span>{isImporting ? 'Ajout...' : 'Ajouter à ma bibliothèque'}</span>
 									</button>
@@ -512,11 +568,23 @@
 									{formatDuration(currentDisplayPosition)}
 								</span>
 
-								<!-- Waveform Seekbar (h-12 / 48px) -->
-								<!-- svelte-ignore a11y_no_static_element_interactions -->
+								<!-- Waveform Seekbar (h-12 / 48px): a slider for the keyboard (arrows, Page Up/Down, Home/End) -->
 								<div
 									bind:this={waveformContainer}
 									class="group relative h-12 flex-1 cursor-pointer overflow-hidden rounded-xl border border-stroke-subtle bg-surface-2/60 px-2 py-1 transition-all"
+									role="slider"
+									tabindex="0"
+									aria-label={$translate('player.waveform.label')}
+									aria-valuemin={0}
+									aria-valuemax={Math.round(effectiveDuration / 1000)}
+									aria-valuenow={Math.round(currentDisplayPosition / 1000)}
+									aria-valuetext={$translate('player.waveform.position', {
+										values: {
+											position: formatDuration(currentDisplayPosition),
+											duration: formatDuration(effectiveDuration),
+										},
+									})}
+									onkeydown={handleWaveformKeydown}
 									onmousedown={handleWaveformMouseDown}
 									onmousemove={handleWaveformMouseMove}
 									onmouseleave={handleWaveformMouseLeave}
@@ -715,7 +783,7 @@
 
 			<!-- Ligne 2 : En-têtes de colonnes fixes -->
 			<div
-				class="grid grid-cols-[32px_36px_minmax(180px,2fr)_minmax(120px,1.2fr)_110px_110px_64px_130px_60px] items-center gap-3 border-t border-stroke-subtle px-3 py-1 text-[10px] font-semibold tracking-wider text-text-tertiary uppercase"
+				class="grid grid-cols-[32px_36px_minmax(160px,2fr)_minmax(0,1.2fr)_110px_110px_64px_130px_60px] items-center gap-3 border-t border-stroke-subtle px-3 py-1 text-[10px] font-semibold tracking-wider text-text-tertiary uppercase"
 			>
 				<span class="pl-1">#</span>
 				<span>Cover</span>
@@ -730,58 +798,38 @@
 		</div>
 
 		<!-- LISTE DÉFILANTE DES SONS UNIQUEMENT (flex-1 overflow-y-auto) -->
-		<div class="min-h-0 flex-1 overflow-y-auto scroll-smooth px-6 py-1">
-			{#if $recentTracksLoading}
-				<div class="flex h-32 items-center justify-center gap-2 text-text-tertiary">
-					<Spinner icon="loader" class="h-4 w-4" color="current" />
-					<span class="text-xs">Chargement de l'historique...</span>
-				</div>
-			{:else if $recentStandaloneTracks.length === 0}
-				<!-- Empty State -->
-				<div class="flex flex-col items-center justify-center py-12 text-center">
-					<div
-						class="mb-2.5 flex h-12 w-12 items-center justify-center rounded-2xl border border-stroke-subtle bg-surface-2 text-cyan-600 shadow-inner dark:text-cyan-400/60"
-					>
-						<Icon name="disc" class="h-6 w-6" />
-					</div>
-					<h3 class="text-sm font-semibold text-text-primary">Aucun fichier audio récent</h3>
-					<p class="mt-1 max-w-sm text-xs text-text-tertiary">
-						Double-cliquez sur un fichier audio dans le Finder ou ouvrez-le avec Crate pour l'écouter directement sans
-						encombrer votre bibliothèque.
-					</p>
-				</div>
-			{:else if filteredRecentTracks.length === 0}
-				<!-- Empty Filter State -->
-				<div class="flex flex-col items-center justify-center py-12 text-center">
-					<div
-						class="mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-tertiary"
-					>
-						<Icon name="search" class="h-5 w-5" />
-					</div>
-					<h3 class="text-xs font-semibold text-text-primary">Aucun résultat pour « {recentSearchQuery} »</h3>
-					<button
-						type="button"
-						class="mt-2 cursor-pointer text-xs text-cyan-600 hover:underline dark:text-cyan-400"
-						onclick={() => (recentSearchQuery = '')}
-					>
-						Effacer le filtre
-					</button>
-				</div>
-			{:else}
+		{#if !$recentTracksLoading && filteredRecentTracks.length > 0}
+			<!-- The scroll area is a grid: one tab stop, the active row outlined only for keyboard focus (recentKeys.ts).
+			     A click on a row plays it, except in its action cell, as before. -->
+			<div
+				bind:this={recentListEl}
+				class="group/recents min-h-0 flex-1 overflow-y-auto scroll-smooth px-6 py-1 focus-visible:outline-none"
+				role="grid"
+				tabindex="0"
+				aria-label={$translate('player.recent.list')}
+				aria-activedescendant="recent-row-{Math.min(activeRecentIndex, filteredRecentTracks.length - 1)}"
+				onclick={handleRecentListClick}
+				onkeydown={handleRecentListKeydown}
+			>
 				<div class="flex flex-col divide-y divide-stroke-subtle/50 py-1">
 					{#each filteredRecentTracks as track, index (track.id)}
 						{@const isPlayingThis =
 							$isPlaying && $playbackSource === 'standalone' && $standaloneTrack?.file_path === track.file_path}
 						{@const trackArtUrl = track.artwork_path ? getArtworkUrl(track.artwork_path, $appDataDir) : null}
 
-						<!-- Track Row -->
-						<!-- svelte-ignore a11y_no_static_element_interactions -->
-						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- Track Row: a click plays it (handled by the list); from the keyboard it is the list's active row -->
 						<div
-							class="group grid cursor-pointer grid-cols-[32px_36px_minmax(180px,2fr)_minmax(120px,1.2fr)_110px_110px_64px_130px_60px] items-center gap-3 rounded-lg px-3 py-1.5 text-xs transition-colors {isPlayingThis
+							id="recent-row-{index}"
+							role="row"
+							tabindex="-1"
+							aria-selected={index === activeRecentIndex}
+							class="group grid cursor-pointer grid-cols-[32px_36px_minmax(160px,2fr)_minmax(0,1.2fr)_110px_110px_64px_130px_60px] items-center gap-3 rounded-lg px-3 py-1.5 text-xs transition-colors {index ===
+							activeRecentIndex
+								? 'group-focus-visible/recents:outline-2 group-focus-visible/recents:-outline-offset-2 group-focus-visible/recents:outline-brand-primary'
+								: ''} {isPlayingThis
 								? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-300'
 								: 'text-text-primary hover:bg-surface-1'}"
-							onclick={() => handlePlayTrack(track)}
+							data-recent-index={index}
 						>
 							<!-- Index / Play Icon / Equalizer Animation -->
 							<div class="flex items-center pl-1 font-mono text-text-tertiary">
@@ -862,25 +910,27 @@
 								{track.last_played_at ? formatDate(track.last_played_at, 'locale') : '-'}
 							</div>
 
-							<!-- Actions -->
-							<!-- svelte-ignore a11y_no_static_element_interactions -->
-							<!-- svelte-ignore a11y_click_events_have_key_events -->
-							<div class="pr-1 text-right" onclick={(e) => e.stopPropagation()}>
-								<div class="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-									<Tooltip text="Révéler dans le Finder" position="top">
+							<!-- Actions (shown on hover, or while one of them has keyboard focus) -->
+							<div class="pr-1 text-right" data-row-actions>
+								<div
+									class="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 has-focus-visible:opacity-100"
+								>
+									<Tooltip text={$translate('player.recent.reveal')} position="top">
 										<button
 											type="button"
 											class="cursor-pointer rounded-full p-1 text-text-tertiary transition-colors hover:bg-surface-2 hover:text-text-primary"
+											aria-label={$translate('player.recent.reveal')}
 											onclick={() => handleRevealInFinder(track.file_path)}
 										>
 											<Icon name="folder-open" class="h-3 w-3" />
 										</button>
 									</Tooltip>
 
-									<Tooltip text="Supprimer de l'historique" position="top">
+									<Tooltip text={$translate('player.recent.remove')} position="top">
 										<button
 											type="button"
 											class="cursor-pointer rounded-full p-1 text-text-tertiary transition-colors hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400"
+											aria-label={$translate('player.recent.remove')}
 											onclick={(e) => handleRemoveRecent(e, track.id)}
 										>
 											<Icon name="x" class="h-3 w-3" />
@@ -891,8 +941,48 @@
 						</div>
 					{/each}
 				</div>
-			{/if}
-		</div>
+			</div>
+		{:else}
+			<div class="min-h-0 flex-1 overflow-y-auto scroll-smooth px-6 py-1">
+				{#if $recentTracksLoading}
+					<div class="flex h-32 items-center justify-center gap-2 text-text-tertiary">
+						<Spinner icon="loader" class="h-4 w-4" color="current" />
+						<span class="text-xs">Chargement de l'historique...</span>
+					</div>
+				{:else if $recentStandaloneTracks.length === 0}
+					<!-- Empty State -->
+					<div class="flex flex-col items-center justify-center py-12 text-center">
+						<div
+							class="mb-2.5 flex h-12 w-12 items-center justify-center rounded-2xl border border-stroke-subtle bg-surface-2 text-cyan-600 shadow-inner dark:text-cyan-400/60"
+						>
+							<Icon name="disc" class="h-6 w-6" />
+						</div>
+						<h3 class="text-sm font-semibold text-text-primary">Aucun fichier audio récent</h3>
+						<p class="mt-1 max-w-sm text-xs text-text-tertiary">
+							Double-cliquez sur un fichier audio dans le Finder ou ouvrez-le avec Crate pour l'écouter directement sans
+							encombrer votre bibliothèque.
+						</p>
+					</div>
+				{:else if filteredRecentTracks.length === 0}
+					<!-- Empty Filter State -->
+					<div class="flex flex-col items-center justify-center py-12 text-center">
+						<div
+							class="mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-tertiary"
+						>
+							<Icon name="search" class="h-5 w-5" />
+						</div>
+						<h3 class="text-xs font-semibold text-text-primary">Aucun résultat pour « {recentSearchQuery} »</h3>
+						<button
+							type="button"
+							class="mt-2 cursor-pointer text-xs text-cyan-600 hover:underline dark:text-cyan-400"
+							onclick={() => (recentSearchQuery = '')}
+						>
+							Effacer le filtre
+						</button>
+					</div>
+				{/if}
+			</div>
+		{/if}
 	{:else if !$selectedAlbum}
 		<!-- ALBUM GRID VIEW -->
 		<AlbumGridView onSelectAlbum={(album) => albumsStore.selectAlbum(album)} />
@@ -938,5 +1028,22 @@
 	}
 	.animate-eq-3 {
 		animation: eq-pulse-3 0.8s ease-in-out infinite 0.3s;
+	}
+	/* Reduced motion: the equaliser stands still at mid height instead of looping. */
+	@media (prefers-reduced-motion: reduce) {
+		.animate-eq-1,
+		.animate-eq-2,
+		.animate-eq-3 {
+			animation: none;
+		}
+		.animate-eq-1 {
+			height: 9px;
+		}
+		.animate-eq-2 {
+			height: 12px;
+		}
+		.animate-eq-3 {
+			height: 7px;
+		}
 	}
 </style>

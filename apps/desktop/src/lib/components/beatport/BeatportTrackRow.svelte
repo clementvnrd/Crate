@@ -4,6 +4,7 @@
 	import { playerStore, isPlaying as isPlayerPlaying, beatportTrack, playbackSource } from '$lib/stores'
 	import { displaySettingsStore } from '$shared/stores/displaySettings'
 	import { Icon, KeyBadge } from '$lib/components/common'
+	import { BEATPORT_DATE_CELL, BEATPORT_GENRE_CELL, BEATPORT_MIX_NAME, BEATPORT_TRACK_GRID } from './trackGrid'
 
 	interface Props {
 		track: BeatportTrack
@@ -43,7 +44,7 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="group grid grid-cols-[36px_40px_1fr_120px_100px_60px_64px_50px_100px] items-center gap-2 px-3 py-1.5 text-xs transition-colors select-none {isCurrentTrack
+	class="group grid {BEATPORT_TRACK_GRID} items-center gap-2 px-3 py-1.5 text-xs transition-colors select-none {isCurrentTrack
 		? 'border-l-2 border-l-[#00FF96] bg-emerald-950/40'
 		: 'border-b border-stroke/40 hover:bg-surface-2/60'}"
 	onmouseenter={() => (isHovered = true)}
@@ -64,9 +65,13 @@
 				</button>
 			{:else}
 				<div class="flex h-5 w-5 items-end justify-center gap-[2px] pb-0.5" title="En cours de lecture">
-					<span class="h-3 w-[3px] animate-pulse rounded-full bg-[#00FF96]"></span>
-					<span class="h-4.5 w-[3px] animate-pulse rounded-full bg-[#00FF96] [animation-delay:150ms]"></span>
-					<span class="h-2.5 w-[3px] animate-pulse rounded-full bg-[#00FF96] [animation-delay:300ms]"></span>
+					<span class="h-3 w-[3px] animate-pulse rounded-full bg-[#00FF96] motion-reduce:animate-none"></span>
+					<span
+						class="h-4.5 w-[3px] animate-pulse rounded-full bg-[#00FF96] [animation-delay:150ms] motion-reduce:animate-none"
+					></span>
+					<span
+						class="h-2.5 w-[3px] animate-pulse rounded-full bg-[#00FF96] [animation-delay:300ms] motion-reduce:animate-none"
+					></span>
 				</div>
 			{/if}
 		{:else if isHovered || isCurrentTrack}
@@ -119,7 +124,7 @@
 				{track.title}
 			</button>
 			{#if track.mix_name}
-				<span class="truncate text-[11px] text-text-tertiary">({track.mix_name})</span>
+				<span class="truncate text-[11px] text-text-tertiary {BEATPORT_MIX_NAME}">({track.mix_name})</span>
 			{/if}
 		</div>
 		<div class="truncate text-[11px] text-text-secondary">
@@ -143,12 +148,12 @@
 	</div>
 
 	<!-- Genre -->
-	<div class="truncate text-text-secondary">
+	<div class="truncate text-text-secondary {BEATPORT_GENRE_CELL}">
 		{track.genre}
 	</div>
 
 	<!-- Released -->
-	<div class="truncate font-mono text-[11px] text-text-tertiary">
+	<div class="truncate font-mono text-[11px] text-text-tertiary {BEATPORT_DATE_CELL}">
 		{track.release_date}
 	</div>
 

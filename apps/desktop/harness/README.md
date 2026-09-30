@@ -44,7 +44,7 @@ Example: `http://localhost:1430/?theme=light&lang=fr&accent=amber&playing=trk-03
 | Beatport | `Beatport` in the segmented control. Charts, catalogue, purchases, favourites, playlists. |
 | Discovery | Globe button of the toolbar. |
 | Pulse | Chart button of the toolbar. |
-| Settings | `Cmd+,` or `Ctrl+,` (the gear button has no accessible name yet, register defect D10). Every tab opens. |
+| Settings | The gear button of the toolbar (named `Settings` / `Paramètres`), or `Cmd+,` / `Ctrl+,`. Every tab opens. |
 | Duplicate Killer | Overlapping-squares button with the red badge. |
 | Beatport Quality Upgrader | Sparkles button with the green badge. |
 

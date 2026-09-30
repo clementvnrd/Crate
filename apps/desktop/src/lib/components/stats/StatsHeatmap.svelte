@@ -93,7 +93,7 @@
 	</div>
 
 	{#if isLoading && heatmap.length === 0}
-		<div class="h-48 w-full animate-pulse rounded-xl bg-surface-3"></div>
+		<div class="h-48 w-full animate-pulse rounded-xl bg-surface-3 motion-reduce:animate-none"></div>
 	{:else}
 		<div class="overflow-x-auto pb-2">
 			<div class="min-w-[700px] space-y-1.5">

@@ -176,10 +176,10 @@
 		{#if $previewLoadingReleaseId === release.id}
 			<Spinner class="h-3.5 w-3.5" />
 		{:else if $refreshingReleaseIds.has(release.id)}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div
+			<button
+				type="button"
 				class="group flex h-6 w-6 cursor-pointer items-center justify-center rounded"
+				aria-label={$translate('discovery.cancelRefresh')}
 				onclick={(e) => {
 					e.stopPropagation()
 					discoveryStore.cancelRefresh(release.id)
@@ -187,12 +187,13 @@
 			>
 				<Spinner class="h-3.5 w-3.5 group-hover:hidden" />
 				<Icon name="x" class="hidden h-3.5 w-3.5 text-text-tertiary group-hover:block hover:text-text-primary" />
-			</div>
+			</button>
 		{:else if release.tracks.length > 0}
 			<IconButton
 				icon="chevron-right"
 				iconClass="h-3.5 w-3.5 text-text-tertiary transition-transform duration-200 {expanded ? 'rotate-90' : ''}"
 				size="sm"
+				ariaLabel={expanded ? $translate('discovery.hideTracks') : $translate('discovery.showTracks')}
 				onclick={(e) => {
 					e.stopPropagation()
 					onToggleExpand?.()
@@ -286,6 +287,7 @@
 				icon="rss"
 				size="sm"
 				active={rowFollowing}
+				ariaLabel={$translate('discovery.following.followForNewReleases')}
 				onclick={(e) => {
 					e.stopPropagation()
 					followTriggerEl = e.currentTarget as HTMLElement
@@ -297,6 +299,7 @@
 			<IconButton
 				icon="upload"
 				size="sm"
+				ariaLabel={$translate('discovery.importToLibrary')}
 				onclick={(e) => {
 					e.stopPropagation()
 					onimport?.()
@@ -307,6 +310,7 @@
 			<IconButton
 				icon="external-link"
 				size="sm"
+				ariaLabel={$translate('discovery.openInBrowser')}
 				onclick={(e) => {
 					e.stopPropagation()
 					onopenurl?.()
@@ -332,7 +336,8 @@
 
 <!-- Track sub-rows (CSS grid-template-rows transition for smooth expand/collapse) -->
 {#if release.tracks.length > 0}
-	<div class="grid overflow-hidden" style="grid-template-rows: {expanded ? '1fr' : '0fr'}">
+	<!-- Collapsed tracks stay in the DOM (for the height transition) but are inert: out of the tab order -->
+	<div class="grid overflow-hidden" style="grid-template-rows: {expanded ? '1fr' : '0fr'}" inert={!expanded}>
 		<div class="min-h-0 overflow-hidden">
 			<div class="border-b border-stroke-subtle bg-surface-1/30">
 				{#each release.tracks as track, idx (track.id)}
@@ -340,15 +345,26 @@
 						{@const canPlay = trackCanPlay(idx)}
 						{@const playing = canPlay && isTrackPlaying(idx)}
 						{@const isContextActive = track.id === $contextMenuDiscoveryTrackId}
-						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<!-- A focusable row like the release row above it: double-click plays, as before, and Enter or Space
+						     plays from the keyboard -->
 						<div
-							class="group/track grid grid-cols-[24px_40px_1fr_80px] items-center gap-2 px-3 py-1 {canPlay
+							role="row"
+							tabindex={canPlay && expanded ? 0 : -1}
+							class="group/track grid grid-cols-[24px_40px_1fr_80px] items-center gap-2 px-3 py-1 focus-visible:-outline-offset-2 {canPlay
 								? 'cursor-pointer hover:bg-surface-2/50'
 								: 'cursor-default opacity-60'} {isContextActive ? 'bg-surface-2/50' : ''} {track.position > 1
 								? 'border-t border-stroke-subtle/50'
 								: ''}"
 							ondblclick={canPlay
 								? (e) => {
+										e.stopPropagation()
+										onTrackPlay?.(idx)
+									}
+								: undefined}
+							onkeydown={canPlay
+								? (e) => {
+										if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return
+										e.preventDefault()
 										e.stopPropagation()
 										onTrackPlay?.(idx)
 									}
@@ -366,6 +382,9 @@
 						>
 							<div class="flex items-center justify-center">
 								<button
+									type="button"
+									aria-label={track.is_liked ? $translate('discovery.unlike') : $translate('discovery.like')}
+									aria-pressed={track.is_liked}
 									class="flex h-5 w-5 cursor-pointer items-center justify-center rounded transition-colors {track.is_liked
 										? 'text-brand-primary'
 										: isContextActive

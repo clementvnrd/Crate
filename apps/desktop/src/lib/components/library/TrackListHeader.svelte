@@ -19,11 +19,13 @@
 		key: keyof ColumnVisibility
 		field: ExtendedTrackSortField | null
 		labelKey: string
+		/** Accessible name of a sort button whose column shows no label (colour). */
+		nameKey?: string
 		width: string
 	}
 
 	const allColumns: ColumnDef[] = [
-		{ key: 'color', field: 'color', labelKey: '', width: '24px' },
+		{ key: 'color', field: 'color', labelKey: '', nameKey: 'library.columns.color', width: '24px' },
 		{ key: 'artwork', field: null, labelKey: '', width: '40px' },
 		{ key: 'title', field: 'title', labelKey: 'library.columns.title', width: 'minmax(140px, 1.3fr)' },
 		{ key: 'artist', field: 'artist', labelKey: 'library.columns.artist', width: 'minmax(110px, 1fr)' },
@@ -66,6 +68,7 @@
 			<button
 				type="button"
 				class="w-full truncate text-left transition-colors hover:text-text-secondary"
+				aria-label={column.nameKey ? $translate(column.nameKey) : undefined}
 				onclick={() => column.field && handleSort(column.field)}
 			>
 				{column.labelKey ? $translate(column.labelKey) : ''}

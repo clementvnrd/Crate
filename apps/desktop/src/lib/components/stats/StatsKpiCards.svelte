@@ -49,7 +49,7 @@
 				<span class="text-xs font-semibold tracking-wider text-text-tertiary uppercase"> Temps d'Écoute </span>
 				<div class="text-2xl font-black tracking-tight text-text-primary">
 					{#if isLoading && !summary}
-						<span class="inline-block h-7 w-24 animate-pulse rounded bg-surface-3"></span>
+						<span class="inline-block h-7 w-24 animate-pulse rounded bg-surface-3 motion-reduce:animate-none"></span>
 					{:else}
 						{timeDisplay.primary}
 					{/if}
@@ -78,7 +78,7 @@
 				<span class="text-xs font-semibold tracking-wider text-text-tertiary uppercase"> Titres Joués </span>
 				<div class="text-2xl font-black tracking-tight text-text-primary">
 					{#if isLoading && !summary}
-						<span class="inline-block h-7 w-20 animate-pulse rounded bg-surface-3"></span>
+						<span class="inline-block h-7 w-20 animate-pulse rounded bg-surface-3 motion-reduce:animate-none"></span>
 					{:else}
 						{totalPlays}
 					{/if}
@@ -105,7 +105,7 @@
 				<span class="text-xs font-semibold tracking-wider text-text-tertiary uppercase"> Artistes Découverts </span>
 				<div class="text-2xl font-black tracking-tight text-text-primary">
 					{#if isLoading && !summary}
-						<span class="inline-block h-7 w-16 animate-pulse rounded bg-surface-3"></span>
+						<span class="inline-block h-7 w-16 animate-pulse rounded bg-surface-3 motion-reduce:animate-none"></span>
 					{:else}
 						{uniqueArtistsCount}
 					{/if}
@@ -132,7 +132,7 @@
 				<span class="text-xs font-semibold tracking-wider text-text-tertiary uppercase"> Sessions DJ Rekordbox </span>
 				<div class="text-2xl font-black tracking-tight text-text-primary">
 					{#if isLoading && !summary}
-						<span class="inline-block h-7 w-16 animate-pulse rounded bg-surface-3"></span>
+						<span class="inline-block h-7 w-16 animate-pulse rounded bg-surface-3 motion-reduce:animate-none"></span>
 					{:else}
 						{rekordboxSessions.length}
 					{/if}

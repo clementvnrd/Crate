@@ -20,7 +20,9 @@
 		"folder": "dossier",
 		"playlist": "playlist",
 		"next": "Suivant",
-		"back": "Retour"
+		"back": "Retour",
+		"viewArtwork": "Afficher la pochette",
+		"albumArtwork": "Pochette de l'album"
 	},
 	"nav": {
 		"library": "Bibliothèque",
@@ -269,7 +271,8 @@
 			"confirmTitle": "Supprimer le coffre cloud?",
 			"confirmMessage": "Cela supprime définitivement toutes vos données synchronisées du cloud et vous déconnecte. Votre bibliothèque locale reste intacte. Cette action ne peut pas être annulée.",
 			"error": "Impossible de supprimer votre coffre cloud"
-		}
+		},
+		"indicatorLabel": "Synchronisation cloud : {status}"
 	},
 	"player": {
 		"play": "Lecture",
@@ -294,6 +297,15 @@
 			"removeTitle": "Retirer cet album ?",
 			"removeMessage": "L'album est retiré du lecteur Crate. Les fichiers sur votre disque ne sont pas supprimés.",
 			"removeConfirm": "Retirer l'album"
+		},
+		"waveform": {
+			"label": "Position de lecture",
+			"position": "{position} sur {duration}"
+		},
+		"recent": {
+			"reveal": "Révéler dans le Finder",
+			"remove": "Supprimer de l'historique",
+			"list": "Fichiers récents"
 		}
 	},
 	"library": {
@@ -323,7 +335,8 @@
 			"sampleRate": "Fréquence",
 			"genre": "Genre",
 			"label": "Label",
-			"year": "Année"
+			"year": "Année",
+			"color": "Couleur"
 		},
 		"track": "piste",
 		"tracks": "pistes",
@@ -466,7 +479,10 @@
 				"urlPlaceholder": "Coller l'URL d'une page artiste/label Bandcamp, SoundCloud ou Discogs",
 				"urlInfo": "On détecte automatiquement la plateforme et s'il s'agit d'un artiste ou d'un label, puis on guette ses nouvelles sorties à partir de maintenant. Les sorties plus anciennes ne seront pas ajoutées."
 			}
-		}
+		},
+		"cancelRefresh": "Annuler l'actualisation des métadonnées",
+		"showTracks": "Afficher les pistes",
+		"hideTracks": "Masquer les pistes"
 	},
 	"filters": {
 		"title": "Filtres",

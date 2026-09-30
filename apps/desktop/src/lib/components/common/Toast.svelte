@@ -4,6 +4,7 @@
 	import { cubicOut } from 'svelte/easing'
 	import Icon from './Icon.svelte'
 	import IconButton from './IconButton.svelte'
+	import { translate } from '$shared/i18n'
 	import Text from './Text.svelte'
 
 	type Props = {
@@ -53,6 +54,12 @@
 		{/if}
 
 		<!-- Close button -->
-		<IconButton icon="x" size="sm" class="flex-shrink-0 opacity-70 hover:opacity-100" onclick={onDismiss} />
+		<IconButton
+			icon="x"
+			size="sm"
+			class="flex-shrink-0 opacity-70 hover:opacity-100"
+			ariaLabel={$translate('common.close')}
+			onclick={onDismiss}
+		/>
 	</div>
 </div>

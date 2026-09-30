@@ -164,13 +164,14 @@
 					<IconButton
 						icon="refresh"
 						size="sm"
-						iconClass={refreshing ? 'animate-spin h-4 w-4' : ''}
+						iconClass={refreshing ? 'animate-spin motion-reduce:animate-none h-4 w-4' : ''}
+						ariaLabel={$translate('discovery.refreshMetadata')}
 						onclick={handleRefreshMetadata}
 					/>
 				</Tooltip>
 			{/if}
 			<Tooltip text={$translate('common.close')} position="bottom" delay={250}>
-				<IconButton icon="x" size="sm" onclick={handleClose} />
+				<IconButton icon="x" size="sm" ariaLabel={$translate('common.close')} onclick={handleClose} />
 			</Tooltip>
 		</div>
 	</div>

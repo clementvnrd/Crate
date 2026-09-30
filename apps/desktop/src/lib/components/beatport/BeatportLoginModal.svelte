@@ -2,6 +2,7 @@
 	import { beatportStore } from '$shared/stores/beatport'
 	import Icon from '$lib/components/common/Icon.svelte'
 	import Spinner from '$lib/components/common/Spinner.svelte'
+	import { focusTrap } from '$lib/components/common/focusTrap'
 	import { openUrl } from '@tauri-apps/plugin-opener'
 
 	let mode = $state<'token' | 'pkce'>('token')
@@ -44,14 +45,18 @@
 
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
 	<div
-		class="relative w-full max-w-lg overflow-hidden rounded-2xl border border-[#00FF96]/40 bg-[#121418] shadow-2xl shadow-[#00FF96]/10"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="beatport-login-title"
+		use:focusTrap={{ onEscape: closeModal }}
+		class="relative w-full max-w-lg overflow-hidden rounded-2xl border border-[#00FF96]/40 bg-[#121418] shadow-2xl shadow-[#00FF96]/10 focus-visible:outline-none"
 	>
 		<!-- Header -->
 		<div class="flex items-center justify-between border-b border-[#252830] px-6 py-4">
 			<div class="flex items-center gap-3">
 				<Icon name="beatport" class="h-6 w-6 text-text-primary" />
 				<div>
-					<h2 class="text-base font-semibold text-white">Connexion Beatport Streaming</h2>
+					<h2 id="beatport-login-title" class="text-base font-semibold text-white">Connexion Beatport Streaming</h2>
 					<p class="text-xs text-neutral-400">Associez votre compte Beatport à Crate</p>
 				</div>
 			</div>

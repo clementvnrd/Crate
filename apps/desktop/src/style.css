@@ -278,11 +278,27 @@ input[type='search']::-webkit-search-cancel-button {
 
 /* =============================================================================
    Focus Styles (uses brand color)
+   Keyboard focus shows an accent outline; mouse focus shows nothing, as before.
+   Text-entry fields are left out: they match :focus-visible on a mouse click too,
+   and carry their own focus border. In the base layer, so a component that draws
+   its own focus ring (`focus:outline-none focus:ring-2`) keeps a single indicator.
+   (Upstream removed every outline with a later `*:focus { outline: none }`.)
    ============================================================================= */
 
-*:focus-visible {
-	outline: 2px solid var(--brand-primary);
-	outline-offset: 2px;
+@layer base {
+	*:focus {
+		outline: none;
+	}
+
+	*:focus-visible:not(
+			input:not([type='checkbox'], [type='radio'], [type='range']),
+			textarea,
+			select,
+			[contenteditable='true']
+		) {
+		outline: 2px solid var(--brand-primary);
+		outline-offset: 2px;
+	}
 }
 
 /* =============================================================================
@@ -315,10 +331,6 @@ textarea,
 .select-none {
 	-webkit-user-select: none;
 	user-select: none;
-}
-
-*:focus {
-	outline: none;
 }
 
 /* =============================================================================

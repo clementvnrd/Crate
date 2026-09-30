@@ -150,8 +150,9 @@ export const VIEWS: ViewSpec[] = [
 	},
 	{
 		id: 'settings',
-		// The gear button has no accessible name yet (register defect D10): use the keyboard shortcut.
-		open: (page) => page.keyboard.press('Control+,'),
+		// The gear button is named by the i18n key `settings.title` (register defect D10). Clicking it, rather than the
+		// Cmd/Ctrl+, shortcut, keeps the screenshot as a mouse user sees it (no keyboard focus ring in the dialog).
+		open: (page) => page.getByRole('button', { name: /^(Settings|Paramètres)$/ }).click(),
 		landmark: (page) => page.locator('dialog[open]'),
 	},
 	{
