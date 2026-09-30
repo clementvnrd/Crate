@@ -160,6 +160,22 @@ impl SpotifyTrackerService {
         Ok(())
     }
 
+    /// Interface language chosen in Crate (`en` when unset), used for the pages the OAuth
+    /// callback serves in the browser.
+    fn interface_language(&self) -> String {
+        let Ok(conn) = self.conn.lock() else {
+            return "en".to_string();
+        };
+        conn.query_row(
+            "SELECT value FROM settings WHERE key = 'language'",
+            [],
+            |r| r.get::<_, String>(0),
+        )
+        .ok()
+        .filter(|l| !l.trim().is_empty())
+        .unwrap_or_else(|| "en".to_string())
+    }
+
     /// Gets stored Spotify client ID from settings table, if any.
     pub fn get_client_id(&self) -> Option<String> {
         let conn = self.conn.lock().ok()?;
@@ -1092,8 +1108,63 @@ fn escape_html(input: &str) -> String {
         .replace('\'', "&#39;")
 }
 
+/// Texts of the result page shown in the browser after the Spotify redirect. English and French
+/// are complete; any other interface language shows English (same policy as the app).
+struct OAuthTexts {
+    page_title: &'static str,
+    denied_title: &'static str,
+    denied_message: &'static str,
+    missing_code_title: &'static str,
+    missing_code_message: &'static str,
+    rejected_title: &'static str,
+    rejected_message: &'static str,
+    connected_title: &'static str,
+    /// Contains `{who}`, replaced by the connected account name.
+    connected_message: &'static str,
+    failed_title: &'static str,
+    failed_message: &'static str,
+}
+
+fn oauth_texts(lang: &str) -> OAuthTexts {
+    match lang {
+        "fr" => OAuthTexts {
+            page_title: "Crate - Connexion Spotify",
+            denied_title: "Connexion refusée",
+            denied_message: "L'autorisation Spotify a été refusée ou a échoué.",
+            missing_code_title: "Code manquant",
+            missing_code_message: "Aucun code d'autorisation n'a été reçu de Spotify.",
+            rejected_title: "Requête refusée",
+            rejected_message: "Paramètre state absent : cette redirection ne vient pas d'une connexion lancée depuis Crate.",
+            connected_title: "Spotify connecté",
+            connected_message: "Compte {who} relié à Crate Pulse. Vous pouvez fermer cet onglet et revenir sur Crate.",
+            failed_title: "Échec de l'authentification",
+            failed_message: "Impossible d'échanger le code d'autorisation avec Spotify.",
+        },
+        _ => OAuthTexts {
+            page_title: "Crate - Spotify sign-in",
+            denied_title: "Sign-in refused",
+            denied_message: "Spotify authorisation was refused or failed.",
+            missing_code_title: "Missing code",
+            missing_code_message: "No authorisation code was received from Spotify.",
+            rejected_title: "Request refused",
+            rejected_message: "Missing state parameter: this redirect does not come from a sign-in started in Crate.",
+            connected_title: "Spotify connected",
+            connected_message: "Account {who} linked to Crate Pulse. You can close this tab and go back to Crate.",
+            failed_title: "Authentication failed",
+            failed_message: "Could not exchange the authorisation code with Spotify.",
+        },
+    }
+}
+
 /// Minimal result page shown in the browser after the Spotify redirect.
-fn oauth_page(success: bool, title: &str, message: &str, detail: Option<&str>) -> Html<String> {
+fn oauth_page(
+    lang: &str,
+    page_title: &str,
+    success: bool,
+    title: &str,
+    message: &str,
+    detail: Option<&str>,
+) -> Html<String> {
     let (accent, icon) = if success {
         ("#1DB954", "✓")
     } else {
@@ -1104,11 +1175,11 @@ fn oauth_page(success: bool, title: &str, message: &str, detail: Option<&str>) -
         .unwrap_or_default();
     Html(format!(
         r#"<!DOCTYPE html>
-<html lang="fr">
+<html lang="{lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crate - Connexion Spotify</title>
+<title>{page_title}</title>
 <style>
 body {{ background:#0f1411; color:#f3f4f6; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
        display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; padding:16px; }}
@@ -1121,6 +1192,8 @@ p {{ color:#9ca3af; font-size:14px; line-height:1.5; }}
 </head>
 <body><div class="card"><div class="icon">{icon}</div><h1>{title}</h1><p>{message}</p>{detail_html}</div></body>
 </html>"#,
+        lang = escape_html(lang),
+        page_title = escape_html(page_title),
         title = escape_html(title),
         message = escape_html(message),
     ))
@@ -1130,24 +1203,37 @@ async fn spotify_oauth_callback_handler(
     State(state): State<SpotifyOAuthServerState>,
     Query(query): Query<OAuthCallbackQuery>,
 ) -> Html<String> {
+    let lang = state.service.interface_language();
+    let t = oauth_texts(&lang);
     if let Some(err) = query.error {
         return oauth_page(
+            &lang,
+            t.page_title,
             false,
-            "Connexion refusée",
-            "L'autorisation Spotify a été refusée ou a échoué.",
+            t.denied_title,
+            t.denied_message,
             Some(&err),
         );
     }
     let Some(code) = query.code.filter(|c| !c.trim().is_empty()) else {
         return oauth_page(
+            &lang,
+            t.page_title,
             false,
-            "Code manquant",
-            "Aucun code d'autorisation n'a été reçu de Spotify.",
+            t.missing_code_title,
+            t.missing_code_message,
             None,
         );
     };
     let Some(oauth_state) = query.state.filter(|s| !s.trim().is_empty()) else {
-        return oauth_page(false, "Requête refusée", "Paramètre state absent : cette redirection ne vient pas d'une connexion lancée depuis Crate.", None);
+        return oauth_page(
+            &lang,
+            t.page_title,
+            false,
+            t.rejected_title,
+            t.rejected_message,
+            None,
+        );
     };
 
     match state
@@ -1164,16 +1250,20 @@ async fn spotify_oauth_callback_handler(
                 .or(auth_state.user_id.clone())
                 .unwrap_or_default();
             oauth_page(
+                &lang,
+                t.page_title,
                 true,
-                "Spotify connecté",
-                &format!("Compte {who} relié à Crate Pulse. Vous pouvez fermer cet onglet et revenir sur Crate."),
+                t.connected_title,
+                &t.connected_message.replace("{who}", &who),
                 None,
             )
         }
         Err(e) => oauth_page(
+            &lang,
+            t.page_title,
             false,
-            "Échec de l'authentification",
-            "Impossible d'échanger le code d'autorisation avec Spotify.",
+            t.failed_title,
+            t.failed_message,
             Some(&e.to_string()),
         ),
     }
@@ -1251,5 +1341,48 @@ mod tests {
             escape_html("<script>x</script>"),
             "&lt;script&gt;x&lt;/script&gt;"
         );
+    }
+
+    #[test]
+    fn test_oauth_texts_follow_the_interface_language() {
+        assert_eq!(oauth_texts("fr").connected_title, "Spotify connecté");
+        assert_eq!(oauth_texts("en").connected_title, "Spotify connected");
+        // Languages without a translation show English, like the interface.
+        assert_eq!(oauth_texts("de").connected_title, "Spotify connected");
+        for lang in ["fr", "en"] {
+            assert!(oauth_texts(lang).connected_message.contains("{who}"));
+        }
+    }
+
+    #[test]
+    fn test_oauth_page_escapes_every_dynamic_value() {
+        let page = oauth_page("fr", "T<", false, "x", "<b>", Some("<script>")).0;
+        assert!(page.contains(r#"<html lang="fr">"#));
+        assert!(!page.contains("<script>"));
+        assert!(page.contains("&lt;script&gt;"));
+        assert!(page.contains("<title>T&lt;</title>"));
+    }
+
+    #[test]
+    fn test_interface_language_reads_the_stored_setting() {
+        let conn = Connection::open_in_memory().unwrap();
+        for migration in crate::db::schema::get_migrations() {
+            conn.execute_batch(migration).unwrap();
+        }
+        let conn = Arc::new(Mutex::new(conn));
+        let service = SpotifyTrackerService::new(
+            conn.clone(),
+            Arc::new(StatsRecorderService::new(conn.clone())),
+        );
+        assert_eq!(service.interface_language(), "en");
+
+        conn.lock()
+            .unwrap()
+            .execute(
+                "INSERT INTO settings (key, value) VALUES ('language', 'fr')",
+                [],
+            )
+            .unwrap();
+        assert_eq!(service.interface_language(), "fr");
     }
 }

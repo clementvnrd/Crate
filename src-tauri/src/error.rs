@@ -78,7 +78,7 @@ pub enum CrateError {
     #[error("Cloud sync network error: {0}")]
     CloudSyncNetwork(String),
 
-    #[error("Authentification Beatport requise. Veuillez vous connecter dans l'onglet Beatport.")]
+    #[error("Beatport authentication required. Please sign in from the Beatport tab.")]
     BeatportAuthRequired,
 
     #[error("Internal lock error")]

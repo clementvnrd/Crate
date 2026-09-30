@@ -5,7 +5,7 @@ This file is **the** source of truth for tracking: every defect in the [register
 Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification or remaining work. The progress table is recomputed with `yarn status` (from the repository root).
 
 <!-- progress:start -->
-**Overall progress: 97 / 107 defects fixed (91%)**
+**Overall progress: 98 / 107 defects fixed (92%)**
 
 | Step | Fixed | Progress |
 | --- | --- | --- |
@@ -20,7 +20,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 9 — Hygiene and tooling | 13 / 15 | █████████░ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
 | Step 11 — View-by-view compliance | 3 / 7 | ████░░░░░░ |
-| Step 12 — Translation | 3 / 6 | █████░░░░░ |
+| Step 12 — Translation | 4 / 6 | ███████░░░ |
 <!-- progress:end -->
 
 ## Owner-only actions
@@ -208,7 +208,7 @@ _Exit criterion: App in English: no French string._
 - [ ] **L1** — 17 new components with no translation at all, about 220 strings
 - [x] **L2** — 13 locales without the 49 to 53 keys added by the fork — _decided (CRA-114): French and English complete, the other 13 fall back to English, documented in the README; Vitest guards keep EN and FR aligned; one key was missing in French and is added_
 - [ ] **L3** — Numbers and units formatted the English way in French ("2,310"), "plays" and "écoutes" mixed in Pulse — _partial: numbers and dates now follow the app language (`formatNumber`, `formatDate`); the "plays" / "écoutes" wording is unified when the Pulse strings are extracted (L1)_
-- [ ] **L4** — Rust error messages in French
+- [x] **L4** — Rust error messages in French — _all backend messages are English; the frequent actionable ones (Beatport sign-in, invalid album folder) are translated by the interface through `localizeBackendError`; the Spotify sign-in pages follow the app language_
 - [x] **L5** — `register('en')` and `register('fr')` kept after `addMessages`: initialisation goes back through the… — _removed; two Vitest tests pin the synchronous switch_
 - [x] **L6** — The README advertises 11 languages while the repository contains 15
 
@@ -237,3 +237,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Synchronous English/French language switch (two redundant `register` calls removed) | 12 |
 | 2026-09-30 | Language policy applied: EN/FR aligned and guarded by tests, one missing French key added, fallback documented | 12 |
 | 2026-09-30 | Numbers and dates follow the app language (`formatNumber`, `formatDate`) — Pulse wording left for L1 | 12 |
+| 2026-09-30 | Backend errors in English, frequent ones translated by the interface, Spotify sign-in pages follow the app language | 12 |

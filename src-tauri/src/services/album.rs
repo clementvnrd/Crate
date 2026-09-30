@@ -39,7 +39,7 @@ impl AlbumService {
         let folder_path = PathBuf::from(folder_path_str);
         if !folder_path.exists() || !folder_path.is_dir() {
             return Err(CrateError::InvalidOperation(format!(
-                "Le chemin spécifié n'est pas un dossier valide: {}",
+                "The specified path is not a valid folder: {}",
                 folder_path_str
             )));
         }
@@ -66,7 +66,7 @@ impl AlbumService {
 
         if audio_files.is_empty() {
             return Err(CrateError::InvalidOperation(
-                "Aucun fichier audio supporté trouvé dans ce dossier.".to_string(),
+                "No supported audio file found in this folder.".to_string(),
             ));
         }
 

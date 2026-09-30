@@ -12,7 +12,7 @@ use crate::models::{
     UpgradeCountInfo, UpgradeMatch, UpgradeReplacementResult, UpgradeScanResult,
     UpgradeScoreBreakdown,
 };
-use crate::services::beatport::client::{BeatportClient, BeatportTrack};
+use crate::services::beatport::client::{BeatportClient, BeatportTrack, AUTH_REQUIRED_PREFIX};
 use crate::services::beatport::downloader::{
     discard_staging, move_into_destination, BeatportDownloader,
 };
@@ -693,7 +693,7 @@ impl BeatportUpgraderService {
                             }
                         }
                         Err(e) => {
-                            if e.contains("Authentification Beatport requise") {
+                            if e.contains(AUTH_REQUIRED_PREFIX) {
                                 return Err(CrateError::BeatportAuthRequired);
                             }
                             log::warn!("Beatport search failed for '{query}': {e}");
@@ -899,7 +899,7 @@ impl BeatportUpgraderService {
                 Err(e) => {
                     failed_count += 1;
                     errors.push(format!(
-                        "'{}' : titre introuvable dans la bibliothèque ({e})",
+                        "'{}': title not found in the library ({e})",
                         item.title
                     ));
                     continue;
@@ -914,7 +914,7 @@ impl BeatportUpgraderService {
             } else {
                 failed_count += 1;
                 errors.push(format!(
-                    "'{}' : dossier de destination introuvable",
+                    "'{}': destination folder not found",
                     item.title
                 ));
                 continue;
@@ -953,10 +953,10 @@ impl BeatportUpgraderService {
                 };
                 let moved = match staged.valid_files.as_slice() {
                     [file] => move_into_destination(file, &dest_dir).map_err(|e| e.to_string()),
-                    [] if staged.errors.is_empty() => Err("aucun fichier FLAC valide".to_string()),
+                    [] if staged.errors.is_empty() => Err("no valid FLAC file".to_string()),
                     [] => Err(staged.errors.join("; ")),
                     _ => Err(format!(
-                        "{} fichiers reçus pour un seul titre",
+                        "{} files received for a single track",
                         staged.valid_files.len()
                     )),
                 };
@@ -975,12 +975,12 @@ impl BeatportUpgraderService {
                 failed_count += 1;
                 errors.push(if candidate_errors.is_empty() {
                     format!(
-                        "Aucun fichier FLAC valide n'a pu être téléchargé pour '{}'",
+                        "No valid FLAC file could be downloaded for '{}'",
                         item.title
                     )
                 } else {
                     format!(
-                        "Échec téléchargement FLAC pour '{}' (candidats testés : {})",
+                        "FLAC download failed for '{}' (candidates tried: {})",
                         item.title,
                         candidate_errors.join(" | ")
                     )
@@ -991,7 +991,7 @@ impl BeatportUpgraderService {
             if let Err(e) = library.replace_track_file(&item.track_id, &new_flac) {
                 failed_count += 1;
                 errors.push(format!(
-                    "'{}' : FLAC téléchargé ({}) mais la bibliothèque n'a pas pu être mise à jour : {e}. Le MP3 est conservé.",
+                    "'{}': FLAC downloaded ({}) but the library could not be updated: {e}. The MP3 is kept.",
                     item.title,
                     new_flac.display()
                 ));
@@ -1001,7 +1001,7 @@ impl BeatportUpgraderService {
             if old_path != new_flac.as_path() {
                 if let Err(e) = crate::services::trash::move_to_trash(old_path) {
                     errors.push(format!(
-                        "'{}' remplacé, mais l'ancien MP3 n'a pas pu être mis à la corbeille ({e}) : {}",
+                        "'{}' replaced, but the old MP3 could not be moved to the Trash ({e}): {}",
                         item.title, old_file_path_str
                     ));
                 }

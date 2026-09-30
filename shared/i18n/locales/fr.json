@@ -651,7 +651,12 @@
 		"tagNameConflict": "Un tag portant ce nom existe déjà dans la catégorie cible",
 		"previewStreamFailed": "Échec du chargement du flux d'aperçu",
 		"updateCheckFailed": "Échec de la vérification des mises à jour",
-		"updateInstallFailed": "Échec de l'installation de la mise à jour"
+		"updateInstallFailed": "Échec de l'installation de la mise à jour",
+		"beatportAuthRequired": "Connexion Beatport requise. Reconnectez-vous depuis l'onglet Beatport.",
+		"beatportTokenInvalid": "Votre session Beatport a expiré ou n'est plus valide. Reconnectez-vous.",
+		"beatportArtistNotFound": "Artiste introuvable sur Beatport",
+		"albumInvalidFolder": "Le chemin choisi n'est pas un dossier valide",
+		"albumNoAudio": "Aucun fichier audio pris en charge dans ce dossier"
 	},
 	"devices": {
 		"title": "Appareils",

@@ -5,6 +5,20 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::sync::Mutex;
 
+/// Stable start of every "sign in to Beatport again" error. The upgrader matches on it to turn a
+/// failed search into `CrateError::BeatportAuthRequired`, so reword it in one place only.
+pub const AUTH_REQUIRED_PREFIX: &str = "Beatport authentication required";
+
+fn auth_required_without_token() -> String {
+    format!("{AUTH_REQUIRED_PREFIX}. No access token available.")
+}
+
+fn auth_required_session_expired() -> String {
+    format!(
+        "{AUTH_REQUIRED_PREFIX} (session expired or unauthorised). Please sign in again from the Beatport tab."
+    )
+}
+
 pub const BEATPORT_CLIENT_ID: &str = "0GIvkCltVIuPkkwSJHp6NDb3s0potTjLBQr388Dd";
 pub const BEATPORT_REDIRECT_URI: &str = "https://api.beatport.com/v4/docs/oauth2-redirect.html";
 
@@ -192,12 +206,12 @@ impl BeatportClient {
                         let json_resp: serde_json::Value = response
                             .json()
                             .await
-                            .map_err(|e| format!("Réponse JSON invalide : {e}"))?;
+                            .map_err(|e| format!("Invalid JSON response: {e}"))?;
 
                         let access_token = json_resp
                             .get("access_token")
                             .and_then(|v| v.as_str())
-                            .ok_or("Aucun access_token dans la réponse Beatport")?
+                            .ok_or("No access_token in the Beatport response")?
                             .to_string();
 
                         let refresh_token = json_resp
@@ -230,13 +244,13 @@ impl BeatportClient {
                     }
                 }
                 Err(e) => {
-                    last_error = format!("Erreur réseau : {e}");
+                    last_error = format!("Network error: {e}");
                 }
             }
         }
 
         Err(format!(
-            "Échec d'obtention du token Beatport : {last_error}"
+            "Failed to obtain a Beatport token: {last_error}"
         ))
     }
 
@@ -259,22 +273,22 @@ impl BeatportClient {
             .form(&params)
             .send()
             .await
-            .map_err(|e| format!("Erreur rafraîchissement token : {e}"))?;
+            .map_err(|e| format!("Token refresh error: {e}"))?;
 
         if !resp.status().is_success() {
             let err_text = resp.text().await.unwrap_or_default();
-            return Err(format!("Échec renouvellement token Beatport : {err_text}"));
+            return Err(format!("Failed to renew the Beatport token: {err_text}"));
         }
 
         let json_resp: serde_json::Value = resp
             .json()
             .await
-            .map_err(|e| format!("Réponse JSON invalide : {e}"))?;
+            .map_err(|e| format!("Invalid JSON response: {e}"))?;
 
         let new_access_token = json_resp
             .get("access_token")
             .and_then(|v| v.as_str())
-            .ok_or("Aucun access_token dans la réponse de rafraîchissement")?
+            .ok_or("No access_token in the refresh response")?
             .to_string();
 
         let new_refresh_token = json_resp
@@ -329,7 +343,7 @@ impl BeatportClient {
         let user_info = self
             .get_my_account(&access_token)
             .await
-            .map_err(|e| format!("Jeton Beatport refusé : {e}"))?;
+            .map_err(|e| format!("Beatport token rejected: {e}"))?;
         let username = user_info
             .get("username")
             .and_then(|v| v.as_str())
@@ -372,10 +386,10 @@ impl BeatportClient {
             .bearer_auth(token)
             .send()
             .await
-            .map_err(|e| format!("Erreur réseau account : {e}"))?;
+            .map_err(|e| format!("Network error (account): {e}"))?;
 
         if !resp.status().is_success() {
-            return Err("Token Beatport expiré ou invalide".to_string());
+            return Err("Beatport token expired or invalid".to_string());
         }
 
         resp.json()
@@ -391,7 +405,7 @@ impl BeatportClient {
             .bearer_auth(token)
             .send()
             .await
-            .map_err(|e| format!("Erreur réseau playlists : {e}"))?;
+            .map_err(|e| format!("Network error (playlists): {e}"))?;
 
         if resp.status().is_success() {
             if let Ok(json_data) = resp.json::<serde_json::Value>().await {
@@ -522,7 +536,7 @@ impl BeatportClient {
             .await
             .map_err(|e| format!("Erreur artist detail : {e}"))?;
         if !resp.status().is_success() {
-            return Err("Artiste non trouvé sur Beatport".to_string());
+            return Err("Artist not found on Beatport".to_string());
         }
 
         let item: serde_json::Value = resp
@@ -852,7 +866,7 @@ impl BeatportClient {
 
         let Some(mut current_token) = active_token else {
             return Err(
-                "Authentification Beatport requise. Aucun jeton d'accès disponible.".to_string(),
+                auth_required_without_token(),
             );
         };
 
@@ -867,7 +881,7 @@ impl BeatportClient {
             .bearer_auth(&current_token)
             .send()
             .await
-            .map_err(|e| format!("Erreur réseau Beatport search: {e}"))?;
+            .map_err(|e| format!("Network error (Beatport search): {e}"))?;
 
         // If 401 or 403, attempt auto-refresh and retry once
         if resp.status().as_u16() == 401 || resp.status().as_u16() == 403 {
@@ -891,12 +905,12 @@ impl BeatportClient {
                     .send()
                     .await
                     .map_err(|e| {
-                        format!("Erreur réseau Beatport search (après rafraîchissement): {e}")
+                        format!("Network error (Beatport search, after token refresh): {e}")
                     })?;
             }
 
             if resp.status().as_u16() == 401 || resp.status().as_u16() == 403 {
-                return Err("Authentification Beatport requise (session expirée ou non autorisée). Veuillez vous reconnecter dans l'onglet Beatport.".to_string());
+                return Err(auth_required_session_expired());
             }
         }
 
@@ -907,7 +921,7 @@ impl BeatportClient {
         let json_data: serde_json::Value = resp
             .json()
             .await
-            .map_err(|e| format!("Réponse JSON recherche Beatport invalide: {e}"))?;
+            .map_err(|e| format!("Invalid Beatport search JSON response: {e}"))?;
 
         let mut tracks = Vec::new();
         let mut artists = Vec::new();
@@ -1120,4 +1134,21 @@ fn url_encode(input: &str) -> String {
         }
     }
     encoded
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::error::CrateError;
+
+    /// The upgrader turns a failed search into `CrateError::BeatportAuthRequired` by matching this
+    /// prefix, and the frontend recognises the same words to show a translated message.
+    #[test]
+    fn test_every_auth_required_error_starts_with_the_shared_prefix() {
+        assert!(auth_required_without_token().starts_with(AUTH_REQUIRED_PREFIX));
+        assert!(auth_required_session_expired().starts_with(AUTH_REQUIRED_PREFIX));
+        assert!(CrateError::BeatportAuthRequired
+            .to_string()
+            .starts_with(AUTH_REQUIRED_PREFIX));
+    }
 }

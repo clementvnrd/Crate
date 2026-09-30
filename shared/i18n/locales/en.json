@@ -651,7 +651,12 @@
 		"tagNameConflict": "A tag with this name already exists in the target category",
 		"previewStreamFailed": "Failed to load preview stream",
 		"updateCheckFailed": "Failed to check for updates",
-		"updateInstallFailed": "Failed to install update"
+		"updateInstallFailed": "Failed to install update",
+		"beatportAuthRequired": "Beatport sign-in required. Please sign in again from the Beatport tab.",
+		"beatportTokenInvalid": "Your Beatport session has expired or is no longer valid. Please sign in again.",
+		"beatportArtistNotFound": "Artist not found on Beatport",
+		"albumInvalidFolder": "The selected path is not a valid folder",
+		"albumNoAudio": "No supported audio file found in this folder"
 	},
 	"devices": {
 		"title": "Devices",
