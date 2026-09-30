@@ -252,3 +252,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | **Owner decisions read from Linear (3rd pass)**: Q2 cancelled (macOS only), visual language reopened after "sienne" became "cyan", Spotify reset waiting for a chat approval or the in-app button | — |
 | 2026-09-30 | Shared SegmentedControl, KeyBadge, EnergyBadge and family Button props, dark theme unchanged (D11 partial) | 11 |
 | 2026-09-30 | Bulk playlist and tag writes made atomic (one transaction each, 10 tests) | 7 |
+| 2026-09-30 | Cloud-sync manifest built once, shard chosen in SQL, off the async workers (about 3.5 times faster at 10,000 tracks) | 7 |

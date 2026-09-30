@@ -28,7 +28,7 @@ use crate::models::{
     DiscoveryTrack, PlaylistTrack, Tag,
 };
 
-use super::buckets::{shard_for_track_id, Bucket, BucketKind};
+use super::buckets::{shard_sql_condition, Bucket, BucketKind};
 use super::dirty;
 
 // ---------------------------------------------------------------------------
@@ -335,25 +335,23 @@ pub fn bucket_max_hlc(conn: &Connection, bucket: &Bucket) -> Result<String> {
     }
 
     if let Bucket::Tracks(n) = bucket {
-        let mut mx = String::new();
-        let mut stmt = conn.prepare("SELECT id, _hlc FROM tracks")?;
-        let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
-        for row in rows {
-            let (id, hlc) = row?;
-            if shard_for_track_id(&id) == *n && hlc > mx {
-                mx = hlc;
-            }
-        }
-        let mut stmt = conn
-            .prepare("SELECT entity_id, _hlc FROM sync_tombstones WHERE entity_type = 'tracks'")?;
-        let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
-        for row in rows {
-            let (eid, hlc) = row?;
-            if shard_for_track_id(&eid) == *n && hlc > mx {
-                mx = hlc;
-            }
-        }
-        return Ok(mx);
+        let live: Option<String> = conn.query_row(
+            &format!(
+                "SELECT MAX(_hlc) FROM tracks WHERE {}",
+                shard_sql_condition("id", *n)
+            ),
+            [],
+            |r| r.get::<_, Option<String>>(0),
+        )?;
+        let tomb: Option<String> = conn.query_row(
+            &format!(
+                "SELECT MAX(_hlc) FROM sync_tombstones WHERE entity_type = 'tracks' AND {}",
+                shard_sql_condition("entity_id", *n)
+            ),
+            [],
+            |r| r.get::<_, Option<String>>(0),
+        )?;
+        return Ok([live, tomb].into_iter().flatten().max().unwrap_or_default());
     }
 
     let table = bucket.table();
@@ -536,27 +534,20 @@ fn serialize_settings(conn: &Connection) -> Result<Vec<u8>> {
 // ---------------------------------------------------------------------------
 
 fn read_tombstones(conn: &Connection, bucket: &Bucket) -> Result<Vec<(String, String)>> {
-    let shard = match bucket {
-        Bucket::Tracks(n) => Some(*n),
-        _ => None,
+    // A track shard only owns the tombstones whose id falls in it; SQLite does the filtering.
+    let shard_filter = match bucket {
+        Bucket::Tracks(n) => format!(" AND {}", shard_sql_condition("entity_id", *n)),
+        _ => String::new(),
     };
-    let mut stmt = conn.prepare(
-        "SELECT entity_id, _hlc FROM sync_tombstones WHERE entity_type = ?1 ORDER BY entity_id",
-    )?;
+    let mut stmt = conn.prepare(&format!(
+        "SELECT entity_id, _hlc FROM sync_tombstones WHERE entity_type = ?1{shard_filter} \
+         ORDER BY entity_id"
+    ))?;
     let rows = stmt.query_map([bucket.entity_type()], |r| {
         Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
     })?;
-    let mut out = Vec::new();
-    for row in rows {
-        let (eid, hlc) = row?;
-        if let Some(n) = shard {
-            if shard_for_track_id(&eid) != n {
-                continue;
-            }
-        }
-        out.push((eid, hlc));
-    }
-    Ok(out)
+    rows.collect::<std::result::Result<Vec<_>, _>>()
+        .map_err(Into::into)
 }
 
 fn read_live_tracks(
@@ -567,14 +558,15 @@ fn read_live_tracks(
         Bucket::Tracks(n) => *n,
         _ => unreachable!(),
     };
-    // NOTE: reads the whole tracks table and filters by shard in Rust to match
-    // `bucket_for_track_id` semantics exactly. Fine for Phase 1 (test scale).
-    let mut stmt = conn.prepare(
+    // The shard is chosen in SQL (`shard_sql_condition` mirrors `shard_for_track_id` exactly),
+    // so only this shard's rows are decoded: a manifest reads the table once, not 16 times.
+    let mut stmt = conn.prepare(&format!(
         "SELECT id, file_path, file_hash, title, artist, album, year, genre, label, \
          catalog_number, duration_ms, bpm, key, bitrate, sample_rate, format, rating, \
          play_count, date_added, date_modified, last_played, rekordbox_id, artwork_path, \
-         artwork_source, color, _hlc, energy FROM tracks",
-    )?;
+         artwork_source, color, _hlc, energy FROM tracks WHERE {}",
+        shard_sql_condition("id", shard)
+    ))?;
     let rows = stmt.query_map([], |r| {
         let t = BackupTrack {
             id: r.get(0)?,
@@ -610,9 +602,7 @@ fn read_live_tracks(
     let mut out = Vec::new();
     for row in rows {
         let (t, hlc) = row?;
-        if shard_for_track_id(&t.id) == shard {
-            out.push((t.id.clone(), t, hlc));
-        }
+        out.push((t.id.clone(), t, hlc));
     }
     Ok(out)
 }

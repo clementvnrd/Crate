@@ -36,9 +36,24 @@ pub struct ManifestDiff {
 
 /// Compute this device's manifest over every bucket.
 pub fn compute_local_manifest(conn: &Connection, device_id: &str) -> Result<Manifest> {
+    compute_local_manifest_with(conn, device_id, |_, _, _| {})
+}
+
+/// Like [`compute_local_manifest`], but hands each bucket's serialized bytes to
+/// `on_blob(bucket name, blob hash, bytes)` right after hashing them. Serializing a bucket is
+/// the expensive part of the manifest, so a caller that is going to upload the changed buckets
+/// keeps the bytes it needs here instead of serializing them a second time. The callback owns
+/// the bytes and decides what to keep; the rest are dropped bucket by bucket, so the whole
+/// library is never held in memory at once.
+pub fn compute_local_manifest_with(
+    conn: &Connection,
+    device_id: &str,
+    mut on_blob: impl FnMut(&str, &str, Vec<u8>),
+) -> Result<Manifest> {
     let mut buckets_map = BTreeMap::new();
     let mut manifest_hlc = String::new();
     for bucket in Bucket::all() {
+        let name = bucket.as_str();
         let bytes = rows::serialize_bucket(conn, &bucket)?;
         let blob_hash = rows::bucket_hash(&bytes);
         let count = count_live_rows(conn, &bucket)?;
@@ -46,10 +61,11 @@ pub fn compute_local_manifest(conn: &Connection, device_id: &str) -> Result<Mani
         if hlc > manifest_hlc {
             manifest_hlc = hlc.clone();
         }
+        on_blob(&name, &blob_hash, bytes);
         buckets_map.insert(
-            bucket.as_str(),
+            name.clone(),
             BucketEntry {
-                object_key: format!("{}-{}.jsonl.gz", bucket.as_str(), blob_hash),
+                object_key: format!("{name}-{blob_hash}.jsonl.gz"),
                 blob_hash,
                 count,
                 hlc,
@@ -103,15 +119,15 @@ fn count_live_rows(conn: &Connection, bucket: &Bucket) -> Result<u64> {
             Ok(n)
         }
         Bucket::Tracks(shard) => {
-            let mut count = 0u64;
-            let mut stmt = conn.prepare("SELECT id FROM tracks")?;
-            let ids = stmt.query_map([], |r| r.get::<_, String>(0))?;
-            for id in ids {
-                if buckets::shard_for_track_id(&id?) == *shard {
-                    count += 1;
-                }
-            }
-            Ok(count)
+            let c: i64 = conn.query_row(
+                &format!(
+                    "SELECT COUNT(*) FROM tracks WHERE {}",
+                    buckets::shard_sql_condition("id", *shard)
+                ),
+                [],
+                |r| r.get(0),
+            )?;
+            Ok(c as u64)
         }
         _ => {
             let table = bucket.table();

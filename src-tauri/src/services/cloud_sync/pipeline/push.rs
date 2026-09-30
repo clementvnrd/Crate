@@ -11,20 +11,21 @@
 //! on success. The standalone pull, self-echo skip, and live updates live in the
 //! sibling [`pull`] module; this push is idempotent and safe to call repeatedly.
 
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 
 use bytes::Bytes;
 use rusqlite::Connection;
 
-use crate::error::{CrateError, Result};
+use crate::error::{run_blocking, CrateError, Result};
 
 use super::super::backend::types::{AuthSession, GcEntry, Manifest};
 use super::super::backend::CloudBackend;
 use super::super::hlc;
 use super::buckets::Bucket;
 use super::dirty::stamp_unstamped_rows;
-use super::manifest::{compute_local_manifest, diff_manifest};
+use super::manifest::{compute_local_manifest_with, diff_manifest};
 use super::merge::OverrideEvent;
 use super::pull;
 use super::rows;
@@ -83,8 +84,15 @@ pub async fn push(
 
         // Recompute the local manifest + serialize the changed buckets (all sync work
         // happens under the guard; the guard is dropped before any upload). This also
-        // snapshots the dirty rows this attempt claims (see `PreparedPush`).
-        let prepared = prepare_uploads(&conn, session, device_id, remote_manifest.as_ref())?;
+        // snapshots the dirty rows this attempt claims (see `PreparedPush`). It reads and
+        // hashes the whole library, so it runs on the blocking pool, not on an async worker.
+        let prepared = {
+            let conn = Arc::clone(&conn);
+            let uid = session.uid.clone();
+            let device_id = device_id.to_string();
+            let remote = remote_manifest.clone();
+            run_blocking(move || prepare_uploads(&conn, &uid, &device_id, remote.as_ref())).await?
+        };
 
         for (key, bytes) in &prepared.uploads {
             blobs
@@ -156,15 +164,24 @@ struct PreparedPush {
 /// atomically with the data snapshot (the correctness crux of the coalescing fix).
 fn prepare_uploads(
     conn: &Arc<Mutex<Connection>>,
-    session: &AuthSession,
+    uid: &str,
     device_id: &str,
     remote: Option<&Manifest>,
 ) -> Result<PreparedPush> {
     let guard = conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-    let local = compute_local_manifest(&guard, device_id)?;
     let base = remote
         .cloned()
         .unwrap_or_else(|| Manifest::empty(device_id));
+
+    // Computing the manifest already serializes every bucket to hash it. Keep the bytes of the
+    // buckets that differ from `base` (the ones to upload) instead of serializing them again:
+    // same guard, so they are exactly the bytes a second pass would produce.
+    let mut changed: BTreeMap<String, Vec<u8>> = BTreeMap::new();
+    let local = compute_local_manifest_with(&guard, device_id, |name, hash, bytes| {
+        if base.bucket(name).map(|entry| entry.blob_hash.as_str()) != Some(hash) {
+            changed.insert(name.to_string(), bytes);
+        }
+    })?;
     let diff = diff_manifest(&local, &base);
 
     let mut uploads = Vec::new();
@@ -174,15 +191,15 @@ fn prepare_uploads(
     for name in &diff.to_upload {
         let bucket = Bucket::parse(name)
             .ok_or_else(|| CrateError::CloudSync(format!("bad bucket {name}")))?;
-        let bytes = rows::serialize_bucket(&guard, &bucket)?;
+        // `diff_manifest` and the filter above use the same rule, so this is always found; the
+        // fallback only keeps the push correct if the two ever drift apart.
+        let bytes = match changed.remove(name) {
+            Some(bytes) => bytes,
+            None => rows::serialize_bucket(&guard, &bucket)?,
+        };
         let hash = rows::bucket_hash(&bytes);
         // Full storage key (BucketEntry.object_key is relative — see manifest.rs).
-        let key = format!(
-            "users/{}/vault/{}-{}.jsonl.gz",
-            session.uid,
-            bucket.as_str(),
-            hash
-        );
+        let key = format!("users/{uid}/vault/{}-{}.jsonl.gz", bucket.as_str(), hash);
         uploads.push((key, bytes));
 
         // Enqueue the prior blob for GC when this bucket actually changed key.
@@ -192,7 +209,7 @@ fn prepare_uploads(
         ) {
             if prev.object_key != now.object_key {
                 gc_enqueue.push(GcEntry {
-                    object_key: format!("users/{}/vault/{}", session.uid, prev.object_key),
+                    object_key: format!("users/{uid}/vault/{}", prev.object_key),
                     delete_after,
                 });
             }

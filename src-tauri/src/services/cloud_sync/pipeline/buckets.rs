@@ -53,6 +53,24 @@ pub fn shard_for_track_id(id: &str) -> u8 {
         .unwrap_or(0) as u8
 }
 
+/// SQL condition that holds exactly when `shard_for_track_id(<column>) == shard`, so SQLite skips
+/// the rows of the other shards instead of Rust decoding all of them and discarding 15/16.
+///
+/// It reproduces the Rust rule character for character: the first character, lowercased for
+/// ASCII only (SQLite's `lower()` is ASCII-only, like `to_ascii_lowercase`), counts when it is a
+/// hex digit; anything else (another character, or an empty id) falls in shard 0.
+/// `column` is a fixed column name from our own code, never user input.
+pub fn shard_sql_condition(column: &str, shard: u8) -> String {
+    if shard == 0 {
+        format!(
+            "lower(substr({column}, 1, 1)) NOT IN \
+             ('1','2','3','4','5','6','7','8','9','a','b','c','d','e','f')"
+        )
+    } else {
+        format!("lower(substr({column}, 1, 1)) = '{shard:x}'")
+    }
+}
+
 /// How a bucket merges. Drives the delete-vs-live tie-break, which MUST be the
 /// same at serialize time and merge time or two converged devices produce
 /// different bytes (hash ping-pong).
@@ -303,6 +321,42 @@ mod tests {
         }
         assert_eq!(shard_for_track_id(""), 0);
         assert_eq!(shard_for_track_id("zzz"), 0);
+    }
+
+    #[test]
+    fn sql_shard_condition_matches_the_rust_rule() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        conn.execute_batch("CREATE TABLE ids (id TEXT NOT NULL);")
+            .unwrap();
+        let ids = [
+            "0a", "1b", "2c", "3d", "4e", "5f", "6a", "7b", "8c", "9d", "aa", "Ab", "bb", "Bc",
+            "cc", "Cd", "dd", "De", "ee", "Ee", "ff", "Fa", "g1", "zz", "_x", "é1", "É2", "ß2",
+            "日本", "", " 3", "0", "f",
+        ];
+        for id in ids {
+            conn.execute("INSERT INTO ids (id) VALUES (?1)", [id])
+                .unwrap();
+        }
+        for shard in 0u8..16 {
+            let sql = format!(
+                "SELECT id FROM ids WHERE {}",
+                shard_sql_condition("id", shard)
+            );
+            let mut stmt = conn.prepare(&sql).unwrap();
+            let mut from_sql: Vec<String> = stmt
+                .query_map([], |r| r.get(0))
+                .unwrap()
+                .map(|r| r.unwrap())
+                .collect();
+            from_sql.sort();
+            let mut from_rust: Vec<String> = ids
+                .iter()
+                .filter(|id| shard_for_track_id(id) == shard)
+                .map(|id| id.to_string())
+                .collect();
+            from_rust.sort();
+            assert_eq!(from_sql, from_rust, "shard {shard:x}");
+        }
     }
 
     #[test]

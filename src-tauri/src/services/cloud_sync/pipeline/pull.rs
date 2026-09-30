@@ -19,7 +19,7 @@ use std::sync::{Arc, Mutex};
 
 use rusqlite::{Connection, OptionalExtension};
 
-use crate::error::{CrateError, Result};
+use crate::error::{run_blocking, CrateError, Result};
 
 use super::super::backend::types::{AuthSession, Manifest};
 use super::super::backend::{BlobStore, CloudBackend};
@@ -117,11 +117,17 @@ pub async fn pull_and_merge(
     session: &AuthSession,
     remote: &Manifest,
 ) -> Result<MergeOutcome> {
+    // Hashing the whole library is slow work: keep it off the async workers.
     let mut to_download = {
-        let guard = conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-        // device_id is irrelevant here: diffing keys on blob_hash only.
-        let local = compute_local_manifest(&guard, "")?;
-        diff_manifest(&local, remote).to_download
+        let conn = Arc::clone(conn);
+        let remote = remote.clone();
+        run_blocking(move || {
+            let guard = conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+            // device_id is irrelevant here: diffing keys on blob_hash only.
+            let local = compute_local_manifest(&guard, "")?;
+            Ok(diff_manifest(&local, &remote).to_download)
+        })
+        .await?
     };
     if to_download.is_empty() {
         return Ok(MergeOutcome::unchanged());

@@ -21,6 +21,7 @@ use crate::services::cloud_sync::pipeline::merge::merge_bucket;
 use crate::services::cloud_sync::pipeline::rows;
 
 mod convergence;
+mod manifest_snapshot;
 
 /// A fresh in-memory device: migrations applied, FK on, a distinct `node_id`.
 fn new_device(node_id: u32) -> Connection {
