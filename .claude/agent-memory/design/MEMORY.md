@@ -1,0 +1,2 @@
+- [Owner visual preferences](owner-visual-preferences.md) — keep colour families (CRA-115); "neon glass"/"sienna" vocabulary mapping
+- [Charter contrast method](charter-contrast-method.md) — how contrast was computed without a harness; glass composite and accent-fill pitfalls
