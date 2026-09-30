@@ -13,7 +13,8 @@ export default defineConfig({
 		setupFiles: ['./vitest.setup.ts'],
 		globals: true,
 		include: ['**/*.{test,spec}.{js,ts}'],
-		exclude: ['**/node_modules/**', '**/src-tauri/**'],
+		// Playwright specs (`*.e2e.ts`) and the browser harness are not Vitest tests: `yarn test:e2e` runs them.
+		exclude: ['**/node_modules/**', '**/src-tauri/**', 'e2e/**', 'apps/desktop/harness/**'],
 	},
 	resolve: {
 		alias: {

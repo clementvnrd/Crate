@@ -451,7 +451,7 @@ Crate is a desktop app: no mobile breakpoints in the desktop app (the mobile app
 - **Debt measured** by `yarn design:scan apps/desktop/src` on 2026-09-30 (see the register, defects D3, D7, D10, D11): 279 palette classes, 105 hex values, 188 arbitrary sizes, 89 `xl` to `3xl` radii, 64 blur, glow or coloured shadows, 12 gradients, 89 `transition-all`, 43 `dark:`, 43 infinite animations without `motion-reduce`. Part of the palette and hex counts are now legitimate family roles; the rest is debt.
 - **Other documents still describe the former direction** ("bring every view back to the accent"): the `crate-design-system`, `crate-ui-build` and `crate-ui-audit` skills and `anti-slop-product.md` ("one colour per card"). This file is authoritative until they are updated.
 - **Internal icon set**: `Icon.svelte` contains the hand-drawn paths inherited from upstream; it is the only authorised source, and missing icons are added to it rather than introducing a library.
-- **No versioned visual harness**: the audit's browser harness (fake Tauri backend) is not in the repository; automatic visual checking depends on it.
+- **Visual harness**: `yarn harness` (port 1430, fake Tauri backend, `apps/desktop/harness/README.md`) and `yarn test:e2e` measure every view in light and dark, at 1000×600 and 1400×900, in English and French; the counts are a ratchet in `e2e/baseline.json`. Contrast in this document is still computed from token values, the harness measures what is actually rendered.
 
 ### Known deviations from the charter
 

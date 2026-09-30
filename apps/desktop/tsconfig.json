@@ -19,6 +19,8 @@
 		".svelte-kit/non-ambient.d.ts",
 		".svelte-kit/types/**/$types.d.ts",
 		"vite.config.ts",
+		"vite.harness.config.ts",
+		"harness/**/*.ts",
 		"src/**/*.js",
 		"src/**/*.ts",
 		"src/**/*.svelte",

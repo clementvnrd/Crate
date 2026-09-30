@@ -6,6 +6,7 @@
 	"private": true,
 	"scripts": {
 		"dev:vite": "vite dev",
+		"harness": "vite dev --config vite.harness.config.ts",
 		"sync": "svelte-kit sync",
 		"build:vite": "vite build",
 		"preview": "vite preview",

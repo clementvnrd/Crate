@@ -176,7 +176,7 @@ _Exit criterion: Green CI, clean fmt/lint, cross-platform builds._
 - [x] **Q12** — No `CLAUDE.md`: every assistant rediscovers the rules (`desktop` feature, CI clippy flags,…
 - [x] **Q13** — `yarn dev` compiles Rust in `--release`: every change costs several minutes (upstream)
 - [ ] **Q14** — 87 `yarn audit` alerts (61 high) in the transitive tooling; `cargo audit` not installed locally
-- [x] **Q15** — No design guard rails for assistants: the strict rules only exist in the register,… — _`DESIGN.md`, `design` agent and 5 skills, `yarn design:scan` (1,220 offending lines at the start); automatic visual verification awaits a versioned harness_
+- [x] **Q15** — No design guard rails for assistants: the strict rules only exist in the register,… — _`DESIGN.md`, `design` agent and 5 skills, `yarn design:scan` (1,220 offending lines at the start); automatic visual verification is now `yarn test:e2e` on the versioned harness (CRA-134)_
 - [x] **B10** — Migration numbering diverging from upstream (15 entries, labelled 7 to 16, 6 skipped) — _labels fixed (6 to 15), order unchanged: the local database has already applied these migrations_
 
 ### Step 10 — Visual foundations
@@ -245,3 +245,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Scenario B: "Your week / Your year" recap (backend) and exact statistics windows | — |
 | 2026-09-30 | Scenario B: next-track suggestion from real Rekordbox transitions (backend) and harmonic key module | — |
 | 2026-09-30 | Scenario B: discovery funnel (backend, migration 17) | — |
+| 2026-09-30 | **Browser harness and end-to-end checks** versioned (`yarn harness`, `yarn test:e2e`, ratchet baseline) | 9 |

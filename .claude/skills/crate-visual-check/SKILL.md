@@ -2,7 +2,7 @@
 name: crate-visual-check
 description: Visual check of Crate's interface with Playwright CLI — screenshots in light and dark themes, several accents, window sizes 1000×600 / 1400×900 / 1920×1080, French and English, reduced motion; in-page measured audit (WCAG contrast, unnamed buttons, overlaps, modals outside the window, crushed columns, text under 12 px); annotation session with the owner. Use before declaring interface work done, for an audit, or to compare with a mockup.
 argument-hint: "[view] [light|dark|all]"
-allowed-tools: Bash(playwright-cli:*) Bash(npx playwright:*) Bash(yarn dev:vite)
+allowed-tools: Bash(playwright-cli:*) Bash(npx playwright:*) Bash(yarn harness) Bash(yarn test:e2e:*)
 ---
 
 # Checking the interface with Playwright CLI
@@ -15,9 +15,14 @@ Tool: [microsoft/playwright-cli](https://github.com/microsoft/playwright-cli) (A
    ```bash
    npm install -g @playwright/cli@latest
    ```
-2. **A frontend running in a browser.** Crate calls the Tauri backend (`invoke`) right at startup: opened as is in a browser (`yarn dev:vite`, port 1420), it lands on the crash screen. You need a **browser harness** that replaces the backend with mock data (fake IPC through `@tauri-apps/api/mocks`, about fifteen tracks, theme and language settings). The one used for the 25 September audit was not committed.
-   - If the browser harness exists (look for a `harness` script in `package.json` or a `harness/` folder), start it and use its URL.
-   - Otherwise, **say so clearly** in the report ("visual check impossible: no browser harness") and fall back on: `yarn design:scan`, code review, and a screenshot request to the owner (`yarn dev`, then a screenshot of the view concerned in light and dark). Never claim to have checked visually.
+   If it reports that Google Chrome is not found, do not download anything: point it at a Chromium already cached by Playwright with a config file (`playwright-cli --config <file> open <url>`, the option is only read by `open`), for example `{ "browser": { "browserName": "chromium", "launchOptions": { "executablePath": "<~/Library/Caches/ms-playwright/chromium-XXXX/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing>", "headless": true } } }`.
+2. **The browser harness running.** Crate calls the Tauri backend (`invoke`) right at startup, so `yarn dev:vite` alone lands on the crash screen. The committed **browser harness** runs the real app with a fake backend (16 tracks, playlists, tags, Beatport, Pulse statistics, albums, duplicates, upgrader matches…). From the repository root:
+   ```bash
+   yarn harness        # http://localhost:1430/ (port fixed; `yarn dev` uses 1420 and 1421)
+   ```
+   Everything is in `apps/desktop/harness/` and its `README.md` (URL parameters such as `?theme=light&lang=fr&accent=amber&beatport=out&library=empty&playing=trk-03`, how to reach each screen, how to add a fixture or a handler). The console lists commands nobody mocked in `window.__harness.unmocked`: if a view is blank or wrong, look there first, and add the handler rather than concluding the app is broken.
+   - Without a running harness, **say so clearly** in the report ("visual check impossible: no browser harness") and fall back on `yarn design:scan`, code review, and a screenshot request to the owner (`yarn dev`, then a screenshot of the view concerned in light and dark). Never claim to have checked visually.
+3. **The automated matrix** (`yarn test:e2e`, from the repository root) already opens every view in both themes, at 1000×600 and 1400×900, in English and French, writes screenshots to `e2e/screenshots/<view>-<theme>-<width>-<lang>.png`, runs `ui-audit.js` and compares its counts with `e2e/baseline.json` (a ratchet: a count that rises fails, a count that falls is reported; lower the baseline with `yarn test:e2e:update-baseline` and commit it with the fix). Run it after any interface change, then use the procedure below for what it does not cover (accents, fonts, 1920×1080, states, a view as it reads on screen).
 
 Screenshots and snapshots go into `.playwright-cli/` (ignored by git).
 
@@ -47,11 +52,11 @@ Add `set-reduced-motion reduce` on one of the rows when animations are involved,
 ## Procedure
 
 ```bash
-# 1. open the browser harness (adapt the URL)
-playwright-cli open http://localhost:1420/
+# 1. open the browser harness (started with `yarn harness`); appearance can also come from the URL
+playwright-cli open "http://localhost:1430/?theme=light&accent=amber&lang=fr"
 playwright-cli resize 1400 900
 
-# 2. set a combination and reload
+# 2. or set a combination through localStorage and reload
 playwright-cli localstorage-set crate-theme light
 playwright-cli localstorage-set crate-accent amber
 playwright-cli localstorage-set crate-language fr
@@ -86,6 +91,8 @@ The script runs in the page and returns a JSON report:
 | `outOfWindow` | Modal, menu or tooltip that extends outside the window | D6 |
 | `crushedColumns` | Text truncated in less than 48 px (crushed column) | D7 |
 | `pageOverflowX` | Horizontal scrolling of the page | rule 10 |
+
+The lists stop at 40 entries each (`const MAX = 40`); `yarn test:e2e` lifts that cap in memory so it counts every finding, which is what makes its baseline a real ratchet.
 
 A 0×0 window (hidden or unsized browser) returns an error: set a size with `resize` and run it again.
 

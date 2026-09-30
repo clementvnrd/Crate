@@ -1,0 +1,645 @@
+{
+	"about": "Audit findings per case (view, theme, window width, language). `yarn test:e2e` fails when a count rises above its value here; after fixing findings, lower it with `yarn test:e2e:update-baseline`. Do not edit by hand.",
+	"cases": {
+		"beatport-dark-1000-en": {
+			"lowContrast": 86,
+			"smallText": 155,
+			"unnamedControls": 10,
+			"pointerOnly": 0,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 72,
+			"pageOverflowX": 0
+		},
+		"beatport-dark-1000-fr": {
+			"lowContrast": 86,
+			"smallText": 155,
+			"unnamedControls": 10,
+			"pointerOnly": 0,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 72,
+			"pageOverflowX": 0
+		},
+		"beatport-dark-1400-en": {
+			"lowContrast": 86,
+			"smallText": 157,
+			"unnamedControls": 10,
+			"pointerOnly": 0,
+			"overlaps": 4,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"beatport-dark-1400-fr": {
+			"lowContrast": 86,
+			"smallText": 157,
+			"unnamedControls": 10,
+			"pointerOnly": 0,
+			"overlaps": 4,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"beatport-light-1000-en": {
+			"lowContrast": 4,
+			"smallText": 155,
+			"unnamedControls": 10,
+			"pointerOnly": 0,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 72,
+			"pageOverflowX": 0
+		},
+		"beatport-light-1000-fr": {
+			"lowContrast": 4,
+			"smallText": 155,
+			"unnamedControls": 10,
+			"pointerOnly": 0,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 72,
+			"pageOverflowX": 0
+		},
+		"beatport-light-1400-en": {
+			"lowContrast": 4,
+			"smallText": 157,
+			"unnamedControls": 10,
+			"pointerOnly": 0,
+			"overlaps": 4,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"beatport-light-1400-fr": {
+			"lowContrast": 4,
+			"smallText": 157,
+			"unnamedControls": 10,
+			"pointerOnly": 0,
+			"overlaps": 4,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"discovery-dark-1000-en": {
+			"lowContrast": 77,
+			"smallText": 3,
+			"unnamedControls": 46,
+			"pointerOnly": 10,
+			"overlaps": 5,
+			"outOfWindow": 0,
+			"crushedColumns": 9,
+			"pageOverflowX": 0
+		},
+		"discovery-dark-1000-fr": {
+			"lowContrast": 77,
+			"smallText": 3,
+			"unnamedControls": 46,
+			"pointerOnly": 10,
+			"overlaps": 5,
+			"outOfWindow": 0,
+			"crushedColumns": 9,
+			"pageOverflowX": 0
+		},
+		"discovery-dark-1400-en": {
+			"lowContrast": 78,
+			"smallText": 5,
+			"unnamedControls": 46,
+			"pointerOnly": 10,
+			"overlaps": 5,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"discovery-dark-1400-fr": {
+			"lowContrast": 78,
+			"smallText": 5,
+			"unnamedControls": 46,
+			"pointerOnly": 10,
+			"overlaps": 5,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"discovery-light-1000-en": {
+			"lowContrast": 12,
+			"smallText": 3,
+			"unnamedControls": 46,
+			"pointerOnly": 10,
+			"overlaps": 5,
+			"outOfWindow": 0,
+			"crushedColumns": 9,
+			"pageOverflowX": 0
+		},
+		"discovery-light-1000-fr": {
+			"lowContrast": 12,
+			"smallText": 3,
+			"unnamedControls": 46,
+			"pointerOnly": 10,
+			"overlaps": 5,
+			"outOfWindow": 0,
+			"crushedColumns": 9,
+			"pageOverflowX": 0
+		},
+		"discovery-light-1400-en": {
+			"lowContrast": 13,
+			"smallText": 5,
+			"unnamedControls": 46,
+			"pointerOnly": 10,
+			"overlaps": 5,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"discovery-light-1400-fr": {
+			"lowContrast": 13,
+			"smallText": 5,
+			"unnamedControls": 46,
+			"pointerOnly": 10,
+			"overlaps": 5,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"duplicates-dark-1000-en": {
+			"lowContrast": 66,
+			"smallText": 82,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 89,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"duplicates-dark-1000-fr": {
+			"lowContrast": 66,
+			"smallText": 82,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 89,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"duplicates-dark-1400-en": {
+			"lowContrast": 67,
+			"smallText": 84,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 69,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"duplicates-dark-1400-fr": {
+			"lowContrast": 67,
+			"smallText": 84,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 68,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"duplicates-light-1000-en": {
+			"lowContrast": 71,
+			"smallText": 82,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 89,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"duplicates-light-1000-fr": {
+			"lowContrast": 71,
+			"smallText": 82,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 89,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"duplicates-light-1400-en": {
+			"lowContrast": 72,
+			"smallText": 84,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 69,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"duplicates-light-1400-fr": {
+			"lowContrast": 72,
+			"smallText": 84,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 68,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"library-dark-1000-en": {
+			"lowContrast": 50,
+			"smallText": 48,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 34,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"library-dark-1000-fr": {
+			"lowContrast": 50,
+			"smallText": 48,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 34,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"library-dark-1400-en": {
+			"lowContrast": 51,
+			"smallText": 50,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 15,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"library-dark-1400-fr": {
+			"lowContrast": 51,
+			"smallText": 50,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 15,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"library-light-1000-en": {
+			"lowContrast": 69,
+			"smallText": 48,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 34,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"library-light-1000-fr": {
+			"lowContrast": 69,
+			"smallText": 48,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 34,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"library-light-1400-en": {
+			"lowContrast": 70,
+			"smallText": 50,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 15,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"library-light-1400-fr": {
+			"lowContrast": 70,
+			"smallText": 50,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 15,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"player-dark-1000-en": {
+			"lowContrast": 31,
+			"smallText": 65,
+			"unnamedControls": 18,
+			"pointerOnly": 5,
+			"overlaps": 2,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"player-dark-1000-fr": {
+			"lowContrast": 31,
+			"smallText": 65,
+			"unnamedControls": 18,
+			"pointerOnly": 5,
+			"overlaps": 2,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"player-dark-1400-en": {
+			"lowContrast": 31,
+			"smallText": 67,
+			"unnamedControls": 18,
+			"pointerOnly": 5,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"player-dark-1400-fr": {
+			"lowContrast": 31,
+			"smallText": 67,
+			"unnamedControls": 18,
+			"pointerOnly": 5,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"player-light-1000-en": {
+			"lowContrast": 10,
+			"smallText": 65,
+			"unnamedControls": 18,
+			"pointerOnly": 5,
+			"overlaps": 2,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"player-light-1000-fr": {
+			"lowContrast": 10,
+			"smallText": 65,
+			"unnamedControls": 18,
+			"pointerOnly": 5,
+			"overlaps": 2,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"player-light-1400-en": {
+			"lowContrast": 10,
+			"smallText": 67,
+			"unnamedControls": 18,
+			"pointerOnly": 5,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"player-light-1400-fr": {
+			"lowContrast": 10,
+			"smallText": 67,
+			"unnamedControls": 18,
+			"pointerOnly": 5,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"pulse-dark-1000-en": {
+			"lowContrast": 163,
+			"smallText": 253,
+			"unnamedControls": 10,
+			"pointerOnly": 173,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"pulse-dark-1000-fr": {
+			"lowContrast": 163,
+			"smallText": 253,
+			"unnamedControls": 10,
+			"pointerOnly": 173,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"pulse-dark-1400-en": {
+			"lowContrast": 163,
+			"smallText": 255,
+			"unnamedControls": 10,
+			"pointerOnly": 173,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 1,
+			"pageOverflowX": 0
+		},
+		"pulse-dark-1400-fr": {
+			"lowContrast": 163,
+			"smallText": 255,
+			"unnamedControls": 10,
+			"pointerOnly": 173,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 1,
+			"pageOverflowX": 0
+		},
+		"pulse-light-1000-en": {
+			"lowContrast": 20,
+			"smallText": 253,
+			"unnamedControls": 10,
+			"pointerOnly": 173,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"pulse-light-1000-fr": {
+			"lowContrast": 20,
+			"smallText": 253,
+			"unnamedControls": 10,
+			"pointerOnly": 173,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"pulse-light-1400-en": {
+			"lowContrast": 20,
+			"smallText": 255,
+			"unnamedControls": 10,
+			"pointerOnly": 173,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 1,
+			"pageOverflowX": 0
+		},
+		"pulse-light-1400-fr": {
+			"lowContrast": 20,
+			"smallText": 255,
+			"unnamedControls": 10,
+			"pointerOnly": 173,
+			"overlaps": 0,
+			"outOfWindow": 0,
+			"crushedColumns": 1,
+			"pageOverflowX": 0
+		},
+		"settings-dark-1000-en": {
+			"lowContrast": 58,
+			"smallText": 48,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 99,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"settings-dark-1000-fr": {
+			"lowContrast": 58,
+			"smallText": 48,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 109,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"settings-dark-1400-en": {
+			"lowContrast": 59,
+			"smallText": 50,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 47,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"settings-dark-1400-fr": {
+			"lowContrast": 59,
+			"smallText": 50,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 46,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"settings-light-1000-en": {
+			"lowContrast": 70,
+			"smallText": 48,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 99,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"settings-light-1000-fr": {
+			"lowContrast": 70,
+			"smallText": 48,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 109,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"settings-light-1400-en": {
+			"lowContrast": 71,
+			"smallText": 50,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 47,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"settings-light-1400-fr": {
+			"lowContrast": 71,
+			"smallText": 50,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 46,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"upgrader-dark-1000-en": {
+			"lowContrast": 74,
+			"smallText": 96,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 54,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"upgrader-dark-1000-fr": {
+			"lowContrast": 74,
+			"smallText": 96,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 54,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"upgrader-dark-1400-en": {
+			"lowContrast": 75,
+			"smallText": 98,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 37,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"upgrader-dark-1400-fr": {
+			"lowContrast": 75,
+			"smallText": 98,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 37,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"upgrader-light-1000-en": {
+			"lowContrast": 70,
+			"smallText": 96,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 54,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"upgrader-light-1000-fr": {
+			"lowContrast": 70,
+			"smallText": 96,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 54,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"upgrader-light-1400-en": {
+			"lowContrast": 71,
+			"smallText": 98,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 37,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"upgrader-light-1400-fr": {
+			"lowContrast": 71,
+			"smallText": 98,
+			"unnamedControls": 29,
+			"pointerOnly": 0,
+			"overlaps": 37,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		}
+	}
+}

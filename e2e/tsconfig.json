@@ -1,0 +1,15 @@
+{
+	// Type-checks the Playwright specs in editors (Playwright itself compiles them without checking types).
+	// Command line: `npx tsc -p e2e/tsconfig.json`.
+	"compilerOptions": {
+		"target": "esnext",
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"lib": ["esnext", "dom"],
+		"types": ["node"],
+		"strict": true,
+		"skipLibCheck": true,
+		"noEmit": true
+	},
+	"include": ["./**/*.ts"]
+}

@@ -30,3 +30,7 @@ coverage/
 
 # Playwright CLI snapshots and screenshots (design checks)
 .playwright-cli/
+
+# End-to-end tests (Playwright): screenshots, per-case measurements and traces are regenerated on every run
+e2e/screenshots/
+e2e/test-results/
