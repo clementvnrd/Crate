@@ -5,7 +5,7 @@ This file is **the** source of truth for tracking: every defect in the [register
 Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification or remaining work. The progress table is recomputed with `yarn status` (from the repository root).
 
 <!-- progress:start -->
-**Overall progress: 94 / 107 defects fixed (88%)**
+**Overall progress: 95 / 107 defects fixed (89%)**
 
 | Step | Fixed | Progress |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 6 — Accurate statistics | 10 / 10 | ██████████ |
 | Step 7 — Exact DJ features | 17 / 18 | █████████░ |
 | Step 8 — Robust frontend | 17 / 17 | ██████████ |
-| Step 9 — Hygiene and tooling | 12 / 15 | ████████░░ |
+| Step 9 — Hygiene and tooling | 13 / 15 | █████████░ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
 | Step 11 — View-by-view compliance | 3 / 7 | ████░░░░░░ |
 | Step 12 — Translation | 1 / 6 | ██░░░░░░░░ |
@@ -170,7 +170,7 @@ _Exit criterion: Green CI, clean fmt/lint, cross-platform builds._
 - [x] **Q6** — No workflow runs `yarn test` or `cargo test` — _Linux jobs: frontend (format, lint, types, Vitest) and Rust (clippy, tests); the upstream macOS/Windows matrix stays manual_
 - [x] **Q7** — No tests on the risky paths: file replacement, purge, pollers, OAuth; 3 tests read… — _tests added for file replacement, sync/purge, listen trackers, import, export; tests on the real MIK database removed_
 - [x] **Q8** — Vitest runs on Vite 8.2 while the app uses Vite 7.3; `test:coverage` with no coverage provider…
-- [ ] **Q9** — Dev, staging and prod icons have become byte-for-byte identical; `.ico`, Windows, iOS and Android icons…
+- [x] **Q9** — Dev, staging and prod icons have become byte-for-byte identical; `.ico`, Windows, iOS and Android icons… — _upstream already shipped the three identical; the dev and staging icons now carry a blue `DEV` / purple `STG` band (all formats regenerated with `tauri icon`), prod untouched_
 - [x] **Q10** — CHANGELOG, version, README and documentation site not updated; the shortcuts doc contradicts the… — _CHANGELOG, README and shortcuts page up to date; version 0.3.0 to be set at the first personal build_
 - [x] **Q11** — Files that must not be committed: `SYNTHESE_DISCUSSION.md` (personal paths),… — _Swift script deleted; the summary is archived in `tracking/history/` (private repository); fonts handled with D8_
 - [x] **Q12** — No `CLAUDE.md`: every assistant rediscovers the rules (`desktop` feature, CI clippy flags,…
@@ -233,3 +233,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | **Answers in Linear + hourly watch**: owner answers by commenting or closing issues, assistant comments prefixed `🤖 Claude:`, scheduled task `crate-linear-hourly-check` (highest autonomy, one defect per run, ends at In Review) | — |
 | 2026-09-30 | **Owner decisions read from Linear**: scenario A then B, French and English complete, macOS only, Mixed In Key read-only; Spotify cleanup, default player, visual language and Beatport still open | — |
 | 2026-09-30 | **Owner decisions read from Linear (2nd pass)**: Beatport download stays while the repository is private (CRA-113), colour families are kept and a graphic charter is written (CRA-115 → CRA-140); Spotify history backed up and verified, deletion awaiting the owner's go (CRA-123) | — |
+| 2026-09-30 | Dev and staging icons recognisable in the Dock (blue `DEV` and purple `STG` bands), all formats regenerated | 9 |
