@@ -4,6 +4,7 @@ mod import;
 pub mod macos_bookmark;
 pub mod mik;
 pub mod mik_db;
+mod organise;
 mod query;
 mod relocation;
 mod report;
@@ -13,6 +14,7 @@ pub mod waveform;
 
 pub use mik::*;
 pub use mik_db::*;
+pub use organise::{OrganisationBatch, OrganisationPlan, OrganisationResult, OrganisationRule};
 pub use report::{read_rekordbox_xml, DiscrepancyReport};
 pub use suggest::NextTrackSuggestion;
 

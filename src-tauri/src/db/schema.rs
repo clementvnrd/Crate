@@ -582,5 +582,19 @@ CREATE INDEX IF NOT EXISTS idx_tracks_match
 CREATE INDEX IF NOT EXISTS idx_discovery_releases_artist_match
     ON discovery_releases(lower(trim(artist)));
 "#,
+        // Migration 18 (fork): journal of the files moved by the assisted organisation, so that a
+        // batch can be undone. Local to this device (not synced).
+        r#"
+CREATE TABLE organisation_journal (
+    id TEXT PRIMARY KEY,
+    batch_id TEXT NOT NULL,
+    track_id TEXT NOT NULL,
+    from_path TEXT NOT NULL,
+    to_path TEXT NOT NULL,
+    moved_at TEXT NOT NULL,
+    undone_at TEXT
+);
+CREATE INDEX idx_organisation_journal_batch ON organisation_journal(batch_id);
+"#,
     ]
 }

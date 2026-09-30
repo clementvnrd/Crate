@@ -248,6 +248,10 @@ pub fn run() {
             commands::library::get_track_cues,
             commands::library::suggest_next_tracks,
             commands::library::get_discrepancy_report,
+            commands::library::plan_organisation,
+            commands::library::apply_organisation,
+            commands::library::undo_organisation,
+            commands::library::get_organisation_batches,
             // Duplicate commands (desktop-only)
             #[cfg(feature = "desktop")]
             commands::duplicate::get_duplicate_groups,

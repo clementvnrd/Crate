@@ -8,7 +8,8 @@ use crate::models::{
     TrackFilter, TrackUpdate,
 };
 use crate::services::library::{
-    read_rekordbox_xml, DiscrepancyReport, NextTrackSuggestion, RescanResult,
+    read_rekordbox_xml, DiscrepancyReport, NextTrackSuggestion, OrganisationBatch,
+    OrganisationPlan, OrganisationResult, OrganisationRule, RescanResult,
 };
 use crate::services::LibraryService;
 
@@ -306,6 +307,71 @@ pub async fn get_discrepancy_report(
             .map(read_rekordbox_xml)
             .transpose()?;
         library.build_discrepancy_report(xml.as_deref())
+    })
+    .await
+}
+
+/// Preview of the assisted organisation: where every file would go under `rule`. Changes nothing.
+/// `track_ids` restricts it to a selection, `None` is the whole library.
+#[tauri::command]
+pub async fn plan_organisation(
+    app: tauri::AppHandle,
+    rule: OrganisationRule,
+    track_ids: Option<Vec<String>>,
+) -> Result<OrganisationPlan> {
+    with_library(&app, move |library| {
+        library.plan_organisation(&rule, track_ids.as_deref())
+    })
+    .await
+}
+
+/// Moves the files, but only if the plan is exactly the previewed one (`expected_plan_id`) and the
+/// caller confirms that Rekordbox and other tools that remember file paths will lose them.
+/// Nothing is overwritten or deleted; the batch can be undone.
+#[tauri::command]
+pub async fn apply_organisation(
+    app: tauri::AppHandle,
+    rule: OrganisationRule,
+    track_ids: Option<Vec<String>>,
+    expected_plan_id: String,
+    understands_external_tools: bool,
+) -> Result<OrganisationResult> {
+    let result = with_library(&app, move |library| {
+        library.apply_organisation(
+            &rule,
+            track_ids.as_deref(),
+            &expected_plan_id,
+            understands_external_tools,
+        )
+    })
+    .await?;
+    if result.moved > 0 {
+        let _ = app.emit("duplicates-updated", ());
+    }
+    Ok(result)
+}
+
+/// Puts an applied batch back where it was.
+#[tauri::command]
+pub async fn undo_organisation(
+    app: tauri::AppHandle,
+    batch_id: String,
+) -> Result<OrganisationResult> {
+    let result = with_library(&app, move |library| library.undo_organisation(&batch_id)).await?;
+    if result.moved > 0 {
+        let _ = app.emit("duplicates-updated", ());
+    }
+    Ok(result)
+}
+
+/// The organisation batches that were applied, latest first (10 by default).
+#[tauri::command]
+pub async fn get_organisation_batches(
+    app: tauri::AppHandle,
+    limit: Option<usize>,
+) -> Result<Vec<OrganisationBatch>> {
+    with_library(&app, move |library| {
+        library.organisation_batches(limit.unwrap_or(10))
     })
     .await
 }
