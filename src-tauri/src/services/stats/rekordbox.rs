@@ -399,7 +399,7 @@ struct XmlHistory {
     track_keys: Vec<String>,
 }
 
-fn xml_unescape(value: &str) -> String {
+pub(crate) fn xml_unescape(value: &str) -> String {
     value
         .replace("&quot;", "\"")
         .replace("&apos;", "'")
@@ -408,7 +408,7 @@ fn xml_unescape(value: &str) -> String {
         .replace("&amp;", "&")
 }
 
-fn xml_attr(attrs: &str, name: &str) -> Option<String> {
+pub(crate) fn xml_attr(attrs: &str, name: &str) -> Option<String> {
     let re = regex::Regex::new(&format!(r#"(?:^|\s){name}="([^"]*)""#)).ok()?;
     re.captures(attrs)
         .and_then(|c| c.get(1))

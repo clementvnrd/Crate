@@ -7,7 +7,9 @@ use crate::models::{
     DuplicateResolution, FileMatchResult, ImportResult, ImportResultWithDuplicates, Track,
     TrackFilter, TrackUpdate,
 };
-use crate::services::library::{NextTrackSuggestion, RescanResult};
+use crate::services::library::{
+    read_rekordbox_xml, DiscrepancyReport, NextTrackSuggestion, RescanResult,
+};
 use crate::services::LibraryService;
 
 /// Runs `work` with the managed [`LibraryService`] on the blocking pool (see [`run_blocking`]).
@@ -286,6 +288,24 @@ pub async fn suggest_next_tracks(
 ) -> Result<Vec<NextTrackSuggestion>> {
     with_library(&app, move |library| {
         library.suggest_next_tracks(&track_id, limit)
+    })
+    .await
+}
+
+/// Where Crate, Mixed In Key and (with an export) Rekordbox disagree: keys, tempos, energy, cues,
+/// missing files, tracks one has and another lacks. Read only: nothing is changed or deleted.
+/// `rekordbox_xml_path` is an export from Rekordbox (File, Export Collection in xml format).
+#[tauri::command]
+pub async fn get_discrepancy_report(
+    app: tauri::AppHandle,
+    rekordbox_xml_path: Option<String>,
+) -> Result<DiscrepancyReport> {
+    with_library(&app, move |library| {
+        let xml = rekordbox_xml_path
+            .as_deref()
+            .map(read_rekordbox_xml)
+            .transpose()?;
+        library.build_discrepancy_report(xml.as_deref())
     })
     .await
 }

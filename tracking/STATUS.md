@@ -247,3 +247,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Scenario B: discovery funnel (backend, migration 17) | — |
 | 2026-09-30 | **Browser harness and end-to-end checks** versioned (`yarn harness`, `yarn test:e2e`, ratchet baseline) | 9 |
 | 2026-09-30 | Scenario B: Rekordbox set timeline (backend) | — |
+| 2026-09-30 | Scenario B: Crate / Mixed In Key / Rekordbox discrepancy report (backend, read only) | — |

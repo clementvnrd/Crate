@@ -6,12 +6,14 @@ pub mod mik;
 pub mod mik_db;
 mod query;
 mod relocation;
+mod report;
 mod suggest;
 mod update;
 pub mod waveform;
 
 pub use mik::*;
 pub use mik_db::*;
+pub use report::{read_rekordbox_xml, DiscrepancyReport};
 pub use suggest::NextTrackSuggestion;
 
 use std::path::PathBuf;
