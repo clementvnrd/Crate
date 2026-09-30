@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;
 use std::sync::{Arc, Mutex};
@@ -208,6 +208,73 @@ fn device_name_from_mount_point(mount_point: &str) -> String {
         .unwrap_or_else(|| mount_point.trim_end_matches(['/', '\\']).to_string())
 }
 
+/// The UUID of the volume mounted at `mount_point`, asking `lookup` only when it is not cached.
+///
+/// A mounted volume keeps its UUID, so a hit is final; a failed lookup is not cached (the next
+/// poll asks again, as before). Looking it up runs `diskutil info`, 60 to 250 ms per volume.
+fn cached_volume_uuid(
+    cache: &mut HashMap<String, String>,
+    mount_point: &str,
+    lookup: impl FnOnce(&str) -> Option<String>,
+) -> Option<String> {
+    if let Some(uuid) = cache.get(mount_point) {
+        return Some(uuid.clone());
+    }
+    let uuid = lookup(mount_point)?;
+    cache.insert(mount_point.to_string(), uuid.clone());
+    Some(uuid)
+}
+
+/// Lists the mounted removable volumes. Blocking (disk enumeration and `diskutil`): call it from
+/// a blocking context. `uuid_cache` lives as long as the caller polls; entries of volumes that
+/// are gone are dropped, so a stick plugged in again is looked up again.
+fn list_removable_devices(uuid_cache: &mut HashMap<String, String>) -> Vec<UsbDevice> {
+    let disks = Disks::new_with_refreshed_list();
+
+    let devices: Vec<UsbDevice> = disks
+        .iter()
+        .filter(|disk| disk.is_removable())
+        .filter(|disk| {
+            // Skip system volumes on macOS
+            let mount = disk.mount_point().to_string_lossy();
+            !mount.starts_with("/System") && mount != "/"
+        })
+        .map(|disk| {
+            let mount_point = disk.mount_point().to_string_lossy().to_string();
+            let name = disk.name().to_string_lossy().to_string();
+
+            // Get volume UUID for stable identification
+            let volume_uuid = cached_volume_uuid(uuid_cache, &mount_point, get_volume_uuid);
+
+            // Use volume UUID as ID if available, otherwise fall back to mount point
+            let id = volume_uuid.clone().unwrap_or_else(|| mount_point.clone());
+
+            UsbDevice {
+                id,
+                name: if name.is_empty() {
+                    device_name_from_mount_point(&mount_point)
+                } else {
+                    name
+                },
+                mount_point,
+                volume_uuid,
+                total_space_bytes: disk.total_space(),
+                available_space_bytes: disk.available_space(),
+                is_removable: true,
+                file_system: disk.file_system().to_string_lossy().to_string(),
+                disk_kind: match disk.kind() {
+                    sysinfo::DiskKind::SSD => "SSD".to_string(),
+                    sysinfo::DiskKind::HDD => "HDD".to_string(),
+                    sysinfo::DiskKind::Unknown(_) => "Unknown".to_string(),
+                },
+            }
+        })
+        .collect();
+
+    uuid_cache.retain(|mount, _| devices.iter().any(|d| &d.mount_point == mount));
+    devices
+}
+
 pub struct DeviceService {
     devices: Arc<Mutex<Vec<UsbDevice>>>,
     stop_tx: Arc<Mutex<Option<watch::Sender<bool>>>>,
@@ -222,47 +289,7 @@ impl DeviceService {
     }
 
     pub fn get_removable_devices(&self) -> Vec<UsbDevice> {
-        let disks = Disks::new_with_refreshed_list();
-
-        disks
-            .iter()
-            .filter(|disk| disk.is_removable())
-            .filter(|disk| {
-                // Skip system volumes on macOS
-                let mount = disk.mount_point().to_string_lossy();
-                !mount.starts_with("/System") && mount != "/"
-            })
-            .map(|disk| {
-                let mount_point = disk.mount_point().to_string_lossy().to_string();
-                let name = disk.name().to_string_lossy().to_string();
-
-                // Get volume UUID for stable identification
-                let volume_uuid = get_volume_uuid(&mount_point);
-
-                // Use volume UUID as ID if available, otherwise fall back to mount point
-                let id = volume_uuid.clone().unwrap_or_else(|| mount_point.clone());
-
-                UsbDevice {
-                    id,
-                    name: if name.is_empty() {
-                        device_name_from_mount_point(&mount_point)
-                    } else {
-                        name
-                    },
-                    mount_point,
-                    volume_uuid,
-                    total_space_bytes: disk.total_space(),
-                    available_space_bytes: disk.available_space(),
-                    is_removable: true,
-                    file_system: disk.file_system().to_string_lossy().to_string(),
-                    disk_kind: match disk.kind() {
-                        sysinfo::DiskKind::SSD => "SSD".to_string(),
-                        sysinfo::DiskKind::HDD => "HDD".to_string(),
-                        sysinfo::DiskKind::Unknown(_) => "Unknown".to_string(),
-                    },
-                }
-            })
-            .collect()
+        list_removable_devices(&mut HashMap::new())
     }
 
     pub fn start_monitoring(&self, app_handle: AppHandle) {
@@ -287,50 +314,28 @@ impl DeviceService {
         let devices_clone = devices.clone();
         tauri::async_runtime::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(2));
+            let mut uuid_cache: HashMap<String, String> = HashMap::new();
 
             loop {
                 tokio::select! {
                     _ = interval.tick() => {
-                        let disks = Disks::new_with_refreshed_list();
-
-                        let current_devices: Vec<UsbDevice> = disks
-                            .iter()
-                            .filter(|disk| disk.is_removable())
-                            .filter(|disk| {
-                                let mount = disk.mount_point().to_string_lossy();
-                                !mount.starts_with("/System") && mount != "/"
-                            })
-                            .map(|disk| {
-                                let mount_point = disk.mount_point().to_string_lossy().to_string();
-                                let name = disk.name().to_string_lossy().to_string();
-
-                                // Get volume UUID for stable identification
-                                let volume_uuid = get_volume_uuid(&mount_point);
-
-                                // Use volume UUID as ID if available, otherwise fall back to mount point
-                                let id = volume_uuid.clone().unwrap_or_else(|| mount_point.clone());
-
-                                UsbDevice {
-                                    id,
-                                    name: if name.is_empty() {
-                                        device_name_from_mount_point(&mount_point)
-                                    } else {
-                                        name
-                                    },
-                                    mount_point,
-                                    volume_uuid,
-                                    total_space_bytes: disk.total_space(),
-                                    available_space_bytes: disk.available_space(),
-                                    is_removable: true,
-                                    file_system: disk.file_system().to_string_lossy().to_string(),
-                                    disk_kind: match disk.kind() {
-                                        sysinfo::DiskKind::SSD => "SSD".to_string(),
-                                        sysinfo::DiskKind::HDD => "HDD".to_string(),
-                                        sysinfo::DiskKind::Unknown(_) => "Unknown".to_string(),
-                                    },
-                                }
-                            })
-                            .collect();
+                        // `diskutil` runs per volume: keep it off the async workers.
+                        let mut cache = std::mem::take(&mut uuid_cache);
+                        let polled = tokio::task::spawn_blocking(move || {
+                            let devices = list_removable_devices(&mut cache);
+                            (devices, cache)
+                        })
+                        .await;
+                        let current_devices = match polled {
+                            Ok((devices, cache)) => {
+                                uuid_cache = cache;
+                                devices
+                            }
+                            Err(e) => {
+                                log::warn!("Device poll failed, will retry: {e}");
+                                continue;
+                            }
+                        };
 
                         // Compare with previous state
                         let previous_ids: HashSet<String> = {
@@ -545,5 +550,46 @@ impl DeviceService {
 
         log::info!("Successfully reformatted device at: {mount_point}");
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod uuid_cache_tests {
+    use super::*;
+
+    #[test]
+    fn a_found_uuid_is_looked_up_once_per_mount() {
+        let mut cache = HashMap::new();
+        let mut lookups = 0;
+        for _ in 0..3 {
+            let uuid = cached_volume_uuid(&mut cache, "/Volumes/USB", |_| {
+                lookups += 1;
+                Some("AAAA-1111".to_string())
+            });
+            assert_eq!(uuid.as_deref(), Some("AAAA-1111"));
+        }
+        assert_eq!(lookups, 1, "diskutil is only run the first time");
+    }
+
+    #[test]
+    fn a_failed_lookup_is_retried_on_the_next_poll() {
+        let mut cache = HashMap::new();
+        let mut lookups = 0;
+        for _ in 0..3 {
+            let uuid = cached_volume_uuid(&mut cache, "/Volumes/USB", |_| {
+                lookups += 1;
+                None
+            });
+            assert_eq!(uuid, None);
+        }
+        assert_eq!(lookups, 3, "a transient failure must not stick");
+    }
+
+    #[test]
+    fn two_mounts_do_not_share_an_entry() {
+        let mut cache = HashMap::new();
+        cached_volume_uuid(&mut cache, "/Volumes/A", |_| Some("A".to_string()));
+        let b = cached_volume_uuid(&mut cache, "/Volumes/B", |_| Some("B".to_string()));
+        assert_eq!(b.as_deref(), Some("B"));
     }
 }
