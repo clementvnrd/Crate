@@ -2,20 +2,22 @@ use std::sync::Arc;
 
 use tauri::{AppHandle, State};
 
-use crate::error::Result;
+use crate::error::{run_blocking, Result};
 use crate::models::export::ExportCheckpoint;
 use crate::models::{DeviceExport, ExportRequest, ExportResult};
 use crate::services::export::CheckpointService;
 use crate::services::ExportService;
 
-/// Export playlists to a USB device
+/// Export playlists to a USB device. Copies every audio file and writes the device database:
+/// minutes of disk I/O, so it runs on the blocking pool.
 #[tauri::command]
 pub async fn export_playlists(
     request: ExportRequest,
     export_service: State<'_, Arc<ExportService>>,
     app_handle: AppHandle,
 ) -> Result<ExportResult> {
-    export_service.export_playlists(&app_handle, request)
+    let export_service = export_service.inner().clone();
+    run_blocking(move || export_service.export_playlists(&app_handle, request)).await
 }
 
 /// Get all exports for a device
@@ -41,7 +43,8 @@ pub async fn cleanup_failed_export(
     mount_point: String,
     export_service: State<'_, Arc<ExportService>>,
 ) -> Result<()> {
-    export_service.cleanup_failed_export(&device_id, &mount_point)
+    let export_service = export_service.inner().clone();
+    run_blocking(move || export_service.cleanup_failed_export(&device_id, &mount_point)).await
 }
 
 /// Get a pending checkpoint for a device
@@ -71,33 +74,38 @@ pub async fn resume_export(
     checkpoint_service: State<'_, Arc<CheckpointService>>,
     app_handle: AppHandle,
 ) -> Result<ExportResult> {
-    // Get the pending checkpoint
-    let checkpoint = checkpoint_service
-        .get_pending_checkpoint(&device_id)?
-        .ok_or_else(|| {
-            crate::error::CrateError::Export("No pending checkpoint found".to_string())
-        })?;
+    let export_service = export_service.inner().clone();
+    let checkpoint_service = checkpoint_service.inner().clone();
+    run_blocking(move || {
+        // Get the pending checkpoint
+        let checkpoint = checkpoint_service
+            .get_pending_checkpoint(&device_id)?
+            .ok_or_else(|| {
+                crate::error::CrateError::Export("No pending checkpoint found".to_string())
+            })?;
 
-    // Create a request from the checkpoint
-    let request = ExportRequest {
-        device_id: checkpoint.device_id.clone(),
-        mount_point,
-        device_name: checkpoint.device_name.clone(),
-        playlist_ids: checkpoint.playlist_ids.clone(),
-        enable_sync: true,
-        use_device_library_plus: false,
-    };
+        // Create a request from the checkpoint
+        let request = ExportRequest {
+            device_id: checkpoint.device_id.clone(),
+            mount_point,
+            device_name: checkpoint.device_name.clone(),
+            playlist_ids: checkpoint.playlist_ids.clone(),
+            enable_sync: true,
+            use_device_library_plus: false,
+        };
 
-    // Resume the export - the export service will detect the checkpoint
-    // and skip already-completed tracks
-    let result = export_service.export_playlists(&app_handle, request)?;
+        // Resume the export - the export service will detect the checkpoint
+        // and skip already-completed tracks
+        let result = export_service.export_playlists(&app_handle, request)?;
 
-    // If successful, delete the checkpoint
-    if result.success {
-        checkpoint_service.complete_checkpoint(&checkpoint.id)?;
-    }
+        // If successful, delete the checkpoint
+        if result.success {
+            checkpoint_service.complete_checkpoint(&checkpoint.id)?;
+        }
 
-    Ok(result)
+        Ok(result)
+    })
+    .await
 }
 
 /// Export library or specific playlists to Pioneer rekordbox.xml format
@@ -107,5 +115,9 @@ pub async fn export_rekordbox_xml(
     playlist_ids: Option<Vec<String>>,
     export_service: State<'_, Arc<ExportService>>,
 ) -> Result<usize> {
-    export_service.export_rekordbox_xml(std::path::Path::new(&target_path), playlist_ids)
+    let export_service = export_service.inner().clone();
+    run_blocking(move || {
+        export_service.export_rekordbox_xml(std::path::Path::new(&target_path), playlist_ids)
+    })
+    .await
 }

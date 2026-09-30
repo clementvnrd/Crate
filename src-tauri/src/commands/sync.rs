@@ -1,26 +1,29 @@
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Manager, State};
 
-use crate::error::Result;
+use crate::error::{run_blocking, Result};
 use crate::services::device_sync::{DeviceInfo, SyncResult};
 use crate::services::SyncService;
 
-/// Sync playlists to a USB device
+/// Sync playlists to a USB device. Copies and deletes files on the device: blocking pool.
 #[tauri::command]
 pub async fn sync_device(
     device_id: String,
     device_name: String,
     mount_point: String,
     playlist_ids: Vec<String>,
-    sync_service: State<'_, SyncService>,
     app_handle: AppHandle,
 ) -> Result<SyncResult> {
-    sync_service.sync_device(
-        &app_handle,
-        &device_id,
-        &device_name,
-        &mount_point,
-        &playlist_ids,
-    )
+    run_blocking(move || {
+        let sync_service = app_handle.state::<SyncService>();
+        sync_service.sync_device(
+            &app_handle,
+            &device_id,
+            &device_name,
+            &mount_point,
+            &playlist_ids,
+        )
+    })
+    .await
 }
 
 /// Get playlists with pending changes for a device

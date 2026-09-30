@@ -1,15 +1,21 @@
-use tauri::State;
+use tauri::{Manager, State};
 
-use crate::error::Result;
+use crate::error::{run_blocking, Result};
 use crate::models::album::{AddAlbumResult, PlayerAlbum, PlayerAlbumTrack};
 use crate::services::AlbumService;
 
+/// Walks the folder and reads the tags and cover of every audio file, which takes seconds for an
+/// album and about a minute for hundreds of files: off the runtime workers.
 #[tauri::command]
 pub async fn add_player_album(
+    app: tauri::AppHandle,
     folder_path: String,
-    album_service: State<'_, AlbumService>,
 ) -> Result<AddAlbumResult> {
-    album_service.add_album_from_folder(&folder_path)
+    run_blocking(move || {
+        app.state::<AlbumService>()
+            .add_album_from_folder(&folder_path)
+    })
+    .await
 }
 
 #[tauri::command]

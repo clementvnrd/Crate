@@ -125,6 +125,22 @@ use services::{
 };
 use tauri::Manager;
 
+/// Full Mixed In Key sync for the startup pass and the file watcher, on the blocking pool: it
+/// reads the Mixed In Key database and the audio files' tags, which takes from milliseconds (an
+/// unchanged library) to minutes (a first import), and must not park a runtime worker.
+#[cfg(feature = "desktop")]
+async fn sync_all_from_mik_db_blocking(
+    conn: std::sync::Arc<std::sync::Mutex<rusqlite::Connection>>,
+    app_data_dir: std::path::PathBuf,
+) -> error::Result<services::library::MikSyncResult> {
+    error::run_blocking(move || {
+        let guard = conn.lock().map_err(|_| error::CrateError::LockPoisoned)?;
+        let artwork = services::ArtworkService::new(app_data_dir);
+        services::library::MikDatabaseService::sync_all_from_mik_db(&guard, Some(&artwork))
+    })
+    .await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Install a panic hook that writes to a crash log file. On Windows, release builds
@@ -832,14 +848,11 @@ pub fn run() {
                     // Delay 600ms so initial frontend stores load instantly without lock contention
                     tokio::time::sleep(std::time::Duration::from_millis(600)).await;
 
-                    if let Ok(guard) = mik_conn_arc.lock() {
-                        let art_svc = crate::services::ArtworkService::new(artwork_svc.clone());
-                        if let Ok(res) = crate::services::library::MikDatabaseService::sync_all_from_mik_db(&guard, Some(&art_svc)) {
-                            if res.added > 0 || res.updated > 0 || res.removed > 0 {
-                                log::info!("Initial MIK sync found updates, notifying frontend...");
-                                let _ = app_handle.emit("mik-database-synced", ());
-                                let _ = app_handle.emit("duplicates-updated", ());
-                            }
+                    if let Ok(res) = sync_all_from_mik_db_blocking(mik_conn_arc.clone(), artwork_svc.clone()).await {
+                        if res.added > 0 || res.updated > 0 || res.removed > 0 {
+                            log::info!("Initial MIK sync found updates, notifying frontend...");
+                            let _ = app_handle.emit("mik-database-synced", ());
+                            let _ = app_handle.emit("duplicates-updated", ());
                         }
                     }
 
@@ -883,23 +896,20 @@ pub fn run() {
 
                             if pending_change && last_activity_time.elapsed() >= std::time::Duration::from_millis(500) {
                                 log::info!("Debounce window passed (500ms inactivity). Executing live Mixed In Key sync...");
-                                if let Ok(guard) = mik_conn_arc.lock() {
-                                    let art_svc = crate::services::ArtworkService::new(artwork_svc.clone());
-                                    match crate::services::library::MikDatabaseService::sync_all_from_mik_db(&guard, Some(&art_svc)) {
-                                        Ok(res) => {
-                                            log::info!(
-                                                "Live MIK sync completed: {} added, {} updated, {} removed (total: {})",
-                                                res.added,
-                                                res.updated,
-                                                res.removed,
-                                                res.total
-                                            );
-                                            let _ = app_handle.emit("mik-database-synced", ());
-                                            let _ = app_handle.emit("duplicates-updated", ());
-                                        }
-                                        Err(e) => {
-                                            log::warn!("Live MIK sync failed: {e}");
-                                        }
+                                match sync_all_from_mik_db_blocking(mik_conn_arc.clone(), artwork_svc.clone()).await {
+                                    Ok(res) => {
+                                        log::info!(
+                                            "Live MIK sync completed: {} added, {} updated, {} removed (total: {})",
+                                            res.added,
+                                            res.updated,
+                                            res.removed,
+                                            res.total
+                                        );
+                                        let _ = app_handle.emit("mik-database-synced", ());
+                                        let _ = app_handle.emit("duplicates-updated", ());
+                                    }
+                                    Err(e) => {
+                                        log::warn!("Live MIK sync failed: {e}");
                                     }
                                 }
                                 last_synced_mtime = crate::services::library::MikDatabaseService::find_mik_db_path()

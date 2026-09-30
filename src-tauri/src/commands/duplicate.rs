@@ -1,21 +1,18 @@
-use tauri::{Emitter, State};
+use tauri::{Emitter, Manager, State};
 
-use crate::error::Result;
+use crate::error::{run_blocking, Result};
 use crate::models::{DuplicateCountInfo, DuplicateScanResult};
 use crate::services::DuplicateService;
 
 #[tauri::command]
-pub async fn get_duplicate_groups(
-    duplicate: State<'_, DuplicateService>,
-) -> Result<DuplicateScanResult> {
-    duplicate.get_duplicate_groups()
+pub async fn get_duplicate_groups(app: tauri::AppHandle) -> Result<DuplicateScanResult> {
+    // Compares every track of the library with every other: off the runtime workers.
+    run_blocking(move || app.state::<DuplicateService>().get_duplicate_groups()).await
 }
 
 #[tauri::command]
-pub async fn get_duplicate_count(
-    duplicate: State<'_, DuplicateService>,
-) -> Result<DuplicateCountInfo> {
-    duplicate.get_duplicate_count()
+pub async fn get_duplicate_count(app: tauri::AppHandle) -> Result<DuplicateCountInfo> {
+    run_blocking(move || app.state::<DuplicateService>().get_duplicate_count()).await
 }
 
 #[tauri::command]

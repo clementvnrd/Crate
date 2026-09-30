@@ -83,6 +83,10 @@ pub enum CrateError {
 
     #[error("Internal lock error")]
     LockPoisoned,
+
+    /// A background task failed to finish (it panicked or was cancelled). See [`run_blocking`].
+    #[error("Internal error: {0}")]
+    Internal(String),
 }
 
 impl CrateError {
@@ -103,3 +107,65 @@ impl serde::Serialize for CrateError {
 }
 
 pub type Result<T> = std::result::Result<T, CrateError>;
+
+/// Runs synchronous, potentially slow work on tokio's blocking pool instead of a runtime worker.
+///
+/// Use it from `async` commands for anything that can take more than a few milliseconds: walking
+/// or hashing many files, parsing tags, decoding audio, spawning `lsof`/`osascript`, or a large
+/// SQLite transaction. Called directly, that work parks a runtime worker; with several such calls
+/// in flight the whole command layer (and the UI waiting on it) stalls.
+///
+/// Inside the closure, reach a managed service with `app.state::<T>()` (move a cloned
+/// `AppHandle` in): a `State<'_, T>` parameter cannot cross into a `'static` closure. A panic in
+/// `work` comes back as [`CrateError::Internal`] instead of taking the command down.
+pub async fn run_blocking<T, F>(work: F) -> Result<T>
+where
+    F: FnOnce() -> Result<T> + Send + 'static,
+    T: Send + 'static,
+{
+    tokio::task::spawn_blocking(work)
+        .await
+        .map_err(|e| CrateError::Internal(format!("background task failed: {e}")))?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn run_blocking_returns_the_value() {
+        let value = run_blocking(|| Ok(40 + 2)).await.unwrap();
+        assert_eq!(value, 42);
+    }
+
+    #[tokio::test]
+    async fn run_blocking_keeps_the_work_error() {
+        let err = run_blocking::<(), _>(|| Err(CrateError::InvalidOperation("nope".into())))
+            .await
+            .unwrap_err();
+        assert!(matches!(err, CrateError::InvalidOperation(m) if m == "nope"));
+    }
+
+    #[tokio::test]
+    async fn run_blocking_turns_a_panic_into_an_error() {
+        let err = run_blocking::<(), _>(|| panic!("boom")).await.unwrap_err();
+        assert!(matches!(err, CrateError::Internal(m) if m.contains("background task failed")));
+    }
+
+    #[tokio::test]
+    async fn run_blocking_does_not_park_the_async_workers() {
+        // A single-threaded runtime would hang here if the sleep ran on the worker itself:
+        // the ticker below could never run until the sleep ended.
+        let slow = run_blocking(|| {
+            std::thread::sleep(std::time::Duration::from_millis(150));
+            Ok(())
+        });
+        let ticker = async {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            "ticked"
+        };
+        let (slow, ticked) = tokio::join!(slow, ticker);
+        slow.unwrap();
+        assert_eq!(ticked, "ticked");
+    }
+}

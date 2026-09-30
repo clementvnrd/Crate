@@ -1,6 +1,6 @@
-use tauri::State;
+use tauri::{Manager, State};
 
-use crate::error::Result;
+use crate::error::{run_blocking, Result};
 use crate::models::stats::{
     BpmBucketItem, HarmonicStatsItem, HeatmapCell, ListenEvent, RekordboxSession, SpotifyAuthState,
     SpotifyImportResult, SpotifyNowPlaying, StatsSummary, TopArtistItem, TopTrackItem,
@@ -159,10 +159,15 @@ pub async fn spotify_get_now_playing(
 
 #[tauri::command]
 pub async fn spotify_import_history(
+    app: tauri::AppHandle,
     json_content: String,
-    spotify: State<'_, SpotifyTrackerService>,
 ) -> Result<SpotifyImportResult> {
-    spotify.import_streaming_history_json(&json_content)
+    // Parses a multi-megabyte JSON file and writes every listen in one transaction.
+    run_blocking(move || {
+        app.state::<SpotifyTrackerService>()
+            .import_streaming_history_json(&json_content)
+    })
+    .await
 }
 
 #[tauri::command]
@@ -184,18 +189,24 @@ pub async fn rekordbox_detect_status(
 }
 
 #[tauri::command]
-pub async fn rekordbox_sync_history(
-    rekordbox: State<'_, RekordboxTrackerService>,
-) -> Result<usize> {
-    rekordbox.sync_rekordbox_history()
+pub async fn rekordbox_sync_history(app: tauri::AppHandle) -> Result<usize> {
+    run_blocking(move || {
+        app.state::<RekordboxTrackerService>()
+            .sync_rekordbox_history()
+    })
+    .await
 }
 
 #[tauri::command]
 pub async fn rekordbox_import_history_xml(
+    app: tauri::AppHandle,
     xml_content: String,
-    rekordbox: State<'_, RekordboxTrackerService>,
 ) -> Result<usize> {
-    rekordbox.import_rekordbox_history_xml(&xml_content)
+    run_blocking(move || {
+        app.state::<RekordboxTrackerService>()
+            .import_rekordbox_history_xml(&xml_content)
+    })
+    .await
 }
 
 #[tauri::command]
@@ -210,8 +221,9 @@ pub async fn rekordbox_get_sessions(
 // ==========================================
 
 #[tauri::command]
-pub async fn mik_detect_status(mik: State<'_, MikTrackerService>) -> Result<bool> {
-    Ok(mik.is_mik_running())
+pub async fn mik_detect_status(app: tauri::AppHandle) -> Result<bool> {
+    // Runs `pgrep` to look for the Mixed In Key process.
+    run_blocking(move || Ok(app.state::<MikTrackerService>().is_mik_running())).await
 }
 
 #[tauri::command]
