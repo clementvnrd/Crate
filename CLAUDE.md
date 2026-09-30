@@ -51,7 +51,7 @@ Close the report with one line: "CLAUDE.md: checked — N changes" or "checked �
 
 ### 0.4 Everything written in the repository is in English (Clément, 2026-09-30)
 
-Every `.md` document (README, CHANGELOG, `tracking/`, `DESIGN.md`, `.claude/` agents and skills, handoffs), every script and its output, and every commit message is written in **English**. Only replies to Clément in chat are in French (§0.2). Why: the English technical vocabulary gets lost in translation, and a single language keeps file names, headings and the scripts that parse them consistent. On 2026-09-30 the whole tracking system was migrated (`suivi/` → `tracking/`, `AVANCEMENT.md` → `STATUS.md`, `yarn suivi` → `yarn status`) and all earlier documents translated — a clean break with the previous way of working. Verbatim quotes keep their original wording. User-facing app strings are not documents: they go through i18n (`en.json` + `fr.json`).
+Every `.md` document (README, CHANGELOG, `tracking/`, `DESIGN.md`, `.claude/` agents and skills, handoffs), every script and its output, and every commit message is written in **English**. Only replies to Clément in chat are in French (§0.2). Why: the English technical vocabulary gets lost in translation, and a single language keeps file names, headings and the scripts that parse them consistent. Verbatim quotes keep their original wording. User-facing app strings are not documents: they go through i18n (`en.json` + `fr.json`).
 
 ## 1. Mandatory tracking
 
