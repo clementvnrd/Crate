@@ -1517,3 +1517,263 @@ mod recap_tests {
         );
     }
 }
+
+// ==========================================
+// Timeline of a Rekordbox set
+// ==========================================
+
+mod timeline_tests {
+    use super::*;
+    use crate::services::harmonic::HarmonicRelation;
+
+    fn session(conn: &Arc<Mutex<Connection>>, id: &str) {
+        conn.lock()
+            .unwrap()
+            .execute(
+                "INSERT INTO rekordbox_sessions (id, session_name, started_at, total_tracks, total_played_ms)
+                 VALUES (?1, 'Friday set', '2026-09-25T22:00:00Z', 4, 800000)",
+                [id],
+            )
+            .unwrap();
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn played(
+        conn: &Arc<Mutex<Connection>>,
+        id: &str,
+        session_id: &str,
+        source: &str,
+        title: &str,
+        artist: &str,
+        at: &str,
+        bpm: Option<f64>,
+        key: Option<&str>,
+    ) {
+        conn.lock()
+            .unwrap()
+            .execute(
+                "INSERT INTO listen_events (id, source, title, artist, duration_ms, played_ms, played_at, session_id, bpm, key)
+                 VALUES (?1, ?2, ?3, ?4, 200000, 200000, ?5, ?6, ?7, ?8)",
+                rusqlite::params![id, source, title, artist, at, session_id, bpm, key],
+            )
+            .unwrap();
+    }
+
+    fn library(
+        conn: &Arc<Mutex<Connection>>,
+        id: &str,
+        artist: &str,
+        title: &str,
+        key: &str,
+        bpm: f64,
+        energy: i32,
+    ) {
+        conn.lock()
+            .unwrap()
+            .execute(
+                "INSERT INTO tracks (id, file_path, format, title, artist, key, bpm, energy, duration_ms, date_added, date_modified)
+                 VALUES (?1, ?2, 'mp3', ?3, ?4, ?5, ?6, ?7, 200000, '2026-01-01', '2026-01-01')",
+                rusqlite::params![id, format!("/m/{id}.mp3"), title, artist, key, bpm, energy],
+            )
+            .unwrap();
+    }
+
+    #[test]
+    fn a_set_is_ordered_enriched_by_the_library_and_numbered() {
+        let (conn, recorder) = setup_test_db();
+        session(&conn, "s1");
+        library(&conn, "t1", "Artist A", "Opener", "8A", 124.0, 6);
+        library(&conn, "t2", "Artist B", "Second", "9A", 126.0, 8);
+        // Inserted out of order; the second is written in other casing and Rekordbox's own key.
+        played(
+            &conn,
+            "e2",
+            "s1",
+            "rekordbox",
+            " SECOND ",
+            "artist b",
+            "2026-09-25T22:04:00Z",
+            Some(130.0),
+            Some("Em"),
+        );
+        played(
+            &conn,
+            "e1",
+            "s1",
+            "rekordbox",
+            "Opener",
+            "Artist A",
+            "2026-09-25T22:00:00Z",
+            None,
+            None,
+        );
+        // Not in the library: what Rekordbox recorded is kept, and there is no energy.
+        played(
+            &conn,
+            "e3",
+            "s1",
+            "rekordbox",
+            "Unknown Track",
+            "Artist Z",
+            "2026-09-25T22:08:00Z",
+            Some(128.0),
+            Some("3B"),
+        );
+
+        let timeline = recorder.get_session_timeline("s1").unwrap();
+
+        assert_eq!(timeline.session.session_name.as_deref(), Some("Friday set"));
+        let titles: Vec<&str> = timeline.tracks.iter().map(|t| t.title.trim()).collect();
+        assert_eq!(titles, ["Opener", "SECOND", "Unknown Track"]);
+        assert_eq!(
+            timeline
+                .tracks
+                .iter()
+                .map(|t| t.position)
+                .collect::<Vec<_>>(),
+            [1, 2, 3]
+        );
+
+        let second = &timeline.tracks[1];
+        assert_eq!(second.library_track_id.as_deref(), Some("t2"));
+        assert_eq!(
+            (second.key.as_deref(), second.bpm, second.energy),
+            (Some("9A"), Some(126.0), Some(8)),
+            "the library's analysis wins"
+        );
+        let unknown = &timeline.tracks[2];
+        assert_eq!(unknown.library_track_id, None);
+        assert_eq!(
+            (unknown.key.as_deref(), unknown.bpm, unknown.energy),
+            (Some("3B"), Some(128.0), None)
+        );
+    }
+
+    #[test]
+    fn every_transition_says_how_it_mixes() {
+        let (conn, recorder) = setup_test_db();
+        session(&conn, "s1");
+        played(
+            &conn,
+            "e1",
+            "s1",
+            "rekordbox",
+            "One",
+            "A",
+            "2026-09-25T22:00:00Z",
+            Some(120.0),
+            Some("8A"),
+        );
+        played(
+            &conn,
+            "e2",
+            "s1",
+            "rekordbox",
+            "Two",
+            "A",
+            "2026-09-25T22:01:00Z",
+            Some(126.0),
+            Some("9A"),
+        ); // next key, +5 %
+        played(
+            &conn,
+            "e3",
+            "s1",
+            "rekordbox",
+            "Three",
+            "A",
+            "2026-09-25T22:02:00Z",
+            Some(126.0),
+            Some("3B"),
+        ); // clash
+        played(
+            &conn,
+            "e4",
+            "s1",
+            "rekordbox",
+            "Four",
+            "A",
+            "2026-09-25T22:03:00Z",
+            None,
+            None,
+        ); // unknown key
+
+        let timeline = recorder.get_session_timeline("s1").unwrap();
+
+        assert!(timeline.tracks[0].from_previous.is_none());
+        let transition = |i: usize| timeline.tracks[i].from_previous.clone().unwrap();
+        assert_eq!(transition(1).harmonic, HarmonicRelation::Adjacent);
+        assert_eq!(transition(1).bpm_delta_percent, Some(5.0));
+        assert_eq!(transition(2).harmonic, HarmonicRelation::Clash);
+        assert_eq!(transition(3).harmonic, HarmonicRelation::Unknown);
+        assert_eq!(
+            (
+                timeline.harmonic_transitions,
+                timeline.clashing_transitions,
+                timeline.unknown_transitions
+            ),
+            (1, 1, 1)
+        );
+    }
+
+    #[test]
+    fn other_sessions_and_other_sources_do_not_leak_in() {
+        let (conn, recorder) = setup_test_db();
+        session(&conn, "s1");
+        session(&conn, "s2");
+        played(
+            &conn,
+            "e1",
+            "s1",
+            "rekordbox",
+            "Mine",
+            "A",
+            "2026-09-25T22:00:00Z",
+            None,
+            None,
+        );
+        played(
+            &conn,
+            "e2",
+            "s2",
+            "rekordbox",
+            "Other set",
+            "A",
+            "2026-09-26T22:00:00Z",
+            None,
+            None,
+        );
+        played(
+            &conn,
+            "e3",
+            "s1",
+            "spotify",
+            "Not a set track",
+            "A",
+            "2026-09-25T22:30:00Z",
+            None,
+            None,
+        );
+
+        let timeline = recorder.get_session_timeline("s1").unwrap();
+        assert_eq!(timeline.tracks.len(), 1);
+        assert_eq!(timeline.tracks[0].title, "Mine");
+    }
+
+    #[test]
+    fn an_empty_set_is_empty_and_an_unknown_one_is_an_error() {
+        let (conn, recorder) = setup_test_db();
+        session(&conn, "empty");
+        let timeline = recorder.get_session_timeline("empty").unwrap();
+        assert!(timeline.tracks.is_empty());
+        assert_eq!(
+            (
+                timeline.harmonic_transitions,
+                timeline.clashing_transitions,
+                timeline.unknown_transitions
+            ),
+            (0, 0, 0)
+        );
+        assert!(recorder.get_session_timeline("nope").is_err());
+    }
+}

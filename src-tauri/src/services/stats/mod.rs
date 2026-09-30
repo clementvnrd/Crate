@@ -3,6 +3,7 @@ pub mod mik;
 pub mod recap;
 pub mod recorder;
 pub mod rekordbox;
+pub mod session_timeline;
 pub mod spotify;
 
 #[cfg(test)]

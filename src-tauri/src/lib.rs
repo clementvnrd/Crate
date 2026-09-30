@@ -511,6 +511,7 @@ pub fn run() {
             commands::stats::get_recent_listens,
             commands::stats::export_listening_history,
             commands::stats::get_recap,
+            commands::stats::get_rekordbox_session_timeline,
             commands::stats::set_spotify_client_id,
             commands::stats::spotify_get_client_id,
             commands::stats::set_spotify_client_secret,

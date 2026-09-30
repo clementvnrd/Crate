@@ -6,6 +6,7 @@ use crate::models::stats::{
     SpotifyImportResult, SpotifyNowPlaying, StatsSummary, TopArtistItem, TopTrackItem,
 };
 use crate::services::stats::recap::Recap;
+use crate::services::stats::session_timeline::SessionTimeline;
 use crate::services::stats::{
     HistoryExportFormat, MikTrackerService, RecapPeriod, RekordboxTrackerService,
     SpotifyTrackerService, StatsRecorderService,
@@ -85,6 +86,20 @@ pub async fn export_listening_history(
     run_blocking(move || {
         app.state::<StatsRecorderService>()
             .export_listen_history(format, std::path::Path::new(&path))
+    })
+    .await
+}
+
+/// The tracks of one Rekordbox set in order, with the key, tempo and energy of each and how
+/// every transition mixes.
+#[tauri::command]
+pub async fn get_rekordbox_session_timeline(
+    app: tauri::AppHandle,
+    session_id: String,
+) -> Result<SessionTimeline> {
+    run_blocking(move || {
+        app.state::<StatsRecorderService>()
+            .get_session_timeline(&session_id)
     })
     .await
 }
