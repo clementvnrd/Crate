@@ -24,3 +24,6 @@ docs/.astro/
 
 # Test coverage
 coverage/
+
+# playwright-cli run-code scripts must stay a bare function expression (no leading semicolon)
+.claude/skills/*/scripts/*.js

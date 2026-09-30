@@ -18,4 +18,5 @@ Fork personnel de `blackboxaudio/crate` (remote `upstream`), poussé sur le dép
 - **Mixed In Key est en lecture seule** : aucune écriture dans `Collection11.mikdb`.
 - **Aucun secret** dans le code (identifiants, jetons, mots de passe).
 - Frontend : thème via `[data-theme]` (pas de `dark:`), couleurs par tokens, composants communs (`Button`, `Modal`, `Tooltip`…), aucune chaîne en dur (clé i18n `en.json` + `fr.json`).
+- Design : `DESIGN.md` fait foi. Tout travail d'interface (audit, correction D*, refonte, nouvelle vue, maquette) se délègue à l'agent `design` (`.claude/agents/design.md`) ; `yarn design:scan <fichiers>` ne doit montrer aucune nouvelle occurrence.
 - Tests : `yarn test` (Vitest), `yarn check:svelte`.

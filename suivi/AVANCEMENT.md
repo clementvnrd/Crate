@@ -5,7 +5,7 @@ Ce fichier est **la** source de vérité du suivi : chaque défaut du [registre]
 Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ = précision ou reste à faire. Le tableau de progression se recalcule avec `yarn suivi`.
 
 <!-- progression:start -->
-**Progression globale : 93 / 106 défauts corrigés (88 %)**
+**Progression globale : 94 / 107 défauts corrigés (88 %)**
 
 | Étape | Corrigés | Progression |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ Légende : `[x]` corrigé et vérifié · `[ ]` à faire · _note en italique_ =
 | Étape 6 — Statistiques justes | 10 / 10 | ██████████ |
 | Étape 7 — Fonctions DJ exactes | 17 / 18 | █████████░ |
 | Étape 8 — Frontend robuste | 17 / 17 | ██████████ |
-| Étape 9 — Hygiène et outillage | 11 / 14 | ████████░░ |
+| Étape 9 — Hygiène et outillage | 12 / 15 | ████████░░ |
 | Étape 10 — Fondations visuelles | 5 / 5 | ██████████ |
 | Étape 11 — Conformité vue par vue | 3 / 7 | ████░░░░░░ |
 | Étape 12 — Traduction | 1 / 6 | ██░░░░░░░░ |
@@ -174,6 +174,7 @@ _Critère de sortie : CI verte, fmt/lint propres, builds multiplateformes._
 - [x] **Q12** — Pas de `CLAUDE.md` : chaque assistant redécouvre les règles (feature `desktop`, flags clippy de la CI,…
 - [x] **Q13** — `yarn dev` compile le Rust en `--release` : chaque modification coûte plusieurs minutes (amont)
 - [ ] **Q14** — 87 alertes `yarn audit` (61 hautes) dans l'outillage transitif ; `cargo audit` non installé localement
+- [x] **Q15** — Aucun garde-fou de design pour les assistants : les règles strictes n'existent que dans le registre,… — _`DESIGN.md`, agent `design` et 5 skills, `yarn design:scan` (1 220 lignes en infraction au départ) ; la vérification visuelle automatique attend un harnais versionné_
 - [x] **B10** — Numérotation des migrations divergente de l'amont (15 entrées, libellées 7 à 16, la 6 sautée) — _libellés corrigés (6 à 15), ordre inchangé : la base locale a déjà appliqué ces migrations_
 
 ### Étape 10 — Fondations visuelles
@@ -223,3 +224,4 @@ _Critère de sortie : App en anglais : aucune chaîne française._
 | 2026-09-26 | Frontend robuste : erreurs visibles, init sans fuite, panier fiable, options d’affichage sauvegardées | 8 |
 | 2026-09-26 | Hygiène : fmt/clippy/ESLint à zéro, CI Linux, hooks git rétablis | 9 |
 | 2026-09-26 | Fondations visuelles : tokens, `dark:` lié au thème, modales bornées, polices, icônes | 10 |
+| 2026-09-30 | Agent `design` : `DESIGN.md`, skills (système, audit, construction, image vers code, vérification Playwright), scanner `yarn design:scan` | 9 |

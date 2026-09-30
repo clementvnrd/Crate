@@ -27,3 +27,6 @@ conf/
 
 # Vitest coverage reports
 coverage/
+
+# Playwright CLI snapshots and screenshots (design checks)
+.playwright-cli/

@@ -42,6 +42,7 @@
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
 		"suivi": "node scripts/suivi.mjs",
+		"design:scan": "node scripts/design-scan.mjs",
 		"bump": "node scripts/version.js",
 		"changelog:prepare": "node scripts/changelog.js prepare",
 		"changelog:graduate": "node scripts/changelog.js graduate"

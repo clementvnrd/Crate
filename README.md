@@ -28,7 +28,8 @@ Ce dépôt est un **fork personnel et privé** de [blackboxaudio/crate](https://
 | [CHANGELOG.md](CHANGELOG.md) | Journal détaillé des modifications |
 | [suivi/REGISTRE-DEFAUTS.md](suivi/REGISTRE-DEFAUTS.md) | Registre des défauts et correctifs prévus |
 | [suivi/RAPPORT-AUDIT.md](suivi/RAPPORT-AUDIT.md) | Rapport d'audit, vision et plan par phases |
-| [CLAUDE.md](CLAUDE.md) | Règles de travail pour les assistants de code |
+| [DESIGN.md](DESIGN.md) | Système de design : tokens, composants, règles visuelles |
+| [CLAUDE.md](CLAUDE.md) | Règles de travail pour les assistants de code (agent `design` dans `.claude/`) |
 
 Le téléchargement Beatport passe par `beatportdl`, qui ne respecte pas les conditions d'utilisation de Beatport : cette partie ne doit jamais être publiée sur un dépôt public.
 
@@ -97,6 +98,11 @@ cd src-tauri && cargo test --features desktop   # Rust
 ```
 
 Les tests n'utilisent que des bases temporaires : ils ne touchent jamais la bibliothèque réelle.
+
+```bash
+yarn design:scan                            # écarts aux règles de DESIGN.md (tokens, rayons, a11y, i18n…)
+yarn design:scan apps/desktop/src/lib/components/stats --details
+```
 
 ### Development
 

@@ -271,6 +271,7 @@ Si l'arbre était commité tel quel, 5 des 8 jobs de la CI amont échoueraient, 
 | Q11 | Fichiers à ne pas commiter : `SYNTHESE_DISCUSSION.md` (chemins personnels), `scripts/set_default_player.swift`, polices inutilisées, logos de marques tierces | racine, `static/` | Exclure ou déplacer ; `.gitignore` | XS |
 | Q12 | Pas de `CLAUDE.md` : chaque assistant redécouvre les règles (feature `desktop`, flags clippy de la CI, i18n, jamais de bases réelles en test) | racine | Créer un `CLAUDE.md` de 15 lignes à partir des règles de ce registre | XS |
 | Q13 | `yarn dev` compile le Rust en `--release` : chaque modification coûte plusieurs minutes (amont) | `package.json:11` | Profil debug pour le développement | XS |
+| Q15 | _Ajouté après l'audit (30 septembre)._ Aucun garde-fou de design pour les assistants : les « règles de design strictes » n'existent que dans ce registre, chaque session réinvente son style (origine des trois langages visuels des builds 40 à 57) et rien ne mesure la dérive | `.claude/`, racine | `DESIGN.md` de Crate, agent `design` avec skills dédiés (système, audit, construction, image vers code, vérification visuelle), scanner `yarn design:scan` | S |
 | Q14 | 87 alertes `yarn audit` (61 hautes) dans l'outillage transitif ; `cargo audit` non installé localement | dépendances | `yarn upgrade` ciblé ; installer `cargo-audit` | S |
 
 ## Ordre de réparation recommandé
