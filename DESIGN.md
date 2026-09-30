@@ -138,6 +138,8 @@ components:
 
 # Crate — design system
 
+> **Provisional (CRA-141).** The owner likes today's look and asked to rethink the charter from scratch, because the first version prescribed changes to it. Until he answers, the sections *Graphic charter* and *Known deviations* record intent and measurements, and **nothing in them authorises a visible change** (radius, hover, toolbar colours, Beatport theme, waveform colours, tokens): where they prescribe one, it is suspended.
+
 This document describes **how Crate must look**. It is read by coding assistants (the `design` agent in `.claude/agents/design.md`) before any interface work, and serves as a reference for the owner. It is extracted from the actual code (`apps/desktop/src/style.css`, `lib/components/common/`) and from the "strict design rules" of the [defect register](tracking/DEFECTS.md#design-responsive-and-accessibility).
 
 ## Overview

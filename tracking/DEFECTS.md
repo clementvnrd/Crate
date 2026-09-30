@@ -259,7 +259,7 @@ If the tree were committed as is, 5 of the 8 upstream CI jobs would fail, and no
 | # | Defect | Where | Fix | Effort |
 | --- | --- | --- | --- | --- |
 | Q1 | `tauri.prod.conf.json` modified for a local build (`targets: ["app"]`, update artefacts disabled): a release would publish a `latest.json` with an empty signature and break auto-update | `src-tauri/tauri.prod.conf.json:5-6` | Restore; local build with `--config '{"bundle":{"targets":["app"],"createUpdaterArtifacts":false}}'` | XS |
-| Q2 | iOS/Android build broken: `services::beatport`, `services::stats` and two library commands are not gated by the `desktop` feature | `lib.rs:193-194`, `services/mod.rs`, `commands/mod.rs` | `#[cfg(feature = "desktop")]` on modules, registrations and `.manage()` | S |
+| Q2 | **Cancelled 2026-09-30 (CRA-76): Crate targets macOS only.** iOS/Android build broken: `services::beatport`, `services::stats` and two library commands are not gated by the `desktop` feature | `lib.rs:193-194`, `services/mod.rs`, `commands/mod.rs` | `#[cfg(feature = "desktop")]` on modules, registrations and `.manage()` | S |
 | Q3 | Windows/Linux build broken: `RunEvent::Opened` only exists on macOS, iOS and Android | `lib.rs` | `#[cfg(any(target_os = "macos", target_os = "ios"))]` around the arm; read `argv` elsewhere | XS |
 | Q4 | Clippy with `-D warnings`: 37 errors (16 of dead code); cargo fmt: 35 files | Rust | `cargo fmt`, removal of dead code, clippy fixes | S |
 | Q5 | ESLint: 38 errors; Prettier: 60 files | TypeScript and Svelte | `yarn format:fix && yarn lint:fix`, then manual fixing of keyless `each` blocks and `any` | S |

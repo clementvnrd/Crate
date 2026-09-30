@@ -5,7 +5,7 @@ This file is **the** source of truth for tracking: every defect in the [register
 Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification or remaining work. The progress table is recomputed with `yarn status` (from the repository root).
 
 <!-- progress:start -->
-**Overall progress: 99 / 107 defects fixed (93%)**
+**Overall progress: 99 / 106 defects fixed (93%)**
 
 | Step | Fixed | Progress |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 6 — Accurate statistics | 10 / 10 | ██████████ |
 | Step 7 — Exact DJ features | 18 / 18 | ██████████ |
 | Step 8 — Robust frontend | 17 / 17 | ██████████ |
-| Step 9 — Hygiene and tooling | 13 / 15 | █████████░ |
+| Step 9 — Hygiene and tooling | 13 / 14 | █████████░ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
 | Step 11 — View-by-view compliance | 3 / 7 | ████░░░░░░ |
 | Step 12 — Translation | 4 / 6 | ███████░░░ |
@@ -163,7 +163,6 @@ _Exit criterion: Backend errors visible, no superfluous IPC call._
 
 _Exit criterion: Green CI, clean fmt/lint, cross-platform builds._
 
-- [ ] **Q2** — iOS/Android build broken: `services::beatport`, `services::stats` and two library commands do not… — _deferred: verification requires the iOS/Android targets and Xcode, which are missing; low priority (Crate is only used on this Mac)_
 - [x] **Q3** — Windows/Linux build broken: `RunEvent::Opened` only exists on macOS, iOS and Android — _code fixed; Linux compilation verified by the CI Rust job (Windows not verified)_
 - [x] **Q4** — Clippy with `-D warnings`: 37 errors (16 dead code); cargo fmt: 35 files
 - [x] **Q5** — ESLint: 38 errors; Prettier: 60 files
@@ -250,3 +249,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Scenario B: Crate / Mixed In Key / Rekordbox discrepancy report (backend, read only) | — |
 | 2026-09-30 | Scenario B: assisted physical organisation with preview, journal and undo (backend, migration 18) | — |
 | 2026-09-30 | Scenario B: Set mode analysis, bridge tracks and proposed order (backend) | — |
+| 2026-09-30 | **Owner decisions read from Linear (3rd pass)**: Q2 cancelled (macOS only), visual language reopened after "sienne" became "cyan", Spotify reset waiting for a chat approval or the in-app button | — |
