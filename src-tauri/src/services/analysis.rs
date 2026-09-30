@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use tauri::async_runtime::JoinHandle;
 use tauri::{AppHandle, Emitter};
+use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use tokio_util::sync::CancellationToken;
 
 use rusqlite::Connection;
@@ -59,9 +60,42 @@ struct TrackAnalysisTask {
     handle: JoinHandle<()>,
 }
 
+/// How many tracks are analysed at the same time. Each analysis decodes the whole file into
+/// memory (about 60 MB for a five-minute track) and keeps a core busy, so the limit is half the
+/// cores, between 1 and 4. Without a limit, selecting the library ran one decode per track at once.
+fn analysis_concurrency() -> usize {
+    let cores = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(2);
+    (cores / 2).clamp(1, 4)
+}
+
+/// Bounds how many analyses run at once. A track waits for its turn while still "pending".
+#[derive(Clone)]
+struct AnalysisLimiter {
+    permits: Arc<Semaphore>,
+}
+
+impl AnalysisLimiter {
+    fn new(max_concurrent: usize) -> Self {
+        Self {
+            permits: Arc::new(Semaphore::new(max_concurrent)),
+        }
+    }
+
+    /// A permit for one running analysis, or `None` if the track was cancelled while it waited.
+    async fn acquire(&self, cancel: &CancellationToken) -> Option<OwnedSemaphorePermit> {
+        tokio::select! {
+            permit = self.permits.clone().acquire_owned() => permit.ok(),
+            _ = cancel.cancelled() => None,
+        }
+    }
+}
+
 pub struct AnalysisService {
     conn: Arc<Mutex<Connection>>,
     tasks: Arc<Mutex<HashMap<String, TrackAnalysisTask>>>,
+    limiter: AnalysisLimiter,
 }
 
 impl AnalysisService {
@@ -69,6 +103,7 @@ impl AnalysisService {
         Self {
             conn,
             tasks: Arc::new(Mutex::new(HashMap::new())),
+            limiter: AnalysisLimiter::new(analysis_concurrency()),
         }
     }
 
@@ -105,6 +140,7 @@ impl AnalysisService {
             let tid = track_id.clone();
             let token = cancel_token.clone();
             let tasks = self.tasks.clone();
+            let limiter = self.limiter.clone();
 
             // Emit "pending" event immediately
             let _ = app.emit(
@@ -119,7 +155,7 @@ impl AnalysisService {
             );
 
             let handle = tauri::async_runtime::spawn(async move {
-                Self::analyze_single_track_task(conn, app, tid, token, tasks).await;
+                Self::analyze_single_track_task(conn, app, tid, token, tasks, limiter).await;
             });
 
             // Store task for potential cancellation
@@ -143,24 +179,19 @@ impl AnalysisService {
         track_id: String,
         cancel_token: CancellationToken,
         tasks: Arc<Mutex<HashMap<String, TrackAnalysisTask>>>,
+        limiter: AnalysisLimiter,
     ) {
         // Check if already cancelled before starting
         if cancel_token.is_cancelled() {
-            let _ = app.emit(
-                "analysis-track-event",
-                TrackAnalysisEvent {
-                    track_id: track_id.clone(),
-                    state: AnalysisStatus::Cancelled,
-                    result: None,
-                    updated_track: None,
-                    error: None,
-                },
-            );
-            if let Ok(mut t) = tasks.lock() {
-                t.remove(&track_id);
-            }
+            Self::finish_cancelled(&app, &track_id, &tasks);
             return;
         }
+
+        // Wait for a free slot: the track stays "pending" until then (or until it is cancelled).
+        let Some(permit) = limiter.acquire(&cancel_token).await else {
+            Self::finish_cancelled(&app, &track_id, &tasks);
+            return;
+        };
 
         // Emit "analyzing" status
         let _ = app.emit(
@@ -183,22 +214,12 @@ impl AnalysisService {
             Self::analyze_track_with_cancellation(&conn_clone, &tid_clone, &token_clone)
         })
         .await;
+        // Free the slot as soon as the decode is over, before the events and the cleanup.
+        drop(permit);
 
         // Check if cancelled during analysis
         if cancel_token.is_cancelled() {
-            let _ = app.emit(
-                "analysis-track-event",
-                TrackAnalysisEvent {
-                    track_id: track_id.clone(),
-                    state: AnalysisStatus::Cancelled,
-                    result: None,
-                    updated_track: None,
-                    error: None,
-                },
-            );
-            if let Ok(mut t) = tasks.lock() {
-                t.remove(&track_id);
-            }
+            Self::finish_cancelled(&app, &track_id, &tasks);
             return;
         }
 
@@ -246,6 +267,27 @@ impl AnalysisService {
         // Clean up task from map
         if let Ok(mut t) = tasks.lock() {
             t.remove(&track_id);
+        }
+    }
+
+    /// Reports a cancelled track to the UI and forgets its task.
+    fn finish_cancelled(
+        app: &AppHandle,
+        track_id: &str,
+        tasks: &Arc<Mutex<HashMap<String, TrackAnalysisTask>>>,
+    ) {
+        let _ = app.emit(
+            "analysis-track-event",
+            TrackAnalysisEvent {
+                track_id: track_id.to_string(),
+                state: AnalysisStatus::Cancelled,
+                result: None,
+                updated_track: None,
+                error: None,
+            },
+        );
+        if let Ok(mut t) = tasks.lock() {
+            t.remove(track_id);
         }
     }
 
@@ -735,6 +777,79 @@ impl Clone for AnalysisService {
         Self {
             conn: self.conn.clone(),
             tasks: self.tasks.clone(),
+            limiter: self.limiter.clone(),
         }
+    }
+}
+
+#[cfg(test)]
+mod limiter_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::time::Duration;
+
+    #[test]
+    fn concurrency_is_bounded_between_one_and_four() {
+        let n = analysis_concurrency();
+        assert!((1..=4).contains(&n), "got {n}");
+    }
+
+    #[tokio::test]
+    async fn never_more_analyses_than_permits_run_at_once() {
+        let limiter = AnalysisLimiter::new(2);
+        let running = Arc::new(AtomicUsize::new(0));
+        let peak = Arc::new(AtomicUsize::new(0));
+
+        let tasks: Vec<_> = (0..12)
+            .map(|_| {
+                let limiter = limiter.clone();
+                let running = running.clone();
+                let peak = peak.clone();
+                tokio::spawn(async move {
+                    let permit = limiter.acquire(&CancellationToken::new()).await.unwrap();
+                    let now = running.fetch_add(1, Ordering::SeqCst) + 1;
+                    peak.fetch_max(now, Ordering::SeqCst);
+                    tokio::time::sleep(Duration::from_millis(15)).await;
+                    running.fetch_sub(1, Ordering::SeqCst);
+                    drop(permit);
+                })
+            })
+            .collect();
+        for task in tasks {
+            task.await.unwrap();
+        }
+
+        assert_eq!(peak.load(Ordering::SeqCst), 2, "all 12 ran, two at a time");
+    }
+
+    #[tokio::test]
+    async fn a_track_cancelled_while_waiting_gives_up_its_place() {
+        let limiter = AnalysisLimiter::new(1);
+        let _busy = limiter.acquire(&CancellationToken::new()).await.unwrap();
+
+        let token = CancellationToken::new();
+        let waiting = {
+            let limiter = limiter.clone();
+            let token = token.clone();
+            tokio::spawn(async move { limiter.acquire(&token).await.is_none() })
+        };
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        token.cancel();
+
+        assert!(waiting.await.unwrap(), "cancelled while queued: no permit");
+    }
+
+    #[tokio::test]
+    async fn a_released_permit_lets_the_next_track_start() {
+        let limiter = AnalysisLimiter::new(1);
+        let first = limiter.acquire(&CancellationToken::new()).await.unwrap();
+        drop(first);
+        let second = tokio::time::timeout(
+            Duration::from_secs(1),
+            limiter.acquire(&CancellationToken::new()),
+        )
+        .await
+        .expect("the freed slot is reused");
+        assert!(second.is_some());
     }
 }
