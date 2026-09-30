@@ -226,18 +226,40 @@ impl BeatportDownloader {
             [single] if single.duration_ms > 0 => Some(single.duration_ms),
             _ => None,
         };
-        for file in Self::scan_audio_files(&staging_dir) {
+        // Validation decodes every file completely (seconds of CPU per track): keep it off the
+        // async runtime threads too.
+        let scan_dir = staging_dir.clone();
+        let (valid_files, validation_errors) = tokio::task::spawn_blocking(move || {
+            Self::validate_staged_files(&scan_dir, expected_ms)
+        })
+        .await
+        .map_err(|e| format!("FLAC validation task failed: {e}"))?;
+        staged.valid_files = valid_files;
+        staged.errors.extend(validation_errors);
+        Ok(staged)
+    }
+
+    /// Checks every audio file of a staging folder: FLAC header and size, then a complete decode
+    /// (and the expected duration when it is known). Returns the files that pass and one error
+    /// message per file that does not. Synchronous and CPU-heavy: call it from the blocking pool.
+    fn validate_staged_files(
+        staging_dir: &Path,
+        expected_ms: Option<i64>,
+    ) -> (Vec<PathBuf>, Vec<String>) {
+        let mut valid_files = Vec::new();
+        let mut errors = Vec::new();
+        for file in Self::scan_audio_files(staging_dir) {
             if validate_flac_file(&file) && verify_flac_decodes(&file, expected_ms) {
-                staged.valid_files.push(file);
+                valid_files.push(file);
             } else {
                 log::warn!("Downloaded file '{:?}' failed FLAC validation (header, full decode or duration)", file);
-                staged.errors.push(format!(
+                errors.push(format!(
                     "Downloaded file '{}' failed FLAC integrity validation",
                     file.file_name().unwrap_or_default().to_string_lossy()
                 ));
             }
         }
-        Ok(staged)
+        (valid_files, errors)
     }
 
     /// Downloads Beatport tracks (cart) into `destination_dir` and imports them into Crate.
@@ -251,18 +273,31 @@ impl BeatportDownloader {
         let expanded_dest = Self::expand_path(destination_dir);
         let staged = Self::download_to_staging(&tracks, &expanded_dest, custom_dl_path).await?;
 
-        let mut errors = staged.errors.clone();
-        let mut downloaded_files = Vec::new();
-        for file in &staged.valid_files {
-            match move_into_destination(file, &expanded_dest) {
-                Ok(final_path) => downloaded_files.push(final_path.to_string_lossy().to_string()),
-                Err(e) => errors.push(format!(
-                    "Could not move '{:?}' into the destination folder: {e}",
-                    file.file_name().unwrap_or_default()
-                )),
-            }
-        }
-        discard_staging(&staged.staging_dir);
+        // Moving can mean copying a whole FLAC across volumes: do it on the blocking pool.
+        let (downloaded_files, mut errors) = {
+            let valid_files = staged.valid_files.clone();
+            let staging_dir = staged.staging_dir.clone();
+            let destination = expanded_dest.clone();
+            let mut errors = staged.errors.clone();
+            tokio::task::spawn_blocking(move || {
+                let mut downloaded_files = Vec::new();
+                for file in &valid_files {
+                    match move_into_destination(file, &destination) {
+                        Ok(final_path) => {
+                            downloaded_files.push(final_path.to_string_lossy().to_string())
+                        }
+                        Err(e) => errors.push(format!(
+                            "Could not move '{:?}' into the destination folder: {e}",
+                            file.file_name().unwrap_or_default()
+                        )),
+                    }
+                }
+                discard_staging(&staging_dir);
+                (downloaded_files, errors)
+            })
+            .await
+            .map_err(|e| format!("moving the downloaded files failed: {e}"))?
+        };
 
         let success_count = downloaded_files.len();
         let failed_count = tracks.len().saturating_sub(success_count);
@@ -275,8 +310,12 @@ impl BeatportDownloader {
         if let Some(lib) = library {
             let pathbufs: Vec<PathBuf> = downloaded_files.iter().map(PathBuf::from).collect();
             if !pathbufs.is_empty() {
-                if let Err(e) = lib.import_tracks(pathbufs) {
-                    errors.push(format!("Import failed: {e}"));
+                // Importing reads tags, hashes audio and writes the library: blocking pool.
+                let lib = lib.clone();
+                match tokio::task::spawn_blocking(move || lib.import_tracks(pathbufs)).await {
+                    Ok(Ok(_)) => {}
+                    Ok(Err(e)) => errors.push(format!("Import failed: {e}")),
+                    Err(e) => errors.push(format!("Import failed: {e}")),
                 }
             }
         }
@@ -538,6 +577,37 @@ mod tests {
         assert!(!config.contains("password:"));
         assert!(config.starts_with("quality: \"lossless\""));
         assert!(config.contains("key_system: \"camelot\""));
+    }
+
+    #[test]
+    fn staged_files_that_are_not_real_flacs_are_reported_and_not_kept() {
+        let dir = get_test_temp_dir("validate_staged");
+        // Right extension, wrong content: the header and size checks must reject it.
+        std::fs::write(dir.join("fake.flac"), b"fLaC not really").unwrap();
+        // Not audio at all: never even looked at.
+        std::fs::write(dir.join("notes.txt"), b"hello").unwrap();
+
+        let (valid, errors) = BeatportDownloader::validate_staged_files(&dir, None);
+
+        assert!(valid.is_empty());
+        assert_eq!(
+            errors.len(),
+            1,
+            "one message, for the audio-looking file only"
+        );
+        assert!(
+            errors[0].contains("fake.flac"),
+            "it names the file: {errors:?}"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_empty_staging_folder_has_nothing_to_validate() {
+        let dir = get_test_temp_dir("validate_empty");
+        let (valid, errors) = BeatportDownloader::validate_staged_files(&dir, Some(1_000));
+        assert!(valid.is_empty() && errors.is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     fn get_test_temp_dir(suffix: &str) -> PathBuf {

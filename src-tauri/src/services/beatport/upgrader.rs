@@ -7,7 +7,7 @@ use std::sync::{Arc, LazyLock, Mutex};
 use tokio::sync::Mutex as TokioMutex;
 use unicode_normalization::UnicodeNormalization;
 
-use crate::error::{CrateError, Result};
+use crate::error::{run_blocking, CrateError, Result};
 use crate::models::{
     UpgradeCountInfo, UpgradeMatch, UpgradeReplacementResult, UpgradeScanResult,
     UpgradeScoreBreakdown,
@@ -949,7 +949,15 @@ impl BeatportUpgraderService {
                     }
                 };
                 let moved = match staged.valid_files.as_slice() {
-                    [file] => move_into_destination(file, &dest_dir).map_err(|e| e.to_string()),
+                    [file] => {
+                        // A move across volumes copies the whole FLAC: blocking pool.
+                        let (file, dest_dir) = (file.clone(), dest_dir.clone());
+                        tokio::task::spawn_blocking(move || {
+                            move_into_destination(&file, &dest_dir).map_err(|e| e.to_string())
+                        })
+                        .await
+                        .unwrap_or_else(|e| Err(format!("move task failed: {e}")))
+                    }
                     [] if staged.errors.is_empty() => Err("no valid FLAC file".to_string()),
                     [] => Err(staged.errors.join("; ")),
                     _ => Err(format!(
@@ -957,7 +965,8 @@ impl BeatportUpgraderService {
                         staged.valid_files.len()
                     )),
                 };
-                discard_staging(&staged.staging_dir);
+                let staging_dir = staged.staging_dir.clone();
+                let _ = tokio::task::spawn_blocking(move || discard_staging(&staging_dir)).await;
                 match moved {
                     Ok(path) => {
                         new_flac = Some(path);
@@ -985,7 +994,14 @@ impl BeatportUpgraderService {
                 continue;
             };
 
-            if let Err(e) = library.replace_track_file(&item.track_id, &new_flac) {
+            // Hashes the new file and rewrites the track: blocking pool, on an owned copy of the
+            // (cheap to clone) library service.
+            let replaced = {
+                let (library, track_id, new_flac) =
+                    (library.clone(), item.track_id.clone(), new_flac.clone());
+                run_blocking(move || library.replace_track_file(&track_id, &new_flac)).await
+            };
+            if let Err(e) = replaced {
                 failed_count += 1;
                 errors.push(format!(
                     "'{}': FLAC downloaded ({}) but the library could not be updated: {e}. The MP3 is kept.",
@@ -996,7 +1012,14 @@ impl BeatportUpgraderService {
             }
 
             if old_path != new_flac.as_path() {
-                if let Err(e) = crate::services::trash::move_to_trash(old_path) {
+                // Runs `osascript` and waits for Finder: blocking pool.
+                let to_trash = old_path.to_path_buf();
+                let trashed = tokio::task::spawn_blocking(move || {
+                    crate::services::trash::move_to_trash(&to_trash)
+                })
+                .await
+                .unwrap_or_else(|e| Err(format!("trash task failed: {e}")));
+                if let Err(e) = trashed {
                     errors.push(format!(
                         "'{}' replaced, but the old MP3 could not be moved to the Trash ({e}): {}",
                         item.title, old_file_path_str

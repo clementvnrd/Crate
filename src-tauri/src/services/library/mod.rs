@@ -33,6 +33,9 @@ use crate::models::{
 use crate::services::hash::compute_audio_hash;
 use crate::services::ArtworkService;
 
+/// Cheap to clone: copies share the same database connection. A clone lets blocking work move into
+/// `spawn_blocking`, which needs an owned value, without a reference to the managed service.
+#[derive(Clone)]
 pub struct LibraryService {
     conn: Arc<Mutex<Connection>>,
     artwork_service: ArtworkService,

@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use uuid::Uuid;
 
-use crate::error::{CrateError, Result};
+use crate::error::{run_blocking, CrateError, Result};
 use crate::models::stats::ListenEvent;
 use crate::services::library::mik::MikService;
 use crate::services::stats::recorder::StatsRecorderService;
@@ -236,38 +236,11 @@ impl MikTrackerService {
         if !self.is_enabled() {
             return Ok(());
         }
-        let pids = Self::get_mik_pids();
-        if pids.is_empty() {
-            let mut acc = self
-                .accumulator
-                .lock()
-                .map_err(|_| CrateError::LockPoisoned)?;
-            if acc.accumulated_ms >= 1_000 && !acc.recorded && !acc.title.is_empty() {
-                let event = ListenEvent {
-                    id: Uuid::new_v4().to_string(),
-                    source: "mixed_in_key".to_string(),
-                    track_id: None,
-                    title: acc.title.clone(),
-                    artist: acc.artist.clone(),
-                    album: acc.album.clone(),
-                    duration_ms: acc.duration_ms,
-                    played_ms: acc.accumulated_ms,
-                    bpm: acc.bpm,
-                    key: acc.key.clone(),
-                    energy: acc.energy,
-                    format: acc.format.clone(),
-                    artwork_url: acc.artwork_url.clone(),
-                    played_at: acc.started_at.clone(),
-                    session_id: None,
-                    metadata_json: None,
-                };
-                let _ = self.recorder.record_listen_event(&event);
-            }
-            *acc = MikAccumulatorState::default();
-            return Ok(());
-        }
-
-        let active_files = Self::find_active_audio_files();
+        // `pgrep`, then `lsof` for every Mixed In Key process, can take hundreds of milliseconds:
+        // run them on the blocking pool. One call covers both "Mixed In Key is not running" and
+        // "it is running with nothing loaded" (no files either way): the accumulator is flushed
+        // and reset the same way in both cases, see the `None` arm below.
+        let active_files = run_blocking(|| Ok(Self::find_active_audio_files())).await?;
         let current_file_opt = active_files.into_iter().next();
 
         let mut acc = self
