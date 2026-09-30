@@ -1,6 +1,13 @@
-import type { DiscoveryRelease, DiscoverySourceType, DiscoveryTrack, FollowedSource, Tag } from '$shared/types'
+import type {
+	DiscoveryFunnel,
+	DiscoveryRelease,
+	DiscoverySourceType,
+	DiscoveryTrack,
+	FollowedSource,
+	Tag,
+} from '$shared/types'
 import { artworkDataUrl } from './artwork'
-import { isoAgo } from './reference'
+import { REFERENCE_NOW, isoAgo } from './reference'
 import { TAG_CATEGORIES } from './library'
 
 // Discovery: releases found on Bandcamp, SoundCloud, YouTube and Discogs, and the artists and labels followed.
@@ -146,3 +153,39 @@ export const FOLLOWED_SOURCES: FollowedSource[] = [
 	newCount: seed.newCount,
 	lastReleaseAt: isoAgo(6 + index),
 }))
+
+// The discovery funnel (CRA-126): what the discoveries became, by source.
+const FUNNEL_SOURCES: [string, number, number, number][] = [
+	['bandcamp', 42, 17, 6],
+	['soundcloud', 27, 8, 3],
+	['youtube', 14, 3, 1],
+	['discogs', 9, 4, 2],
+	['other', 3, 0, 0],
+]
+
+/** All time, or roughly the share of the releases added since `since` (deterministic). */
+export function discoveryFunnel(since: string | null, empty: boolean): DiscoveryFunnel {
+	const share =
+		since === null
+			? 1
+			: Math.max(0.1, Math.min(1, (Date.parse(REFERENCE_NOW) - Date.parse(since)) / (400 * 86_400_000)))
+	const by_source = empty
+		? []
+		: FUNNEL_SOURCES.map(([source_type, discovered, in_library, played_in_set]) => ({
+				source_type,
+				stages: {
+					discovered: Math.round(discovered * share),
+					in_library: Math.round(in_library * share),
+					played_in_set: Math.round(played_in_set * share),
+				},
+			})).filter((source) => source.stages.discovered > 0)
+	const total = by_source.reduce(
+		(sum, source) => ({
+			discovered: sum.discovered + source.stages.discovered,
+			in_library: sum.in_library + source.stages.in_library,
+			played_in_set: sum.played_in_set + source.stages.played_in_set,
+		}),
+		{ discovered: 0, in_library: 0, played_in_set: 0 }
+	)
+	return { since, total, by_source }
+}

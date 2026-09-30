@@ -1,10 +1,15 @@
+import type { RecapPeriod } from '$shared/types'
 import type { HandlerMap } from '../types'
+import type { HarnessState } from '../state'
 import {
+	EXPORTED_LISTENS,
 	REKORDBOX_SESSIONS,
 	bpmStats,
 	harmonicStats,
 	listeningHeatmap,
+	recap,
 	recentListens,
+	sessionTimeline,
 	statsSummary,
 	topArtists,
 	topTracks,
@@ -18,7 +23,7 @@ function limit(value: unknown, fallback: number): number {
 	return typeof value === 'number' ? value : fallback
 }
 
-export function statsHandlers(): HandlerMap {
+export function statsHandlers(state: HarnessState): HandlerMap {
 	return {
 		get_stats_summary: ({ timeRange }) => statsSummary(range(timeRange)),
 		get_top_tracks: ({ timeRange, limit: max }) => topTracks(range(timeRange), limit(max, 20)),
@@ -37,5 +42,16 @@ export function statsHandlers(): HandlerMap {
 		rekordbox_get_sessions: () => REKORDBOX_SESSIONS,
 		mik_detect_status: () => true,
 		mik_tracker_get_enabled: () => true,
+
+		// Recap, set timeline and history export.
+		get_recap: ({ period, offset }) =>
+			recap(period === 'year' ? 'year' : ('week' as RecapPeriod), limit(offset, 0), state.params.libraryEmpty),
+		get_rekordbox_session_timeline: ({ sessionId }) => {
+			const timeline = sessionTimeline(String(sessionId))
+			if (!timeline) throw `Rekordbox session not found: ${String(sessionId)}`
+			return timeline
+		},
+		// Only reached when a save dialog answers a path, which the harness never does (it always cancels).
+		export_listening_history: () => EXPORTED_LISTENS,
 	}
 }

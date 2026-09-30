@@ -41,7 +41,7 @@ export function createBackend(params: HarnessParams): Backend {
 		...playerHandlers(state),
 		...beatportHandlers(state),
 		...discoveryHandlers(state),
-		...statsHandlers(),
+		...statsHandlers(state),
 		...systemHandlers(state),
 		...maintenanceHandlers(state),
 	}

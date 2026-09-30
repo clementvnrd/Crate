@@ -1277,6 +1277,96 @@
 			"redirectCopied": "Redirect URI copié dans le presse-papiers !",
 			"clientIdRequired": "Veuillez renseigner un Client ID Spotify valide",
 			"codeRequired": "Veuillez coller le code d'autorisation ou l'URL de redirection"
+		},
+		"retry": "Réessayer",
+		"recap": {
+			"titleWeek": "Votre semaine",
+			"titleYear": "Votre année",
+			"periodLabel": "Période du récapitulatif",
+			"period": {
+				"week": "Semaine",
+				"year": "Année"
+			},
+			"previous": "Période précédente",
+			"next": "Période suivante",
+			"range": "{start} – {end}",
+			"plays": "Écoutes",
+			"listeningTime": "Temps d'écoute",
+			"uniqueTracks": "Morceaux différents",
+			"uniqueArtists": "{count, plural, one {de # artiste} other {de # artistes}}",
+			"newTracks": "Nouveaux morceaux",
+			"newTracksHint": "Écoutés pour la première fois",
+			"changeWeek": "{change} par rapport à la semaine précédente",
+			"changeYear": "{change} par rapport à l'année précédente",
+			"noPrevious": "Rien à comparer",
+			"topTracks": "Top morceaux",
+			"topArtists": "Top artistes",
+			"highlights": "Temps forts",
+			"busiestDay": "Jour le plus actif",
+			"peakHour": "Heure de pointe",
+			"peakWeekday": "Jour préféré",
+			"topKeys": "Tonalités favorites",
+			"none": "—",
+			"empty": "Aucune écoute sur cette période.",
+			"loadFailed": "Impossible de charger le récapitulatif."
+		},
+		"funnel": {
+			"title": "Entonnoir des découvertes",
+			"subtitle": "Ce que sont devenues vos découvertes",
+			"scopeRange": "Sorties ajoutées sur la période choisie",
+			"scopeAll": "Toutes les sorties trouvées",
+			"stage": {
+				"discovered": "Découvertes",
+				"inLibrary": "Dans la bibliothèque",
+				"playedInSet": "Jouées en set"
+			},
+			"releases": "{count, plural, one {# sortie} other {# sorties}}",
+			"share": "{percent} des découvertes",
+			"bySource": "Par source",
+			"source": "Source",
+			"note": "Rapprochement par artiste et titre, noms exacts uniquement.",
+			"empty": "Aucune découverte sur cette période. Analysez une page Bandcamp, SoundCloud ou YouTube dans Découvertes pour remplir l'entonnoir.",
+			"loadFailed": "Impossible de charger l'entonnoir des découvertes."
+		},
+		"sets": {
+			"title": "Sets Rekordbox",
+			"subtitle": "Ouvrez un set pour voir sa tracklist et ses transitions",
+			"untitled": "Set sans titre",
+			"meta": "{tracks, plural, one {# morceau} other {# morceaux}} · {duration}",
+			"open": "Ouvrir la timeline de {name}",
+			"empty": "Aucun set Rekordbox pour l'instant. Synchronisez Rekordbox dans les intégrations ci-dessous pour importer vos sets."
+		},
+		"timeline": {
+			"tracks": "Morceaux",
+			"harmonic": "Transitions harmoniques",
+			"clashing": "Conflits de tonalité",
+			"unknown": "Tonalités inconnues",
+			"columns": {
+				"position": "#",
+				"time": "Heure",
+				"track": "Morceau",
+				"bpm": "BPM",
+				"key": "Tonalité",
+				"transition": "Transition"
+			},
+			"relation": {
+				"same": "Même tonalité",
+				"adjacent": "Tonalité voisine",
+				"relative": "Tonalité relative",
+				"clash": "Conflit de tonalité",
+				"unknown": "Tonalité inconnue"
+			},
+			"opening": "Morceau d'ouverture",
+			"tempo": "Tempo {delta}",
+			"notInLibrary": "Absent de la bibliothèque",
+			"empty": "Ce set ne contient aucun morceau.",
+			"loadFailed": "Impossible de charger ce set."
+		},
+		"export": {
+			"button": "Exporter l'historique",
+			"hint": "Exporter tout l'historique d'écoute en CSV ou JSON",
+			"success": "{count, plural, one {# écoute exportée} other {# écoutes exportées}}",
+			"failed": "Impossible d'exporter l'historique : {error}"
 		}
 	},
 	"beatport": {

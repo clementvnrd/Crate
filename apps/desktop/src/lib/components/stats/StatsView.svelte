@@ -18,7 +18,12 @@
 		isStatsLoading,
 	} from '$shared/stores/stats'
 	import { translate } from '$shared/i18n'
-	import { Icon, SegmentedControl, type SegmentOption } from '$lib/components/common'
+	import { Button, Icon, SegmentedControl, Tooltip, type SegmentOption } from '$lib/components/common'
+	import { save } from '@tauri-apps/plugin-dialog'
+	import { exportListeningHistory } from '$shared/api/stats'
+	import { toastStore } from '$shared/stores/toast'
+	import { withNativeDialog } from '$shared/utils'
+	import { toErrorMessage } from '$shared/utils/errors'
 	import StatsKpiCards from './StatsKpiCards.svelte'
 	import StatsSourceBar from './StatsSourceBar.svelte'
 	import StatsTopTracks from './StatsTopTracks.svelte'
@@ -27,6 +32,10 @@
 	import StatsBpmDistribution from './StatsBpmDistribution.svelte'
 	import StatsHeatmap from './StatsHeatmap.svelte'
 	import StatsIntegrations from './StatsIntegrations.svelte'
+	import StatsRecap from './StatsRecap.svelte'
+	import StatsFunnel from './StatsFunnel.svelte'
+	import StatsSets from './StatsSets.svelte'
+	import { historyExportTarget } from './historyExport'
 
 	const TIME_RANGES: TimeRange[] = ['today', '7d', '30d', 'year', 'all']
 
@@ -52,8 +61,39 @@
 		statsStore.setRange(range)
 	}
 
+	// Bumped by the refresh button so the recap and the funnel, which load their own data, reload too.
+	let refreshKey = $state(0)
+
 	function handleRefresh() {
 		statsStore.refreshAll()
+		refreshKey += 1
+	}
+
+	// History export: the native save dialog picks the file, its extension picks the format (CSV or JSON).
+	let exportingHistory = $state(false)
+	async function handleExportHistory() {
+		if (exportingHistory) return
+		const path = await withNativeDialog(() =>
+			save({
+				defaultPath: 'crate-listening-history.csv',
+				filters: [
+					{ name: 'CSV', extensions: ['csv'] },
+					{ name: 'JSON', extensions: ['json'] },
+				],
+			})
+		)
+		if (!path) return
+		const target = historyExportTarget(path)
+		exportingHistory = true
+		try {
+			const count = await exportListeningHistory(target.format, target.path)
+			toastStore.success($translate('stats.export.success', { values: { count } }))
+		} catch (err) {
+			const message = toErrorMessage(err, $translate('common.unknownError'))
+			toastStore.error($translate('stats.export.failed', { values: { error: message } }))
+		} finally {
+			exportingHistory = false
+		}
 	}
 </script>
 
@@ -107,6 +147,25 @@
 				onchange={handleRangeChange}
 			/>
 
+			<!-- Export the whole listening history (CSV or JSON). Icon only below 1280 px, so the header keeps one line at
+			     1000 px as it did before the button existed. -->
+			<Tooltip text={$translate('stats.export.hint')} position="bottom">
+				<Button
+					variant="secondary"
+					size="sm"
+					class="h-8"
+					onclick={handleExportHistory}
+					disabled={exportingHistory}
+					aria-label={$translate('stats.export.button')}
+				>
+					<Icon
+						name={exportingHistory ? 'loader' : 'download'}
+						class="h-4 w-4 {exportingHistory ? 'animate-spin motion-reduce:animate-none' : ''}"
+					/>
+					<span class="ml-1.5 hidden xl:inline">{$translate('stats.export.button')}</span>
+				</Button>
+			</Tooltip>
+
 			<!-- Refresh Button -->
 			<button
 				type="button"
@@ -151,7 +210,16 @@
 		<!-- 5. Weekly 24h x 7d Heatmap Matrix -->
 		<StatsHeatmap heatmap={$listeningHeatmap} isLoading={$isStatsLoading} />
 
-		<!-- 6. Cloud & Files Integrations Banner (Spotify, Rekordbox & Mixed In Key) -->
+		<!-- 6. Recap of a week or a year -->
+		<StatsRecap {refreshKey} />
+
+		<!-- 7. Rekordbox sets (timeline of each) and the discovery funnel -->
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+			<StatsSets sessions={$rekordboxSessions} isLoading={$isStatsLoading} />
+			<StatsFunnel range={$statsSelectedRange} {refreshKey} />
+		</div>
+
+		<!-- 8. Cloud & Files Integrations Banner (Spotify, Rekordbox & Mixed In Key) -->
 		<StatsIntegrations
 			spotifyAuth={$spotifyAuth}
 			spotifyNowPlaying={$spotifyNowPlaying}

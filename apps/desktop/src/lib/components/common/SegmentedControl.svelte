@@ -36,9 +36,23 @@
 		variant: SegmentedVariant
 		id?: string
 		class?: string
+		/**
+		 * `boxed` only: colour of the labels that are not selected. `tertiary` (default) is the look of Pulse's period
+		 * selector today; `secondary` reads at 4.5:1 in both themes, for new controls (the recap's week/year switch).
+		 */
+		unselectedTone?: 'tertiary' | 'secondary'
 	}
 
-	let { options, value, onchange, ariaLabel, variant, id, class: className = '' }: Props = $props()
+	let {
+		options,
+		value,
+		onchange,
+		ariaLabel,
+		variant,
+		id,
+		class: className = '',
+		unselectedTone = 'tertiary',
+	}: Props = $props()
 
 	const active = $derived(
 		selectedIndex(
@@ -101,7 +115,9 @@
 				return `cursor-pointer rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
 					selected
 						? 'border border-stroke-strong/60 bg-surface-0 text-text-primary shadow-sm'
-						: 'text-text-tertiary hover:text-text-secondary'
+						: unselectedTone === 'secondary'
+							? 'text-text-secondary hover:text-text-primary'
+							: 'text-text-tertiary hover:text-text-secondary'
 				}`
 		}
 	}

@@ -14,4 +14,8 @@ metadata:
 - The global shortcuts (`useKeyboardShortcuts.ts`, window keydown) call `preventDefault` on Enter, Space and Shift+Tab whenever no input is focused: outside modals a focused button cannot be activated from the keyboard, and Shift+Tab switches views. New keyboard handlers must `stopPropagation`; test keyboard flows with Tab only (never Shift+Tab) in the harness.
 - `yarn test:e2e` emulates reduced motion, so adding `motion-reduce:animate-none` changes screenshots (static ping/pulse dots). The Pulse screenshots sometimes catch a toolbar tooltip (Duplicate Killer) under the cursor: noise, not a regression. PIL (python3) is available for pixel diffs of `e2e/screenshots/` (copy the before set first; the run overwrites it).
 
+- `npx prettier --write <folder>` formats EVERY file type in it, `.md` included (it rewrapped the harness README tables); `yarn format:check` only covers ts/js/json/svelte/css. Pass file paths or globs, and check `git status` for files you did not mean to touch.
+- The e2e audit counts text in the whole page, below the fold too, so a new Pulse section must pass contrast in both themes: dark `text-tertiary` fails on glass and on surface-2, and an extra `boxed` SegmentedControl adds one failing unselected label per theme (use `unselectedTone="secondary"`). KeyBadge `tag`/`chip` variants are 10 px and raise `smallText`; `tag-wide` is 12 px.
+- The Pulse header sits on one line at 1000 px with almost no room left: adding a labelled button wrapped it onto two lines. New header controls go icon-only below `xl` (aria-label kept). Compare against `e2e/screenshots/pulse-*-1000-*.png` taken before the change.
+
 Related: [[charter-contrast-method]].

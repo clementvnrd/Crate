@@ -1277,6 +1277,96 @@
 			"redirectCopied": "Redirect URI copied to the clipboard!",
 			"clientIdRequired": "Enter a valid Spotify Client ID",
 			"codeRequired": "Paste the authorization code or the redirect URL"
+		},
+		"retry": "Try again",
+		"recap": {
+			"titleWeek": "Your week",
+			"titleYear": "Your year",
+			"periodLabel": "Recap period",
+			"period": {
+				"week": "Week",
+				"year": "Year"
+			},
+			"previous": "Previous period",
+			"next": "Next period",
+			"range": "{start} – {end}",
+			"plays": "Plays",
+			"listeningTime": "Listening time",
+			"uniqueTracks": "Different tracks",
+			"uniqueArtists": "{count, plural, one {by # artist} other {by # artists}}",
+			"newTracks": "New tracks",
+			"newTracksHint": "Heard for the first time",
+			"changeWeek": "{change} vs the week before",
+			"changeYear": "{change} vs the year before",
+			"noPrevious": "Nothing to compare with",
+			"topTracks": "Top tracks",
+			"topArtists": "Top artists",
+			"highlights": "Highlights",
+			"busiestDay": "Busiest day",
+			"peakHour": "Peak hour",
+			"peakWeekday": "Favourite day",
+			"topKeys": "Top keys",
+			"none": "—",
+			"empty": "No plays in this period.",
+			"loadFailed": "Could not load the recap."
+		},
+		"funnel": {
+			"title": "Discovery funnel",
+			"subtitle": "What your discoveries became",
+			"scopeRange": "Releases added in the selected period",
+			"scopeAll": "Every release found",
+			"stage": {
+				"discovered": "Discovered",
+				"inLibrary": "In the library",
+				"playedInSet": "Played in a set"
+			},
+			"releases": "{count, plural, one {# release} other {# releases}}",
+			"share": "{percent} of discoveries",
+			"bySource": "By source",
+			"source": "Source",
+			"note": "Matched by artist and title, exact names only.",
+			"empty": "No discoveries in this period. Scan a Bandcamp, SoundCloud or YouTube page in Discovery to fill the funnel.",
+			"loadFailed": "Could not load the discovery funnel."
+		},
+		"sets": {
+			"title": "Rekordbox sets",
+			"subtitle": "Open a set to see its tracklist and transitions",
+			"untitled": "Untitled set",
+			"meta": "{tracks, plural, one {# track} other {# tracks}} · {duration}",
+			"open": "Open the timeline of {name}",
+			"empty": "No Rekordbox set yet. Sync Rekordbox in the integrations below to import your sets."
+		},
+		"timeline": {
+			"tracks": "Tracks",
+			"harmonic": "Harmonic transitions",
+			"clashing": "Key clashes",
+			"unknown": "Unknown keys",
+			"columns": {
+				"position": "#",
+				"time": "Time",
+				"track": "Track",
+				"bpm": "BPM",
+				"key": "Key",
+				"transition": "Transition"
+			},
+			"relation": {
+				"same": "Same key",
+				"adjacent": "Adjacent key",
+				"relative": "Relative key",
+				"clash": "Key clash",
+				"unknown": "Key unknown"
+			},
+			"opening": "Opening track",
+			"tempo": "{delta} tempo",
+			"notInLibrary": "Not in the library",
+			"empty": "This set has no tracks.",
+			"loadFailed": "Could not load this set."
+		},
+		"export": {
+			"button": "Export history",
+			"hint": "Export the whole listening history as CSV or JSON",
+			"success": "{count, plural, one {# play exported} other {# plays exported}}",
+			"failed": "Could not export the history: {error}"
 		}
 	},
 	"beatport": {

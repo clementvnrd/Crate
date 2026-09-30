@@ -25,7 +25,7 @@ The app starts on the library with 16 tracks, in the dark theme, in English, log
 | `lang` | `en`, `fr` (and the other locales) | Interface language. |
 | `font` | `open-sans`, `jost`, `dm-sans`, `inter`, `nunito`, `fira-code`, `ibm-plex-mono`, `source-code-pro` | Font. |
 | `beatport` | `out` | Start logged out of Beatport (default: logged in). |
-| `library` | `empty` | Empty library, empty Discovery: the empty states. |
+| `library` | `empty` | Empty library, empty Discovery, empty Pulse recap and funnel: the empty states. |
 | `onboarding` | `1` | Show the onboarding wizard. |
 | `playing` | a track id, e.g. `trk-03` | Show that library track, paused, in the player bar. |
 | `dev` | `1` | Report a development build (DEV badge, developer tools button). |
@@ -78,8 +78,8 @@ Typed with the real types of `shared/types`, deterministic (no `Math.random`, no
 | `fixtures/library.ts` | 16 tracks (BPM 90 to 138, all Camelot numbers, energy 2 to 10, every format), stress cases on purpose: a very long title (track 3), a very long artist (4), four tracks without artwork (5, 9, 12, 16), one track with no metadata at all (16). Three tag categories, playlists and folders (one smart, one with a very long name), one USB stick, cues and waveform. |
 | `fixtures/player.ts` | 7 albums (two without artwork, one with a very long title) with their tracks; 4 recently opened files. |
 | `fixtures/beatport.ts` | 10 genres, 6 charts, 24 catalogue tracks, 3 playlists, favourites, purchases, artist pages, and the 3 Upgrader matches. |
-| `fixtures/discovery.ts` | 6 releases (Bandcamp, SoundCloud, YouTube, Discogs, one without metadata), 3 followed sources (one in error). |
-| `fixtures/stats.ts` | Pulse: summary, top tracks and artists, harmonic and BPM stats, heatmap, recent listens, 3 Rekordbox sessions, scaled by the selected time range. |
+| `fixtures/discovery.ts` | 6 releases (Bandcamp, SoundCloud, YouTube, Discogs, one without metadata), 3 followed sources (one in error), the discovery funnel by source. |
+| `fixtures/stats.ts` | Pulse: summary, top tracks and artists, harmonic and BPM stats, heatmap, recent listens, 3 Rekordbox sessions, scaled by the selected time range; the week and year recap (any offset), the timeline of each set, the history export count. |
 | `fixtures/maintenance.ts` | Duplicate Killer: two groups (exact hash, metadata match). |
 | `fixtures/system.ts` | Settings (appearance read from localStorage), app info, audio devices, diagnostics, cloud sync (signed out), Mixed In Key status, backup info. |
 

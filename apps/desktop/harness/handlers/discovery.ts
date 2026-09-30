@@ -1,7 +1,7 @@
 import type { DiscoveryFilter, DiscoveryRelease } from '$shared/types'
 import type { HandlerMap } from '../types'
 import type { HarnessState } from '../state'
-import { DISCOVERY_RELEASES, FOLLOWED_SOURCES } from '../fixtures/discovery'
+import { DISCOVERY_RELEASES, FOLLOWED_SOURCES, discoveryFunnel } from '../fixtures/discovery'
 import { REFERENCE_NOW } from '../fixtures/reference'
 
 function matchesSearch(release: DiscoveryRelease, search: string): boolean {
@@ -32,5 +32,7 @@ export function discoveryHandlers(state: HarnessState): HandlerMap {
 		// "Check now" in the Following window: nothing new.
 		check_all_followed_sources: () => ({ totalNew: 0, bySource: [], releaseIds: [], checkedAt: REFERENCE_NOW }),
 		get_discovery_audio_cache_size: () => 48_000_000,
+		get_discovery_funnel: ({ since }) =>
+			discoveryFunnel(typeof since === 'string' ? since : null, state.params.libraryEmpty),
 	}
 }
