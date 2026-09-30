@@ -230,3 +230,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | `design` agent: `DESIGN.md`, skills (system, audit, build, image to code, Playwright verification), `yarn design:scan` scanner | 9 |
 | 2026-09-30 | **Clean break — new way of working**: everything in the repository in English, `suivi/` → `tracking/`, `AVANCEMENT.md` → `STATUS.md`, `yarn status`, all earlier documents translated, standing rules in `CLAUDE.md` | — |
 | 2026-09-30 | **Linear adopted as the live board**: team Crate App (`CRA`), 3 projects and 17 milestones, 107 register defects loaded as issues (94 Done), 5 owner actions and decisions, 10 scenario B ideas, beginner's guide, rules in `CLAUDE.md` §1 | — |
+| 2026-09-30 | **Answers in Linear + hourly watch**: owner answers by commenting or closing issues, assistant comments prefixed `🤖 Claude:`, scheduled task `crate-linear-hourly-check` (highest autonomy, one defect per run, ends at In Review) | — |
