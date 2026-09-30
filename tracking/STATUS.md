@@ -39,6 +39,7 @@ These actions cannot be done on the owner's behalf (personal accounts, decisions
 - [x] Upstream workflows (macOS/Windows builds on every push) switched to manual trigger so as not to consume Actions minutes; lightweight CI `ci.fork.yml` (Vitest)
 - [x] Tracking documents: this file, [report](AUDIT-REPORT.md), [register](DEFECTS.md), [history](history/DISCUSSION-SUMMARY.md), `CLAUDE.md`
 - [x] New way of working (2026-09-30): everything written in the repository is in English, `suivi/` became `tracking/`, `yarn suivi` became `yarn status`, standing rules in `CLAUDE.md`
+- [x] Linear adopted as the live board (2026-09-30): team Crate App (`CRA`), 3 projects, 17 milestones, the 107 register defects as issues, decisions and scenario B ideas, rules in `CLAUDE.md` §1 — _optional GitHub integration left to the owner (CRA-136)_
 
 ## Register defects, by repair step
 
@@ -228,3 +229,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-26 | Visual foundations: tokens, `dark:` tied to the theme, bounded modals, fonts, icons | 10 |
 | 2026-09-30 | `design` agent: `DESIGN.md`, skills (system, audit, build, image to code, Playwright verification), `yarn design:scan` scanner | 9 |
 | 2026-09-30 | **Clean break — new way of working**: everything in the repository in English, `suivi/` → `tracking/`, `AVANCEMENT.md` → `STATUS.md`, `yarn status`, all earlier documents translated, standing rules in `CLAUDE.md` | — |
+| 2026-09-30 | **Linear adopted as the live board**: team Crate App (`CRA`), 3 projects and 17 milestones, 107 register defects loaded as issues (94 Done), 5 owner actions and decisions, 10 scenario B ideas, beginner's guide, rules in `CLAUDE.md` §1 | — |

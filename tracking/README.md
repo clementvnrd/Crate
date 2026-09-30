@@ -18,6 +18,7 @@ This folder tracks all the work of restoring the personal fork of Crate, since t
 4. Every fix is **verified** before being ticked: Rust tests (`cargo test --features desktop`, from `src-tauri/`), Vitest (`yarn test`, from the root), and a manual check or a check in the browser harness when it is visual.
 5. Tests **never** touch the real databases (`~/Library/...`): temporary databases only.
 6. Pushed to GitHub after every step (or more often).
+7. **Linear is the live board** (workspace "HomeMade", team Crate App, key `CRA`): every defect of the register is an issue titled `[B12] …`, every repair step is a milestone of the project *Consolidation 0.3.0*. The issue is moved to In Progress when work starts and to Done once the commit is pushed. The files in this folder stay the versioned record; the rules are in `CLAUDE.md` §1.
 
 ## Finding the history of a defect
 

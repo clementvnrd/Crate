@@ -60,6 +60,19 @@ Every `.md` document (README, CHANGELOG, `tracking/`, `DESIGN.md`, `.claude/` ag
 - Update the README and other `.md` files whenever documented behaviour changes.
 - Small thematic commits, pushed to `origin`.
 
+### Linear — the live board (Clément, 2026-09-30)
+
+Clément follows the project in **Linear** (workspace "HomeMade", team **Crate App**, key `CRA`, Linear MCP server `linear-server`). Work consistently with it, **during** the task and not only at the end, so he can see at any moment what is being built and what is left. Why: he wants a clear picture of progress without asking, and he is new to Linear, so the board is deliberately rich and every Linear concept is explained briefly the first time it is used.
+
+- **One issue per piece of work, created before starting it.** Whenever Clément voices a new request, idea or bug, create the issue in the same reply (Backlog unless he decides to do it now). Never start work that has no issue.
+- **Where it goes.** Three projects: *Consolidation 0.3.0* (the register defects, one **milestone per repair step**), *Polish & Unify 0.4* (scenario B ideas and open decisions, milestones = the pillars) and *Repository & workflow* (everything around the app). New work joins the project and milestone it belongs to.
+- **Title.** Register defects start with their identifier, `[B12] Title`, so the title matches the commit message. Work outside the register has a plain title.
+- **Labels.** One type (`Bug`, `Improvement` or `Feature`), one **Area** (`Rust backend`, `Frontend`, `IPC`, `Design`, `i18n`, `Tooling`), and `Owner action`, `Decision` or `Process` when they apply. Priority **Urgent** is reserved for critical defects (C*).
+- **Status follows the work.** `Backlog` → `Todo` (decided) → `In Progress` (started) → `In Review` (pushed, waiting for Clément to check) → `Done` (verified). Close with a comment giving the commit hash.
+- **Commits** keep `[B12]` and add the Linear key in the body when an issue exists: `Refs CRA-42`.
+- **Linear complements the repository files, it does not replace them.** `tracking/STATUS.md`, `tracking/DEFECTS.md` and `CHANGELOG.md` stay the versioned record (they survive without Linear); update both in the same step.
+- **Report.** Close every substantial answer to Clément with the Linear changes made (issues created, moved, closed, with their `CRA-n` keys).
+
 ## 2. Technical rules
 
 - Rust desktop (from `src-tauri/`): the `desktop` feature is not a default. `cargo test --features desktop`, `cargo clippy --features desktop -- -D warnings`.
@@ -75,4 +88,5 @@ Every `.md` document (README, CHANGELOG, `tracking/`, `DESIGN.md`, `.claude/` ag
 
 ## 9. Open questions
 
-_None._
+- **Linear versus `tracking/STATUS.md`** (2026-09-30): both currently track the same defects. Which one is authoritative in the long run, or should a script keep them in sync? Until Clément decides, both are updated in the same step (§1, "Linear").
+- **Language of Linear content** (2026-09-30): issues and comments are written in English, like the repository, because they mirror commit messages and tracking files. Only the beginner's guide document is in French. Confirm or change.
