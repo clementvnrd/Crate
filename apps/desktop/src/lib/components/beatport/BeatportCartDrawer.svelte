@@ -3,6 +3,7 @@
 	import { formatDurationCompact } from '$shared/utils/format'
 	import { Icon, Spinner, focusTrap } from '$lib/components/common'
 	import { fly, fade } from 'svelte/transition'
+	import { translate } from '$shared/i18n'
 
 	interface Props {
 		isOpen: boolean
@@ -49,12 +50,16 @@
 				</div>
 				<div>
 					<div class="flex items-center gap-2">
-						<h2 id="beatport-cart-title" class="text-sm font-bold text-white">Panier Beatport</h2>
+						<h2 id="beatport-cart-title" class="text-sm font-bold text-white">{$translate('beatport.cart.title')}</h2>
 						<span class="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-bold text-emerald-400">
-							{$beatportCartCount} morceau{$beatportCartCount > 1 ? 'x' : ''}
+							{$translate('beatport.cart.trackCount', { values: { count: $beatportCartCount } })}
 						</span>
 					</div>
-					<p class="text-[11px] text-neutral-400">Durée totale : {formatDurationCompact($beatportCartDuration)}</p>
+					<p class="text-[11px] text-neutral-400">
+						{$translate('beatport.cart.totalDuration', {
+							values: { duration: formatDurationCompact($beatportCartDuration) },
+						})}
+					</p>
 				</div>
 			</div>
 
@@ -62,7 +67,7 @@
 				type="button"
 				class="cursor-pointer rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
 				onclick={onClose}
-				title="Fermer le panier"
+				title={$translate('beatport.cart.close')}
 			>
 				<Icon name="x" class="h-5 w-5" />
 			</button>
@@ -103,7 +108,7 @@
 						type="button"
 						class="cursor-pointer rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-red-500/10 hover:text-red-400"
 						onclick={() => beatportStore.removeFromCart(track.id)}
-						title="Retirer du panier"
+						title={$translate('beatport.cart.remove')}
 					>
 						<Icon name="x" class="h-4 w-4" />
 					</button>
@@ -114,9 +119,13 @@
 		<!-- Footer -->
 		<div class="space-y-3 border-t border-[#252830] bg-[#181a20] p-4">
 			<div class="flex items-center justify-between text-xs text-neutral-400">
-				<span>Format de sortie : <strong class="font-mono text-emerald-400">FLAC (Lossless)</strong></span>
 				<span
-					>Destination : <strong class="text-neutral-200"
+					>{$translate('beatport.cart.outputFormat')}
+					<strong class="font-mono text-emerald-400">{$translate('beatport.cart.formatFlac')}</strong></span
+				>
+				<span
+					>{$translate('beatport.cart.destination')}
+					<strong class="text-neutral-200"
 						>{($beatportStore.downloadDestination || 'FLAC').replace(/^.*\/([^/]+)$/, '$1')}</strong
 					></span
 				>
@@ -128,7 +137,7 @@
 						class="flex w-full items-center justify-center gap-2.5 rounded-xl border border-emerald-500/40 bg-emerald-950/60 py-3 text-xs font-semibold text-emerald-400"
 					>
 						<Spinner class="h-4 w-4 text-emerald-400" />
-						<span>{$beatportStore.downloadProgressText || 'Téléchargement BeatportDL en cours...'}</span>
+						<span>{$beatportStore.downloadProgressText || $translate('beatport.cart.downloading')}</span>
 					</div>
 				{:else}
 					<button
@@ -136,7 +145,7 @@
 						class="cursor-pointer rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-3 text-xs font-semibold text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-white"
 						onclick={handleClear}
 					>
-						Vider
+						{$translate('beatport.cart.clear')}
 					</button>
 
 					<button
@@ -145,7 +154,7 @@
 						onclick={handleDownload}
 					>
 						<Icon name="download" class="h-4 w-4" />
-						<span>Télécharger en FLAC & Synchro MIK</span>
+						<span>{$translate('beatport.cart.download')}</span>
 					</button>
 				{/if}
 			</div>

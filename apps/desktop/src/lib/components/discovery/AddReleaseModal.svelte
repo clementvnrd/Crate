@@ -71,13 +71,13 @@
 		}
 	})
 
-	const sourceOptions = [
+	const sourceOptions = $derived([
 		{ value: 'bandcamp', label: 'Bandcamp' },
 		{ value: 'soundcloud', label: 'SoundCloud' },
 		{ value: 'youtube', label: 'YouTube' },
 		{ value: 'discogs', label: 'Discogs' },
-		{ value: 'other', label: 'Other' },
-	]
+		{ value: 'other', label: $translate('discovery.sourceOther') },
+	])
 
 	function isSupportedDomain(input: string): boolean {
 		const lower = input.toLowerCase()
@@ -171,7 +171,7 @@
 				scannedPage = page
 				isBulkMode = true
 			} catch (error) {
-				fetchError = typeof error === 'string' ? error : toErrorMessage(error, 'Scan failed')
+				fetchError = typeof error === 'string' ? error : toErrorMessage(error, $translate('discovery.scanFailed'))
 			} finally {
 				scanning = false
 			}
@@ -231,7 +231,7 @@
 				// Non-blocking: if match check fails, just continue without showing matches
 			}
 		} catch (error) {
-			fetchError = typeof error === 'string' ? error : toErrorMessage(error, 'Fetch failed')
+			fetchError = typeof error === 'string' ? error : toErrorMessage(error, $translate('discovery.fetchFailed'))
 		} finally {
 			fetching = false
 		}
@@ -413,7 +413,11 @@
 			<!-- Artwork preview -->
 			{#if artworkPreview}
 				<div class="flex justify-center">
-					<img src={artworkPreview} alt="Release artwork" class="h-40 w-40 rounded-md object-cover" />
+					<img
+						src={artworkPreview}
+						alt={$translate('discovery.releaseArtwork')}
+						class="h-40 w-40 rounded-md object-cover"
+					/>
 				</div>
 			{/if}
 

@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { TopTrackItem } from '$shared/types'
 	import { getArtworkUrl } from '$shared/utils/artwork'
-	import { appDataDir } from '$lib/stores'
+	import { appDataDir, language } from '$lib/stores'
+	import { translate } from '$shared/i18n'
+	import { formatNumber } from '$shared/utils/format'
 	import { Icon, KeyBadge } from '$lib/components/common'
 
 	type Props = {
@@ -36,14 +38,14 @@
 				<Icon name="music-note" class="h-4 w-4" />
 			</div>
 			<div>
-				<h3 class="text-sm font-bold text-text-primary">Top Morceaux</h3>
-				<p class="text-[11px] text-text-tertiary">Les titres les plus écoutés</p>
+				<h3 class="text-sm font-bold text-text-primary">{$translate('stats.topTracks.title')}</h3>
+				<p class="text-[11px] text-text-tertiary">{$translate('stats.topTracks.subtitle')}</p>
 			</div>
 		</div>
 		<span
 			class="rounded-full border border-stroke bg-surface-2 px-2 py-0.5 font-mono text-[10px] font-medium text-text-secondary"
 		>
-			{tracks.length} titres
+			{$translate('stats.topTracks.count', { values: { count: tracks.length } })}
 		</span>
 	</div>
 
@@ -61,7 +63,7 @@
 		</div>
 	{:else if tracks.length === 0}
 		<div class="flex flex-1 items-center justify-center py-12 text-center text-xs text-text-tertiary">
-			Aucune écoute enregistrée pour cette période.
+			{$translate('stats.topTracks.empty')}
 		</div>
 	{:else}
 		<div class="max-h-[440px] flex-1 space-y-1.5 divide-y divide-stroke/20 overflow-y-auto pr-1">
@@ -150,11 +152,12 @@
 						<!-- Plays & Duration -->
 						<div class="min-w-[56px] space-y-0.5 text-right">
 							<div class="font-mono text-xs font-bold text-text-primary">
-								{track.plays}
-								{track.plays > 1 ? 'plays' : 'play'}
+								{$translate('stats.plays', { values: { count: track.plays } })}
 							</div>
 							<div class="font-mono text-[10px] text-text-tertiary">
-								{track.total_minutes}m
+								{$translate('stats.duration.minutesCompact', {
+									values: { minutes: formatNumber(track.total_minutes, $language) },
+								})}
 							</div>
 						</div>
 					</div>

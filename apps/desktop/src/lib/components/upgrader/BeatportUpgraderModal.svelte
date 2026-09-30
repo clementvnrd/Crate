@@ -19,6 +19,7 @@
 	} from '$shared/stores/player'
 	import { beatportStore } from '$shared/stores/beatport'
 	import { pageActions } from '$lib/stores'
+	import { translate } from '$shared/i18n'
 	import { libraryStore } from '$lib/stores/library'
 	import { formatBitrate, formatDurationCompact } from '$shared/utils/format'
 	import { Button, Icon, KeyBadge, Text } from '$lib/components/common'
@@ -205,9 +206,7 @@
 							<span
 								class="rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-400"
 							>
-								{$upgraderMatchCount} morceau{$upgraderMatchCount > 1 ? 'x' : ''} améliorable{$upgraderMatchCount > 1
-									? 's'
-									: ''} en FLAC Lossless
+								{$translate('upgrader.header.upgradableCount', { values: { count: $upgraderMatchCount } })}
 							</span>
 						{/if}
 					</div>
@@ -222,14 +221,14 @@
 						class="cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 						onclick={() => upgraderStore.selectAll()}
 					>
-						Tout cocher
+						{$translate('upgrader.actions.selectAll')}
 					</button>
 					<button
 						type="button"
 						class="cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 						onclick={() => upgraderStore.deselectAll()}
 					>
-						Tout décocher
+						{$translate('upgrader.actions.deselectAll')}
 					</button>
 				{/if}
 
@@ -238,23 +237,23 @@
 					class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary disabled:opacity-50"
 					onclick={() => upgraderStore.load()}
 					disabled={$isUpgraderLoading}
-					title="Actualiser la recherche des upgrades"
+					title={$translate('upgrader.actions.refreshTitle')}
 				>
 					<Icon
 						name="refresh-cw"
 						class="h-3.5 w-3.5 {$isUpgraderLoading ? 'animate-spin text-emerald-400 motion-reduce:animate-none' : ''}"
 					/>
-					<span>Actualiser</span>
+					<span>{$translate('upgrader.actions.refresh')}</span>
 				</button>
 
 				<button
 					type="button"
 					class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 					onclick={onClose}
-					title="Fermer"
+					title={$translate('common.close')}
 				>
 					<Icon name="x" class="h-3.5 w-3.5" />
-					<span>Fermer</span>
+					<span>{$translate('common.close')}</span>
 				</button>
 			</div>
 		</div>
@@ -271,10 +270,9 @@
 						<Icon name="beatport" class="h-8 w-8 fill-current" />
 					</div>
 					<div class="space-y-1.5">
-						<Text variant="header-2" weight="bold" class="text-text-primary">Connexion Beatport requise</Text>
+						<Text variant="header-2" weight="bold" class="text-text-primary">{$translate('upgrader.auth.title')}</Text>
 						<Text variant="body-2" class="text-text-secondary">
-							Pour rechercher automatiquement les versions FLAC Lossless de vos MP3 et synchroniser les métadonnées
-							officielles, vous devez être connecté à votre compte Beatport.
+							{$translate('upgrader.auth.body')}
 						</Text>
 					</div>
 					<Button
@@ -283,7 +281,7 @@
 						onclick={handleConnectBeatport}
 					>
 						<Icon name="beatport" class="h-4 w-4 fill-current" />
-						<span>Se connecter à Beatport</span>
+						<span>{$translate('upgrader.auth.connect')}</span>
 					</Button>
 				</div>
 			{:else if $isUpgraderLoading && $upgraderMatches.length === 0}
@@ -298,9 +296,11 @@
 						<Icon name="sparkles" class="absolute h-6 w-6 animate-pulse text-emerald-400 motion-reduce:animate-none" />
 					</div>
 					<div class="space-y-1">
-						<Text variant="header-2" weight="bold" class="text-text-primary">Scan de la bibliothèque en cours...</Text>
+						<Text variant="header-2" weight="bold" class="text-text-primary"
+							>{$translate('upgrader.scanning.title')}</Text
+						>
 						<Text variant="body-2" class="mx-auto max-w-md text-text-secondary">
-							Recherche multi-passes haute fidélité sur le catalogue Beatport avec scoring multi-critères (&ge; 75%).
+							{$translate('upgrader.scanning.body')}
 						</Text>
 					</div>
 				</div>
@@ -313,11 +313,10 @@
 					</div>
 					<div>
 						<Text variant="header-2" weight="bold" class="mb-1 text-text-primary">
-							Toute votre bibliothèque est en qualité maximale !
+							{$translate('upgrader.empty.title')}
 						</Text>
 						<Text variant="body-1" class="mx-auto max-w-md text-text-secondary">
-							Aucun fichier MP3 à mettre à niveau trouvé sur Beatport. Votre collection est au meilleur niveau de
-							fidélité audio.
+							{$translate('upgrader.empty.body')}
 						</Text>
 					</div>
 				</div>
@@ -327,7 +326,7 @@
 						class="mb-2 flex animate-pulse items-center justify-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-3.5 py-2 text-xs font-medium text-emerald-400 motion-reduce:animate-none"
 					>
 						<Icon name="refresh-cw" class="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-						<span>Actualisation de la recherche en cours...</span>
+						<span>{$translate('upgrader.refreshing')}</span>
 					</div>
 				{/if}
 				{#each $upgraderMatches as match (match.track_id)}
@@ -359,13 +358,19 @@
 									{match.confidence_score >= 90
 										? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-400'
 										: 'border-teal-500/30 bg-teal-500/15 text-teal-300'}"
-									title="Score de confiance multi-critères : {match.confidence_score}% (Titre: {match.score_breakdown
-										.title_score}/40, Artiste: {match.score_breakdown.artist_score}/30, Durée: {match.score_breakdown
-										.duration_score}/15, BPM: {match.score_breakdown.bpm_score}/10, Clé: {match.score_breakdown
-										.key_score}/5)"
+									title={$translate('upgrader.card.scoreTitle', {
+										values: {
+											score: match.confidence_score,
+											titleScore: match.score_breakdown.title_score,
+											artistScore: match.score_breakdown.artist_score,
+											durationScore: match.score_breakdown.duration_score,
+											bpmScore: match.score_breakdown.bpm_score,
+											keyScore: match.score_breakdown.key_score,
+										},
+									})}
 								>
 									<Icon name="sparkles" class="h-3 w-3" />
-									{match.confidence_score}% de correspondance
+									{$translate('upgrader.card.match', { values: { score: match.confidence_score } })}
 								</span>
 							</div>
 
@@ -373,9 +378,9 @@
 								type="button"
 								class="shrink-0 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 								onclick={() => upgraderStore.ignoreMatch(match)}
-								title="Ne plus proposer d'upgrade pour ce morceau"
+								title={$translate('upgrader.card.ignoreTitle')}
 							>
-								Ignorer ce morceau
+								{$translate('upgrader.card.ignore')}
 							</button>
 						</div>
 
@@ -388,7 +393,7 @@
 										class="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-amber-400/90 uppercase"
 									>
 										<span class="inline-block h-2 w-2 rounded-full bg-amber-400"></span>
-										Actuel (MP3)
+										{$translate('upgrader.card.current')}
 									</span>
 									<span class="font-mono text-xs text-text-secondary tabular-nums">
 										{formatDurationCompact(match.current_duration_ms)}
@@ -404,7 +409,7 @@
 											? 'border-[#00E5FF] bg-[#00E5FF] text-black shadow-md shadow-[#00E5FF]/40'
 											: 'border-stroke bg-surface-2 text-text-primary hover:border-[#00E5FF]/60 hover:bg-[#00E5FF]/15 hover:text-[#00E5FF]'}"
 										onclick={() => handleTogglePlayLocal(match)}
-										title={isLocalPlaying ? 'Mettre en pause' : 'Écouter la version locale'}
+										title={isLocalPlaying ? $translate('upgrader.card.pause') : $translate('upgrader.card.playLocal')}
 									>
 										{#if isLocalPlaying}
 											<Icon name="pause" class="h-4 w-4" fill />
@@ -435,7 +440,7 @@
 											handleTogglePlayLocal(match)
 										}
 									}}
-									title="Cliquer pour naviguer dans l'audio local"
+									title={$translate('upgrader.card.seekLocal')}
 								>
 									{#each getBarsForTrack(match.track_id) as barHeight, barIdx (barIdx)}
 										{@const barPercent = (barIdx / 48) * 100}
@@ -509,7 +514,7 @@
 									<span class="font-mono text-[11px] font-bold tracking-wide text-emerald-400 uppercase">
 										MP3 ➔ FLAC
 									</span>
-									<p class="text-[10px] font-medium text-text-tertiary">Lossless Studio</p>
+									<p class="text-[10px] font-medium text-text-tertiary">{$translate('upgrader.card.losslessStudio')}</p>
 								</div>
 							</div>
 
@@ -546,7 +551,7 @@
 											class="absolute inset-0 flex items-center justify-center bg-black/60 transition-opacity hover:cursor-pointer
 											{isBpPlaying ? 'bg-[#00FF96]/80 text-black opacity-100' : 'text-white opacity-0 group-hover:opacity-100'}"
 											onclick={() => handleTogglePlayBeatport(match)}
-											title={isBpPlaying ? 'Mettre en pause' : "Écouter l'extrait Beatport"}
+											title={isBpPlaying ? $translate('upgrader.card.pause') : $translate('upgrader.card.playPreview')}
 										>
 											{#if isBpPlaying}
 												<Icon name="pause" class="h-4 w-4" fill />
@@ -606,7 +611,7 @@
 								<div class="flex items-center gap-1.5 truncate text-[11px] text-text-tertiary">
 									<Icon name="beatport" class="h-3 w-3 shrink-0 text-emerald-400" />
 									<span class="truncate">
-										{match.beatport_track.release_name || 'Catalogue Officiel Beatport'}
+										{match.beatport_track.release_name || $translate('upgrader.card.officialCatalogue')}
 										{match.beatport_track.release_date ? `(${match.beatport_track.release_date.slice(0, 4)})` : ''}
 									</span>
 								</div>
@@ -626,11 +631,11 @@
 									onchange={() => upgraderStore.toggleMatchSelection(match.track_id)}
 									class="h-4 w-4 rounded border-stroke bg-surface-2 text-emerald-500 hover:cursor-pointer focus:ring-emerald-500"
 								/>
-								<span>Remplacer ce MP3 par la version FLAC Lossless</span>
+								<span>{$translate('upgrader.card.replace')}</span>
 							</label>
 
 							<span class="font-mono text-[11px] text-text-tertiary">
-								Suppression propre + Import synchronisé MIK
+								{$translate('upgrader.card.replaceNote')}
 							</span>
 						</div>
 					</div>
@@ -643,7 +648,7 @@
 			class="sticky bottom-0 z-10 flex flex-shrink-0 items-center justify-between border-t border-stroke bg-surface-2/95 px-6 py-3.5"
 		>
 			<div class="text-xs">
-				<span class="text-text-secondary">Sélectionnés pour upgrade :</span>
+				<span class="text-text-secondary">{$translate('upgrader.footer.selected')}</span>
 				<span class="ml-1 font-mono font-bold text-emerald-400">{$selectedUpgradeCount}</span>
 			</div>
 
@@ -653,7 +658,7 @@
 					class="cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 					onclick={onClose}
 				>
-					Fermer
+					{$translate('common.close')}
 				</button>
 
 				<Button
@@ -665,13 +670,19 @@
 					{#if $isUpgrading}
 						<Icon name="refresh-cw" class="mr-2 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
 						{#if $upgradeProgress}
-							Mise à niveau {$upgradeProgress.current}/{$upgradeProgress.total} — {$upgradeProgress.title}
+							{$translate('upgrader.footer.progress', {
+								values: {
+									current: $upgradeProgress.current,
+									total: $upgradeProgress.total,
+									title: $upgradeProgress.title,
+								},
+							})}
 						{:else}
-							Mise à niveau en cours...
+							{$translate('upgrader.footer.upgrading')}
 						{/if}
 					{:else}
 						<Icon name="sparkles" class="mr-2 h-3.5 w-3.5" />
-						Remplacer les {$selectedUpgradeCount} morceau{$selectedUpgradeCount > 1 ? 'x' : ''} par FLAC Lossless
+						{$translate('upgrader.footer.replace', { values: { count: $selectedUpgradeCount } })}
 					{/if}
 				</Button>
 			</div>

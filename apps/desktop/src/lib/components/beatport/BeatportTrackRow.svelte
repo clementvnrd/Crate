@@ -4,6 +4,7 @@
 	import { playerStore, isPlaying as isPlayerPlaying, beatportTrack, playbackSource } from '$lib/stores'
 	import { displaySettingsStore } from '$shared/stores/displaySettings'
 	import { Icon, KeyBadge } from '$lib/components/common'
+	import { translate } from '$shared/i18n'
 	import { BEATPORT_DATE_CELL, BEATPORT_GENRE_CELL, BEATPORT_MIX_NAME, BEATPORT_TRACK_GRID } from './trackGrid'
 
 	interface Props {
@@ -59,12 +60,15 @@
 					type="button"
 					class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-[#00FF96] text-black shadow-lg shadow-[#00FF96]/30 transition-transform active:scale-95"
 					onclick={togglePlay}
-					title="Pause preview"
+					title={$translate('beatport.track.pausePreview')}
 				>
 					<Icon name="pause" class="h-3 w-3" fill />
 				</button>
 			{:else}
-				<div class="flex h-5 w-5 items-end justify-center gap-[2px] pb-0.5" title="En cours de lecture">
+				<div
+					class="flex h-5 w-5 items-end justify-center gap-[2px] pb-0.5"
+					title={$translate('beatport.track.nowPlaying')}
+				>
 					<span class="h-3 w-[3px] animate-pulse rounded-full bg-[#00FF96] motion-reduce:animate-none"></span>
 					<span
 						class="h-4.5 w-[3px] animate-pulse rounded-full bg-[#00FF96] [animation-delay:150ms] motion-reduce:animate-none"
@@ -79,7 +83,7 @@
 				type="button"
 				class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-emerald-500/20 text-[#00FF96] shadow-sm transition-all hover:bg-[#00FF96] hover:text-black active:scale-95"
 				onclick={togglePlay}
-				title="Play preview"
+				title={$translate('beatport.track.playPreview')}
 			>
 				<Icon name="play" class="ml-0.5 h-3 w-3" fill />
 			</button>
@@ -142,7 +146,7 @@
 					</button>{#if aIdx < track.artists.length - 1},&nbsp;{/if}
 				{/each}
 			{:else}
-				<span class="text-text-tertiary">Beatport Artist</span>
+				<span class="text-text-tertiary">{$translate('beatport.artist.label')}</span>
 			{/if}
 		</div>
 	</div>
@@ -181,7 +185,7 @@
 				? 'font-bold text-emerald-400'
 				: 'text-text-tertiary hover:text-text-primary'}"
 			onclick={toggleCart}
-			title={inCart ? 'Retirer du panier' : 'Ajouter au panier'}
+			title={$translate(inCart ? 'beatport.cart.remove' : 'beatport.cart.add')}
 		>
 			<Icon name="cart" class="h-3.5 w-3.5" />
 		</button>
@@ -193,7 +197,7 @@
 				? 'font-bold text-red-500'
 				: 'text-text-tertiary hover:text-red-400'}"
 			onclick={toggleFav}
-			title={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris Beatport'}
+			title={$translate(isFavorite ? 'beatport.track.removeFavorite' : 'beatport.track.addFavorite')}
 		>
 			<Icon name="heart" class="h-3.5 w-3.5" />
 		</button>
@@ -203,7 +207,7 @@
 			type="button"
 			class="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-text-tertiary transition-colors hover:bg-surface-3 hover:text-text-primary"
 			onclick={toggleCart}
-			title={inCart ? 'Dans le panier (cliquer pour retirer)' : 'Ajouter au panier'}
+			title={$translate(inCart ? 'beatport.cart.inCart' : 'beatport.cart.add')}
 		>
 			{#if inCart}
 				<Icon name="check" class="h-3.5 w-3.5 text-[#00FF96]" />

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { formatDuration } from '$shared/utils'
 	import { Text } from '$lib/components/common'
+	import { translate } from '$shared/i18n'
 
 	type Props = {
 		position: number
@@ -61,7 +62,7 @@
 		bind:this={barElement}
 		role="slider"
 		tabindex="0"
-		aria-label="Seek"
+		aria-label={$translate('player.waveform.label')}
 		aria-valuemin={0}
 		aria-valuemax={effectiveDuration}
 		aria-valuenow={effectivePosition}

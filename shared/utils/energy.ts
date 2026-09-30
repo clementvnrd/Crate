@@ -6,6 +6,7 @@
 export interface EnergyInfo {
 	level: number
 	symbol: string
+	/** French reference wording only: the interface shows the translated `badges.energy.levels.<level>` key. */
 	descriptor: string
 	color: string
 	bg: string

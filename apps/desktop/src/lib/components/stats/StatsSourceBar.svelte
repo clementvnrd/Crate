@@ -2,6 +2,7 @@
 	import type { StatsSummary } from '$shared/types'
 	import { language } from '$lib/stores'
 	import { formatNumber } from '$shared/utils/format'
+	import { translate } from '$shared/i18n'
 
 	type Props = {
 		summary: StatsSummary | null
@@ -94,6 +95,25 @@
 		return items.sort((a, b) => b.minutes - a.minutes)
 	})
 
+	function formatMinutes(minutes: number): string {
+		if (minutes >= 60) {
+			return $translate('stats.duration.hoursMinutes', {
+				values: { hours: formatNumber(Math.floor(minutes / 60), $language), minutes: minutes % 60 },
+			})
+		}
+		return $translate('stats.duration.minutesCompact', { values: { minutes } })
+	}
+
+	function segmentLabel(item: SourceItem): string {
+		return $translate('stats.sourceBar.segment', {
+			values: {
+				source: item.label,
+				minutes: formatNumber(item.minutes, $language),
+				percent: formatNumber(item.percentage, $language),
+			},
+		})
+	}
+
 	let totalMinutes = $derived(
 		summary?.total_minutes ?? Object.values(summary?.source_breakdown ?? {}).reduce((a, b) => a + b, 0)
 	)
@@ -103,10 +123,14 @@
 	<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 		<div class="flex items-center gap-2">
 			<div class="h-2 w-2 animate-pulse rounded-full bg-emerald-400 motion-reduce:animate-none"></div>
-			<h3 class="text-xs font-bold tracking-wider text-text-secondary uppercase">Répartition Multi-Sources</h3>
+			<h3 class="text-xs font-bold tracking-wider text-text-secondary uppercase">
+				{$translate('stats.sourceBar.title')}
+			</h3>
 		</div>
 		<span class="font-mono text-xs text-text-tertiary">
-			{totalMinutes > 0 ? `${formatNumber(totalMinutes, $language)} min d'écoute totale` : 'Aucune écoute'}
+			{totalMinutes > 0
+				? $translate('stats.sourceBar.total', { values: { total: formatNumber(totalMinutes, $language) } })
+				: $translate('stats.sourceBar.noPlays')}
 		</span>
 	</div>
 
@@ -118,8 +142,8 @@
 					class="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full {item.bgClass} cursor-pointer hover:opacity-90"
 					style="width: {item.percentage}%"
 					role="img"
-					aria-label="{item.label} : {formatNumber(item.minutes, $language)} min ({item.percentage}%)"
-					title="{item.label} : {formatNumber(item.minutes, $language)} min ({item.percentage}%)"
+					aria-label={segmentLabel(item)}
+					title={segmentLabel(item)}
 				></div>
 			{/each}
 		</div>
@@ -131,17 +155,17 @@
 					<span class="h-2.5 w-2.5 rounded-full shadow-sm" style="background-color: {item.color}"></span>
 					<span class="font-medium text-text-primary">{item.label}</span>
 					<span class="font-mono text-[11px] text-text-tertiary">
-						{item.percentage}%
+						{$translate('stats.percent', { values: { percent: formatNumber(item.percentage, $language) } })}
 					</span>
 					<span class="font-mono text-[10px] text-text-tertiary/70">
-						({item.minutes >= 60 ? `${Math.floor(item.minutes / 60)}h ${item.minutes % 60}m` : `${item.minutes}m`})
+						({formatMinutes(item.minutes)})
 					</span>
 				</div>
 			{/each}
 		</div>
 	{:else}
 		<div class="py-3 text-center text-xs text-text-tertiary">
-			Aucune donnée d'écoute multi-sources pour cette période.
+			{$translate('stats.sourceBar.empty')}
 		</div>
 	{/if}
 </div>

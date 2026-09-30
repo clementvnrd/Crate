@@ -1,3 +1,3 @@
 - [Owner visual preferences](owner-visual-preferences.md) — look frozen until CRA-141: no visible dark-theme change; keep colour families; vocabulary
 - [Charter contrast method](charter-contrast-method.md) — how contrast was computed without a harness; glass composite and accent-fill pitfalls
-- [Tooling pitfalls](tooling-pitfalls.md) — design:scan blind spots; audit overlaps ignore clipping; e2e flakes; global Enter/Space shortcuts
+- [Tooling pitfalls](tooling-pitfalls.md) — design:scan blind spots; audit overlaps ignore clipping and modals; e2e flakes; global shortcuts

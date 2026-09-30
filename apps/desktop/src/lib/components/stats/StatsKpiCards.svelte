@@ -3,6 +3,7 @@
 	import Icon from '$lib/components/common/Icon.svelte'
 	import { language } from '$lib/stores'
 	import { formatNumber } from '$shared/utils/format'
+	import { translate } from '$shared/i18n'
 
 	type Props = {
 		summary: StatsSummary | null
@@ -14,18 +15,28 @@
 	let { summary, topArtists, rekordboxSessions, isLoading }: Props = $props()
 
 	function formatTotalTime(minutes: number, locale: string): { primary: string; secondary: string } {
-		if (!minutes || minutes <= 0) return { primary: '0 min', secondary: "0 h d'écoute" }
+		if (!minutes || minutes <= 0) {
+			return {
+				primary: $translate('stats.duration.minutes', { values: { minutes: 0 } }),
+				secondary: $translate('stats.kpi.noListening'),
+			}
+		}
 		const hours = Math.floor(minutes / 60)
 		const mins = minutes % 60
+		const secondary = $translate('stats.kpi.totalMinutes', {
+			values: { count: minutes, total: formatNumber(minutes, locale) },
+		})
 		if (hours > 0) {
 			return {
-				primary: `${hours}h ${mins.toString().padStart(2, '0')}m`,
-				secondary: `${formatNumber(minutes, locale)} minutes au total`,
+				primary: $translate('stats.duration.hoursMinutes', {
+					values: { hours: formatNumber(hours, locale), minutes: mins.toString().padStart(2, '0') },
+				}),
+				secondary,
 			}
 		}
 		return {
-			primary: `${mins} min`,
-			secondary: `${formatNumber(minutes, locale)} minutes au total`,
+			primary: $translate('stats.duration.minutes', { values: { minutes: mins } }),
+			secondary,
 		}
 	}
 
@@ -46,7 +57,9 @@
 		></div>
 		<div class="flex items-start justify-between">
 			<div class="space-y-1">
-				<span class="text-xs font-semibold tracking-wider text-text-tertiary uppercase"> Temps d'Écoute </span>
+				<span class="text-xs font-semibold tracking-wider text-text-tertiary uppercase">
+					{$translate('stats.kpi.listeningTime')}
+				</span>
 				<div class="text-2xl font-black tracking-tight text-text-primary">
 					{#if isLoading && !summary}
 						<span class="inline-block h-7 w-24 animate-pulse rounded bg-surface-3 motion-reduce:animate-none"></span>
@@ -75,7 +88,9 @@
 		></div>
 		<div class="flex items-start justify-between">
 			<div class="space-y-1">
-				<span class="text-xs font-semibold tracking-wider text-text-tertiary uppercase"> Titres Joués </span>
+				<span class="text-xs font-semibold tracking-wider text-text-tertiary uppercase">
+					{$translate('stats.kpi.plays')}
+				</span>
 				<div class="text-2xl font-black tracking-tight text-text-primary">
 					{#if isLoading && !summary}
 						<span class="inline-block h-7 w-20 animate-pulse rounded bg-surface-3 motion-reduce:animate-none"></span>
@@ -83,7 +98,7 @@
 						{totalPlays}
 					{/if}
 				</div>
-				<p class="text-[11px] text-text-secondary">Écoutes cumulées</p>
+				<p class="text-[11px] text-text-secondary">{$translate('stats.kpi.playsHint')}</p>
 			</div>
 			<div
 				class="flex h-11 w-11 items-center justify-center rounded-xl border border-purple-500/30 bg-purple-500/15 text-purple-400 shadow-inner transition-transform duration-300 group-hover:scale-110"
@@ -102,7 +117,9 @@
 		></div>
 		<div class="flex items-start justify-between">
 			<div class="space-y-1">
-				<span class="text-xs font-semibold tracking-wider text-text-tertiary uppercase"> Artistes Découverts </span>
+				<span class="text-xs font-semibold tracking-wider text-text-tertiary uppercase">
+					{$translate('stats.kpi.artists')}
+				</span>
 				<div class="text-2xl font-black tracking-tight text-text-primary">
 					{#if isLoading && !summary}
 						<span class="inline-block h-7 w-16 animate-pulse rounded bg-surface-3 motion-reduce:animate-none"></span>
@@ -110,7 +127,7 @@
 						{uniqueArtistsCount}
 					{/if}
 				</div>
-				<p class="text-[11px] text-text-secondary">Créateurs & producteurs</p>
+				<p class="text-[11px] text-text-secondary">{$translate('stats.kpi.artistsHint')}</p>
 			</div>
 			<div
 				class="flex h-11 w-11 items-center justify-center rounded-xl border border-pink-500/30 bg-pink-500/15 text-pink-400 shadow-inner transition-transform duration-300 group-hover:scale-110"
@@ -129,16 +146,20 @@
 		></div>
 		<div class="flex items-start justify-between">
 			<div class="space-y-1">
-				<span class="text-xs font-semibold tracking-wider text-text-tertiary uppercase"> Sessions DJ Rekordbox </span>
+				<span class="text-xs font-semibold tracking-wider text-text-tertiary uppercase">
+					{$translate('stats.kpi.rekordboxSessions')}
+				</span>
 				<div class="text-2xl font-black tracking-tight text-text-primary">
 					{#if isLoading && !summary}
 						<span class="inline-block h-7 w-16 animate-pulse rounded bg-surface-3 motion-reduce:animate-none"></span>
 					{:else}
-						{rekordboxSessions.length}
+						{formatNumber(rekordboxSessions.length, $language)}
 					{/if}
 				</div>
 				<p class="text-[11px] text-text-secondary">
-					{rekordboxHours > 0 ? `${rekordboxHours}h de mix enregistrées` : 'Mix & Live sets'}
+					{rekordboxHours > 0
+						? $translate('stats.kpi.mixHours', { values: { hours: formatNumber(rekordboxHours, $language) } })
+						: $translate('stats.kpi.mixSets')}
 				</p>
 			</div>
 			<div

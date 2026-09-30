@@ -53,7 +53,7 @@
 			onclick={onBack}
 		>
 			<Icon name="arrow-left" class="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
-			<span>Tous les albums</span>
+			<span>{$translate('player.albums.all')}</span>
 		</button>
 
 		<button
@@ -62,7 +62,7 @@
 			onclick={() => (confirmingRemoval = true)}
 		>
 			<Icon name="trash" class="h-3.5 w-3.5" />
-			<span>Retirer l'album</span>
+			<span>{$translate('player.albums.removeConfirm')}</span>
 		</button>
 	</div>
 
@@ -83,7 +83,9 @@
 
 		<!-- Metadata & Play Controls -->
 		<div class="flex min-w-0 flex-1 flex-col justify-center">
-			<span class="text-[11px] font-bold tracking-wider text-cyan-600 uppercase dark:text-cyan-400"> Album </span>
+			<span class="text-[11px] font-bold tracking-wider text-cyan-600 uppercase dark:text-cyan-400">
+				{$translate('player.albums.typeLabel')}
+			</span>
 			<h1
 				class="mt-0.5 line-clamp-1 text-2xl font-extrabold tracking-tight text-text-primary md:text-3xl"
 				title={album.title}
@@ -104,7 +106,7 @@
 					<span>{album.year}</span>
 					<span>•</span>
 				{/if}
-				<span>{album.track_count} {album.track_count > 1 ? 'morceaux' : 'morceau'}</span>
+				<span>{$translate('player.albums.trackCount', { values: { count: album.track_count } })}</span>
 				<span>•</span>
 				<span class="font-mono">{formatDuration(album.total_duration_ms)}</span>
 			</div>
@@ -121,7 +123,7 @@
 					onclick={handlePlayAll}
 				>
 					<Icon name="play" class="h-4 w-4" fill />
-					<span>Lecture</span>
+					<span>{$translate('player.play')}</span>
 				</Button>
 
 				<button
@@ -130,7 +132,7 @@
 					onclick={handlePlayShuffle}
 				>
 					<Icon name="shuffle" class="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-					<span>Aléatoire</span>
+					<span>{$translate('player.albums.shuffle')}</span>
 				</button>
 			</div>
 		</div>
@@ -143,10 +145,10 @@
 			class="grid grid-cols-[36px_minmax(200px,2fr)_120px_120px_70px] items-center gap-3 border-b border-stroke-subtle px-3 py-2 text-[10px] font-semibold tracking-wider text-text-tertiary uppercase"
 		>
 			<span class="pl-1">#</span>
-			<span>Titre & Artiste</span>
-			<span>Format / Bitrate</span>
-			<span>BPM / Clé</span>
-			<span class="pr-2 text-right">Durée</span>
+			<span>{$translate('player.columns.titleArtist')}</span>
+			<span>{$translate('player.columns.formatBitrate')}</span>
+			<span>{$translate('player.columns.bpmKey')}</span>
+			<span class="pr-2 text-right">{$translate('player.columns.duration')}</span>
 		</div>
 
 		<!-- Tracks Rows -->

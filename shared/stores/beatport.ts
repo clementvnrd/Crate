@@ -14,6 +14,7 @@ import { settingsStore } from './settings'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { playerStore } from './player'
 import { toErrorMessage } from '../utils/errors'
+import { translate } from '../i18n'
 
 export type BeatportNavSection = 'home' | 'purchased' | 'offline' | 'favorites' | 'playlist' | 'chart' | 'artist'
 
@@ -222,11 +223,13 @@ function createBeatportStore() {
 			try {
 				const authUrl = await beatportApi.getBeatportPkceAuthUrl()
 				await openUrl(authUrl)
-				toastStore.info("Connexion ouverte dans votre navigateur. Autorisez puis collez le code ou l'URL.")
+				toastStore.info(get(translate)('beatport.toast.pkceOpened'))
 				update((s) => ({ ...s, showLoginModal: true }))
 			} catch (e) {
 				console.error('Failed to open Beatport Auth URL:', e)
-				toastStore.error(`Impossible d'ouvrir le navigateur : ${toErrorMessage(e, String(e))}`)
+				toastStore.error(
+					get(translate)('beatport.toast.browserFailed', { values: { error: toErrorMessage(e, String(e)) } })
+				)
 			}
 		},
 
@@ -240,11 +243,15 @@ function createBeatportStore() {
 					has_subscription: true,
 				}
 				saveAuth(formattedAuth)
-				toastStore.success(`Compte Beatport connecté avec succès (${formattedAuth.username})`)
+				toastStore.success(
+					get(translate)('beatport.toast.connected', { values: { username: formattedAuth.username ?? '' } })
+				)
 				update((s) => ({ ...s, auth: formattedAuth, showLoginModal: false, loading: false }))
 				await this.loadInitialData()
 			} catch (e) {
-				toastStore.error(`Échec de connexion Beatport : ${toErrorMessage(e, String(e))}`)
+				toastStore.error(
+					get(translate)('beatport.toast.loginFailed', { values: { error: toErrorMessage(e, String(e)) } })
+				)
 				update((s) => ({ ...s, loading: false, error: toErrorMessage(e, String(e)) }))
 			}
 		},
@@ -284,11 +291,15 @@ function createBeatportStore() {
 					has_subscription: true,
 				}
 				saveAuth(formattedAuth)
-				toastStore.success(`Connecté avec token Beatport (${formattedAuth.username})`)
+				toastStore.success(
+					get(translate)('beatport.toast.tokenConnected', { values: { username: formattedAuth.username ?? '' } })
+				)
 				update((s) => ({ ...s, auth: formattedAuth, showLoginModal: false, loading: false }))
 				await this.loadInitialData()
 			} catch (e) {
-				toastStore.error(`Token Beatport invalide : ${toErrorMessage(e, String(e))}`)
+				toastStore.error(
+					get(translate)('beatport.toast.tokenInvalid', { values: { error: toErrorMessage(e, String(e)) } })
+				)
 				update((s) => ({ ...s, loading: false, error: toErrorMessage(e, String(e)) }))
 			}
 		},
@@ -329,7 +340,7 @@ function createBeatportStore() {
 				}
 				update((s) => ({
 					...s,
-					error: 'Votre session Beatport a expiré. Veuillez renouveler votre connexion.',
+					error: get(translate)('errors.beatportTokenInvalid'),
 				}))
 				return null
 			}
@@ -669,7 +680,7 @@ function createBeatportStore() {
 				if (s.cart.some((t) => String(t.id) === String(track.id))) return s
 				const nextCart = [...s.cart, track]
 				saveCart(nextCart)
-				toastStore.success(`Ajouté au panier Beatport : ${track.title}`)
+				toastStore.success(get(translate)('beatport.toast.addedToCart', { values: { title: track.title } }))
 				return { ...s, cart: nextCart }
 			})
 		},
@@ -695,7 +706,7 @@ function createBeatportStore() {
 				const newTracks = tracks.filter((t) => !existingIds.has(String(t.id)))
 				const nextCart = [...s.cart, ...newTracks]
 				saveCart(nextCart)
-				toastStore.success(`${newTracks.length} morceau(x) ajouté(s) au panier Beatport`)
+				toastStore.success(get(translate)('beatport.toast.bulkAdded', { values: { count: newTracks.length } }))
 				return { ...s, cart: nextCart }
 			})
 		},
@@ -705,9 +716,9 @@ function createBeatportStore() {
 				const isFav = s.favorites.some((t) => String(t.id) === String(track.id))
 				const nextFavs = isFav ? s.favorites.filter((t) => String(t.id) !== String(track.id)) : [...s.favorites, track]
 				toastStore.info(
-					isFav
-						? `Retiré des favoris locaux : ${track.title}`
-						: `Ajouté aux favoris locaux (non synchronisés avec Beatport) : ${track.title}`
+					get(translate)(isFav ? 'beatport.toast.favoriteRemoved' : 'beatport.toast.favoriteAdded', {
+						values: { title: track.title },
+					})
 				)
 				return { ...s, favorites: nextFavs }
 			})
@@ -721,7 +732,7 @@ function createBeatportStore() {
 					track_count: 0,
 					is_public: false,
 				}
-				toastStore.info(`Playlist locale créée (non synchronisée avec Beatport) : ${name}`)
+				toastStore.info(get(translate)('beatport.toast.playlistCreated', { values: { name } }))
 				return { ...s, userPlaylists: [...s.userPlaylists, newPl] }
 			})
 		},
@@ -755,7 +766,7 @@ function createBeatportStore() {
 			const state = get({ subscribe })
 			const tracks = tracksToDownload || state.cart
 			if (tracks.length === 0) {
-				toastStore.info('Aucun morceau sélectionné pour le téléchargement')
+				toastStore.info(get(translate)('beatport.toast.nothingSelected'))
 				return
 			}
 
@@ -770,7 +781,9 @@ function createBeatportStore() {
 			for (const [index, track] of tracks.entries()) {
 				update((s) => ({
 					...s,
-					downloadProgressText: `Téléchargement ${index + 1}/${tracks.length} : ${track.title}`,
+					downloadProgressText: get(translate)('beatport.download.progress', {
+						values: { index: index + 1, total: tracks.length, title: track.title },
+					}),
 				}))
 				try {
 					const result = await beatportApi.downloadBeatportTracks([track], dest, state.beatportdlPath ?? undefined)
@@ -785,16 +798,20 @@ function createBeatportStore() {
 						failures.push(`${track.title}${result.errors.length > 0 ? ` (${result.errors[0]})` : ''}`)
 					}
 				} catch (e) {
-					failures.push(`${track.title} (${toErrorMessage(e, 'erreur inconnue')})`)
+					failures.push(`${track.title} (${toErrorMessage(e, get(translate)('beatport.download.unknownError'))})`)
 				}
 			}
 
 			update((s) => ({ ...s, isDownloading: false, downloadProgressText: null }))
 			if (succeeded > 0) {
-				toastStore.success(`${succeeded} morceau(x) téléchargé(s) en FLAC et importé(s) dans Crate`)
+				toastStore.success(get(translate)('beatport.toast.downloaded', { values: { count: succeeded } }))
 			}
 			if (failures.length > 0) {
-				toastStore.warning(`${failures.length} échec(s), restés dans le panier : ${failures.join(' ; ')}`)
+				toastStore.warning(
+					get(translate)('beatport.toast.downloadFailures', {
+						values: { count: failures.length, list: failures.join(' ; ') },
+					})
+				)
 			}
 		},
 
@@ -802,7 +819,7 @@ function createBeatportStore() {
 			const resetAuth: BeatportAuthState = defaultAuth()
 			saveAuth(resetAuth)
 			beatportApi.clearBeatportPersistedAuth().catch(() => {})
-			toastStore.info('Déconnecté de Beatport')
+			toastStore.info(get(translate)('beatport.toast.loggedOut'))
 			update((s) => ({
 				...s,
 				auth: resetAuth,

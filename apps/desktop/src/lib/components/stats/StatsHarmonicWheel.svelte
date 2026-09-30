@@ -2,6 +2,8 @@
 	import type { HarmonicStatsItem } from '$shared/types'
 	import { Icon, KeyBadge } from '$lib/components/common'
 	import { getCamelotColor } from '$shared/utils/camelot'
+	import { translate } from '$shared/i18n'
+	import { language } from '$lib/stores'
 
 	type Props = {
 		harmonicStats: HarmonicStatsItem[]
@@ -13,6 +15,9 @@
 	let sortedItems = $derived([...harmonicStats].sort((a, b) => b.plays - a.plays))
 
 	let maxPlays = $derived(Math.max(...harmonicStats.map((item) => item.plays), 1))
+
+	// One decimal, like the former toFixed(1), with the app language's decimal separator
+	let percentFormat = $derived(new Intl.NumberFormat($language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }))
 </script>
 
 <div class="flex h-full flex-col rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
@@ -22,14 +27,14 @@
 				<Icon name="disc" class="h-4 w-4" />
 			</div>
 			<div>
-				<h3 class="text-sm font-bold text-text-primary">Roue Harmonique & Tonalités</h3>
-				<p class="text-[11px] text-text-tertiary">Distribution des clés Camelot & Mixed In Key</p>
+				<h3 class="text-sm font-bold text-text-primary">{$translate('stats.harmonic.title')}</h3>
+				<p class="text-[11px] text-text-tertiary">{$translate('stats.harmonic.subtitle')}</p>
 			</div>
 		</div>
 		<span
 			class="rounded-full border border-stroke bg-surface-2 px-2 py-0.5 font-mono text-[10px] font-medium text-text-secondary"
 		>
-			{harmonicStats.length} tonalités
+			{$translate('stats.harmonic.count', { values: { count: harmonicStats.length } })}
 		</span>
 	</div>
 
@@ -41,7 +46,7 @@
 		</div>
 	{:else if harmonicStats.length === 0}
 		<div class="flex flex-1 items-center justify-center py-10 text-center text-xs text-text-tertiary">
-			Aucune donnée harmonique disponible pour cette période.
+			{$translate('stats.harmonic.empty')}
 		</div>
 	{:else}
 		<div class="max-h-[360px] flex-1 space-y-2.5 overflow-y-auto pr-1">
@@ -63,8 +68,12 @@
 						</div>
 
 						<div class="flex items-center gap-2 font-mono text-xs">
-							<span class="font-bold text-text-primary">{item.plays} plays</span>
-							<span class="text-[11px] text-text-tertiary">({item.percentage.toFixed(1)}%)</span>
+							<span class="font-bold text-text-primary"
+								>{$translate('stats.plays', { values: { count: item.plays } })}</span
+							>
+							<span class="text-[11px] text-text-tertiary"
+								>({$translate('stats.percent', { values: { percent: percentFormat.format(item.percentage) } })})</span
+							>
 						</div>
 					</div>
 

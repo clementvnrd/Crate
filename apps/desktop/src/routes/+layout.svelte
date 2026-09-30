@@ -358,7 +358,9 @@
 				}
 			} catch (err) {
 				console.error('Error opening standalone file:', err)
-				toastStore.error(`Impossible d'ouvrir le fichier audio : ${filePath.split('/').pop()}`)
+				toastStore.error(
+					$translate('library.toast.openFileFailed', { values: { name: filePath.split('/').pop() ?? filePath } })
+				)
 			}
 		}
 

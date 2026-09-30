@@ -22,7 +22,8 @@
 		"next": "Next",
 		"back": "Back",
 		"viewArtwork": "View artwork",
-		"albumArtwork": "Album artwork"
+		"albumArtwork": "Album artwork",
+		"unknownError": "Unknown error"
 	},
 	"nav": {
 		"library": "Library",
@@ -31,7 +32,19 @@
 		"tags": "Tags",
 		"viewSwitcher": "Views",
 		"player": "Player",
-		"beatport": "Beatport"
+		"beatport": "Beatport",
+		"toolbar": {
+			"mikSync": "Live-synced with Mixed In Key (click to force a sync)",
+			"duplicates": "Duplicate management",
+			"duplicatesIdle": "Duplicate Killer: duplicate management",
+			"duplicatesFound": "Duplicate Killer: {groups, plural, one {# duplicate group} other {# duplicate groups}} ({tracks, plural, one {# track} other {# tracks}})",
+			"upgraderIdle": "Beatport Quality Upgrader: upgrade to lossless FLAC",
+			"upgraderFound": "Beatport Quality Upgrader: {count, plural, one {# track} other {# tracks}} upgradable to lossless FLAC",
+			"stats": "Statistics",
+			"statsTooltip": "Crate Pulse & statistics",
+			"rekordboxXml": "Export to Rekordbox XML",
+			"rekordboxXmlTooltip": "Export the collection as Rekordbox XML (ready for CDJ / Rekordbox)"
+		}
 	},
 	"settings": {
 		"title": "Settings",
@@ -221,6 +234,23 @@
 			"checkForUpdates": "Check for Updates",
 			"upToDate": "Up to date",
 			"updateAvailable": "{version} available"
+		},
+		"beatport": {
+			"account": "Beatport account",
+			"notConnected": "Not connected",
+			"signOut": "Sign out",
+			"formatTitle": "Download format",
+			"formatHint": "Lossless FLAC only: every file is fully decoded and its length checked before it is kept.",
+			"destTitle": "Destination folder",
+			"destHint": "Local folder where downloaded FLAC files are stored.",
+			"browse": "Browse…",
+			"dialogTitle": "Choose the destination folder for FLAC files",
+			"importHint": "Downloaded FLAC files are imported into the Crate library. Their Mixed In Key analysis (key, energy, cues) is picked up automatically as soon as Mixed In Key has analysed them.",
+			"toast": {
+				"saved": "Beatport settings saved",
+				"saveFailed": "Could not save: {error}",
+				"loggedOut": "Beatport session signed out"
+			}
 		}
 	},
 	"cloudSync": {
@@ -296,7 +326,22 @@
 		"albums": {
 			"removeTitle": "Remove this album?",
 			"removeMessage": "The album is removed from the Crate player. The files on your disk are not deleted.",
-			"removeConfirm": "Remove album"
+			"removeConfirm": "Remove album",
+			"all": "All albums",
+			"typeLabel": "Album",
+			"trackCount": "{count, plural, one {# track} other {# tracks}}",
+			"shuffle": "Shuffle",
+			"title": "My albums",
+			"subtitle": "Browse your music folders as albums, with their artwork and metadata",
+			"importing": "Importing…",
+			"addFolder": "Add folder / album",
+			"loading": "Loading albums…",
+			"emptyTitle": "No albums imported",
+			"emptyHint": "Add a folder of audio files to browse your collection as albums with their embedded artwork.",
+			"addAlbumFolder": "Add an album folder",
+			"play": "Play album",
+			"removeFromList": "Remove from list",
+			"dialogTitle": "Select an album folder"
 		},
 		"waveform": {
 			"label": "Playback position",
@@ -305,7 +350,70 @@
 		"recent": {
 			"reveal": "Reveal in Finder",
 			"remove": "Remove from history",
-			"list": "Recent files"
+			"list": "Recent files",
+			"filterPlaceholder": "Filter recents (title, artist, format, key)…",
+			"clearSearch": "Clear search",
+			"clearHistory": "Clear history",
+			"loading": "Loading history…",
+			"emptyTitle": "No recent audio files",
+			"emptyHint": "Double-click an audio file in the Finder or open it with Crate to play it without cluttering your library.",
+			"noResults": "No results for “{query}”",
+			"clearFilter": "Clear filter"
+		},
+		"unknownTrack": "Unknown track",
+		"trackFallback": "Track",
+		"hero": {
+			"playPause": "Play / Pause",
+			"sourceLibrary": "Crate library",
+			"sourceExternal": "External file",
+			"harmonicMix": "Harmonic mix",
+			"harmonicMixHint": "Find compatible tracks (same key, relative, ±1h, ±4% BPM)",
+			"addToLibrary": "Add to my library",
+			"adding": "Adding…",
+			"backToStart": "Back to start",
+			"stopPlayback": "Stop playback",
+			"emptyTitle": "Crate audio player",
+			"emptyHint": "Open any audio file from the Finder to play it instantly."
+		},
+		"cues": {
+			"hotPin": "Hot Cue {number}: {name}",
+			"memoryPin": "Memory Cue: {name}",
+			"jumpTo": "Jump to Hot Cue {slot} ({name})",
+			"notSet": "Cue {slot} not set",
+			"pad": "CUE {slot}"
+		},
+		"columns": {
+			"cover": "Cover",
+			"titleArtist": "Title & artist",
+			"formatBitrate": "Format / bitrate",
+			"bpmKey": "BPM / key",
+			"duration": "Duration",
+			"lastPlayed": "Last played",
+			"actions": "Actions"
+		},
+		"trackInfo": {
+			"beatportArtist": "Beatport artist",
+			"externalFile": "External audio file",
+			"beatportFavorite": "Beatport favorite"
+		},
+		"toast": {
+			"noCamelotKey": "This track has no Camelot key set",
+			"harmonicMix": "Harmonic mix: {title} ({key}) — keys: {keys}",
+			"harmonicMixBpm": "Harmonic mix: {title} ({key} • {bpm} BPM (±4%)) — keys: {keys}",
+			"imported": "\"{title}\" added to the Crate library",
+			"importFailed": "Import failed: {error}",
+			"addToLibraryFailed": "Could not add to the Crate library",
+			"revealFailed": "Could not reveal the file in the Finder",
+			"historyCleared": "Recent files history cleared",
+			"albumTracksLoadFailed": "Could not load the album tracks",
+			"albumScanning": "Scanning the album folder…",
+			"albumImported": "Album \"{title}\" imported ({count, plural, one {# track} other {# tracks}})",
+			"albumAddFailed": "Could not add the album",
+			"albumRemoved": "Album removed from the list",
+			"albumRemoveFailed": "Could not remove the album",
+			"albumEmpty": "This album has no playable audio track",
+			"noPreviewStream": "No preview audio stream available for this track.",
+			"beatportPlaybackFailed": "Beatport playback failed"
 		}
 	},
 	"library": {
@@ -341,7 +449,19 @@
 		"track": "track",
 		"tracks": "tracks",
 		"item": "item",
-		"items": "items"
+		"items": "items",
+		"fileNotFound": "File not found",
+		"dropToImport": "Drop audio files to import",
+		"clearSearch": "Clear search",
+		"toast": {
+			"mikSyncAdded": "{count, plural, other {# imported}}",
+			"mikSyncUpdated": "{count, plural, other {# updated}}",
+			"mikSyncRemoved": "{count, plural, other {# removed}}",
+			"mikSyncUpToDate": "Up to date",
+			"mikSyncSuccess": "Mixed In Key library synced: {detail} ({total} in total)",
+			"mikSyncError": "Could not sync with the Mixed In Key library",
+			"openFileFailed": "Could not open the audio file: {name}"
+		}
 	},
 	"discovery": {
 		"addRelease": "Add Release",
@@ -482,7 +602,13 @@
 		},
 		"cancelRefresh": "Cancel metadata refresh",
 		"showTracks": "Show tracks",
-		"hideTracks": "Hide tracks"
+		"hideTracks": "Hide tracks",
+		"sourceOther": "Other",
+		"scanFailed": "Scan failed",
+		"fetchFailed": "Fetch failed",
+		"releaseArtwork": "Release artwork",
+		"mergeTarget": "Target",
+		"mergeTagCount": "{count, plural, one {# tag} other {# tags}}"
 	},
 	"filters": {
 		"title": "Filters",
@@ -513,7 +639,8 @@
 		"addTag": "Add Tag",
 		"moveToCategory": "Move to Category",
 		"noTags": "No tags",
-		"noTagCategoriesYet": "No tag categories yet"
+		"noTagCategoriesYet": "No tag categories yet",
+		"removeTag": "Remove tag"
 	},
 	"contextMenu": {
 		"viewInFinder": "View in Finder",
@@ -594,7 +721,23 @@
 		},
 		"relocate": {
 			"title": "Relocate Track",
-			"message": "Select the new location for this track."
+			"message": "Select the new location for this track.",
+			"selectFile": "Select Replacement File",
+			"selectFolder": "Select Library Root Folder",
+			"audioFiles": "Audio Files",
+			"validateFailed": "Failed to validate file",
+			"relocateFailed": "Failed to relocate track",
+			"unknownTitle": "Unknown Title",
+			"cloudWarning": "This track was added on another device. Pick the local folder that contains its library root to make it playable here.",
+			"notFound": "The file for this track could not be found at its original location.",
+			"validating": "Validating file…",
+			"unsupportedFormat": "Unsupported audio format.",
+			"matches": "File content matches! Hash verified.",
+			"mismatch": "File content does not match the original.",
+			"noOriginalHash": "No original hash available for comparison. The file may still be correct.",
+			"useAnyway": "Use this file anyway",
+			"relocating": "Relocating…",
+			"relocate": "Relocate"
 		},
 		"albumArt": "Album Art",
 		"deviceInfo": {
@@ -752,7 +895,11 @@
 		"checkpointAvailable": "A previous export can be resumed",
 		"tracksCompleted": "{count, plural, =1 {1 track completed} other {{count} tracks completed}}",
 		"filesRemaining": "{count, plural, =1 {1 file remaining} other {{count} files remaining}}",
-		"resumeFromCheckpoint": "Resume from last checkpoint"
+		"resumeFromCheckpoint": "Resume from last checkpoint",
+		"toast": {
+			"rekordboxXmlSuccess": "Rekordbox XML export complete: {count, plural, one {# track} other {# tracks}} exported with grids, keys and MIK cues!",
+			"rekordboxXmlFailed": "Rekordbox export failed: {error}"
+		}
 	},
 	"editor": {
 		"trackInfo": "Track Info",
@@ -979,7 +1126,8 @@
 			"title": "You're all set!",
 			"subtitle": "Start building your collection."
 		},
-		"getStarted": "Get Started"
+		"getStarted": "Get Started",
+		"step": "Step {step}"
 	},
 	"stats": {
 		"range": {
@@ -991,7 +1139,144 @@
 			"all": "All time"
 		},
 		"heatmap": {
-			"cell": "{day} {from} - {to}: {minutes} min of listening ({plays, plural, one {# track} other {# tracks}})"
+			"cell": "{day} {from} - {to}: {minutes} min of listening ({plays, plural, one {# play} other {# plays}})",
+			"title": "Weekly listening heatmap",
+			"subtitle": "Hourly grid, 24h × 7 days",
+			"peak": "Peak listening:",
+			"peakAt": "{day} at {hour}:00",
+			"hourTick": "{hour}h",
+			"tooltipRange": "{day} {from}:00 - {to}:00",
+			"tooltipDetail": "{minutes, plural, one {# minute} other {# minutes}} · {plays, plural, one {# play} other {# plays}}",
+			"less": "Less listening",
+			"more": "More listening"
+		},
+		"live": "Live",
+		"plays": "{count, plural, one {# play} other {# plays}}",
+		"percent": "{percent}%",
+		"duration": {
+			"minutes": "{minutes} min",
+			"minutesCompact": "{minutes}m",
+			"hoursMinutes": "{hours}h {minutes}m"
+		},
+		"header": {
+			"title": "Crate Pulse & Stats",
+			"subtitle": "Unified analysis of your Spotify, Crate and Beatport plays and Rekordbox DJ sets",
+			"liveSpotify": "Spotify live:",
+			"refresh": "Refresh statistics",
+			"live": "Live"
+		},
+		"kpi": {
+			"listeningTime": "Listening time",
+			"noListening": "0 h of listening",
+			"totalMinutes": "{count, plural, one {{total} minute in total} other {{total} minutes in total}}",
+			"plays": "Plays",
+			"playsHint": "All sources combined",
+			"artists": "Artists discovered",
+			"artistsHint": "Artists & producers",
+			"rekordboxSessions": "Rekordbox DJ sessions",
+			"mixHours": "{hours} h of mixes recorded",
+			"mixSets": "Mixes & live sets"
+		},
+		"sourceBar": {
+			"title": "Multi-source breakdown",
+			"total": "{total} min of listening in total",
+			"noPlays": "No plays",
+			"segment": "{source}: {minutes} min ({percent}%)",
+			"empty": "No multi-source listening data for this period."
+		},
+		"topTracks": {
+			"title": "Top tracks",
+			"subtitle": "Your most played tracks",
+			"count": "{count, plural, one {# track} other {# tracks}}",
+			"empty": "No plays recorded for this period."
+		},
+		"topArtists": {
+			"title": "Top artists",
+			"subtitle": "Favorite producers and artists",
+			"count": "{count, plural, one {# artist} other {# artists}}",
+			"empty": "No artists recorded for this period.",
+			"topTrack": "Top:"
+		},
+		"harmonic": {
+			"title": "Harmonic wheel & keys",
+			"subtitle": "Camelot & Mixed In Key key distribution",
+			"count": "{count, plural, one {# key} other {# keys}}",
+			"empty": "No harmonic data available for this period."
+		},
+		"bpm": {
+			"title": "Tempo distribution (BPM)",
+			"subtitle": "Tempo ranges & music styles",
+			"count": "{count, plural, one {# range} other {# ranges}}",
+			"empty": "No BPM data available for this period.",
+			"genreElectronic": "Electronic"
+		},
+		"integrations": {
+			"notConnected": "Not connected",
+			"linkedAccount": "Linked account:",
+			"defaultUser": "User",
+			"realtimePlays": "Real-time plays (OAuth2 PKCE)",
+			"nowPlaying": "Now playing",
+			"disconnect": "Disconnect",
+			"connect": "Connect",
+			"importing": "Importing…",
+			"importJson": "Import JSON",
+			"detected": "Detected",
+			"notDetected": "Not detected",
+			"djSessions": "{count, plural, one {# DJ session} other {# DJ sessions}}",
+			"rekordboxHint": "Sets, transitions and cue points",
+			"syncing": "Syncing…",
+			"syncRekordbox": "Sync Rekordbox",
+			"mikDetectorActive": "Detector active",
+			"mikHint": "Harmonic analysis & Energy Level",
+			"mikTrackerLabel": "Count plays in Mixed In Key",
+			"mikTrackerDescription": "Experimental: Mixed In Key does not report whether it is playing. A track left open (analysis included) may be counted as played.",
+			"mikTrackingOff": "Mixed In Key play tracking off",
+			"mikTracking": "Mixed In Key 11 open: tracking plays",
+			"mikWaiting": "Waiting for Mixed In Key 11"
+		},
+		"spotifyModal": {
+			"title": "Connect Spotify Pulse",
+			"subtitle": "Quick 3-step setup guide (30 s)",
+			"step1": "Open the Spotify developer portal",
+			"step2": "Create a free app",
+			"appName": "App name:",
+			"api": "API:",
+			"redirectUri": "Redirect URI:",
+			"copy": "Copy",
+			"copied": "✓ Copied",
+			"ipWarning": "Important: Spotify requires the exact IP address",
+			"ipRejects": "(and rejects",
+			"step3": "Paste your Spotify credentials below",
+			"clientId": "Spotify Client ID",
+			"required": "required",
+			"clientSecret": "Spotify Client Secret",
+			"optional": "optional but recommended",
+			"example": "e.g. {example}",
+			"secretStored": "Secret saved — leave empty to keep it",
+			"secretHint": "Click “View client secret” on your Spotify dashboard to get it",
+			"manualToggle": "Or paste the authorization code / received URL manually",
+			"manualHelp": "If the browser does not redirect automatically, paste the full URL shown in the address bar, or the authorization code, here:",
+			"manualPlaceholder": "e.g. http://127.0.0.1:8888/callback?code=AQD… or AQD…",
+			"validating": "Validating…",
+			"validate": "Validate",
+			"connect": "Connect to Spotify"
+		},
+		"toast": {
+			"loadFailed": "Could not load statistics",
+			"authorizeInBrowser": "Authorize Crate on Spotify in your browser…",
+			"connectFailed": "Could not start the Spotify connection",
+			"spotifyConnected": "Spotify account connected!",
+			"authFailed": "Spotify authentication failed",
+			"spotifyDisconnected": "Spotify disconnected",
+			"disconnectFailed": "Could not disconnect Spotify",
+			"spotifyImported": "Spotify history imported: {count, plural, one {# play} other {# plays}} ({minutes} min)",
+			"importFailed": "Could not import the Spotify archive",
+			"rekordboxSynced": "Rekordbox synced: {count, plural, one {# play recorded} other {# plays recorded}}",
+			"rekordboxFailed": "Could not sync with Rekordbox",
+			"mikToggleFailed": "Could not change Mixed In Key tracking: {error}",
+			"redirectCopied": "Redirect URI copied to the clipboard!",
+			"clientIdRequired": "Enter a valid Spotify Client ID",
+			"codeRequired": "Paste the authorization code or the redirect URL"
 		}
 	},
 	"beatport": {
@@ -1002,7 +1287,148 @@
 				"artists": "Artists",
 				"releases": "Releases"
 			},
-			"clear": "Clear search"
+			"clear": "Clear search",
+			"placeholder": "Search…",
+			"submit": "Search"
+		},
+		"title": "Beatport Streaming",
+		"signIn": "Sign in",
+		"connected": "Connected",
+		"loading": "Loading Beatport…",
+		"nav": {
+			"purchased": "Purchased tracks",
+			"offline": "Offline library",
+			"favorites": "Favorites"
+		},
+		"playlists": {
+			"title": "Playlists",
+			"create": "Create a Beatport playlist",
+			"newPlaceholder": "New playlist…",
+			"none": "No Beatport playlists",
+			"signInPrompt": "Sign in to see your playlists"
+		},
+		"gateway": {
+			"title": "Beatport Streaming integration",
+			"description": "Connect your Beatport subscription to stream your library, sync your personal playlists and download your tracks with BeatportDL, synced with Mixed In Key & Crate.",
+			"signIn": "Sign in with Beatport"
+		},
+		"session": {
+			"title": "Beatport session or connection needs renewing",
+			"renew": "Renew my Beatport session"
+		},
+		"section": {
+			"results": "Results for \"{query}\" ({count, plural, one {# track} other {# tracks}})",
+			"artist": "Artist: {name}",
+			"chart": "Chart: {name}",
+			"chartFallback": "Curated chart",
+			"playlistFallback": "Beatport playlist",
+			"favorites": "My Beatport favorites",
+			"genreTop": "Top tracks - {genre}",
+			"catalog": "Beatport catalogue tracks",
+			"showAll": "Show the whole catalogue ✕"
+		},
+		"artist": {
+			"label": "Beatport artist",
+			"back": "← Back to catalogue",
+			"matching": "Matching artists ({count, number})",
+			"viewDiscography": "View discography →",
+			"addDiscography": "Add the whole discography to the cart ({count, number})"
+		},
+		"charts": {
+			"title": "Charts & curations",
+			"trackCount": "{count, plural, one {# track} other {# tracks}}"
+		},
+		"genres": {
+			"title": "Electronic genres"
+		},
+		"table": {
+			"title": "Title & artist",
+			"genre": "Genre",
+			"date": "Date",
+			"length": "Length",
+			"key": "Key",
+			"bpm": "BPM",
+			"actions": "Actions",
+			"empty": "No tracks found in this section."
+		},
+		"track": {
+			"playPreview": "Play preview",
+			"pausePreview": "Pause preview",
+			"nowPlaying": "Now playing",
+			"addFavorite": "Add to Beatport favorites",
+			"removeFavorite": "Remove from favorites"
+		},
+		"cart": {
+			"open": "Open the cart",
+			"button": "Cart ({count, number})",
+			"title": "Beatport cart",
+			"trackCount": "{count, plural, one {# track} other {# tracks}}",
+			"totalDuration": "Total length: {duration}",
+			"close": "Close the cart",
+			"add": "Add to cart",
+			"remove": "Remove from cart",
+			"inCart": "In the cart (click to remove)",
+			"addAll": "Add all to cart ({count, number})",
+			"outputFormat": "Output format:",
+			"formatFlac": "FLAC (Lossless)",
+			"destination": "Destination:",
+			"downloading": "BeatportDL download in progress…",
+			"clear": "Clear",
+			"download": "Download as FLAC & sync MIK"
+		},
+		"login": {
+			"title": "Beatport Streaming sign-in",
+			"subtitle": "Link your Beatport account to Crate",
+			"tabs": {
+				"token": "Permanent token (recommended)",
+				"code": "Authorization code"
+			},
+			"token": {
+				"howTo": "How to get your permanent session:",
+				"openDocs": "Open api.beatport.com",
+				"step1Open": "Open",
+				"step1Click": "and click the green",
+				"step1End": "button at the top right.",
+				"step2": "Sign in with your Beatport account.",
+				"step3Open": "Open the web inspector (",
+				"step3Or": "or",
+				"step3TabBefore": "the",
+				"step3Tab": "Network tab",
+				"step4Filter": "Filter on",
+				"step4Copy": "and copy the JSON response containing",
+				"step4And": "and",
+				"label": "Paste the JSON or token here:",
+				"placeholderHint": "or paste the text starting with eyJ…",
+				"submit": "Validate and enable the permanent connection"
+			},
+			"code": {
+				"step1": "1. Click to open the official Beatport sign-in page in your browser:",
+				"open": "Open Beatport sign-in",
+				"step2": "2. Once signed in, copy the URL from your browser (or the code) and paste it here:",
+				"placeholder": "https://api.beatport.com/… or authorization code",
+				"submit": "Validate"
+			}
+		},
+		"download": {
+			"progress": "Downloading {index, number}/{total, number}: {title}",
+			"unknownError": "unknown error"
+		},
+		"toast": {
+			"pkceOpened": "Sign-in opened in your browser. Authorize, then paste the code or the URL.",
+			"browserFailed": "Could not open the browser: {error}",
+			"connected": "Beatport account connected ({username})",
+			"loginFailed": "Beatport sign-in failed: {error}",
+			"tokenConnected": "Signed in with a Beatport token ({username})",
+			"tokenInvalid": "Invalid Beatport token: {error}",
+			"addedToCart": "Added to the Beatport cart: {title}",
+			"bulkAdded": "{count, plural, one {# track added to the Beatport cart} other {# tracks added to the Beatport cart}}",
+			"favoriteRemoved": "Removed from local favorites: {title}",
+			"favoriteAdded": "Added to local favorites (not synced with Beatport): {title}",
+			"playlistCreated": "Local playlist created (not synced with Beatport): {name}",
+			"nothingSelected": "No tracks selected for download",
+			"downloaded": "{count, plural, one {# track downloaded as FLAC and imported into Crate} other {# tracks downloaded as FLAC and imported into Crate}}",
+			"downloadFailures": "{count, plural, one {# failure} other {# failures}}, kept in the cart: {list}",
+			"loggedOut": "Signed out of Beatport"
 		}
 	},
 	"badges": {
@@ -1014,7 +1440,118 @@
 		},
 		"energy": {
 			"title": "Energy {level}/10: {descriptor} (Mixed In Key)",
-			"titlePlayer": "Energy: {descriptor} ({level}/10)"
+			"titlePlayer": "Energy: {descriptor} ({level}/10)",
+			"levels": {
+				"1": "Very calm / Ambient",
+				"2": "Calm / Chill",
+				"3": "Soft / Warm-up",
+				"4": "Groovy / Progressive",
+				"5": "Dynamic / Driving",
+				"6": "Energetic / Club",
+				"7": "Powerful / Peak time",
+				"8": "Very energetic / Banger",
+				"9": "Explosive / Climax",
+				"10": "Ultra energetic / Maximum"
+			}
+		}
+	},
+	"upgrader": {
+		"header": {
+			"upgradableCount": "{count, plural, one {# track upgradable to FLAC Lossless} other {# tracks upgradable to FLAC Lossless}}"
+		},
+		"actions": {
+			"selectAll": "Select all",
+			"deselectAll": "Deselect all",
+			"refresh": "Scan again",
+			"refreshTitle": "Search for upgrades again"
+		},
+		"auth": {
+			"title": "Beatport sign-in required",
+			"body": "To find FLAC Lossless versions of your MP3s automatically and sync the official metadata, you need to be signed in to your Beatport account.",
+			"connect": "Sign in to Beatport"
+		},
+		"scanning": {
+			"title": "Scanning your library…",
+			"body": "Multi-pass high-fidelity search of the Beatport catalogue with multi-criteria scoring (≥ 75%)."
+		},
+		"empty": {
+			"title": "Your whole library is already at top quality!",
+			"body": "No MP3 to upgrade was found on Beatport. Your collection is at the best audio fidelity."
+		},
+		"refreshing": "Refreshing the search…",
+		"card": {
+			"scoreTitle": "Multi-criteria confidence score: {score}% (Title: {titleScore}/40, Artist: {artistScore}/30, Duration: {durationScore}/15, BPM: {bpmScore}/10, Key: {keyScore}/5)",
+			"match": "{score}% match",
+			"ignore": "Ignore this track",
+			"ignoreTitle": "Stop suggesting an upgrade for this track",
+			"current": "Current (MP3)",
+			"pause": "Pause",
+			"playLocal": "Play the local version",
+			"seekLocal": "Click to seek in the local audio",
+			"losslessStudio": "Lossless Studio",
+			"playPreview": "Play the Beatport preview",
+			"officialCatalogue": "Official Beatport catalogue",
+			"replace": "Replace this MP3 with the FLAC Lossless version",
+			"replaceNote": "Clean removal + synced MIK import"
+		},
+		"footer": {
+			"selected": "Selected for upgrade:",
+			"progress": "Upgrading {current}/{total} — {title}",
+			"upgrading": "Upgrading…",
+			"replace": "{count, plural, one {Replace # track with FLAC Lossless} other {Replace # tracks with FLAC Lossless}}"
+		},
+		"toast": {
+			"scanFailed": "Upgrade scan failed",
+			"ignored": "Track ignored for future upgrades",
+			"ignoreFailed": "Could not ignore the track",
+			"upgraded": "{count, plural, one {# track upgraded to FLAC Lossless!} other {# tracks upgraded to FLAC Lossless!}}",
+			"failed": "{count, plural, one {# upgrade failed.} other {# upgrades failed.}}",
+			"upgradeFailed": "Upgrade failed"
+		}
+	},
+	"duplicates": {
+		"header": {
+			"summary": "{groups, plural, one {# group} other {# groups}} ({count, plural, one {# duplicate} other {# duplicates}})"
+		},
+		"actions": {
+			"selectAll": "Select all",
+			"deselectAll": "Deselect all",
+			"refresh": "Refresh",
+			"refreshTitle": "Refresh the duplicate list"
+		},
+		"scanning": "Analysing and searching for duplicates…",
+		"empty": {
+			"title": "No duplicates found in your library!",
+			"body": "Every track is unique. Your collection is clean, optimised and ready to mix."
+		},
+		"unknownTitle": "Unknown title",
+		"match": {
+			"exactHash": "Identical audio (Blake3)",
+			"metadata": "Metadata match"
+		},
+		"group": {
+			"ignore": "Ignore this group"
+		},
+		"track": {
+			"pause": "Pause",
+			"play": "Play a preview",
+			"recommended": "Recommended track (best quality)",
+			"seek": "Click to seek in the track",
+			"cues": "{count, plural, one {# cue} other {# cues}}",
+			"markedForDeletion": "Marked for deletion",
+			"keep": "Keep this track"
+		},
+		"footer": {
+			"selected": "Selected:",
+			"deleting": "Deleting…",
+			"delete": "{count, plural, one {Delete # track (Trash)} other {Delete # tracks (Trash)}}"
+		},
+		"toast": {
+			"scanFailed": "Duplicate scan failed",
+			"groupIgnored": "Duplicate group ignored",
+			"ignoreFailed": "Could not ignore the group",
+			"deleted": "{count, plural, one {# duplicate deleted (moved to Trash)} other {# duplicates deleted (moved to Trash)}}",
+			"deleteFailed": "Could not delete the duplicates"
 		}
 	}
 }

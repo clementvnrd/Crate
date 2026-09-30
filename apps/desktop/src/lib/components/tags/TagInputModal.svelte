@@ -5,6 +5,7 @@
 	import Input from '$lib/components/common/Input.svelte'
 	import Button from '$lib/components/common/Button.svelte'
 	import Text from '$lib/components/common/Text.svelte'
+	import { translate } from '$shared/i18n'
 
 	type Props = {
 		open: boolean
@@ -51,20 +52,28 @@
 	}
 </script>
 
-<Modal {open} title="Add Tag" onClose={handleCancel} onSubmit={handleSubmit}>
+<Modal {open} title={$translate('tags.addTag')} onClose={handleCancel} onSubmit={handleSubmit}>
 	<div class="space-y-4">
 		<div>
-			<Text as="label" variant="body-2" color="secondary" class="mb-1.5 block" for="tag-category">Category</Text>
-			<Select bind:value={selectedCategoryId} options={categoryOptions} placeholder="Select a category" />
+			<Text as="label" variant="body-2" color="secondary" class="mb-1.5 block" for="tag-category"
+				>{$translate('modals.createTag.categoryLabel')}</Text
+			>
+			<Select
+				bind:value={selectedCategoryId}
+				options={categoryOptions}
+				placeholder={$translate('modals.createTag.categoryPlaceholder')}
+			/>
 		</div>
 		<div>
-			<Text as="label" variant="body-2" color="secondary" class="mb-1.5 block" for="tag-name">Tag name</Text>
-			<Input bind:value={tagName} placeholder="Enter tag name" autofocus />
+			<Text as="label" variant="body-2" color="secondary" class="mb-1.5 block" for="tag-name"
+				>{$translate('modals.createTag.tagLabel')}</Text
+			>
+			<Input bind:value={tagName} placeholder={$translate('modals.createTag.tagPlaceholder')} autofocus />
 		</div>
 	</div>
 
 	{#snippet footer()}
-		<Button variant="ghost" onclick={handleCancel}>Cancel</Button>
-		<Button variant="primary" onclick={handleSubmit} disabled={!canSubmit}>Create</Button>
+		<Button variant="ghost" onclick={handleCancel}>{$translate('common.cancel')}</Button>
+		<Button variant="primary" onclick={handleSubmit} disabled={!canSubmit}>{$translate('common.create')}</Button>
 	{/snippet}
 </Modal>

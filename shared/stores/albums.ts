@@ -1,4 +1,5 @@
 import { writable, derived, get } from 'svelte/store'
+import { translate } from '../i18n'
 import type { PlayerAlbum, PlayerAlbumTrack, StandaloneTrack } from '../types'
 import * as albumApi from '../api/album'
 import { playerStore } from './player'
@@ -57,7 +58,7 @@ function createAlbumsStore() {
 			})
 		} catch (e) {
 			console.error('Failed to load album tracks:', e)
-			toastStore.error("Impossible de charger les morceaux de l'album")
+			toastStore.error(get(translate)('player.toast.albumTracksLoadFailed'))
 		}
 	}
 
@@ -66,7 +67,7 @@ function createAlbumsStore() {
 			const selected = await open({
 				directory: true,
 				multiple: false,
-				title: "Sélectionner un dossier d'album",
+				title: get(translate)('player.albums.dialogTitle'),
 			})
 
 			if (!selected || typeof selected !== 'string') {
@@ -74,7 +75,7 @@ function createAlbumsStore() {
 			}
 
 			update((s) => ({ ...s, isAdding: true }))
-			toastStore.info("Analyse du dossier d'album en cours...")
+			toastStore.info(get(translate)('player.toast.albumScanning'))
 
 			const result = await albumApi.addPlayerAlbum(selected)
 			update((s) => {
@@ -97,10 +98,14 @@ function createAlbumsStore() {
 				}
 			})
 
-			toastStore.success(`Album "${result.album.title}" importé (${result.tracks.length} pistes)`)
+			toastStore.success(
+				get(translate)('player.toast.albumImported', {
+					values: { title: result.album.title, count: result.tracks.length },
+				})
+			)
 		} catch (e) {
 			console.error('Failed to add album:', e)
-			const errorMsg = toErrorMessage(e, "Erreur lors de l'ajout de l'album")
+			const errorMsg = toErrorMessage(e, get(translate)('player.toast.albumAddFailed'))
 			toastStore.error(String(errorMsg))
 			update((s) => ({ ...s, isAdding: false }))
 		}
@@ -119,10 +124,10 @@ function createAlbumsStore() {
 					selectedAlbumTracks: isCurrentSelected ? [] : s.selectedAlbumTracks,
 				}
 			})
-			toastStore.info('Album supprimé de la liste')
+			toastStore.info(get(translate)('player.toast.albumRemoved'))
 		} catch (e) {
 			console.error('Failed to remove album:', e)
-			toastStore.error("Erreur lors de la suppression de l'album")
+			toastStore.error(get(translate)('player.toast.albumRemoveFailed'))
 		}
 	}
 
@@ -201,7 +206,7 @@ function createAlbumsStore() {
 		}
 
 		if (tracks.length === 0) {
-			toastStore.error('Cet album ne contient aucune piste audio lisible')
+			toastStore.error(get(translate)('player.toast.albumEmpty'))
 			return
 		}
 

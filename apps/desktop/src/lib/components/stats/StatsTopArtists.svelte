@@ -4,6 +4,7 @@
 	import { appDataDir, language } from '$lib/stores'
 	import { formatNumber } from '$shared/utils/format'
 	import Icon from '$lib/components/common/Icon.svelte'
+	import { translate } from '$shared/i18n'
 
 	type Props = {
 		artists: TopArtistItem[]
@@ -11,6 +12,15 @@
 	}
 
 	let { artists, isLoading }: Props = $props()
+
+	function formatMinutes(minutes: number): string {
+		if (minutes >= 60) {
+			return $translate('stats.duration.hoursMinutes', {
+				values: { hours: formatNumber(Math.floor(minutes / 60), $language), minutes: minutes % 60 },
+			})
+		}
+		return $translate('stats.duration.minutes', { values: { minutes } })
+	}
 </script>
 
 <div class="flex h-full flex-col rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
@@ -20,14 +30,14 @@
 				<Icon name="user" class="h-4 w-4" />
 			</div>
 			<div>
-				<h3 class="text-sm font-bold text-text-primary">Top Artistes</h3>
-				<p class="text-[11px] text-text-tertiary">Producteurs et créateurs favoris</p>
+				<h3 class="text-sm font-bold text-text-primary">{$translate('stats.topArtists.title')}</h3>
+				<p class="text-[11px] text-text-tertiary">{$translate('stats.topArtists.subtitle')}</p>
 			</div>
 		</div>
 		<span
 			class="rounded-full border border-stroke bg-surface-2 px-2 py-0.5 font-mono text-[10px] font-medium text-text-secondary"
 		>
-			{artists.length} artistes
+			{$translate('stats.topArtists.count', { values: { count: artists.length } })}
 		</span>
 	</div>
 
@@ -45,7 +55,7 @@
 		</div>
 	{:else if artists.length === 0}
 		<div class="flex flex-1 items-center justify-center py-12 text-center text-xs text-text-tertiary">
-			Aucun artiste enregistré pour cette période.
+			{$translate('stats.topArtists.empty')}
 		</div>
 	{:else}
 		<div class="max-h-[440px] flex-1 space-y-1.5 divide-y divide-stroke/20 overflow-y-auto pr-1">
@@ -102,7 +112,7 @@
 						</div>
 						{#if artist.top_track}
 							<div class="flex items-center gap-1.5 text-[11px] text-text-secondary">
-								<span class="text-[10px] text-text-tertiary">Top :</span>
+								<span class="text-[10px] text-text-tertiary">{$translate('stats.topArtists.topTrack')}</span>
 								<span class="truncate text-text-secondary italic">{artist.top_track}</span>
 							</div>
 						{/if}
@@ -111,13 +121,10 @@
 					<!-- Plays & Minutes -->
 					<div class="min-w-[70px] flex-shrink-0 space-y-0.5 text-right">
 						<div class="font-mono text-xs font-bold text-text-primary">
-							{formatNumber(artist.plays, $language)}
-							{artist.plays > 1 ? 'écoutes' : 'écoute'}
+							{$translate('stats.plays', { values: { count: artist.plays } })}
 						</div>
 						<div class="font-mono text-[10px] text-text-tertiary">
-							{artist.total_minutes >= 60
-								? `${Math.floor(artist.total_minutes / 60)}h ${artist.total_minutes % 60}m`
-								: `${artist.total_minutes} min`}
+							{formatMinutes(artist.total_minutes)}
 						</div>
 					</div>
 				</div>

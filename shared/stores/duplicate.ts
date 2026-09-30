@@ -4,6 +4,7 @@ import * as duplicateApi from '../api/duplicate'
 import * as libraryApi from '../api/library'
 import { toastStore } from './toast'
 import { toErrorMessage } from '../utils/errors'
+import { translate } from '../i18n'
 
 export interface DuplicateState {
 	groups: DuplicateGroup[]
@@ -59,7 +60,7 @@ function createDuplicateStore() {
 				}))
 				return result
 			} catch (error) {
-				const errorMsg = toErrorMessage(error, 'Erreur lors du scan des doublons')
+				const errorMsg = toErrorMessage(error, get(translate)('duplicates.toast.scanFailed'))
 				update((s) => ({ ...s, loading: false, error: errorMsg }))
 				toastStore.error(errorMsg)
 				return null
@@ -183,9 +184,9 @@ function createDuplicateStore() {
 						selectedTrackIdsToDelete: nextSelected,
 					}
 				})
-				toastStore.success('Groupe de doublons ignoré')
+				toastStore.success(get(translate)('duplicates.toast.groupIgnored'))
 			} catch (error) {
-				const errorMsg = toErrorMessage(error, "Erreur lors de l'ignorance du groupe")
+				const errorMsg = toErrorMessage(error, get(translate)('duplicates.toast.ignoreFailed'))
 				toastStore.error(errorMsg)
 			}
 		},
@@ -205,12 +206,10 @@ function createDuplicateStore() {
 					await onDeleted(trackIds)
 				}
 				const count = trackIds.length
-				toastStore.success(
-					count === 1 ? '1 doublon supprimé (mis à la corbeille)' : `${count} doublons supprimés (mis à la corbeille)`
-				)
+				toastStore.success(get(translate)('duplicates.toast.deleted', { values: { count } }))
 				await this.load()
 			} catch (error) {
-				const errorMsg = toErrorMessage(error, 'Erreur lors de la suppression des doublons')
+				const errorMsg = toErrorMessage(error, get(translate)('duplicates.toast.deleteFailed'))
 				update((s) => ({ ...s, loading: false }))
 				toastStore.error(errorMsg)
 			}

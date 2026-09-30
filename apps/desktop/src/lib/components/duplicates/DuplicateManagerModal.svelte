@@ -10,7 +10,9 @@
 	} from '$shared/stores/duplicate'
 	import { playerStore, currentTrack, isPlaying, playbackPosition } from '$shared/stores/player'
 	import { libraryStore } from '$lib/stores/library'
-	import { formatBitrate, formatDurationCompact } from '$shared/utils/format'
+	import { language } from '$lib/stores'
+	import { translate } from '$shared/i18n'
+	import { formatBitrate, formatDurationCompact, formatNumber } from '$shared/utils/format'
 	import { Button, Icon, KeyBadge, Text } from '$lib/components/common'
 	import Modal from '$lib/components/common/Modal.svelte'
 
@@ -180,10 +182,9 @@
 							<span
 								class="rounded-full border border-brand-primary/30 bg-brand-primary/15 px-2.5 py-0.5 text-xs font-semibold text-brand-primary"
 							>
-								{$duplicateGroupCount} groupe{$duplicateGroupCount > 1 ? 's' : ''} ({$duplicateTrackCount} doublon{$duplicateTrackCount >
-								1
-									? 's'
-									: ''})
+								{$translate('duplicates.header.summary', {
+									values: { groups: $duplicateGroupCount, count: $duplicateTrackCount },
+								})}
 							</span>
 						{/if}
 					</div>
@@ -198,14 +199,14 @@
 						class="cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 						onclick={() => duplicateStore.selectAllDuplicates()}
 					>
-						Tout cocher
+						{$translate('duplicates.actions.selectAll')}
 					</button>
 					<button
 						type="button"
 						class="cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 						onclick={() => duplicateStore.deselectAll()}
 					>
-						Tout décocher
+						{$translate('duplicates.actions.deselectAll')}
 					</button>
 				{/if}
 
@@ -214,7 +215,7 @@
 					class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary disabled:opacity-50"
 					onclick={() => duplicateStore.load()}
 					disabled={$isDuplicateLoading}
-					title="Actualiser la liste des doublons"
+					title={$translate('duplicates.actions.refreshTitle')}
 				>
 					<Icon
 						name="refresh-cw"
@@ -222,17 +223,17 @@
 							? 'animate-spin text-brand-primary motion-reduce:animate-none'
 							: ''}"
 					/>
-					<span>Actualiser</span>
+					<span>{$translate('duplicates.actions.refresh')}</span>
 				</button>
 
 				<button
 					type="button"
 					class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 					onclick={onClose}
-					title="Fermer"
+					title={$translate('common.close')}
 				>
 					<Icon name="x" class="h-3.5 w-3.5" />
-					<span>Fermer</span>
+					<span>{$translate('common.close')}</span>
 				</button>
 			</div>
 		</div>
@@ -244,7 +245,7 @@
 					<div
 						class="h-10 w-10 animate-spin rounded-full border-3 border-brand-primary border-t-transparent motion-reduce:animate-none"
 					></div>
-					<Text variant="body-1" class="font-medium text-text-secondary">Analyse et recherche des doublons...</Text>
+					<Text variant="body-1" class="font-medium text-text-secondary">{$translate('duplicates.scanning')}</Text>
 				</div>
 			{:else if $duplicateGroups.length === 0}
 				<div class="flex h-80 flex-col items-center justify-center gap-4 px-4 text-center">
@@ -255,10 +256,10 @@
 					</div>
 					<div>
 						<Text variant="header-2" weight="bold" class="mb-1 text-text-primary">
-							Aucun doublon détecté dans votre bibliothèque !
+							{$translate('duplicates.empty.title')}
 						</Text>
 						<Text variant="body-1" class="mx-auto max-w-md text-text-secondary">
-							Toutes les pistes sont uniques. Votre collection est propre, optimisée et prête pour le mix.
+							{$translate('duplicates.empty.body')}
 						</Text>
 					</div>
 				</div>
@@ -271,7 +272,8 @@
 						<div class="mb-3 flex items-center justify-between border-b border-stroke/40 pb-2.5">
 							<div class="flex min-w-0 items-center gap-2.5">
 								<Text variant="body-2" weight="bold" class="truncate text-text-primary">
-									{group.tracks[0].artist || 'Artiste inconnu'} — {group.tracks[0].title || 'Titre inconnu'}
+									{group.tracks[0].artist || $translate('common.unknownArtist')} — {group.tracks[0].title ||
+										$translate('duplicates.unknownTitle')}
 								</Text>
 
 								{#if group.match_type === 'exact_hash'}
@@ -279,14 +281,14 @@
 										class="inline-flex shrink-0 items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-400"
 									>
 										<Icon name="sparkles" class="h-3 w-3" />
-										Audio identique (Blake3)
+										{$translate('duplicates.match.exactHash')}
 									</span>
 								{:else}
 									<span
 										class="inline-flex shrink-0 items-center gap-1 rounded-md border border-sky-500/30 bg-sky-500/15 px-2 py-0.5 text-[10px] font-medium text-sky-400"
 									>
 										<Icon name="clone" class="h-3 w-3" />
-										Correspondance métadonnées
+										{$translate('duplicates.match.metadata')}
 									</span>
 								{/if}
 							</div>
@@ -296,7 +298,7 @@
 								class="shrink-0 cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 								onclick={() => duplicateStore.ignoreGroup(group)}
 							>
-								Ignorer ce groupe
+								{$translate('duplicates.group.ignore')}
 							</button>
 						</div>
 
@@ -331,7 +333,9 @@
 														? 'border-[#00E5FF] bg-[#00E5FF] text-black shadow-md shadow-[#00E5FF]/40'
 														: 'border-stroke bg-surface-2 text-text-primary hover:border-[#00E5FF]/60 hover:bg-[#00E5FF]/15 hover:text-[#00E5FF]'}"
 													onclick={() => handleTogglePlay(track)}
-													title={isPlayingThis ? 'Mettre en pause' : 'Écouter un extrait'}
+													title={isPlayingThis
+														? $translate('duplicates.track.pause')
+														: $translate('duplicates.track.play')}
 												>
 													{#if isPlayingThis}
 														<Icon name="pause" class="h-4 w-4" fill />
@@ -343,11 +347,11 @@
 												<div class="min-w-0">
 													<div class="flex items-center gap-1.5">
 														<Text variant="body-2" weight="bold" class="truncate text-text-primary">
-															{track.title || 'Sans titre'}
+															{track.title || $translate('common.untitled')}
 														</Text>
 													</div>
 													<Text variant="caption" class="truncate text-text-secondary">
-														{track.artist || 'Artiste inconnu'}
+														{track.artist || $translate('common.unknownArtist')}
 														{track.album ? `• ${track.album}` : ''}
 													</Text>
 												</div>
@@ -358,7 +362,7 @@
 												{#if track.recommended_keep}
 													<span
 														class="cursor-default text-xs drop-shadow-[0_0_6px_rgba(251,191,36,0.6)] select-none"
-														title="Morceau recommandé (meilleure qualité)">⭐</span
+														title={$translate('duplicates.track.recommended')}>⭐</span
 													>
 												{/if}
 												<span
@@ -386,7 +390,7 @@
 													handleTogglePlay(track)
 												}
 											}}
-											title="Cliquer pour naviguer dans le morceau"
+											title={$translate('duplicates.track.seek')}
 										>
 											{#each getBarsForTrack(track.id, track.file_hash) as barHeight, barIdx (barIdx)}
 												{@const barPercent = (barIdx / 64) * 100}
@@ -452,7 +456,7 @@
 												<span
 													class="inline-flex h-[20px] items-center rounded border border-stroke/40 bg-surface-2/60 px-1.5 font-mono text-[10px] text-text-tertiary select-none"
 												>
-													{(track.sample_rate / 1000).toFixed(track.sample_rate % 1000 !== 0 ? 1 : 0)} kHz
+													{formatNumber(Math.round(track.sample_rate / 100) / 10, $language)} kHz
 												</span>
 											{/if}
 
@@ -461,7 +465,7 @@
 												<span
 													class="inline-flex h-[20px] items-center rounded border border-indigo-500/30 bg-indigo-500/15 px-1.5 font-mono text-[10px] font-medium text-indigo-300 select-none"
 												>
-													{track.cue_count} cue{track.cue_count > 1 ? 's' : ''}
+													{$translate('duplicates.track.cues', { values: { count: track.cue_count } })}
 												</span>
 											{/if}
 										</div>
@@ -489,7 +493,11 @@
 												onchange={() => duplicateStore.toggleTrackSelection(track.id)}
 												class="h-4 w-4 rounded border-stroke bg-surface-2 text-rose-500 hover:cursor-pointer focus:ring-rose-500"
 											/>
-											<span>{isSelectedForDeletion ? 'Marqué pour suppression' : 'Conserver ce morceau'}</span>
+											<span
+												>{isSelectedForDeletion
+													? $translate('duplicates.track.markedForDeletion')
+													: $translate('duplicates.track.keep')}</span
+											>
 										</label>
 									</div>
 								</div>
@@ -503,7 +511,7 @@
 		<!-- Footer -->
 		<div class="flex items-center justify-between border-t border-stroke bg-surface-2/80 px-6 py-3.5">
 			<div class="text-xs">
-				<span class="text-text-secondary">Sélectionnés :</span>
+				<span class="text-text-secondary">{$translate('duplicates.footer.selected')}</span>
 				<span class="ml-1 font-mono font-bold text-text-primary">{$selectedDuplicateCount}</span>
 			</div>
 
@@ -513,7 +521,7 @@
 					class="cursor-pointer rounded-lg border border-stroke/50 bg-surface-2 px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 					onclick={onClose}
 				>
-					Fermer
+					{$translate('common.close')}
 				</button>
 
 				<Button
@@ -524,10 +532,10 @@
 				>
 					{#if isDeleting}
 						<Icon name="refresh-cw" class="mr-2 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-						Suppression en cours...
+						{$translate('duplicates.footer.deleting')}
 					{:else}
 						<Icon name="trash" class="mr-2 h-3.5 w-3.5" />
-						Supprimer les {$selectedDuplicateCount} morceau{$selectedDuplicateCount > 1 ? 'x' : ''} (Corbeille)
+						{$translate('duplicates.footer.delete', { values: { count: $selectedDuplicateCount } })}
 					{/if}
 				</Button>
 			</div>

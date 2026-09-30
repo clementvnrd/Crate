@@ -119,8 +119,8 @@ export interface ViewSpec {
 	landmark: (page: Page) => Locator
 }
 
-// Several toolbar buttons carry French `aria-label`s that are hard-coded in Toolbar.svelte; when those become
-// translated, update the names below.
+// Toolbar buttons are named through i18n (`nav.toolbar.*`), so the names below cover English and French. The
+// Upgrader button keeps its product name in both languages.
 export const VIEWS: ViewSpec[] = [
 	{
 		id: 'library',
@@ -145,7 +145,7 @@ export const VIEWS: ViewSpec[] = [
 	},
 	{
 		id: 'pulse',
-		open: (page) => page.getByRole('button', { name: 'Statistiques' }).click(),
+		open: (page) => page.getByRole('button', { name: /^(Statistics|Statistiques)$/ }).click(),
 		landmark: (page) => page.getByRole('heading', { name: 'Crate Pulse & Stats' }),
 	},
 	{
@@ -157,7 +157,7 @@ export const VIEWS: ViewSpec[] = [
 	},
 	{
 		id: 'duplicates',
-		open: (page) => page.getByRole('button', { name: 'Gestion des doublons' }).click(),
+		open: (page) => page.getByRole('button', { name: /^(Duplicate management|Gestion des doublons)$/ }).click(),
 		landmark: (page) => page.locator('dialog[open]').getByText('Duplicate Killer'),
 	},
 	{

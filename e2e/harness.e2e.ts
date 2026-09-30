@@ -71,7 +71,7 @@ test('appearance parameters reach the app', async ({ page }) => {
 test('?beatport=out starts logged out, the default is logged in', async ({ page }) => {
 	await start(page, { params: { beatport: 'out' } })
 	await page.locator('#wizard-view-switcher button', { hasText: 'Beatport' }).click()
-	await expect(page.getByRole('button', { name: /Se connecter avec Beatport/ })).toBeVisible()
+	await expect(page.getByRole('button', { name: /Sign in with Beatport|Se connecter avec Beatport/ })).toBeVisible()
 
 	await page.goto(harnessUrl())
 	await waitForApp(page)

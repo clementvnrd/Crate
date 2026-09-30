@@ -9,6 +9,7 @@
 	import * as libraryApi from '$shared/api/library'
 	import { missingTracksStore, cloudSyncStore } from '$lib/stores'
 	import type { Track, FileMatchResult } from '$shared/types'
+	import { translate } from '$shared/i18n'
 
 	type Props = {
 		open: boolean
@@ -46,10 +47,10 @@
 		const selected = await withNativeDialog(() =>
 			open({
 				multiple: false,
-				title: 'Select Replacement File',
+				title: $translate('modals.relocate.selectFile'),
 				filters: [
 					{
-						name: 'Audio Files',
+						name: $translate('modals.relocate.audioFiles'),
 						extensions: ['mp3', 'wav', 'aiff', 'aif', 'flac', 'm4a', 'aac'],
 					},
 				],
@@ -69,7 +70,7 @@
 			open({
 				directory: true,
 				multiple: false,
-				title: 'Select Library Root Folder',
+				title: $translate('modals.relocate.selectFolder'),
 			})
 		)
 
@@ -89,7 +90,7 @@
 		try {
 			validationResult = await libraryApi.validateReplacementFile(track.id, selectedPath)
 		} catch (e) {
-			error = toErrorMessage(e, 'Failed to validate file')
+			error = toErrorMessage(e, $translate('modals.relocate.validateFailed'))
 		} finally {
 			validating = false
 		}
@@ -118,7 +119,7 @@
 				onClose()
 			}
 		} catch (e) {
-			error = toErrorMessage(e, 'Failed to relocate track')
+			error = toErrorMessage(e, $translate('modals.relocate.relocateFailed'))
 		} finally {
 			relocating = false
 		}
@@ -132,11 +133,11 @@
 		return validationResult.matches || forceRelocate
 	})
 
-	const displayTitle = $derived(track?.title || 'Unknown Title')
-	const displayArtist = $derived(track?.artist || 'Unknown Artist')
+	const displayTitle = $derived(track?.title || $translate('modals.relocate.unknownTitle'))
+	const displayArtist = $derived(track?.artist || $translate('common.unknownArtist'))
 </script>
 
-<Modal open={isOpen} title="Relocate Track" {onClose}>
+<Modal open={isOpen} title={$translate('modals.relocate.title')} {onClose}>
 	<div class="space-y-4">
 		<!-- Track Info -->
 		<div class="rounded-md bg-surface-2 p-3">
@@ -154,10 +155,9 @@
 			<Icon name="warning" class="h-5 w-5 flex-shrink-0 text-warning" />
 			<Text color="warning">
 				{#if isCloudSynced}
-					This track was added on another device. Pick the local folder that contains its library root to make it
-					playable here.
+					{$translate('modals.relocate.cloudWarning')}
 				{:else}
-					The file for this track could not be found at its original location.
+					{$translate('modals.relocate.notFound')}
 				{/if}
 			</Text>
 		</div>
@@ -167,12 +167,12 @@
 			{#if isCloudSynced}
 				<Button variant="secondary" onclick={handleSelectFolder} class="w-full">
 					<Icon name="folder-open" class="mr-2 h-4 w-4" />
-					Select Library Root Folder
+					{$translate('modals.relocate.selectFolder')}
 				</Button>
 			{:else}
 				<Button variant="secondary" onclick={handleSelectFile} class="w-full">
 					<Icon name="folder" class="mr-2 h-4 w-4" />
-					Select Replacement File
+					{$translate('modals.relocate.selectFile')}
 				</Button>
 			{/if}
 
@@ -189,29 +189,27 @@
 				<div
 					class="h-4 w-4 animate-spin rounded-full border-2 border-brand-primary border-t-transparent motion-reduce:animate-none"
 				></div>
-				Validating file...
+				{$translate('modals.relocate.validating')}
 			</div>
 		{:else if !isCloudSynced && validationResult}
 			{#if !validationResult.format_valid}
 				<div class="flex gap-2 rounded-md border border-red-500/20 bg-red-500/10 p-3">
 					<Icon name="close" class="h-5 w-5 flex-shrink-0 text-red-500" />
-					<Text color="danger">Unsupported audio format.</Text>
+					<Text color="danger">{$translate('modals.relocate.unsupportedFormat')}</Text>
 				</div>
 			{:else if validationResult.matches}
 				<div class="flex gap-2 rounded-md border border-green-500/20 bg-green-500/10 p-3">
 					<Icon name="check" class="h-5 w-5 flex-shrink-0 text-green-500" />
-					<Text color="success">File content matches! Hash verified.</Text>
+					<Text color="success">{$translate('modals.relocate.matches')}</Text>
 				</div>
 			{:else}
 				<div class="space-y-3">
 					<div class="flex gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 p-3">
 						<Icon name="warning" class="h-5 w-5 flex-shrink-0 text-amber-500" />
 						<div>
-							<Text weight="medium" color="warning">File content does not match the original.</Text>
+							<Text weight="medium" color="warning">{$translate('modals.relocate.mismatch')}</Text>
 							{#if !validationResult.original_hash}
-								<Text size="xs" color="warning" class="mt-1"
-									>No original hash available for comparison. The file may still be correct.</Text
-								>
+								<Text size="xs" color="warning" class="mt-1">{$translate('modals.relocate.noOriginalHash')}</Text>
 							{/if}
 						</div>
 					</div>
@@ -222,7 +220,7 @@
 							bind:checked={forceRelocate}
 							class="h-4 w-4 rounded border-stroke bg-surface-2 text-brand-primary focus:ring-brand-primary focus:ring-offset-0"
 						/>
-						<Text color="secondary" as="span">Use this file anyway</Text>
+						<Text color="secondary" as="span">{$translate('modals.relocate.useAnyway')}</Text>
 					</label>
 				</div>
 			{/if}
@@ -238,12 +236,12 @@
 	</div>
 
 	{#snippet footer()}
-		<Button variant="ghost" onclick={onClose} disabled={relocating}>Cancel</Button>
+		<Button variant="ghost" onclick={onClose} disabled={relocating}>{$translate('common.cancel')}</Button>
 		<Button variant="primary" onclick={handleRelocate} disabled={!canRelocate()}>
 			{#if relocating}
-				Relocating...
+				{$translate('modals.relocate.relocating')}
 			{:else}
-				Relocate
+				{$translate('modals.relocate.relocate')}
 			{/if}
 		</Button>
 	{/snippet}

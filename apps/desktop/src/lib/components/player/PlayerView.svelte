@@ -20,6 +20,7 @@
 		uiStore,
 		currentCues,
 		currentWaveformBars,
+		language,
 	} from '$lib/stores'
 	import type { StandaloneTrack, Cue } from '$shared/types'
 	import * as libraryApi from '$shared/api/library'
@@ -32,6 +33,7 @@
 		formatKey,
 		formatBitrate,
 		formatDate,
+		formatNumber,
 		getHarmonicKeys,
 	} from '$shared/utils'
 	import { translate } from '$shared/i18n'
@@ -162,7 +164,7 @@
 
 	async function handleHarmonicMatch() {
 		if (!activeHeroTrack?.key) {
-			toastStore.warning("Ce morceau n'a pas de tonalité Camelot définie")
+			toastStore.warning($translate('player.toast.noCamelotKey'))
 			return
 		}
 
@@ -185,9 +187,17 @@
 
 		uiStore.setActiveView('library')
 
-		const bpmInfo = currentBpm ? ` • ${Math.round(currentBpm)} BPM (±4%)` : ''
+		const mixValues = {
+			title: activeHeroTrack.title || $translate('player.trackFallback'),
+			key: formatKey(activeHeroTrack.key, 'camelot'),
+			keys: compatibleKeys.join(', '),
+		}
 		toastStore.success(
-			`Mix Harmonique : ${activeHeroTrack.title || 'Piste'} (${formatKey(activeHeroTrack.key, 'camelot')}${bpmInfo}) — Clés : ${compatibleKeys.join(', ')}`
+			currentBpm
+				? $translate('player.toast.harmonicMixBpm', {
+						values: { ...mixValues, bpm: formatNumber(Math.round(currentBpm), $language) },
+					})
+				: $translate('player.toast.harmonicMix', { values: mixValues })
 		)
 	}
 
@@ -292,13 +302,17 @@
 				await recentTracksStore.removeTrack(imported.id)
 				// Update the source store: the hero track is a $derived value and must not be mutated
 				playerStore.markStandaloneInLibrary(imported.file_path)
-				toastStore.success(`"${imported.title || 'Morceau'}" ajouté à la bibliothèque Crate`)
+				toastStore.success(
+					$translate('player.toast.imported', {
+						values: { title: imported.title || $translate('player.trackFallback') },
+					})
+				)
 			} else if (res.errors.length > 0) {
-				toastStore.error(`Échec de l'import: ${res.errors[0]}`)
+				toastStore.error($translate('player.toast.importFailed', { values: { error: res.errors[0] } }))
 			}
 		} catch (err) {
 			console.error('Import standalone track error:', err)
-			toastStore.error("Erreur lors de l'ajout à la bibliothèque Crate")
+			toastStore.error($translate('player.toast.addToLibraryFailed'))
 		} finally {
 			isImporting = false
 		}
@@ -309,7 +323,7 @@
 			await revealItemInDir(filePath)
 		} catch (err) {
 			console.error('Reveal in finder error:', err)
-			toastStore.error('Impossible de révéler le fichier dans le Finder')
+			toastStore.error($translate('player.toast.revealFailed'))
 		}
 	}
 
@@ -355,12 +369,13 @@
 
 	async function handleClearRecent() {
 		await recentTracksStore.clear()
-		toastStore.info('Historique des fichiers récents effacé')
+		toastStore.info($translate('player.toast.historyCleared'))
 	}
 
 	function formatSampleRateDisplay(sr: number | null | undefined): string {
 		if (!sr) return '-'
-		const khz = (sr / 1000).toFixed(sr % 1000 === 0 ? 0 : 1)
+		// Same rounding as before (one decimal, none for whole kHz), with the app language's decimal separator
+		const khz = formatNumber(Math.round(sr / 100) / 10, $language)
 		return `${khz} kHz`
 	}
 </script>
@@ -405,7 +420,7 @@
 						{#if heroArtworkUrl}
 							<img
 								src={heroArtworkUrl}
-								alt="Artwork"
+								alt={$translate('common.albumArtwork')}
 								class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
 							/>
 						{:else}
@@ -419,7 +434,7 @@
 							type="button"
 							class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/30 opacity-0 backdrop-blur-xs transition-opacity duration-200 group-hover:opacity-100"
 							onclick={handleTogglePlayPause}
-							aria-label="Play / Pause"
+							aria-label={$translate('player.hero.playPause')}
 						>
 							<div
 								class="flex h-14 w-14 items-center justify-center rounded-full bg-cyan-400 text-black shadow-lg shadow-cyan-400/50 transition-transform group-hover:scale-105 active:scale-95"
@@ -441,14 +456,14 @@
 										class="inline-flex items-center gap-1 rounded-full border border-brand-primary/30 bg-brand-primary/15 px-2.5 py-0.5 text-[10px] font-semibold text-brand-primary"
 									>
 										<Icon name="library" class="h-2.5 w-2.5" />
-										Bibliothèque Crate
+										{$translate('player.hero.sourceLibrary')}
 									</span>
 								{:else}
 									<span
 										class="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-300"
 									>
 										<Icon name="hard-drive" class="h-2.5 w-2.5" />
-										Fichier externe
+										{$translate('player.hero.sourceExternal')}
 									</span>
 								{/if}
 
@@ -497,10 +512,10 @@
 											type="button"
 											class="inline-flex cursor-pointer items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold text-purple-600 shadow-xs transition-all hover:scale-105 hover:bg-purple-500/25 active:scale-95 dark:text-purple-300"
 											onclick={handleHarmonicMatch}
-											title="Trouver les morceaux compatibles (Même clé, relative, ±1h, ±4% BPM)"
+											title={$translate('player.hero.harmonicMixHint')}
 										>
 											<Icon name="sparkles" class="h-3 w-3 text-purple-500 dark:text-purple-300" />
-											<span>Mix Harmonique</span>
+											<span>{$translate('player.hero.harmonicMix')}</span>
 										</button>
 									</div>
 								{/if}
@@ -527,16 +542,18 @@
 											name={isImporting ? 'loader' : 'plus'}
 											class="h-3.5 w-3.5 {isImporting ? 'animate-spin motion-reduce:animate-none' : ''}"
 										/>
-										<span>{isImporting ? 'Ajout...' : 'Ajouter à ma bibliothèque'}</span>
+										<span
+											>{isImporting ? $translate('player.hero.adding') : $translate('player.hero.addToLibrary')}</span
+										>
 									</button>
 								{/if}
 
-								<Tooltip text="Révéler dans le Finder" position="bottom">
+								<Tooltip text={$translate('player.recent.reveal')} position="bottom">
 									<button
 										type="button"
 										class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-secondary transition-all hover:bg-surface-3 hover:text-text-primary active:scale-95"
 										onclick={() => handleRevealInFinder(activeHeroTrack.file_path)}
-										aria-label="Révéler dans le Finder"
+										aria-label={$translate('player.recent.reveal')}
 									>
 										<Icon name="folder-open" class="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
 									</button>
@@ -550,10 +567,12 @@
 								class="line-clamp-1 text-2xl font-bold tracking-tight text-text-primary"
 								title={activeHeroTrack.title || activeHeroTrack.file_path}
 							>
-								{activeHeroTrack.title || activeHeroTrack.file_path.split('/').pop() || 'Morceau Inconnu'}
+								{activeHeroTrack.title ||
+									activeHeroTrack.file_path.split('/').pop() ||
+									$translate('player.unknownTrack')}
 							</h1>
 							<p class="mt-0.5 line-clamp-1 text-base font-medium text-text-secondary">
-								{activeHeroTrack.artist || 'Artiste inconnu'}
+								{activeHeroTrack.artist || $translate('common.unknownArtist')}
 								{#if activeHeroTrack.album}
 									<span class="font-normal text-text-tertiary"> — {activeHeroTrack.album}</span>
 								{/if}
@@ -616,8 +635,13 @@
 													e.stopPropagation()
 													playerStore.jumpToCue(cue)
 												}}
-												title="{cue.cue_type === 'hot' ? `Hot Cue ${cueNum}` : 'Memory Cue'} : {cue.name ||
-													formatDuration(cue.position_ms)}"
+												title={cue.cue_type === 'hot'
+													? $translate('player.cues.hotPin', {
+															values: { number: cueNum, name: cue.name || formatDuration(cue.position_ms) },
+														})
+													: $translate('player.cues.memoryPin', {
+															values: { name: cue.name || formatDuration(cue.position_ms) },
+														})}
 											>
 												<div
 													class="flex h-3.5 w-3.5 items-center justify-center rounded-xs border border-amber-200 bg-amber-400 text-[8px] font-black text-black shadow-[0_0_8px_rgba(251,191,36,0.9)]"
@@ -664,10 +688,14 @@
 										onclick={() => handleCuePadClick(pad.slot, pad.cue)}
 										disabled={!pad.cue}
 										title={pad.cue
-											? `Sauter au Hot Cue ${pad.slot} (${pad.cue.name || formatDuration(pad.cue.position_ms)})`
-											: `Cue ${pad.slot} non défini`}
+											? $translate('player.cues.jumpTo', {
+													values: { slot: pad.slot, name: pad.cue.name || formatDuration(pad.cue.position_ms) },
+												})
+											: $translate('player.cues.notSet', { values: { slot: pad.slot } })}
 									>
-										<span class="font-mono text-[11px] leading-none font-extrabold">CUE {pad.slot}</span>
+										<span class="font-mono text-[11px] leading-none font-extrabold"
+											>{$translate('player.cues.pad', { values: { slot: pad.slot } })}</span
+										>
 										<span class="mt-0.5 font-mono text-[9px] tabular-nums opacity-90">
 											{pad.cue ? formatDuration(pad.cue.position_ms) : '--:--'}
 										</span>
@@ -681,7 +709,7 @@
 									type="button"
 									class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-secondary shadow-xs transition-all hover:bg-surface-3 hover:text-text-primary active:scale-95"
 									onclick={() => handleSeek(0)}
-									title="Revenir au début"
+									title={$translate('player.hero.backToStart')}
 								>
 									<Icon name="skip-back" class="h-4 w-4" fill />
 								</button>
@@ -690,7 +718,7 @@
 									type="button"
 									class="flex h-[52px] w-[52px] cursor-pointer items-center justify-center rounded-full bg-cyan-400 text-black shadow-lg shadow-cyan-400/40 transition-all hover:brightness-110 active:scale-95"
 									onclick={handleTogglePlayPause}
-									title={isCurrentPlayingInHero ? 'Pause' : 'Lecture'}
+									title={isCurrentPlayingInHero ? $translate('player.pause') : $translate('player.play')}
 								>
 									<Icon name={isCurrentPlayingInHero ? 'pause' : 'play'} class="ml-0.5 h-7 w-7" fill />
 								</button>
@@ -699,7 +727,7 @@
 									type="button"
 									class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-stroke-subtle bg-surface-2 text-text-secondary shadow-xs transition-all hover:bg-surface-3 hover:text-text-primary active:scale-95"
 									onclick={handleStop}
-									title="Arrêter la lecture"
+									title={$translate('player.hero.stopPlayback')}
 								>
 									<Icon name="stop" class="h-4 w-4" fill />
 								</button>
@@ -717,9 +745,9 @@
 							<Icon name="disc" class="h-10 w-10 opacity-80" />
 						</div>
 						<div>
-							<h2 class="text-xl font-bold text-text-primary">Lecteur Audio Crate</h2>
+							<h2 class="text-xl font-bold text-text-primary">{$translate('player.hero.emptyTitle')}</h2>
 							<p class="mt-1 text-sm text-text-secondary">
-								Ouvrez n'importe quel fichier audio depuis le Finder pour l'écouter instantanément.
+								{$translate('player.hero.emptyHint')}
 							</p>
 						</div>
 					</div>
@@ -744,7 +772,7 @@
 				<div class="flex min-w-0 flex-1 items-center gap-4">
 					<div class="flex flex-shrink-0 items-center gap-2.5">
 						<Icon name="disc" class="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-						<h2 class="text-sm font-bold text-text-primary">Fichiers Récents</h2>
+						<h2 class="text-sm font-bold text-text-primary">{$translate('player.recent.list')}</h2>
 					</div>
 
 					<!-- Barre de recherche instantanée -->
@@ -752,7 +780,7 @@
 						<Icon name="search" class="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-text-tertiary" />
 						<input
 							type="text"
-							placeholder="Filtrer les récents (titre, artiste, format, clé)..."
+							placeholder={$translate('player.recent.filterPlaceholder')}
 							bind:value={recentSearchQuery}
 							class="h-7 w-full rounded-full border border-stroke-subtle bg-surface-2/80 pr-7 pl-8 text-xs text-text-primary transition-all placeholder:text-text-tertiary focus:border-cyan-500 focus:bg-surface-2 focus:outline-hidden"
 						/>
@@ -761,7 +789,7 @@
 								type="button"
 								class="absolute right-2 flex h-4 w-4 cursor-pointer items-center justify-center rounded-full text-text-tertiary hover:text-text-primary"
 								onclick={() => (recentSearchQuery = '')}
-								aria-label="Effacer la recherche"
+								aria-label={$translate('player.recent.clearSearch')}
 							>
 								<Icon name="x" class="h-3 w-3" />
 							</button>
@@ -776,7 +804,7 @@
 						onclick={handleClearRecent}
 					>
 						<Icon name="trash" class="h-3 w-3" />
-						<span>Effacer l'historique</span>
+						<span>{$translate('player.recent.clearHistory')}</span>
 					</button>
 				{/if}
 			</div>
@@ -786,14 +814,14 @@
 				class="grid grid-cols-[32px_36px_minmax(160px,2fr)_minmax(0,1.2fr)_110px_110px_64px_130px_60px] items-center gap-3 border-t border-stroke-subtle px-3 py-1 text-[10px] font-semibold tracking-wider text-text-tertiary uppercase"
 			>
 				<span class="pl-1">#</span>
-				<span>Cover</span>
-				<span>Titre & Artiste</span>
-				<span>Album</span>
-				<span>Format</span>
-				<span>BPM / Clé</span>
-				<span class="text-right">Durée</span>
-				<span>Dernière lecture</span>
-				<span class="pr-1 text-right">Actions</span>
+				<span>{$translate('player.columns.cover')}</span>
+				<span>{$translate('player.columns.titleArtist')}</span>
+				<span>{$translate('library.columns.album')}</span>
+				<span>{$translate('library.columns.format')}</span>
+				<span>{$translate('player.columns.bpmKey')}</span>
+				<span class="text-right">{$translate('player.columns.duration')}</span>
+				<span>{$translate('player.columns.lastPlayed')}</span>
+				<span class="pr-1 text-right">{$translate('player.columns.actions')}</span>
 			</div>
 		</div>
 
@@ -865,10 +893,10 @@
 								<div
 									class="truncate font-semibold text-text-primary transition-colors group-hover:text-cyan-600 dark:group-hover:text-cyan-400"
 								>
-									{track.title || track.file_path.split('/').pop() || 'Morceau inconnu'}
+									{track.title || track.file_path.split('/').pop() || $translate('player.unknownTrack')}
 								</div>
 								<div class="truncate text-[11px] text-text-secondary">
-									{track.artist || 'Artiste inconnu'}
+									{track.artist || $translate('common.unknownArtist')}
 								</div>
 							</div>
 
@@ -907,7 +935,7 @@
 
 							<!-- Last Played -->
 							<div class="truncate text-[11px] text-text-tertiary">
-								{track.last_played_at ? formatDate(track.last_played_at, 'locale') : '-'}
+								{track.last_played_at ? formatDate(track.last_played_at, 'locale', $language) : '-'}
 							</div>
 
 							<!-- Actions (shown on hover, or while one of them has keyboard focus) -->
@@ -947,7 +975,7 @@
 				{#if $recentTracksLoading}
 					<div class="flex h-32 items-center justify-center gap-2 text-text-tertiary">
 						<Spinner icon="loader" class="h-4 w-4" color="current" />
-						<span class="text-xs">Chargement de l'historique...</span>
+						<span class="text-xs">{$translate('player.recent.loading')}</span>
 					</div>
 				{:else if $recentStandaloneTracks.length === 0}
 					<!-- Empty State -->
@@ -957,10 +985,9 @@
 						>
 							<Icon name="disc" class="h-6 w-6" />
 						</div>
-						<h3 class="text-sm font-semibold text-text-primary">Aucun fichier audio récent</h3>
+						<h3 class="text-sm font-semibold text-text-primary">{$translate('player.recent.emptyTitle')}</h3>
 						<p class="mt-1 max-w-sm text-xs text-text-tertiary">
-							Double-cliquez sur un fichier audio dans le Finder ou ouvrez-le avec Crate pour l'écouter directement sans
-							encombrer votre bibliothèque.
+							{$translate('player.recent.emptyHint')}
 						</p>
 					</div>
 				{:else if filteredRecentTracks.length === 0}
@@ -971,13 +998,15 @@
 						>
 							<Icon name="search" class="h-5 w-5" />
 						</div>
-						<h3 class="text-xs font-semibold text-text-primary">Aucun résultat pour « {recentSearchQuery} »</h3>
+						<h3 class="text-xs font-semibold text-text-primary">
+							{$translate('player.recent.noResults', { values: { query: recentSearchQuery } })}
+						</h3>
 						<button
 							type="button"
 							class="mt-2 cursor-pointer text-xs text-cyan-600 hover:underline dark:text-cyan-400"
 							onclick={() => (recentSearchQuery = '')}
 						>
-							Effacer le filtre
+							{$translate('player.recent.clearFilter')}
 						</button>
 					</div>
 				{/if}

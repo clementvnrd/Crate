@@ -52,30 +52,36 @@
 
 	let sectionTitle = $derived.by(() => {
 		if ($beatportStore.searchQuery.trim()) {
-			return `Résultats pour "${$beatportStore.searchQuery}" (${displayTracks.length} titres)`
+			return $translate('beatport.section.results', {
+				values: { query: $beatportStore.searchQuery, count: displayTracks.length },
+			})
 		}
 		if ($beatportStore.navSection === 'artist') {
-			return `Artiste : ${$beatportStore.selectedArtistName || 'Artiste Beatport'}`
+			return $translate('beatport.section.artist', {
+				values: { name: $beatportStore.selectedArtistName || $translate('beatport.artist.label') },
+			})
 		}
 		if ($beatportStore.navSection === 'chart') {
-			return `Chart : ${$beatportStore.selectedChartTitle || 'Curated Chart'}`
+			return $translate('beatport.section.chart', {
+				values: { name: $beatportStore.selectedChartTitle || $translate('beatport.section.chartFallback') },
+			})
 		}
 		if ($beatportStore.navSection === 'playlist') {
-			return $beatportStore.selectedPlaylistName || 'Playlist Beatport'
+			return $beatportStore.selectedPlaylistName || $translate('beatport.section.playlistFallback')
 		}
 		if ($beatportStore.navSection === 'favorites') {
-			return 'Mes Favoris Beatport'
+			return $translate('beatport.section.favorites')
 		}
 		if ($beatportStore.navSection === 'purchased') {
-			return 'Titres achetés (Purchases)'
+			return $translate('beatport.nav.purchased')
 		}
 		if ($beatportStore.navSection === 'offline') {
-			return 'Bibliothèque Hors-Ligne (Offline)'
+			return $translate('beatport.nav.offline')
 		}
 		if ($beatportStore.selectedGenreName) {
-			return `Top Tracks - ${$beatportStore.selectedGenreName}`
+			return $translate('beatport.section.genreTop', { values: { genre: $beatportStore.selectedGenreName } })
 		}
-		return 'Beatport Catalog Tracks'
+		return $translate('beatport.section.catalog')
 	})
 </script>
 
@@ -93,7 +99,7 @@
 		>
 			<div class="flex items-center gap-2.5">
 				<Icon name="beatport" class="h-5 w-5 text-text-primary" />
-				<h1 class="text-base font-bold text-text-primary">Beatport Streaming</h1>
+				<h1 class="text-base font-bold text-text-primary">{$translate('beatport.title')}</h1>
 			</div>
 
 			{#if $beatportStore.auth.is_authenticated}
@@ -103,7 +109,7 @@
 						<Icon name="search" class="absolute left-2.5 h-3.5 w-3.5 text-text-tertiary" />
 						<input
 							type="text"
-							placeholder="Rechercher..."
+							placeholder={$translate('beatport.search.placeholder')}
 							bind:value={searchInput}
 							class="h-8 w-64 rounded-l-lg border border-stroke bg-surface-2 pr-3 pl-8 text-xs text-text-primary placeholder:text-text-tertiary focus:border-emerald-500 focus:outline-none"
 						/>
@@ -129,7 +135,7 @@
 						press
 						class="h-8 px-3.5 text-xs"
 					>
-						Rechercher
+						{$translate('beatport.search.submit')}
 					</Button>
 
 					{#if $beatportStore.searchQuery.trim()}
@@ -148,10 +154,10 @@
 							type="button"
 							class="ml-2 flex flex-shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-bold text-emerald-400 shadow-md shadow-emerald-500/10 transition-all hover:bg-emerald-500/20 active:scale-95"
 							onclick={() => (isCartOpen = true)}
-							title="Ouvrir le panier"
+							title={$translate('beatport.cart.open')}
 						>
 							<Icon name="cart" class="h-4 w-4 text-emerald-400" />
-							<span>Panier ({$beatportCartCount})</span>
+							<span>{$translate('beatport.cart.button', { values: { count: $beatportCartCount } })}</span>
 							<span class="text-[11px] text-text-tertiary">· {formatDurationCompact($beatportCartDuration)}</span>
 						</button>
 					{/if}
@@ -173,11 +179,9 @@
 						</div>
 
 						<div class="mx-auto max-w-xl space-y-2">
-							<h2 class="text-2xl font-extrabold tracking-tight text-white">Intégration Beatport Streaming</h2>
+							<h2 class="text-2xl font-extrabold tracking-tight text-white">{$translate('beatport.gateway.title')}</h2>
 							<p class="text-xs leading-relaxed text-neutral-300">
-								Connectez votre abonnement Beatport pour accéder à votre bibliothèque en streaming, synchroniser vos
-								playlists personnelles et télécharger vos morceaux via BeatportDL avec synchronisation Mixed In Key &
-								Crate.
+								{$translate('beatport.gateway.description')}
 							</p>
 						</div>
 
@@ -192,7 +196,7 @@
 								onclick={() => beatportStore.openLoginModal()}
 							>
 								<Icon name="link" class="h-4 w-4" />
-								<span>Se connecter avec Beatport</span>
+								<span>{$translate('beatport.gateway.signIn')}</span>
 							</Button>
 						</div>
 					</div>
@@ -208,7 +212,7 @@
 							<div class="flex items-center gap-3">
 								<Icon name="alert-triangle" class="h-5 w-5 flex-shrink-0 text-amber-400" />
 								<div>
-									<div class="font-bold text-amber-300">Session ou connexion Beatport à renouveler</div>
+									<div class="font-bold text-amber-300">{$translate('beatport.session.title')}</div>
 									<div class="text-[11px] text-neutral-300">{$beatportStore.error}</div>
 								</div>
 							</div>
@@ -222,7 +226,7 @@
 								onclick={() => beatportStore.openLoginModal()}
 							>
 								<Icon name="refresh-cw" class="h-3.5 w-3.5" />
-								<span>Renouveler ma session Beatport</span>
+								<span>{$translate('beatport.session.renew')}</span>
 							</Button>
 						</div>
 					{/if}
@@ -239,7 +243,7 @@
 									{#if $beatportStore.selectedArtistImage}
 										<img
 											src={$beatportStore.selectedArtistImage}
-											alt={$beatportStore.selectedArtistName || 'Artist'}
+											alt={$beatportStore.selectedArtistName || $translate('beatport.artist.label')}
 											class="h-full w-full object-cover"
 										/>
 									{:else}
@@ -257,7 +261,7 @@
 										<span
 											class="rounded-full border border-[#00FF96]/40 bg-[#00FF96]/20 px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-[#00FF96] uppercase"
 										>
-											Artiste Beatport
+											{$translate('beatport.artist.label')}
 										</span>
 									</div>
 
@@ -279,7 +283,7 @@
 											class="flex items-center gap-1.5 rounded-lg border border-stroke bg-surface-3 px-3 py-1 text-xs text-text-secondary transition-colors hover:text-white"
 											onclick={() => beatportStore.setNavSection('home')}
 										>
-											← Retour au Catalogue
+											{$translate('beatport.artist.back')}
 										</button>
 
 										{#if displayTracks.length > 0}
@@ -293,7 +297,11 @@
 												onclick={handleAddAllVisibleToCart}
 											>
 												<Icon name="plus" class="h-3.5 w-3.5" />
-												<span>Ajouter toute la discographie au panier ({displayTracks.length})</span>
+												<span
+													>{$translate('beatport.artist.addDiscography', {
+														values: { count: displayTracks.length },
+													})}</span
+												>
 											</Button>
 										{/if}
 									</div>
@@ -306,7 +314,7 @@
 					{#if $beatportStore.searchQuery.trim() && $beatportStore.searchArtists.length > 0}
 						<div class="space-y-3">
 							<h3 class="text-xs font-bold tracking-wider text-text-tertiary uppercase">
-								Artistes correspondants ({$beatportStore.searchArtists.length})
+								{$translate('beatport.artist.matching', { values: { count: $beatportStore.searchArtists.length } })}
 							</h3>
 							<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
 								{#each $beatportStore.searchArtists as artist (artist.id)}
@@ -334,7 +342,7 @@
 											<div class="truncate text-xs font-bold text-text-primary group-hover:text-[#00FF96]">
 												{artist.name}
 											</div>
-											<div class="text-[10px] text-text-tertiary">Voir discographie →</div>
+											<div class="text-[10px] text-text-tertiary">{$translate('beatport.artist.viewDiscography')}</div>
 										</div>
 									</button>
 								{/each}
@@ -345,13 +353,13 @@
 					{#if $beatportStore.loading}
 						<div class="flex h-40 items-center justify-center gap-2 text-text-secondary">
 							<Spinner class="h-5 w-5 text-emerald-400" />
-							<span class="text-xs">Chargement de Beatport...</span>
+							<span class="text-xs">{$translate('beatport.loading')}</span>
 						</div>
 					{:else}
 						<!-- Featured Curated Charts (if home and not searching) -->
 						{#if $beatportStore.navSection === 'home' && !$beatportStore.searchQuery.trim() && $beatportStore.charts.length > 0}
 							<div>
-								<h2 class="mb-3 text-sm font-bold text-text-primary">Charts & Curations</h2>
+								<h2 class="mb-3 text-sm font-bold text-text-primary">{$translate('beatport.charts.title')}</h2>
 								<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 									{#each $beatportStore.charts as chart (chart.id)}
 										<button
@@ -381,7 +389,7 @@
 												{/if}
 												{#if chart.tracks_count}
 													<span class="mt-1 inline-block font-mono text-[10px] text-emerald-400">
-														{chart.tracks_count} titres
+														{$translate('beatport.charts.trackCount', { values: { count: chart.tracks_count } })}
 													</span>
 												{/if}
 											</div>
@@ -404,7 +412,7 @@
 											class="cursor-pointer rounded border border-stroke bg-surface-2 px-2 py-0.5 text-[10px] text-text-secondary hover:text-text-primary"
 											onclick={() => beatportStore.setNavSection('home')}
 										>
-											Voir tout le catalogue ✕
+											{$translate('beatport.section.showAll')}
 										</button>
 									{/if}
 								</div>
@@ -417,7 +425,7 @@
 											onclick={handleAddAllVisibleToCart}
 										>
 											<Icon name="plus" class="h-3.5 w-3.5" />
-											<span>Ajouter tout au panier ({displayTracks.length})</span>
+											<span>{$translate('beatport.cart.addAll', { values: { count: displayTracks.length } })}</span>
 										</button>
 									{/if}
 								</div>
@@ -432,20 +440,20 @@
 								>
 									<div class="text-center">#</div>
 									<div></div>
-									<div>Titre & Artiste</div>
-									<div class={BEATPORT_GENRE_CELL}>Genre</div>
-									<div class={BEATPORT_DATE_CELL}>Date</div>
-									<div>Durée</div>
-									<div>Tonalité</div>
-									<div>BPM</div>
-									<div class="pr-2 text-right">Actions</div>
+									<div>{$translate('beatport.table.title')}</div>
+									<div class={BEATPORT_GENRE_CELL}>{$translate('beatport.table.genre')}</div>
+									<div class={BEATPORT_DATE_CELL}>{$translate('beatport.table.date')}</div>
+									<div>{$translate('beatport.table.length')}</div>
+									<div>{$translate('beatport.table.key')}</div>
+									<div>{$translate('beatport.table.bpm')}</div>
+									<div class="pr-2 text-right">{$translate('beatport.table.actions')}</div>
 								</div>
 
 								<!-- Table Rows -->
 								<div class="divide-y divide-stroke/30">
 									{#if displayTracks.length === 0}
 										<div class="p-8 text-center text-xs text-text-tertiary">
-											Aucun morceau trouvé dans cette section.
+											{$translate('beatport.table.empty')}
 										</div>
 									{:else}
 										{#each displayTracks as track, idx (track.id)}
@@ -459,7 +467,7 @@
 						<!-- Genres Grid Section (if home and not searching) -->
 						{#if $beatportStore.navSection === 'home' && !$beatportStore.searchQuery.trim() && $beatportStore.genres.length > 0}
 							<div>
-								<h2 class="mb-3 text-sm font-bold text-text-primary">Genres Électroniques</h2>
+								<h2 class="mb-3 text-sm font-bold text-text-primary">{$translate('beatport.genres.title')}</h2>
 								<div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4">
 									{#each $beatportStore.genres as genre (genre.id)}
 										<button

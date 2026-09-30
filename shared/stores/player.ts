@@ -584,7 +584,7 @@ function createPlayerStore() {
 			stopPositionTracking()
 
 			if (!track.preview_url) {
-				toastStore.warning('Aucun flux audio de préécoute disponible pour ce titre.')
+				toastStore.warning(get(translate)('player.toast.noPreviewStream'))
 				return
 			}
 
@@ -620,7 +620,7 @@ function createPlayerStore() {
 					},
 				}))
 			} catch (error) {
-				const errorMsg = toErrorMessage(error, 'Erreur lecture Beatport')
+				const errorMsg = toErrorMessage(error, get(translate)('player.toast.beatportPlaybackFailed'))
 				update((s) => ({ ...s, error: errorMsg }))
 			}
 		},

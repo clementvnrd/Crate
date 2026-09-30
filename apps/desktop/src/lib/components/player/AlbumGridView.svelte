@@ -44,7 +44,7 @@
 			</div>
 			<div>
 				<h2 class="flex items-center gap-2 text-base font-bold text-text-primary">
-					<span>Mes Albums</span>
+					<span>{$translate('player.albums.title')}</span>
 					<span
 						class="rounded-full border border-stroke-subtle bg-surface-2 px-2 py-0.5 font-mono text-xs font-medium text-text-secondary"
 					>
@@ -52,7 +52,7 @@
 					</span>
 				</h2>
 				<p class="text-xs text-text-tertiary">
-					Explorez vos dossiers musicaux organisés par albums avec leurs pochettes et métadonnées
+					{$translate('player.albums.subtitle')}
 				</p>
 			</div>
 		</div>
@@ -72,7 +72,7 @@
 			{:else}
 				<Icon name="folder-plus" class="h-4 w-4" />
 			{/if}
-			<span>{$albumsAdding ? 'Importation...' : 'Ajouter un dossier / album'}</span>
+			<span>{$albumsAdding ? $translate('player.albums.importing') : $translate('player.albums.addFolder')}</span>
 		</Button>
 	</div>
 
@@ -81,7 +81,7 @@
 		{#if $albumsLoading}
 			<div class="flex h-48 items-center justify-center gap-2.5 text-text-tertiary">
 				<Spinner icon="loader" class="h-5 w-5 text-cyan-500" color="current" />
-				<span class="text-sm">Chargement des albums...</span>
+				<span class="text-sm">{$translate('player.albums.loading')}</span>
 			</div>
 		{:else if $playerAlbums.length === 0}
 			<!-- Empty State -->
@@ -91,10 +91,9 @@
 				>
 					<Icon name="disc" class="h-10 w-10 opacity-70" />
 				</div>
-				<h3 class="text-base font-bold text-text-primary">Aucun album importé</h3>
+				<h3 class="text-base font-bold text-text-primary">{$translate('player.albums.emptyTitle')}</h3>
 				<p class="mt-1.5 text-xs leading-relaxed text-text-secondary">
-					Ajoutez un dossier contenant vos fichiers audio pour parcourir votre collection sous forme d'albums avec leurs
-					pochettes intégrées.
+					{$translate('player.albums.emptyHint')}
 				</p>
 				<Button
 					variant="primary"
@@ -106,7 +105,7 @@
 					onclick={handleAddAlbum}
 				>
 					<Icon name="folder-plus" class="h-4 w-4" />
-					<span>Ajouter un dossier d'album</span>
+					<span>{$translate('player.albums.addAlbumFolder')}</span>
 				</Button>
 			</div>
 		{:else}
@@ -145,7 +144,7 @@
 								type="button"
 								class="absolute right-3 bottom-3 z-10 flex h-10 w-10 translate-y-2 cursor-pointer items-center justify-center rounded-full bg-cyan-400 text-black opacity-0 shadow-lg shadow-cyan-400/50 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
 								onclick={(e) => handlePlayAlbumDirect(e, album)}
-								aria-label="Lire l'album"
+								aria-label={$translate('player.albums.play')}
 							>
 								<Icon name="play" class="ml-0.5 h-4 w-4" fill />
 							</button>
@@ -155,7 +154,7 @@
 								type="button"
 								class="absolute top-2.5 right-2.5 z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-black/60 text-text-tertiary opacity-0 backdrop-blur-md transition-all duration-200 group-hover:opacity-100 hover:bg-black/80 hover:text-red-400 active:scale-95"
 								onclick={(e) => handleRemoveAlbum(e, album.id)}
-								title="Retirer de la liste"
+								title={$translate('player.albums.removeFromList')}
 							>
 								<Icon name="trash" class="h-3.5 w-3.5" />
 							</button>
@@ -164,8 +163,7 @@
 							<div
 								class="pointer-events-none absolute bottom-2.5 left-2.5 rounded-md bg-black/60 px-2 py-0.5 font-mono text-[10px] font-medium text-white/90 opacity-0 backdrop-blur-md transition-opacity duration-200 group-hover:opacity-100"
 							>
-								{album.track_count}
-								{album.track_count > 1 ? 'pistes' : 'piste'}
+								{$translate('player.albums.trackCount', { values: { count: album.track_count } })}
 							</div>
 						</div>
 

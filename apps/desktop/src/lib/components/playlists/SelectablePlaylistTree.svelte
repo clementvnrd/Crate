@@ -5,6 +5,7 @@
 	import PlaylistItem from './PlaylistItem.svelte'
 	import Text from '$lib/components/common/Text.svelte'
 	import { SvelteSet } from 'svelte/reactivity'
+	import { translate } from '$shared/i18n'
 
 	type Props = {
 		playlists: Playlist[]
@@ -72,6 +73,6 @@
 	{/each}
 
 	{#if playlists.length === 0}
-		<Text variant="caption" class="py-4 text-center">No playlists available</Text>
+		<Text variant="caption" class="py-4 text-center">{$translate('export.noPlaylistsAvailable')}</Text>
 	{/if}
 </div>

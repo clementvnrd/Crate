@@ -5,7 +5,7 @@
 	import { Button, IconButton, Tooltip, MixedInKeyLogo } from '$lib/components/common'
 	import Icon from '$lib/components/common/Icon.svelte'
 	import { SyncStatusIndicator } from '$lib/components/cloud-sync'
-	import { isDev, libraryStore } from '$lib/stores'
+	import { isDev, libraryStore, language } from '$lib/stores'
 	import { duplicateStore, duplicateGroupCount, duplicateTrackCount } from '$shared/stores/duplicate'
 	import { upgraderStore, upgraderMatchCount } from '$shared/stores/upgrader'
 	import { toastStore } from '$shared/stores/toast'
@@ -14,6 +14,7 @@
 	import * as exportApi from '$shared/api/export'
 	import { save } from '@tauri-apps/plugin-dialog'
 	import { withNativeDialog } from '$shared/utils'
+	import { formatNumber } from '$shared/utils/format'
 
 	type Props = {
 		activeView?: string
@@ -71,14 +72,18 @@
 			await duplicateStore.loadCount()
 			await upgraderStore.loadCount()
 			const parts: string[] = []
-			if (res.added > 0) parts.push(`${res.added} importé${res.added > 1 ? 's' : ''}`)
-			if (res.updated > 0) parts.push(`${res.updated} mis à jour`)
-			if (res.removed > 0) parts.push(`${res.removed} supprimé${res.removed > 1 ? 's' : ''}`)
-			const detail = parts.length > 0 ? parts.join(', ') : 'À jour'
-			toastStore.success(`Bibliothèque Mixed In Key synchronisée : ${detail} (${res.total} au total)`)
+			if (res.added > 0) parts.push($translate('library.toast.mikSyncAdded', { values: { count: res.added } }))
+			if (res.updated > 0) parts.push($translate('library.toast.mikSyncUpdated', { values: { count: res.updated } }))
+			if (res.removed > 0) parts.push($translate('library.toast.mikSyncRemoved', { values: { count: res.removed } }))
+			const detail = parts.length > 0 ? parts.join(', ') : $translate('library.toast.mikSyncUpToDate')
+			toastStore.success(
+				$translate('library.toast.mikSyncSuccess', {
+					values: { detail, total: formatNumber(res.total, $language) },
+				})
+			)
 		} catch (err) {
 			console.error('MIK DB Sync error:', err)
-			toastStore.error('Erreur lors de la synchronisation avec la bibliothèque Mixed In Key')
+			toastStore.error($translate('library.toast.mikSyncError'))
 		} finally {
 			syncingMik = false
 		}
@@ -98,10 +103,10 @@
 		exportingXml = true
 		try {
 			const count = await exportApi.exportRekordboxXml(path)
-			toastStore.success(`Export Rekordbox XML réussi : ${count} morceaux exportés avec grilles, clés et cues MIK !`)
+			toastStore.success($translate('export.toast.rekordboxXmlSuccess', { values: { count } }))
 		} catch (err) {
-			const message = toErrorMessage(err, 'Unknown error')
-			toastStore.error(`Échec de l'export Rekordbox : ${message}`)
+			const message = toErrorMessage(err, $translate('common.unknownError'))
+			toastStore.error($translate('export.toast.rekordboxXmlFailed', { values: { error: message } }))
 		} finally {
 			exportingXml = false
 		}
@@ -111,7 +116,7 @@
 <div
 	class="flex flex-1 items-center justify-end gap-1.5 rounded-bl-md py-4 pr-3 pl-2 min-[1280px]:gap-2 min-[1280px]:pl-4"
 >
-	<Tooltip text="Synchronisé en direct avec Mixed In Key (Cliquer pour forcer)" position="bottom" delay={250}>
+	<Tooltip text={$translate('nav.toolbar.mikSync')} position="bottom" delay={250}>
 		<button
 			type="button"
 			class="group flex items-center gap-2 rounded-lg border border-sky-500/30 bg-surface-2/80 px-2.5 py-1 text-xs shadow-sm transition-all hover:cursor-pointer hover:border-sky-400/60 hover:bg-sky-950/40 active:scale-95"
@@ -137,8 +142,10 @@
 	<!-- Duplicate Killer Button with Badge -->
 	<Tooltip
 		text={$duplicateGroupCount > 0
-			? `Duplicate Killer : ${$duplicateGroupCount} groupe${$duplicateGroupCount > 1 ? 's' : ''} de doublons (${$duplicateTrackCount} morceaux)`
-			: 'Duplicate Killer : Gestion des doublons'}
+			? $translate('nav.toolbar.duplicatesFound', {
+					values: { groups: $duplicateGroupCount, tracks: $duplicateTrackCount },
+				})
+			: $translate('nav.toolbar.duplicatesIdle')}
 		position="bottom"
 		delay={250}
 	>
@@ -149,7 +156,7 @@
 				? 'border-amber-500/40 bg-amber-950/30 text-amber-300 hover:border-amber-400 hover:bg-amber-900/40'
 				: 'border-stroke bg-surface-2/80 text-text-secondary hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary'}"
 			onclick={onOpenDuplicates}
-			aria-label="Gestion des doublons"
+			aria-label={$translate('nav.toolbar.duplicates')}
 		>
 			<Icon name="clone" class="h-4 w-4 {$duplicateGroupCount > 0 ? 'text-amber-400' : 'text-text-secondary'}" />
 			{#if $duplicateGroupCount > 0}
@@ -165,8 +172,8 @@
 	<!-- Beatport Quality Upgrader Button with Emerald Badge (Positioned between Duplicates and Discovery) -->
 	<Tooltip
 		text={$upgraderMatchCount > 0
-			? `Beatport Quality Upgrader : ${$upgraderMatchCount} morceau${$upgraderMatchCount > 1 ? 'x' : ''} améliorable${$upgraderMatchCount > 1 ? 's' : ''} en FLAC Lossless`
-			: 'Beatport Quality Upgrader : Améliorer la qualité en FLAC Lossless'}
+			? $translate('nav.toolbar.upgraderFound', { values: { count: $upgraderMatchCount } })
+			: $translate('nav.toolbar.upgraderIdle')}
 		position="bottom"
 		delay={250}
 	>
@@ -206,7 +213,7 @@
 	</Tooltip>
 
 	<!-- Stats Button -->
-	<Tooltip text="Crate Pulse & Statistiques" position="bottom" delay={250}>
+	<Tooltip text={$translate('nav.toolbar.statsTooltip')} position="bottom" delay={250}>
 		<button
 			type="button"
 			class="relative flex h-8 w-8 items-center justify-center rounded-lg border shadow-sm transition-all hover:cursor-pointer active:scale-95
@@ -214,20 +221,20 @@
 				? 'border-brand-primary/60 bg-brand-primary/20 text-brand-primary'
 				: 'border-stroke bg-surface-2/80 text-text-secondary hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary'}"
 			onclick={() => onViewChange?.('stats')}
-			aria-label="Statistiques"
+			aria-label={$translate('nav.toolbar.stats')}
 		>
 			<Icon name="chart" class="h-4 w-4 {activeView === 'stats' ? 'text-brand-primary' : 'text-text-secondary'}" />
 		</button>
 	</Tooltip>
 
 	<!-- Rekordbox XML Export Button -->
-	<Tooltip text="Exporter la collection en Rekordbox XML (Prêt pour CDJ / Rekordbox)" position="bottom" delay={250}>
+	<Tooltip text={$translate('nav.toolbar.rekordboxXmlTooltip')} position="bottom" delay={250}>
 		<button
 			type="button"
 			class="relative flex h-8 w-8 items-center justify-center rounded-lg border border-stroke bg-surface-2/80 text-text-secondary shadow-sm transition-all hover:cursor-pointer hover:border-cyan-500/50 hover:bg-cyan-950/30 hover:text-cyan-400 active:scale-95 disabled:opacity-50"
 			onclick={handleExportRekordboxXml}
 			disabled={exportingXml}
-			aria-label="Exporter vers Rekordbox XML"
+			aria-label={$translate('nav.toolbar.rekordboxXml')}
 		>
 			<Icon
 				name={exportingXml ? 'loader' : 'download'}

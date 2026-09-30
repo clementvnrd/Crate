@@ -53,7 +53,7 @@
 			>
 				<div class="flex items-center gap-2">
 					<Icon name="download" class="h-3.5 w-3.5" />
-					<span>Purchased tracks</span>
+					<span>{$translate('beatport.nav.purchased')}</span>
 				</div>
 				{#if $beatportStore.purchases.length > 0}
 					<span class="py-0.2 rounded border border-stroke bg-surface-2 px-1.5 font-mono text-[10px] text-emerald-400">
@@ -72,7 +72,7 @@
 			>
 				<div class="flex items-center gap-2">
 					<Icon name="database" class="h-3.5 w-3.5" />
-					<span>Offline library</span>
+					<span>{$translate('beatport.nav.offline')}</span>
 				</div>
 			</button>
 
@@ -86,7 +86,7 @@
 			>
 				<div class="flex items-center gap-2">
 					<Icon name="heart" class="h-3.5 w-3.5 text-red-400" />
-					<span>Favorites</span>
+					<span>{$translate('beatport.nav.favorites')}</span>
 				</div>
 				<span class="py-0.2 rounded border border-stroke bg-surface-2 px-1.5 font-mono text-[10px] text-emerald-400">
 					{$beatportStore.favorites.length}
@@ -99,12 +99,12 @@
 			<div
 				class="flex items-center justify-between px-2.5 pb-1 text-[11px] font-bold tracking-wider text-text-tertiary uppercase"
 			>
-				<span>Playlists</span>
+				<span>{$translate('beatport.playlists.title')}</span>
 				<div class="flex items-center gap-1">
 					<button
 						type="button"
 						class="rounded p-0.5 hover:bg-surface-2 hover:text-text-primary"
-						title="Créer une Playlist Beatport"
+						title={$translate('beatport.playlists.create')}
 						onclick={() => (showNewPlaylistInput = !showNewPlaylistInput)}
 					>
 						<Icon name="plus" class="h-3.5 w-3.5" />
@@ -116,7 +116,7 @@
 				<div class="my-1.5 flex items-center gap-1 px-1">
 					<input
 						type="text"
-						placeholder="Nouvelle playlist..."
+						placeholder={$translate('beatport.playlists.newPlaceholder')}
 						bind:value={newPlaylistName}
 						class="w-full rounded border border-stroke bg-surface-2 px-2 py-1 text-xs text-text-primary focus:border-emerald-500 focus:outline-none"
 						onkeydown={(e) => e.key === 'Enter' && handleCreatePlaylist()}
@@ -129,9 +129,9 @@
 				{#if $beatportStore.userPlaylists.length === 0}
 					<div class="px-2.5 py-2 text-[11px] text-text-tertiary">
 						{#if $beatportStore.auth.is_authenticated}
-							Aucune playlist Beatport
+							{$translate('beatport.playlists.none')}
 						{:else}
-							Connectez-vous pour voir vos playlists
+							{$translate('beatport.playlists.signInPrompt')}
 						{/if}
 					</div>
 				{:else}
@@ -163,11 +163,11 @@
 			<div
 				class="h-3.5 w-16 bg-text-secondary"
 				style="-webkit-mask-image: url('/beatport-full-logo.png'); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center left; mask-image: url('/beatport-full-logo.png'); mask-size: contain; mask-repeat: no-repeat; mask-position: center left;"
-				title="Beatport Streaming"
+				title={$translate('beatport.title')}
 			></div>
 			<div class="flex items-center gap-1.5 text-[11px] font-medium text-emerald-500">
 				<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-				<span>Connecté</span>
+				<span>{$translate('beatport.connected')}</span>
 			</div>
 		</div>
 	{:else}
@@ -181,7 +181,7 @@
 					class="h-3.5 w-14 bg-text-primary"
 					style="-webkit-mask-image: url('/beatport-full-logo.png'); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center left; mask-image: url('/beatport-full-logo.png'); mask-size: contain; mask-repeat: no-repeat; mask-position: center left;"
 				></div>
-				<span>Se connecter</span>
+				<span>{$translate('beatport.signIn')}</span>
 			</button>
 		</div>
 	{/if}

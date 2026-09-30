@@ -4,6 +4,7 @@
 	import Spinner from '$lib/components/common/Spinner.svelte'
 	import { focusTrap } from '$lib/components/common/focusTrap'
 	import { openUrl } from '@tauri-apps/plugin-opener'
+	import { translate } from '$shared/i18n'
 
 	let mode = $state<'token' | 'pkce'>('token')
 	let authCode = $state('')
@@ -56,8 +57,10 @@
 			<div class="flex items-center gap-3">
 				<Icon name="beatport" class="h-6 w-6 text-text-primary" />
 				<div>
-					<h2 id="beatport-login-title" class="text-base font-semibold text-white">Connexion Beatport Streaming</h2>
-					<p class="text-xs text-neutral-400">Associez votre compte Beatport à Crate</p>
+					<h2 id="beatport-login-title" class="text-base font-semibold text-white">
+						{$translate('beatport.login.title')}
+					</h2>
+					<p class="text-xs text-neutral-400">{$translate('beatport.login.subtitle')}</p>
 				</div>
 			</div>
 			<button
@@ -78,7 +81,7 @@
 					: 'border-transparent text-neutral-400 hover:text-neutral-200'}"
 				onclick={() => (mode = 'token')}
 			>
-				Token Permanent (Recommandé)
+				{$translate('beatport.login.tabs.token')}
 			</button>
 			<button
 				type="button"
@@ -87,7 +90,7 @@
 					: 'border-transparent text-neutral-400 hover:text-neutral-200'}"
 				onclick={() => (mode = 'pkce')}
 			>
-				Code d'autorisation
+				{$translate('beatport.login.tabs.code')}
 			</button>
 		</div>
 
@@ -97,44 +100,52 @@
 				<div class="space-y-3">
 					<div class="space-y-2 rounded-xl border border-[#2e323d] bg-[#0e1014] p-3 text-xs">
 						<div class="flex items-center justify-between">
-							<span class="font-bold text-white">Comment obtenir votre session permanente :</span>
+							<span class="font-bold text-white">{$translate('beatport.login.token.howTo')}</span>
 							<button
 								type="button"
 								class="flex cursor-pointer items-center gap-1 font-semibold text-[#00FF96] hover:underline"
 								onclick={handleOpenDocs}
 							>
-								<span>Ouvrir api.beatport.com</span>
+								<span>{$translate('beatport.login.token.openDocs')}</span>
 								<Icon name="external-link" class="h-3 w-3" />
 							</button>
 						</div>
 						<ol class="list-inside list-decimal space-y-1 text-[11px] leading-relaxed text-neutral-400">
 							<li>
-								Ouvrez <strong class="text-neutral-200">api.beatport.com/v4/docs/</strong> et cliquez sur le bouton vert
-								<strong class="text-emerald-400">Authorize</strong> en haut à droite.
+								{$translate('beatport.login.token.step1Open')}
+								<strong class="text-neutral-200">api.beatport.com/v4/docs/</strong>
+								{$translate('beatport.login.token.step1Click')}
+								<strong class="text-emerald-400">Authorize</strong>
+								{$translate('beatport.login.token.step1End')}
 							</li>
-							<li>Connectez-vous avec votre compte Beatport.</li>
+							<li>{$translate('beatport.login.token.step2')}</li>
 							<li>
-								Ouvrez l'inspecteur web (<code class="text-[#00FF96]">F12</code> ou
-								<code class="text-[#00FF96]">Cmd+Opt+I</code>) &rarr; onglet
-								<strong class="text-neutral-200">Réseau (Network)</strong>.
+								{$translate('beatport.login.token.step3Open')}<code class="text-[#00FF96]">F12</code>
+								{$translate('beatport.login.token.step3Or')}
+								<code class="text-[#00FF96]">Cmd+Opt+I</code>) &rarr; {$translate(
+									'beatport.login.token.step3TabBefore'
+								)}
+								<strong class="text-neutral-200">{$translate('beatport.login.token.step3Tab')}</strong>.
 							</li>
 							<li>
-								Filtrez sur <code class="text-[#00FF96]">token</code> et copiez la réponse JSON contenant
+								{$translate('beatport.login.token.step4Filter')} <code class="text-[#00FF96]">token</code>
+								{$translate('beatport.login.token.step4Copy')}
 								<code class="text-emerald-400">access_token</code>
-								et <code class="text-emerald-400">refresh_token</code>.
+								{$translate('beatport.login.token.step4And')} <code class="text-emerald-400">refresh_token</code>.
 							</li>
 						</ol>
 					</div>
 
 					<div>
 						<label for="bp-token-input" class="mb-1 block text-xs font-medium text-neutral-400"
-							>Collez le JSON ou Token ici :</label
+							>{$translate('beatport.login.token.label')}</label
 						>
 						<textarea
 							id="bp-token-input"
 							bind:value={directToken}
 							rows="4"
-							placeholder={'{\n  "access_token": "eyJ...",\n  "refresh_token": "1PBpi..."\n}\nou collez le texte commençant par eyJ...'}
+							placeholder={'{\n  "access_token": "eyJ...",\n  "refresh_token": "1PBpi..."\n}\n' +
+								$translate('beatport.login.token.placeholderHint')}
 							class="w-full rounded-lg border border-[#2e323d] bg-[#0e1014] p-2.5 font-mono text-xs text-white placeholder-neutral-600 focus:border-[#00FF96] focus:outline-none"
 						></textarea>
 					</div>
@@ -148,7 +159,7 @@
 						{#if isSubmitting}
 							<Spinner class="h-3 w-3" />
 						{:else}
-							Valider et Activer la Connexion Permanente
+							{$translate('beatport.login.token.submit')}
 						{/if}
 					</button>
 				</div>
@@ -156,7 +167,7 @@
 				<div class="space-y-4">
 					<div class="space-y-2">
 						<p class="text-xs leading-relaxed text-neutral-300">
-							1. Cliquez pour ouvrir la page officielle de connexion Beatport dans votre navigateur :
+							{$translate('beatport.login.code.step1')}
 						</p>
 
 						<button
@@ -165,20 +176,20 @@
 							onclick={handleOpenWeb}
 						>
 							<Icon name="external-link" class="h-4 w-4" />
-							<span>Ouvrir la connexion Beatport</span>
+							<span>{$translate('beatport.login.code.open')}</span>
 						</button>
 					</div>
 
 					<div class="space-y-2 border-t border-[#252830] pt-3">
 						<label for="bp-auth-code" class="block text-xs font-medium text-neutral-400">
-							2. Après connexion, copiez l'URL de votre navigateur (ou le code) et collez-la ici :
+							{$translate('beatport.login.code.step2')}
 						</label>
 						<div class="flex gap-2">
 							<input
 								id="bp-auth-code"
 								type="text"
 								bind:value={authCode}
-								placeholder="https://api.beatport.com/... ou code d'autorisation"
+								placeholder={$translate('beatport.login.code.placeholder')}
 								class="flex-1 rounded-lg border border-[#2e323d] bg-[#0e1014] px-3 py-2 text-xs text-white placeholder-neutral-500 focus:border-[#00FF96] focus:outline-none"
 							/>
 							<button
@@ -190,7 +201,7 @@
 								{#if isSubmitting}
 									<Spinner class="h-3 w-3" />
 								{:else}
-									Valider
+									{$translate('beatport.login.code.submit')}
 								{/if}
 							</button>
 						</div>

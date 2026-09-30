@@ -9,6 +9,7 @@
 	import { toastStore } from '$shared/stores/toast'
 	import { listen } from '@tauri-apps/api/event'
 	import { onMount } from 'svelte'
+	import { translate } from '$shared/i18n'
 
 	type Props = {
 		spotifyAuth: SpotifyAuthState | null
@@ -34,7 +35,7 @@
 			await statsApi.setMikTrackerEnabled(enabled)
 			mikTrackerEnabled = enabled
 		} catch (err) {
-			toastStore.error(`Impossible de modifier le suivi Mixed In Key : ${err}`)
+			toastStore.error($translate('stats.toast.mikToggleFailed', { values: { error: String(err) } }))
 		}
 	}
 
@@ -54,7 +55,7 @@
 			if (event.payload?.is_connected) {
 				showSpotifyModal = false
 				statsStore.refreshAll()
-				toastStore.success('Compte Spotify connecté avec succès !')
+				toastStore.success($translate('stats.toast.spotifyConnected'))
 			}
 		}).then((unlisten) => {
 			unlistenAuth = unlisten
@@ -108,7 +109,7 @@
 		try {
 			await navigator.clipboard.writeText('http://127.0.0.1:8888/callback')
 			isCopiedRedirectUri = true
-			toastStore.success('Redirect URI copié dans le presse-papier !')
+			toastStore.success($translate('stats.toast.redirectCopied'))
 			setTimeout(() => {
 				isCopiedRedirectUri = false
 			}, 3000)
@@ -128,7 +129,7 @@
 	async function handleConfirmSpotifyConnect() {
 		const cleanId = spotifyClientIdInput.trim()
 		if (!cleanId) {
-			toastStore.error('Veuillez renseigner un Client ID Spotify valide')
+			toastStore.error($translate('stats.toast.clientIdRequired'))
 			return
 		}
 		const cleanSecret = spotifyClientSecretInput.trim()
@@ -138,7 +139,7 @@
 	async function handleManualCodeSubmit() {
 		const raw = manualCodeInput.trim()
 		if (!raw) {
-			toastStore.error("Veuillez coller le code d'autorisation ou l'URL de redirection")
+			toastStore.error($translate('stats.toast.codeRequired'))
 			return
 		}
 		isSubmittingManualCode = true
@@ -180,23 +181,26 @@
 									class="inline-flex items-center gap-1 rounded-full border border-[#1DB954]/40 bg-[#1DB954]/20 px-2 py-0.5 text-[10px] font-bold text-[#1DB954]"
 								>
 									<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1DB954] motion-reduce:animate-none"></span>
-									En direct
+									{$translate('stats.live')}
 								</span>
 							{:else}
 								<span
 									class="rounded-full border border-stroke bg-surface-3 px-2 py-0.5 text-[10px] font-medium text-text-tertiary"
 								>
-									Non connecté
+									{$translate('stats.integrations.notConnected')}
 								</span>
 							{/if}
 						</div>
 						<p class="mt-0.5 text-[11px] text-text-secondary">
 							{#if spotifyAuth?.is_connected}
-								Compte associé : <strong class="text-text-primary"
-									>{spotifyAuth.user_name || spotifyAuth.user_id || 'Utilisateur'}</strong
+								{$translate('stats.integrations.linkedAccount')}
+								<strong class="text-text-primary"
+									>{spotifyAuth.user_name ||
+										spotifyAuth.user_id ||
+										$translate('stats.integrations.defaultUser')}</strong
 								>
 							{:else}
-								Écoutes en temps réel (OAuth2 PKCE)
+								{$translate('stats.integrations.realtimePlays')}
 							{/if}
 						</p>
 					</div>
@@ -215,7 +219,9 @@
 					{/if}
 					<div class="min-w-0 flex-1">
 						<div class="flex items-center gap-1.5">
-							<span class="text-[10px] font-bold tracking-wider text-[#1DB954] uppercase">Lecture en cours</span>
+							<span class="text-[10px] font-bold tracking-wider text-[#1DB954] uppercase"
+								>{$translate('stats.integrations.nowPlaying')}</span
+							>
 							{#if spotifyNowPlaying.device_name}
 								<span class="text-[10px] text-text-tertiary">({spotifyNowPlaying.device_name})</span>
 							{/if}
@@ -236,7 +242,7 @@
 					onclick={() => statsStore.disconnectSpotify()}
 				>
 					<Icon name="x" class="h-3.5 w-3.5" />
-					<span>Déconnecter</span>
+					<span>{$translate('stats.integrations.disconnect')}</span>
 				</button>
 			{:else}
 				<Button
@@ -249,7 +255,7 @@
 					onclick={openSpotifyConnectModal}
 				>
 					<Icon name="link" class="h-3.5 w-3.5" />
-					<span>Se connecter</span>
+					<span>{$translate('stats.integrations.connect')}</span>
 				</Button>
 			{/if}
 
@@ -270,10 +276,10 @@
 			>
 				{#if $isImportingSpotify}
 					<Spinner class="h-3.5 w-3.5 text-text-primary" />
-					<span>Import...</span>
+					<span>{$translate('stats.integrations.importing')}</span>
 				{:else}
 					<Icon name="upload" class="h-3.5 w-3.5 text-text-secondary" />
-					<span>Importer JSON</span>
+					<span>{$translate('stats.integrations.importJson')}</span>
 				{/if}
 			</button>
 		</div>
@@ -299,13 +305,13 @@
 									class="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400"
 								>
 									<span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-									Détecté
+									{$translate('stats.integrations.detected')}
 								</span>
 							{:else}
 								<span
 									class="rounded-full border border-stroke bg-surface-3 px-2 py-0.5 text-[10px] font-medium text-text-tertiary"
 								>
-									Non détecté
+									{$translate('stats.integrations.notDetected')}
 								</span>
 							{/if}
 						</div>
@@ -317,8 +323,10 @@
 			<!-- Sessions Info Callout -->
 			<div class="flex items-center justify-between rounded-xl border border-stroke/50 bg-surface-2/60 p-2.5 text-xs">
 				<div>
-					<div class="font-bold text-text-primary">{rekordboxSessions.length} sessions DJ</div>
-					<div class="text-[11px] text-text-tertiary">Sets, transitions et cue points</div>
+					<div class="font-bold text-text-primary">
+						{$translate('stats.integrations.djSessions', { values: { count: rekordboxSessions.length } })}
+					</div>
+					<div class="text-[11px] text-text-tertiary">{$translate('stats.integrations.rekordboxHint')}</div>
 				</div>
 				<span class="font-mono text-[11px] font-bold text-red-400"> master.db </span>
 			</div>
@@ -334,10 +342,10 @@
 			>
 				{#if $isSyncingRekordbox}
 					<Spinner class="h-3.5 w-3.5 text-white" />
-					<span>Synchronisation...</span>
+					<span>{$translate('stats.integrations.syncing')}</span>
 				{:else}
 					<Icon name="refresh-cw" class="h-3.5 w-3.5 text-white" />
-					<span>Synchroniser Rekordbox</span>
+					<span>{$translate('stats.integrations.syncRekordbox')}</span>
 				{/if}
 			</button>
 		</div>
@@ -363,17 +371,17 @@
 									class="inline-flex items-center gap-1 rounded-full border border-[#00D2FF]/40 bg-[#00D2FF]/20 px-2 py-0.5 text-[10px] font-bold text-[#00D2FF]"
 								>
 									<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#00D2FF] motion-reduce:animate-none"></span>
-									En direct
+									{$translate('stats.live')}
 								</span>
 							{:else}
 								<span
 									class="rounded-full border border-stroke bg-surface-3 px-2 py-0.5 text-[10px] font-medium text-text-tertiary"
 								>
-									Détecteur actif
+									{$translate('stats.integrations.mikDetectorActive')}
 								</span>
 							{/if}
 						</div>
-						<p class="mt-0.5 text-[11px] text-text-secondary">Analyse harmonique & Energy Level</p>
+						<p class="mt-0.5 text-[11px] text-text-secondary">{$translate('stats.integrations.mikHint')}</p>
 					</div>
 				</div>
 			</div>
@@ -382,8 +390,8 @@
 			<ToggleSwitch
 				checked={mikTrackerEnabled}
 				onchange={handleToggleMikTracker}
-				label="Compter les écoutes dans Mixed In Key"
-				description="Expérimental : Mixed In Key n'indique pas s'il joue. Un morceau resté ouvert (analyse comprise) peut être compté comme écouté."
+				label={$translate('stats.integrations.mikTrackerLabel')}
+				description={$translate('stats.integrations.mikTrackerDescription')}
 				class="rounded-xl border border-stroke/50 bg-surface-2/60 px-2.5"
 			/>
 		</div>
@@ -397,11 +405,11 @@
 			></span>
 			<span class="text-[11px]">
 				{#if !mikTrackerEnabled}
-					Suivi des écoutes Mixed In Key désactivé
+					{$translate('stats.integrations.mikTrackingOff')}
 				{:else if mikDetected}
-					Mixed In Key 11 ouvert : écoute en cours de suivi
+					{$translate('stats.integrations.mikTracking')}
 				{:else}
-					En attente de Mixed In Key 11
+					{$translate('stats.integrations.mikWaiting')}
 				{/if}
 			</span>
 		</div>
@@ -437,15 +445,15 @@
 						<Icon name="spotify" class="h-7 w-7 text-[#1DB954]" />
 					</div>
 					<div>
-						<h2 class="text-lg font-bold text-white">Connexion Spotify Pulse</h2>
-						<p class="text-xs text-text-secondary">Guide de configuration rapide en 3 étapes (30s)</p>
+						<h2 class="text-lg font-bold text-white">{$translate('stats.spotifyModal.title')}</h2>
+						<p class="text-xs text-text-secondary">{$translate('stats.spotifyModal.subtitle')}</p>
 					</div>
 				</div>
 				<button
 					type="button"
 					class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface-2 text-text-tertiary transition-colors hover:bg-surface-3 hover:text-white"
 					onclick={closeSpotifyModal}
-					aria-label="Fermer"
+					aria-label={$translate('common.close')}
 				>
 					<Icon name="x" class="h-4 w-4" />
 				</button>
@@ -459,7 +467,7 @@
 						>1</span
 					>
 					<div class="flex-1 space-y-1">
-						<div class="font-bold text-text-primary">Ouvrir le portail développeur Spotify</div>
+						<div class="font-bold text-text-primary">{$translate('stats.spotifyModal.step1')}</div>
 						<div class="flex items-center gap-2">
 							<button
 								type="button"
@@ -479,13 +487,14 @@
 						>2</span
 					>
 					<div class="flex-1 space-y-1.5">
-						<div class="font-bold text-text-primary">Créer une application gratuite</div>
+						<div class="font-bold text-text-primary">{$translate('stats.spotifyModal.step2')}</div>
 						<p class="text-[11px] text-text-secondary">
-							Nom de l'app : <strong class="text-white">Crate</strong> &middot; API :
+							{$translate('stats.spotifyModal.appName')} <strong class="text-white">Crate</strong> &middot;
+							{$translate('stats.spotifyModal.api')}
 							<strong class="text-white">Web API</strong>
 						</p>
 						<div class="flex items-center gap-2">
-							<span class="text-[11px] text-text-tertiary">Redirect URI :</span>
+							<span class="text-[11px] text-text-tertiary">{$translate('stats.spotifyModal.redirectUri')}</span>
 							<code
 								class="rounded border border-emerald-500/20 bg-black/50 px-2 py-0.5 font-mono text-[10px] text-emerald-400"
 							>
@@ -496,15 +505,16 @@
 								class="cursor-pointer rounded bg-surface-3 px-2 py-0.5 text-[10px] font-semibold text-text-primary transition-colors hover:bg-surface-4"
 								onclick={handleCopyRedirectUri}
 							>
-								{isCopiedRedirectUri ? '✓ Copié' : 'Copier'}
+								{isCopiedRedirectUri ? $translate('stats.spotifyModal.copied') : $translate('stats.spotifyModal.copy')}
 							</button>
 						</div>
 						<p class="text-[10.5px] font-medium text-amber-300/90">
-							Important : Spotify exige l'adresse IP exacte <code
-								class="rounded bg-black/40 px-1 py-0.5 font-mono text-[10px] text-amber-200"
+							{$translate('stats.spotifyModal.ipWarning')}
+							<code class="rounded bg-black/40 px-1 py-0.5 font-mono text-[10px] text-amber-200"
 								>http://127.0.0.1:8888/callback</code
 							>
-							(et refuse <code class="text-amber-400/60 line-through">localhost</code>).
+							{$translate('stats.spotifyModal.ipRejects')}
+							<code class="text-amber-400/60 line-through">localhost</code>).
 						</p>
 					</div>
 				</div>
@@ -515,7 +525,7 @@
 						>3</span
 					>
 					<div class="flex-1">
-						<div class="font-bold text-text-primary">Coller vos identifiants Spotify ci-dessous</div>
+						<div class="font-bold text-text-primary">{$translate('stats.spotifyModal.step3')}</div>
 					</div>
 				</div>
 			</div>
@@ -527,15 +537,19 @@
 						for="spotify-client-id"
 						class="flex items-center justify-between text-xs font-bold tracking-wider text-text-secondary uppercase"
 					>
-						<span>Client ID Spotify</span>
-						<span class="text-[10px] font-semibold text-emerald-400 lowercase">obligatoire</span>
+						<span>{$translate('stats.spotifyModal.clientId')}</span>
+						<span class="text-[10px] font-semibold text-emerald-400 lowercase"
+							>{$translate('stats.spotifyModal.required')}</span
+						>
 					</label>
 					<div class="relative">
 						<input
 							id="spotify-client-id"
 							type="text"
 							bind:value={spotifyClientIdInput}
-							placeholder="Ex: 4a2b8c9d0e1f2a3b4c5d6e7f8a9b0c1d"
+							placeholder={$translate('stats.spotifyModal.example', {
+								values: { example: '4a2b8c9d0e1f2a3b4c5d6e7f8a9b0c1d' },
+							})}
 							class="w-full rounded-xl border border-stroke bg-surface-1/90 px-4 py-2.5 font-mono text-xs text-white placeholder-text-tertiary focus:border-[#1DB954] focus:ring-2 focus:ring-[#1DB954]/20 focus:outline-none"
 							onkeydown={(e) => {
 								if (e.key === 'Enter') handleConfirmSpotifyConnect()
@@ -549,8 +563,10 @@
 						for="spotify-client-secret"
 						class="flex items-center justify-between text-xs font-bold tracking-wider text-text-secondary uppercase"
 					>
-						<span>Client Secret Spotify</span>
-						<span class="text-[10px] font-normal text-text-tertiary lowercase">optionnel mais recommandé</span>
+						<span>{$translate('stats.spotifyModal.clientSecret')}</span>
+						<span class="text-[10px] font-normal text-text-tertiary lowercase"
+							>{$translate('stats.spotifyModal.optional')}</span
+						>
 					</label>
 					<div class="relative">
 						<input
@@ -558,8 +574,8 @@
 							type="password"
 							bind:value={spotifyClientSecretInput}
 							placeholder={hasStoredSpotifySecret
-								? 'Secret enregistré — laisser vide pour le conserver'
-								: 'Ex: 8f7e6d5c4b3a210987654321fedcba09'}
+								? $translate('stats.spotifyModal.secretStored')
+								: $translate('stats.spotifyModal.example', { values: { example: '8f7e6d5c4b3a210987654321fedcba09' } })}
 							class="w-full rounded-xl border border-stroke bg-surface-1/90 px-4 py-2.5 font-mono text-xs text-white placeholder-text-tertiary focus:border-[#1DB954] focus:ring-2 focus:ring-[#1DB954]/20 focus:outline-none"
 							onkeydown={(e) => {
 								if (e.key === 'Enter') handleConfirmSpotifyConnect()
@@ -567,7 +583,7 @@
 						/>
 					</div>
 					<p class="text-[11px] text-text-tertiary italic">
-						Cliquez sur &laquo;&nbsp;View client secret&nbsp;&raquo; sur votre dashboard Spotify pour l'obtenir
+						{$translate('stats.spotifyModal.secretHint')}
 					</p>
 				</div>
 			</div>
@@ -581,7 +597,7 @@
 				>
 					<span class="flex items-center gap-1.5">
 						<Icon name="key" class="h-3.5 w-3.5 text-[#1DB954]" />
-						<span>Ou coller le code d'autorisation / URL reçue manuellement</span>
+						<span>{$translate('stats.spotifyModal.manualToggle')}</span>
 					</span>
 					<Icon
 						name="chevron-right"
@@ -592,14 +608,13 @@
 				{#if showManualCodeFallback}
 					<div class="mt-2.5 space-y-2 rounded-2xl border border-stroke/50 bg-surface-1/90 p-3.5 text-xs">
 						<p class="text-[11px] leading-relaxed text-text-secondary">
-							Si le navigateur ne redirige pas automatiquement, collez ici l'URL complète affichée dans la barre
-							d'adresse ou le code d'autorisation :
+							{$translate('stats.spotifyModal.manualHelp')}
 						</p>
 						<div class="flex gap-2">
 							<input
 								type="text"
 								bind:value={manualCodeInput}
-								placeholder="Ex: http://127.0.0.1:8888/callback?code=AQD... ou AQD..."
+								placeholder={$translate('stats.spotifyModal.manualPlaceholder')}
 								class="flex-1 rounded-xl border border-stroke bg-surface-2/90 px-3 py-2 font-mono text-[11px] text-white placeholder-text-tertiary focus:border-[#1DB954] focus:ring-1 focus:ring-[#1DB954]/20 focus:outline-none"
 								onkeydown={(e) => {
 									if (e.key === 'Enter') handleManualCodeSubmit()
@@ -613,10 +628,10 @@
 							>
 								{#if isSubmittingManualCode}
 									<Spinner class="h-3.5 w-3.5 text-emerald-400" />
-									<span>Validation...</span>
+									<span>{$translate('stats.spotifyModal.validating')}</span>
 								{:else}
 									<Icon name="check" class="h-3.5 w-3.5" />
-									<span>Valider</span>
+									<span>{$translate('stats.spotifyModal.validate')}</span>
 								{/if}
 							</button>
 						</div>
@@ -631,7 +646,7 @@
 					class="cursor-pointer rounded-xl border border-stroke bg-surface-2 px-4 py-2 text-xs font-semibold text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
 					onclick={closeSpotifyModal}
 				>
-					Annuler
+					{$translate('common.cancel')}
 				</button>
 				<Button
 					variant="primary"
@@ -643,7 +658,7 @@
 					onclick={handleConfirmSpotifyConnect}
 				>
 					<Icon name="link" class="h-3.5 w-3.5" />
-					<span>Se connecter à Spotify</span>
+					<span>{$translate('stats.spotifyModal.connect')}</span>
 				</Button>
 			</div>
 		</div>

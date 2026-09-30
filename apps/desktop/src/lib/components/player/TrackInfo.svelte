@@ -32,7 +32,9 @@
 	const previewArtworkPath = $derived(previewInfo?.release.artwork_path ?? null)
 	const previewArtworkUrl = $derived(previewInfo?.release.artwork_url ?? null)
 
-	const beatportArtistNames = $derived(beatportTrack?.artists?.map((a) => a.name).join(', ') || 'Beatport Artist')
+	const beatportArtistNames = $derived(
+		beatportTrack?.artists?.map((a) => a.name).join(', ') || $translate('player.trackInfo.beatportArtist')
+	)
 
 	function handleArtworkClick() {
 		if (
@@ -123,10 +125,10 @@
 				class="block max-w-full cursor-pointer truncate text-left text-sm font-medium text-text-primary hover:underline"
 				onclick={() => onLocate?.()}
 			>
-				{standaloneTrack.title || standaloneTrack.file_path.split('/').pop() || 'Morceau inconnu'}
+				{standaloneTrack.title || standaloneTrack.file_path.split('/').pop() || $translate('player.unknownTrack')}
 			</button>
 			<Text variant="caption" as="p" color="secondary" truncate>
-				{standaloneTrack.artist || 'Fichier audio externe'}
+				{standaloneTrack.artist || $translate('player.trackInfo.externalFile')}
 			</Text>
 		{:else if track}
 			<button
@@ -149,7 +151,7 @@
 			type="button"
 			class="flex-shrink-0 cursor-pointer text-text-tertiary transition-colors hover:text-red-400"
 			onclick={() => beatportStore.toggleFavorite(beatportTrack)}
-			title="Favori Beatport"
+			title={$translate('player.trackInfo.beatportFavorite')}
 		>
 			<Icon name="heart" class="h-3.5 w-3.5" />
 		</button>

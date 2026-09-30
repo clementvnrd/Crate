@@ -10,6 +10,7 @@ import type {
 import * as upgraderApi from '../api/upgrader'
 import { toastStore } from './toast'
 import { toErrorMessage } from '../utils/errors'
+import { translate } from '../i18n'
 
 export interface UpgraderState {
 	matches: UpgradeMatch[]
@@ -66,7 +67,7 @@ function createUpgraderStore() {
 				}))
 				return result
 			} catch (error) {
-				const errorMsg = toErrorMessage(error, "Erreur lors du scan d'upgrade")
+				const errorMsg = toErrorMessage(error, get(translate)('upgrader.toast.scanFailed'))
 				update((s) => ({ ...s, loading: false, error: errorMsg }))
 				toastStore.error(errorMsg)
 				return null
@@ -147,9 +148,9 @@ function createUpgraderStore() {
 						selectedMatchTrackIds: nextSelected,
 					}
 				})
-				toastStore.success('Morceau ignoré pour les futures améliorations')
+				toastStore.success(get(translate)('upgrader.toast.ignored'))
 			} catch (error) {
-				const errorMsg = toErrorMessage(error, "Erreur lors de l'ignorance du morceau")
+				const errorMsg = toErrorMessage(error, get(translate)('upgrader.toast.ignoreFailed'))
 				toastStore.error(errorMsg)
 			}
 		},
@@ -172,19 +173,15 @@ function createUpgraderStore() {
 					await onUpgraded()
 				}
 				if (result.success_count > 0) {
-					toastStore.success(
-						result.success_count === 1
-							? '1 morceau mis à niveau en FLAC Lossless !'
-							: `${result.success_count} morceaux mis à niveau en FLAC Lossless !`
-					)
+					toastStore.success(get(translate)('upgrader.toast.upgraded', { values: { count: result.success_count } }))
 				}
 				if (result.failed_count > 0) {
-					toastStore.error(`${result.failed_count} mise(s) à niveau ont échoué.`)
+					toastStore.error(get(translate)('upgrader.toast.failed', { values: { count: result.failed_count } }))
 				}
 				await this.load()
 				return result
 			} catch (error) {
-				const errorMsg = toErrorMessage(error, 'Erreur lors de la mise à niveau')
+				const errorMsg = toErrorMessage(error, get(translate)('upgrader.toast.upgradeFailed'))
 				toastStore.error(errorMsg)
 				return null
 			} finally {

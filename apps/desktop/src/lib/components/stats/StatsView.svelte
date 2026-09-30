@@ -70,15 +70,15 @@
 			</div>
 			<div>
 				<div class="flex items-center gap-2">
-					<h1 class="text-base font-bold tracking-tight text-text-primary">Crate Pulse & Stats</h1>
+					<h1 class="text-base font-bold tracking-tight text-text-primary">{$translate('stats.header.title')}</h1>
 					<span
 						class="rounded-full border border-brand-primary/40 bg-brand-primary/20 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-brand-primary uppercase"
 					>
-						Live
+						{$translate('stats.header.live')}
 					</span>
 				</div>
 				<p class="text-[11px] text-text-tertiary">
-					Analyse unifiée de vos écoutes Spotify, Crate, Beatport et sets Rekordbox DJ
+					{$translate('stats.header.subtitle')}
 				</p>
 			</div>
 		</div>
@@ -91,7 +91,7 @@
 					class="hidden animate-pulse items-center gap-2 rounded-full border border-[#1DB954]/40 bg-[#1DB954]/10 px-3 py-1 text-xs font-medium text-[#1DB954] shadow-sm motion-reduce:animate-none md:flex"
 				>
 					<span class="h-2 w-2 rounded-full bg-[#1DB954]"></span>
-					<span class="font-bold">Live Spotify :</span>
+					<span class="font-bold">{$translate('stats.header.liveSpotify')}</span>
 					<span class="max-w-[140px] truncate text-text-primary">
 						{$spotifyNowPlaying.title}
 					</span>
@@ -112,7 +112,7 @@
 				type="button"
 				class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-stroke bg-surface-2 text-text-secondary shadow-sm transition-all hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary active:scale-95"
 				onclick={handleRefresh}
-				title="Rafraîchir les statistiques"
+				title={$translate('stats.header.refresh')}
 				disabled={$isStatsLoading}
 			>
 				<Icon

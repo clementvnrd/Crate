@@ -1,6 +1,9 @@
 <script lang="ts">
 	import type { BpmBucketItem } from '$shared/types'
 	import Icon from '$lib/components/common/Icon.svelte'
+	import { translate } from '$shared/i18n'
+	import { language } from '$lib/stores'
+	import { formatNumber } from '$shared/utils/format'
 
 	type Props = {
 		bpmStats: BpmBucketItem[]
@@ -15,7 +18,7 @@
 		if (range.includes('130-135')) return 'Peak Techno'
 		if (range.includes('115-120') || range.includes('< 120')) return 'Deep & Organic'
 		if (range.includes('135') || range.includes('140') || range.includes('170')) return 'Hard Dance / DnB'
-		return 'Électronique'
+		return $translate('stats.bpm.genreElectronic')
 	}
 
 	let maxCount = $derived(Math.max(...bpmStats.map((b) => b.count), 1))
@@ -30,14 +33,14 @@
 				<Icon name="activity" class="h-4 w-4" />
 			</div>
 			<div>
-				<h3 class="text-sm font-bold text-text-primary">Distribution du Tempo (BPM)</h3>
-				<p class="text-[11px] text-text-tertiary">Analyse des plages de tempo & styles musicaux</p>
+				<h3 class="text-sm font-bold text-text-primary">{$translate('stats.bpm.title')}</h3>
+				<p class="text-[11px] text-text-tertiary">{$translate('stats.bpm.subtitle')}</p>
 			</div>
 		</div>
 		<span
 			class="rounded-full border border-stroke bg-surface-2 px-2 py-0.5 font-mono text-[10px] font-medium text-text-secondary"
 		>
-			{bpmStats.length} plages
+			{$translate('stats.bpm.count', { values: { count: bpmStats.length } })}
 		</span>
 	</div>
 
@@ -49,7 +52,7 @@
 		</div>
 	{:else if bpmStats.length === 0}
 		<div class="flex flex-1 items-center justify-center py-10 text-center text-xs text-text-tertiary">
-			Aucune donnée BPM disponible pour cette période.
+			{$translate('stats.bpm.empty')}
 		</div>
 	{:else}
 		<div class="max-h-[360px] flex-1 space-y-2.5 overflow-y-auto pr-1">
@@ -73,8 +76,12 @@
 						</div>
 
 						<div class="flex items-center gap-2 font-mono text-xs">
-							<span class="font-bold text-text-primary">{bucket.count} morceaux</span>
-							<span class="text-[11px] text-text-tertiary">({percentage}%)</span>
+							<span class="font-bold text-text-primary"
+								>{$translate('stats.plays', { values: { count: bucket.count } })}</span
+							>
+							<span class="text-[11px] text-text-tertiary"
+								>({$translate('stats.percent', { values: { percent: formatNumber(percentage, $language) } })})</span
+							>
 						</div>
 					</div>
 

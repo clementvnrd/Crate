@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { HeatmapCell } from '$shared/types'
 	import { translate } from '$shared/i18n'
+	import { language } from '$lib/stores'
+	import { formatNumber } from '$shared/utils/format'
 	import { Icon, Tooltip } from '$lib/components/common'
 
 	type Props = {
@@ -10,15 +12,26 @@
 
 	let { heatmap, isLoading }: Props = $props()
 
-	const DAYS = [
-		{ id: 1, label: 'Lun', full: 'Lundi' },
-		{ id: 2, label: 'Mar', full: 'Mardi' },
-		{ id: 3, label: 'Mer', full: 'Mercredi' },
-		{ id: 4, label: 'Jeu', full: 'Jeudi' },
-		{ id: 5, label: 'Ven', full: 'Vendredi' },
-		{ id: 6, label: 'Sam', full: 'Samedi' },
-		{ id: 0, label: 'Dim', full: 'Dimanche' },
-	]
+	// Rows run Monday to Sunday; ids follow the backend's day_of_week (0 = Sunday)
+	const DAY_IDS = [1, 2, 3, 4, 5, 6, 0]
+
+	// 1 January 2023 was a Sunday, so this date falls on the weekday `id`
+	const weekdayDate = (id: number) => new Date(2023, 0, 1 + id)
+
+	// Day names come from the app language, not from hand-written labels. They are row labels and the start of a
+	// tooltip line, so they start with a capital and drop the abbreviation dot ("lun." -> "Lun", "lundi" -> "Lundi").
+	const asLabel = (name: string, locale: string) =>
+		name.charAt(0).toLocaleUpperCase(locale) + name.slice(1).replace(/\.$/, '')
+
+	let DAYS = $derived.by(() => {
+		const short = new Intl.DateTimeFormat($language, { weekday: 'short' })
+		const long = new Intl.DateTimeFormat($language, { weekday: 'long' })
+		return DAY_IDS.map((id) => ({
+			id,
+			label: asLabel(short.format(weekdayDate(id)), $language),
+			full: asLabel(long.format(weekdayDate(id)), $language),
+		}))
+	})
 
 	const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
@@ -49,7 +62,7 @@
 	let peakDayName = $derived.by(() => {
 		if (!peakCell) return ''
 		const found = DAYS.find((d) => d.id === peakCell.day_of_week)
-		return found ? found.full : 'Inconnu'
+		return found ? found.full : $translate('common.unknown')
 	})
 
 	const hourLabel = (hour: number) => `${hour.toString().padStart(2, '0')}:00`
@@ -77,8 +90,8 @@
 				<Icon name="clock" class="h-4 w-4" />
 			</div>
 			<div>
-				<h3 class="text-sm font-bold text-text-primary">Heatmap Hebdomadaire d'Écoute</h3>
-				<p class="text-[11px] text-text-tertiary">Matrice horaire 24h × 7 jours</p>
+				<h3 class="text-sm font-bold text-text-primary">{$translate('stats.heatmap.title')}</h3>
+				<p class="text-[11px] text-text-tertiary">{$translate('stats.heatmap.subtitle')}</p>
 			</div>
 		</div>
 
@@ -87,7 +100,15 @@
 				class="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400"
 			>
 				<Icon name="flame" class="h-3.5 w-3.5 text-emerald-400" />
-				<span>Pic d'écoute : <strong>{peakDayName} à {peakCell.hour_of_day}h00</strong> ({peakCell.minutes} min)</span>
+				<span
+					>{$translate('stats.heatmap.peak')}
+					<strong
+						>{$translate('stats.heatmap.peakAt', { values: { day: peakDayName, hour: peakCell.hour_of_day } })}</strong
+					>
+					({$translate('stats.duration.minutes', {
+						values: { minutes: formatNumber(peakCell.minutes, $language) },
+					})})</span
+				>
 			</div>
 		{/if}
 	</div>
@@ -102,7 +123,7 @@
 					{#each HOURS as hour (hour)}
 						<div class="flex-1 text-center">
 							{#if hour % 3 === 0}
-								{hour}h
+								{$translate('stats.heatmap.hourTick', { values: { hour } })}
 							{/if}
 						</div>
 					{/each}
@@ -140,8 +161,14 @@
 										)}"
 									></div>
 									{#snippet content()}
-										<div class="font-bold text-emerald-400">{day.full} {hour}h00 - {hour + 1}h00</div>
-										<div class="text-text-secondary">{mins} minutes · {plays} titres</div>
+										<div class="font-bold text-emerald-400">
+											{$translate('stats.heatmap.tooltipRange', {
+												values: { day: day.full, from: hour, to: hour + 1 },
+											})}
+										</div>
+										<div class="text-text-secondary">
+											{$translate('stats.heatmap.tooltipDetail', { values: { minutes: mins, plays } })}
+										</div>
 									{/snippet}
 								</Tooltip>
 							{/each}
@@ -152,7 +179,7 @@
 
 			<!-- Heatmap Scale Legend -->
 			<div class="mt-4 flex items-center justify-end gap-2 text-[10px] font-medium text-text-tertiary">
-				<span>Moins d'écoute</span>
+				<span>{$translate('stats.heatmap.less')}</span>
 				<div class="flex items-center gap-1">
 					<div class="h-3 w-3 rounded border border-stroke/40 bg-surface-3/40"></div>
 					<div class="h-3 w-3 rounded border border-emerald-500/30 bg-emerald-500/25"></div>
@@ -160,7 +187,7 @@
 					<div class="h-3 w-3 rounded border border-emerald-400 bg-emerald-500/75"></div>
 					<div class="h-3 w-3 rounded border border-emerald-300 bg-emerald-400"></div>
 				</div>
-				<span>Plus d'écoute</span>
+				<span>{$translate('stats.heatmap.more')}</span>
 			</div>
 		</div>
 	{/if}

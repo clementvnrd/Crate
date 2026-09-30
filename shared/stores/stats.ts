@@ -17,6 +17,8 @@ import * as statsApi from '../api/stats'
 import { toastStore } from './toast'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { toErrorMessage } from '../utils/errors'
+import { formatNumber } from '../utils/format'
+import { locale, translate } from '../i18n'
 
 export interface StatsState {
 	summary: StatsSummary | null
@@ -136,7 +138,7 @@ function createStatsStore() {
 					mikDetected: mikDetectedRes.status === 'fulfilled' ? mikDetectedRes.value : s.mikDetected,
 				}))
 			} catch (err) {
-				const errorMsg = toErrorMessage(err, 'Erreur lors du chargement des statistiques')
+				const errorMsg = toErrorMessage(err, get(translate)('stats.toast.loadFailed'))
 				update((s) => ({ ...s, isLoading: false, error: errorMsg }))
 				toastStore.error(errorMsg)
 			}
@@ -170,11 +172,11 @@ function createStatsStore() {
 				const authUrl = await statsApi.getSpotifyAuthUrl(clientId, redirectUri)
 				if (authUrl) {
 					await openUrl(authUrl)
-					toastStore.info('Autorisez Crate sur Spotify dans votre navigateur...')
+					toastStore.info(get(translate)('stats.toast.authorizeInBrowser'))
 				}
 			} catch (err) {
 				console.error('Spotify connect error:', err)
-				toastStore.error("Impossible d'initialiser la connexion Spotify")
+				toastStore.error(get(translate)('stats.toast.connectFailed'))
 			}
 		},
 
@@ -185,12 +187,12 @@ function createStatsStore() {
 			try {
 				const authState = await statsApi.handleSpotifyCallback(code, clientId, redirectUri, state)
 				update((s) => ({ ...s, spotifyAuth: authState }))
-				toastStore.success('Compte Spotify connecté avec succès !')
+				toastStore.success(get(translate)('stats.toast.spotifyConnected'))
 				await this.refreshAll()
 				return authState
 			} catch (err) {
 				console.error('Spotify auth callback error:', err)
-				toastStore.error("Erreur d'authentification avec Spotify")
+				toastStore.error(get(translate)('stats.toast.authFailed'))
 				return null
 			}
 		},
@@ -206,10 +208,10 @@ function createStatsStore() {
 					spotifyAuth: { is_connected: false, user_id: null, user_name: null, expires_at: null },
 					spotifyNowPlaying: null,
 				}))
-				toastStore.success('Spotify déconnecté')
+				toastStore.success(get(translate)('stats.toast.spotifyDisconnected'))
 			} catch (err) {
 				console.error('Spotify disconnect error:', err)
-				toastStore.error('Erreur lors de la déconnexion de Spotify')
+				toastStore.error(get(translate)('stats.toast.disconnectFailed'))
 			}
 		},
 
@@ -221,11 +223,18 @@ function createStatsStore() {
 			try {
 				const result = await statsApi.importSpotifyHistoryJson(jsonContent)
 				update((s) => ({ ...s, isImportingSpotify: false }))
-				toastStore.success(`Historique Spotify importé : ${result.imported_count} titres (${result.total_minutes} min)`)
+				toastStore.success(
+					get(translate)('stats.toast.spotifyImported', {
+						values: {
+							count: result.imported_count,
+							minutes: formatNumber(result.total_minutes, get(locale) ?? undefined),
+						},
+					})
+				)
 				await this.refreshAll()
 				return result
 			} catch (err) {
-				const errorMsg = toErrorMessage(err, "Erreur lors de l'import de l'archive Spotify")
+				const errorMsg = toErrorMessage(err, get(translate)('stats.toast.importFailed'))
 				update((s) => ({ ...s, isImportingSpotify: false }))
 				toastStore.error(errorMsg)
 				return null
@@ -240,11 +249,11 @@ function createStatsStore() {
 			try {
 				const count = await statsApi.syncRekordboxHistory()
 				update((s) => ({ ...s, isSyncingRekordbox: false }))
-				toastStore.success(`Rekordbox synchronisé : ${count} écoutes enregistrées`)
+				toastStore.success(get(translate)('stats.toast.rekordboxSynced', { values: { count } }))
 				await this.refreshAll()
 				return count
 			} catch (err) {
-				const errorMsg = toErrorMessage(err, 'Erreur lors de la synchronisation avec Rekordbox')
+				const errorMsg = toErrorMessage(err, get(translate)('stats.toast.rekordboxFailed'))
 				update((s) => ({ ...s, isSyncingRekordbox: false }))
 				toastStore.error(errorMsg)
 				return null
