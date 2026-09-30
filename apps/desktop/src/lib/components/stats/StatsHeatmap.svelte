@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { HeatmapCell } from '$shared/types'
-	import Icon from '$lib/components/common/Icon.svelte'
+	import { translate } from '$shared/i18n'
+	import { Icon, Tooltip } from '$lib/components/common'
 
 	type Props = {
 		heatmap: HeatmapCell[]
@@ -50,6 +51,14 @@
 		const found = DAYS.find((d) => d.id === peakCell.day_of_week)
 		return found ? found.full : 'Inconnu'
 	})
+
+	const hourLabel = (hour: number) => `${hour.toString().padStart(2, '0')}:00`
+
+	function cellDescription(dayName: string, hour: number, minutes: number, plays: number): string {
+		return $translate('stats.heatmap.cell', {
+			values: { day: dayName, from: hourLabel(hour), to: hourLabel(hour + 1), minutes, plays },
+		})
+	}
 
 	function getCellIntensityClass(minutes: number, max: number): string {
 		if (minutes <= 0) return 'bg-surface-3/40 hover:bg-surface-3 border-transparent'
@@ -113,23 +122,28 @@
 								{@const cell = cellMap.get(`${day.id}_${hour}`)}
 								{@const mins = cell?.minutes ?? 0}
 								{@const plays = cell?.plays ?? 0}
-								<div
-									class="group relative flex h-6 flex-1 cursor-pointer items-center justify-center rounded border text-[9px] transition-all {getCellIntensityClass(
-										mins,
-										maxMinutes
-									)}"
-									title="{day.full} {hour.toString().padStart(2, '0')}:00 - {(hour + 1)
-										.toString()
-										.padStart(2, '0')}:00 : {mins} min d'écoute ({plays} titres)"
+								{@const description = cellDescription(day.full, hour, mins, plays)}
+								<!-- Same bubble as before (instant, two lines); the cell is described for screen readers -->
+								<Tooltip
+									text={description}
+									wrapperClass="flex flex-1"
+									fade={false}
+									bubbleClass="rounded-lg border border-stroke bg-surface-0/95 px-2.5 py-1.5 text-[11px] font-medium whitespace-nowrap text-text-primary shadow-2xl backdrop-blur-md"
 								>
-									<!-- Tooltip on hover -->
 									<div
-										class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden -translate-x-1/2 rounded-lg border border-stroke bg-surface-0/95 px-2.5 py-1.5 text-[11px] font-medium whitespace-nowrap text-text-primary shadow-2xl backdrop-blur-md group-hover:block"
-									>
+										role="img"
+										aria-label={description}
+										title={description}
+										class="flex h-6 flex-1 items-center justify-center rounded border text-[9px] transition-all {getCellIntensityClass(
+											mins,
+											maxMinutes
+										)}"
+									></div>
+									{#snippet content()}
 										<div class="font-bold text-emerald-400">{day.full} {hour}h00 - {hour + 1}h00</div>
 										<div class="text-text-secondary">{mins} minutes · {plays} titres</div>
-									</div>
-								</div>
+									{/snippet}
+								</Tooltip>
 							{/each}
 						</div>
 					</div>

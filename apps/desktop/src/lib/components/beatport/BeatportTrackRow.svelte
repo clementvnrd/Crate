@@ -2,9 +2,8 @@
 	import type { BeatportTrack } from '$shared/types/beatport'
 	import { beatportStore } from '$shared/stores/beatport'
 	import { playerStore, isPlaying as isPlayerPlaying, beatportTrack, playbackSource } from '$lib/stores'
-	import { getCamelotColor, formatCamelotKey } from '$shared/utils/camelot'
 	import { displaySettingsStore } from '$shared/stores/displaySettings'
-	import { Icon } from '$lib/components/common'
+	import { Icon, KeyBadge } from '$lib/components/common'
 
 	interface Props {
 		track: BeatportTrack
@@ -21,9 +20,6 @@
 		$playbackSource === 'beatport' && String($beatportTrack?.id) === String(track.id) && $isPlayerPlaying
 	)
 	let isCurrentTrack = $derived($playbackSource === 'beatport' && String($beatportTrack?.id) === String(track.id))
-
-	let camelotInfo = $derived(track.key ? getCamelotColor(track.key) : null)
-	let formattedKey = $derived(track.key ? formatCamelotKey(track.key, $displaySettingsStore.camelotZeroPadding) : '-')
 
 	function togglePlay(e: MouseEvent) {
 		e.stopPropagation()
@@ -161,19 +157,9 @@
 		{track.duration_formatted}
 	</div>
 
-	<!-- Key (Camelot Colored Pill) -->
+	<!-- Key (Camelot) -->
 	<div class="flex items-center">
-		{#if camelotInfo}
-			<span
-				class="relative inline-flex h-[20px] w-10 items-center justify-center rounded font-mono text-[11px] font-bold tracking-tight shadow-sm select-none"
-				style="background-color: {camelotInfo.bg}; color: {camelotInfo.text};"
-				title="{formattedKey} ({camelotInfo.name}) • Beatport / Camelot"
-			>
-				{formattedKey}
-			</span>
-		{:else}
-			<span class="font-mono text-[11px] text-text-tertiary">{formattedKey}</span>
-		{/if}
+		<KeyBadge value={track.key} variant="cell-compact" zeroPad={$displaySettingsStore.camelotZeroPadding} />
 	</div>
 
 	<!-- BPM -->

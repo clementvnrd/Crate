@@ -9,13 +9,31 @@
 		position?: TooltipPosition
 		delay?: number
 		class?: string
+		/** Classes of the element that wraps the trigger (default `inline-flex`), e.g. `flex-1` in a flex row. */
+		wrapperClass?: string
+		/** Replaces the bubble's default classes entirely (a view that keeps its own tooltip look). */
+		bubbleClass?: string
+		/** Rich content instead of `text` (`text` still triggers the tooltip and is kept in sync). */
+		content?: Snippet
+		/** Fade in and out (default). `false`: appear and disappear at once. */
+		fade?: boolean
 		children: Snippet
 	}
 
 	const GAP = 8
 	const VIEWPORT_PADDING = 8
 
-	let { text, position = 'top', delay = 0, class: className = '', children }: Props = $props()
+	let {
+		text,
+		position = 'top',
+		delay = 0,
+		class: className = '',
+		wrapperClass = 'inline-flex',
+		bubbleClass,
+		content,
+		fade: fades = true,
+		children,
+	}: Props = $props()
 
 	let visible = $state(false)
 	let message = $state('')
@@ -173,7 +191,7 @@
 
 <div
 	bind:this={wrapperEl}
-	class="inline-flex"
+	class={wrapperClass}
 	role="group"
 	onmouseenter={handleMouseEnter}
 	onmouseleave={handleMouseLeave}
@@ -186,12 +204,17 @@
 		<div
 			bind:this={tooltipEl}
 			use:portal
-			class="pointer-events-none z-50 rounded border border-stroke bg-surface-1 px-2 py-1 text-xs font-medium whitespace-nowrap text-text-primary shadow-lg {className}"
+			class="pointer-events-none z-50 {bubbleClass ??
+				`rounded border border-stroke bg-surface-1 px-2 py-1 text-xs font-medium whitespace-nowrap text-text-primary shadow-lg ${className}`}"
 			style={fixedStyle}
 			role="tooltip"
-			transition:fade={{ duration: 200 }}
+			transition:fade={{ duration: fades ? 200 : 0 }}
 		>
-			{message}
+			{#if content}
+				{@render content()}
+			{:else}
+				{message}
+			{/if}
 		</div>
 	{/if}
 </div>

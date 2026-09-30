@@ -117,7 +117,7 @@ window:
   check: "1000×600, 1400×900, 1920×1080"
 
 components:
-  Button: { variants: [primary, secondary, ghost, danger, ghost-danger, outline], sizes: [sm, md, lg], rounded: control }
+  Button: { variants: [primary, secondary, ghost, danger, ghost-danger, outline], sizes: [sm, md, lg, bare], rounded: control, tones: "primary: accent (default look); deck, beatport, spotify render today's family look (bold, rounded-lg/xl via shape, glow, press, lift), each only in its own scope" }
   IconButton: { sizes: [sm 24px, md 32px, lg 40px], active: "bg-brand-muted text-brand-primary", rule: "accessible name required" }
   Text: { variants: [header-1, header-2, header-3, header-4, header-table, body-1, body-2, caption, code] }
   Input: { background: surface-2, border: stroke, rounded: control }
@@ -126,14 +126,15 @@ components:
   Tooltip: { background: surface-1, border: stroke, rounded: small, text: text-xs, portal: true }
   ContextMenu: { background: surface-1, rounded: control, shadow: shadow-lg }
   Checkbox: {}
+  SegmentedControl: { semantics: "radiogroup, one tab stop, arrow keys, Home/End", variants: "switcher (view switcher, sliding thumb), deck (Player, cyan fill), boxed (Pulse period)", rule: "a value that matches no option selects nothing" }
   ToggleSwitch: {}
   Slider: {}
-  Spinner: {}
+  Spinner: { color: "muted (default) or current", icon: "refresh (default) or loader (Player views)", motion: "motion-reduce:animate-none" }
   Toast: {}
   Icon: { source: "common/Icon.svelte (internal set); a Vitest test fails on an unknown name" }
   track-row: { layout: "grid, items-center, gap-2, px-3 py-1.5, text-sm", selected: "bg-brand-muted", playing: "title in text-brand-primary" }
-  key-badge: { size: "h-[22px] w-11", font: "font-mono text-xs font-bold", colors: "getCamelotColor(key)", rounded: small }
-  energy-badge: { component: "library/EnergyBadge.svelte", colors: "getEnergyInfo(level)", rounded: small }
+  key-badge: { component: "common/KeyBadge.svelte", variants: "one per view, reproducing today's look (cell, cell-compact, chip, chip-plain, tag, tag-wide, pill, pill-xs)", colors: "getCamelotColor(key), through keyBadge.ts only", neutral: "border-stroke bg-surface-3 when the key is not a Mixed In Key analysis (library)" }
+  energy-badge: { component: "common/EnergyBadge.svelte", colors: "getEnergyInfo(level)", variants: "badge (library: level symbol, glow), pill (Player hero: fixed ⚡)" }
 ---
 
 # Crate — design system
@@ -212,7 +213,7 @@ States, data palettes and source colours are not families: they cross every scop
 | Pulse view | header icon, period selector, refresh, focus | no | yes | no | yes (source chips, source bar, integration cards) | yes |
 | Beatport view and modals, Upgrader | focus | waveform preview only | no | yes | Beatport logo | yes |
 | Duplicate Killer | yes | waveform preview only | no | no | no | yes (`danger` for what will be deleted) |
-| Common components (`common/`) | yes | no | no | no | no | yes |
+| Common components (`common/`) | yes | only through an explicit `tone` or `variant`, used in the Player | no | only through an explicit `tone`, used in Beatport's scope | only through an explicit `tone` (Spotify's own connect button) | yes |
 
 A family colour never sits next to another family's colour in the same element (no cyan and neon green in one row, no gradient between two families). Entry points in the shell may carry the destination family's colour **only as a label or a count badge**, never as the fill or border of the button.
 
@@ -377,15 +378,17 @@ The one exception is the **neon-glass material**, kept by owner decision and con
 
 ## Components
 
-The components in `lib/components/common/` are **mandatory**: `Button`, `IconButton`, `Text`, `Input`, `Select`, `Checkbox`, `ToggleSwitch`, `Slider`, `Modal`, `ConfirmModal`, `InputModal`, `ContextMenu`, `Tooltip`, `Spinner`, `Toast`, `Icon`. A need that is not covered is handled by **extending** the common component (new variant, new prop), not by copying it.
+The components in `lib/components/common/` are **mandatory**: `Button`, `IconButton`, `Text`, `Input`, `Select`, `Checkbox`, `ToggleSwitch`, `Slider`, `Modal`, `ConfirmModal`, `InputModal`, `ContextMenu`, `Tooltip`, `Spinner`, `Toast`, `Icon`, `SegmentedControl`, `KeyBadge`, `EnergyBadge`. A need that is not covered is handled by **extending** the common component (new variant, new prop), not by copying it.
 
-Components to extract (defect D11) and to use as soon as they exist: `SegmentedControl` (4 copies today), `KeyBadge` (Camelot badge copied 8 times), `EnergyBadge` (exists in `library/`, to be generalised).
+A common component is on the accent by default. When a family view needs its own look on a shared control, the component takes an explicit prop (`Button tone="deck" | "beatport" | "spotify"`, `SegmentedControl variant`, `KeyBadge variant`) that reproduces that view's look exactly: the owner froze the visible look (CRA-141), so extraction shares the code and the behaviour, never imposes a new look. A view uses only its own family's tone. Merging the variants into fewer looks, and turning their classes into family tokens (D3), waits for the owner's answer.
 
-- **Button**: `primary` for the primary action of a view or modal (only one), `secondary` by default, `ghost` in toolbars, `danger` for a confirmed destructive action.
+- **Button**: `primary` for the primary action of a view or modal (only one), `secondary` by default, `ghost` in toolbars, `danger` for a confirmed destructive action. With a family `tone`, `size="bare"` plus `class` give the padding, and `shape`, `glow`, `press`, `lift` reproduce the view's radius, coloured shadow, press and hover scale.
+- **Segmented control**: always `SegmentedControl` (view switcher, Player display mode, Pulse period). It is a radio group: one tab stop, arrow keys move the selection, a translated `ariaLabel` names the group. `switcher` for the view switcher (a segment label may carry the destination family's colour, `labelTone`), `deck` for the Player, `boxed` for Pulse's period selector.
 - **Icon button**: always `IconButton` with an accessible name (translated `title` and `aria-label`). Active state: `bg-brand-muted text-brand-primary`.
 - **Modal**: the common `Modal` (`<dialog>`, Escape, focus trap). Height bounded by the window, internal scrolling, fixed footer. A destructive action goes through `ConfirmModal`.
 - **Track row**: dense grid, `border-b border-stroke-subtle`, selection as `bg-brand-muted`, the playing track signalled by its title in `text-brand-primary` (in the Player and Beatport views, by the family's now-playing role).
-- **Key badge**: `font-mono text-xs font-bold`, `rounded`, colours from `getCamelotColor()`.
+- **Key badge**: always `KeyBadge`, colours from `getCamelotColor()` through `keyBadge.ts`, with the `variant` of its view (library `cell` with `analysis="mik" | "other"`, Beatport `cell-compact`, Duplicate Killer `chip`, Upgrader `chip-plain`, Pulse `tag` and `tag-wide`, Player `pill` and `pill-xs`). The variants keep today's sizes (9 to 12 px); bringing them to the 12 px minimum is suspended with the charter (CRA-141). A Vitest guard fails when a component calls `getCamelotColor()` or `getEnergyInfo()` outside the badges without a stated reason.
+- **Energy badge**: always `EnergyBadge`, colours from `getEnergyInfo()`: `badge` in the library, `pill` in the Player hero.
 
 ## Interface states
 

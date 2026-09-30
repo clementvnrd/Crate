@@ -1,9 +1,8 @@
 <script lang="ts">
 	import type { TopTrackItem } from '$shared/types'
-	import { getCamelotColor, formatCamelotKey } from '$shared/utils/camelot'
 	import { getArtworkUrl } from '$shared/utils/artwork'
 	import { appDataDir } from '$lib/stores'
-	import Icon from '$lib/components/common/Icon.svelte'
+	import { Icon, KeyBadge } from '$lib/components/common'
 
 	type Props = {
 		tracks: TopTrackItem[]
@@ -68,7 +67,6 @@
 		<div class="max-h-[440px] flex-1 space-y-1.5 divide-y divide-stroke/20 overflow-y-auto pr-1">
 			{#each tracks as track, index (track.title + track.artist + index)}
 				{@const rank = index + 1}
-				{@const camelotColor = getCamelotColor(track.key)}
 				{@const primarySource = track.sources?.[0] ?? 'crate_local'}
 				{@const sourceInfo = formatSourceLabel(primarySource)}
 				{@const artUrl = getArtworkUrl(track.artwork_url, $appDataDir)}
@@ -140,14 +138,7 @@
 						{/if}
 
 						{#if track.key}
-							<span
-								class="rounded border px-1.5 py-0.5 font-mono text-[10px] font-bold shadow-xs"
-								style={camelotColor
-									? `background-color: ${camelotColor.bg}; color: ${camelotColor.text}; border-color: ${camelotColor.border};`
-									: ''}
-							>
-								{formatCamelotKey(track.key)}
-							</span>
+							<KeyBadge value={track.key} variant="tag" />
 						{/if}
 
 						<span

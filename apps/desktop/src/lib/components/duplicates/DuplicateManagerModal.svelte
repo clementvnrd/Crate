@@ -11,8 +11,7 @@
 	import { playerStore, currentTrack, isPlaying, playbackPosition } from '$shared/stores/player'
 	import { libraryStore } from '$lib/stores/library'
 	import { formatBitrate, formatDurationCompact } from '$shared/utils/format'
-	import { getCamelotColor, formatCamelotKey } from '$shared/utils/camelot'
-	import { Button, Icon, Text } from '$lib/components/common'
+	import { Button, Icon, KeyBadge, Text } from '$lib/components/common'
 	import Modal from '$lib/components/common/Modal.svelte'
 
 	type Props = {
@@ -408,23 +407,7 @@
 										<div class="flex flex-wrap items-center gap-1.5">
 											<!-- Camelot Key Badge -->
 											{#if track.key}
-												{@const camelot = getCamelotColor(track.key)}
-												{@const formattedKey = formatCamelotKey(track.key)}
-												{#if camelot}
-													<span
-														class="inline-flex h-[20px] min-w-[32px] items-center justify-center rounded px-1.5 font-mono text-[10px] font-bold tracking-tight shadow-sm select-none"
-														style="background-color: {camelot.bg}; color: {camelot.text};"
-														title="{formattedKey} ({camelot.name}) • Camelot Key"
-													>
-														{formattedKey}
-													</span>
-												{:else}
-													<span
-														class="inline-flex h-[20px] items-center justify-center rounded border border-stroke/50 bg-surface-3 px-1.5 font-mono text-[10px] text-text-secondary select-none"
-													>
-														{formattedKey}
-													</span>
-												{/if}
+												<KeyBadge value={track.key} variant="chip" />
 											{/if}
 
 											<!-- BPM Badge -->

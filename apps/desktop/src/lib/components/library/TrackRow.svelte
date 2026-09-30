@@ -7,20 +7,18 @@
 		formatKey,
 		formatBitrate,
 		formatDate,
-		getCamelotColor,
 		formatCamelotKey,
 		getTrackDisplayName,
 		getTrackDisplayArtist,
 	} from '$shared/utils'
 	import { TagChip } from '$lib/components/tags'
 	import Icon from '$lib/components/common/Icon.svelte'
-	import { AlbumArt, AlbumArtModal, Spinner, Text, Tooltip } from '$lib/components/common'
+	import { AlbumArt, AlbumArtModal, EnergyBadge, KeyBadge, Spinner, Text, Tooltip } from '$lib/components/common'
 	import { missingTrackIds, dragStore, isDraggingTag, keyNotationFormat, language, dateFormat } from '$lib/stores'
 	import { displaySettingsStore, type ColumnVisibility } from '$shared/stores/displaySettings'
 	import { translate } from '$shared/i18n'
 	import { DRAG_THRESHOLD, getDistance } from '$shared/utils/drag'
 	import TrackColorCell from './TrackColorCell.svelte'
-	import EnergyBadge from './EnergyBadge.svelte'
 
 	type Props = {
 		track: Track
@@ -259,38 +257,16 @@
 		{:else if col === 'key'}
 			<!-- Key (Authentic MIK Camelot Wheel vs Neutral Grey for non-MIK) -->
 			<div class="flex items-center">
-				{#if track.key}
-					{@const isMik = track.analysis_source === 'mixed_in_key'}
-					{@const camelotInfo = getCamelotColor(track.key)}
-					{@const formattedKey =
-						$keyNotationFormat === 'camelot'
+				<KeyBadge
+					value={track.key}
+					variant="cell"
+					label={track.key
+						? $keyNotationFormat === 'camelot'
 							? formatCamelotKey(track.key, $displaySettingsStore.camelotZeroPadding)
-							: formatKey(track.key, $keyNotationFormat)}
-					{#if isMik && camelotInfo}
-						<span
-							class="relative inline-flex h-[22px] w-11 items-center justify-center rounded font-mono text-[11px] font-bold tracking-tight shadow-sm select-none"
-							style="background-color: {camelotInfo.bg}; color: {camelotInfo.text};"
-							title="{formattedKey} ({camelotInfo.name}) • Mixed In Key"
-						>
-							{formattedKey}
-							<img
-								src="/mik-ring.png"
-								alt="MIK"
-								class="pointer-events-none absolute -top-1.5 -right-1.5 h-3.5 w-3.5 object-contain drop-shadow-[0_0_3px_rgba(56,189,248,0.8)] select-none"
-								title="Mixed In Key Analyzed"
-							/>
-						</span>
-					{:else}
-						<span
-							class="relative inline-flex h-[22px] w-11 items-center justify-center rounded border border-stroke bg-surface-3 font-mono text-[11px] font-medium tracking-tight text-text-secondary select-none"
-							title="{formattedKey} • Non analysé par Mixed In Key"
-						>
-							{formattedKey}
-						</span>
-					{/if}
-				{:else}
-					<span class="text-xs text-text-tertiary">-</span>
-				{/if}
+							: formatKey(track.key, $keyNotationFormat)
+						: undefined}
+					analysis={track.analysis_source === 'mixed_in_key' ? 'mik' : 'other'}
+				/>
 			</div>
 		{:else if col === 'energy'}
 			<!-- Energy (Mixed In Key Energy Level) -->

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../style.css'
 	import type { Snippet } from 'svelte'
-	import type { Language, Playlist, TagCategory, Tag, TagSelectionState, UsbDevice } from '$shared/types'
+	import type { ActiveView, Language, Playlist, TagCategory, Tag, TagSelectionState, UsbDevice } from '$shared/types'
 	import ToastContainer from '$lib/components/common/ToastContainer.svelte'
 	import CrashScreen from '$lib/components/common/CrashScreen.svelte'
 	import SplashScreen from '$lib/components/common/SplashScreen.svelte'
@@ -17,7 +17,7 @@
 	import { initializeI18n, translate } from '$shared/i18n'
 	import { Sidebar, Toolbar } from '$lib/components/layout'
 	import { Player } from '$lib/components/player'
-	import { ResizeHandle, Icon, Text } from '$lib/components/common'
+	import { ResizeHandle, Text, SegmentedControl, type SegmentOption } from '$lib/components/common'
 	import {
 		playlistsStore,
 		tagsStore,
@@ -202,6 +202,13 @@
 	// =========================================================================
 
 	const contextPlaylists = $derived(playlists.filter((p) => p.context === $activeView))
+
+	// Discovery and Pulse are reached from the toolbar: on those views no segment is selected.
+	const viewSwitcherOptions: SegmentOption<ActiveView>[] = $derived([
+		{ value: 'player', label: $translate('nav.player'), icon: 'disc', labelTone: 'deck' },
+		{ value: 'library', label: $translate('nav.library') },
+		{ value: 'beatport', label: $translate('nav.beatport'), icon: 'beatport', labelTone: 'beatport' },
+	])
 
 	// =========================================================================
 	// Handlers
@@ -424,56 +431,15 @@
 				<div
 					class="pointer-events-none absolute inset-0 flex items-center justify-center max-[1535px]:pointer-events-auto max-[1535px]:static max-[1535px]:flex-shrink-0 max-[1535px]:px-2"
 				>
-					<div
+					<SegmentedControl
 						id="wizard-view-switcher"
-						class="pointer-events-auto relative inline-grid grid-cols-3 items-center rounded-lg bg-surface-2 p-0.5"
-					>
-						<div
-							class="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(33.333%-2px)] rounded-md bg-surface-0 shadow-sm transition-transform duration-200 ease-out motion-reduce:transition-none"
-							style="transform: translateX({$activeView === 'player'
-								? '0%'
-								: $activeView === 'library'
-									? '100%'
-									: '200%'})"
-						></div>
-						<button
-							type="button"
-							class="relative z-10 flex items-center justify-center gap-1.5 rounded-md px-3 py-1 text-center text-xs font-medium transition-colors {$activeView ===
-							'player'
-								? 'font-semibold text-cyan-400'
-								: 'text-text-tertiary hover:cursor-pointer hover:text-text-secondary'}"
-							onclick={() => $pageActions?.handleViewChange('player')}
-						>
-							<Icon name="disc" class="h-3 w-3 {$activeView === 'player' ? 'text-cyan-400' : 'text-text-tertiary'}" />
-							<span>Player</span>
-						</button>
-						<button
-							type="button"
-							class="relative z-10 rounded-md px-3 py-1 text-center text-xs font-medium transition-colors {$activeView ===
-							'library'
-								? 'font-semibold text-text-primary'
-								: 'text-text-tertiary hover:cursor-pointer hover:text-text-secondary'}"
-							onclick={() => $pageActions?.handleViewChange('library')}
-						>
-							{$translate('nav.library')}
-						</button>
-						<button
-							type="button"
-							class="relative z-10 flex items-center justify-center gap-1.5 rounded-md px-3 py-1 text-center text-xs font-medium transition-colors {$activeView ===
-							'beatport'
-								? 'font-semibold text-emerald-500 dark:text-emerald-400'
-								: 'text-text-tertiary hover:cursor-pointer hover:text-text-secondary'}"
-							onclick={() => $pageActions?.handleViewChange('beatport')}
-						>
-							<Icon
-								name="beatport"
-								class="h-3 w-3 {$activeView === 'beatport'
-									? 'text-emerald-500 dark:text-emerald-400'
-									: 'text-text-tertiary'}"
-							/>
-							<span>Beatport</span>
-						</button>
-					</div>
+						class="pointer-events-auto"
+						variant="switcher"
+						ariaLabel={$translate('nav.viewSwitcher')}
+						options={viewSwitcherOptions}
+						value={$activeView}
+						onchange={(view) => $pageActions?.handleViewChange(view)}
+					/>
 				</div>
 
 				<Toolbar

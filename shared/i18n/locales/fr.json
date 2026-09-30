@@ -26,7 +26,10 @@
 		"library": "Bibliothèque",
 		"discovery": "Découvertes",
 		"playlists": "Playlists",
-		"tags": "Tags"
+		"tags": "Tags",
+		"viewSwitcher": "Vues",
+		"player": "Player",
+		"beatport": "Beatport"
 	},
 	"settings": {
 		"title": "Paramètres",
@@ -281,7 +284,17 @@
 		"volume": "Volume",
 		"tempo": "Tempo",
 		"resetTempo": "Réinitialiser le tempo",
-		"trackNotFound": "Impossible de localiser la piste en cours de lecture"
+		"trackNotFound": "Impossible de localiser la piste en cours de lecture",
+		"mode": {
+			"label": "Affichage du lecteur",
+			"recent": "Récents",
+			"albums": "Mode Album"
+		},
+		"albums": {
+			"removeTitle": "Retirer cet album ?",
+			"removeMessage": "L'album est retiré du lecteur Crate. Les fichiers sur votre disque ne sont pas supprimés.",
+			"removeConfirm": "Retirer l'album"
+		}
 	},
 	"library": {
 		"searchPlaceholder": "Rechercher des pistes...",
@@ -951,5 +964,41 @@
 			"subtitle": "Commencez à construire votre collection."
 		},
 		"getStarted": "Commencer"
+	},
+	"stats": {
+		"range": {
+			"label": "Période",
+			"today": "Aujourd'hui",
+			"7d": "7 Jours",
+			"30d": "30 Jours",
+			"year": "Cette Année",
+			"all": "Tout"
+		},
+		"heatmap": {
+			"cell": "{day} {from} - {to} : {minutes} min d'écoute ({plays, plural, other {# titres}})"
+		}
+	},
+	"beatport": {
+		"search": {
+			"type": "Rechercher dans",
+			"types": {
+				"tracks": "Catalogue Global",
+				"artists": "Artistes",
+				"releases": "Releases"
+			},
+			"clear": "Effacer la recherche"
+		}
+	},
+	"badges": {
+		"key": {
+			"titleMik": "{key} ({name}) • Mixed In Key",
+			"titleNotMik": "{key} • Non analysé par Mixed In Key",
+			"titleSource": "{key} ({name}) • {source}",
+			"titleName": "Camelot Key: {name}"
+		},
+		"energy": {
+			"title": "Energy {level}/10 : {descriptor} (Mixed In Key)",
+			"titlePlayer": "Énergie: {descriptor} ({level}/10)"
+		}
 	}
 }

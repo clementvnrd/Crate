@@ -17,7 +17,8 @@
 		statsSelectedRange,
 		isStatsLoading,
 	} from '$shared/stores/stats'
-	import Icon from '$lib/components/common/Icon.svelte'
+	import { translate } from '$shared/i18n'
+	import { Icon, SegmentedControl, type SegmentOption } from '$lib/components/common'
 	import StatsKpiCards from './StatsKpiCards.svelte'
 	import StatsSourceBar from './StatsSourceBar.svelte'
 	import StatsTopTracks from './StatsTopTracks.svelte'
@@ -27,13 +28,11 @@
 	import StatsHeatmap from './StatsHeatmap.svelte'
 	import StatsIntegrations from './StatsIntegrations.svelte'
 
-	const TIME_RANGES: { id: TimeRange; label: string }[] = [
-		{ id: 'today', label: "Aujourd'hui" },
-		{ id: '7d', label: '7 Jours' },
-		{ id: '30d', label: '30 Jours' },
-		{ id: 'year', label: 'Cette Année' },
-		{ id: 'all', label: 'Tout' },
-	]
+	const TIME_RANGES: TimeRange[] = ['today', '7d', '30d', 'year', 'all']
+
+	const rangeOptions: SegmentOption<TimeRange>[] = $derived(
+		TIME_RANGES.map((range) => ({ value: range, label: $translate(`stats.range.${range}`) }))
+	)
 
 	let refreshTimer: NodeJS.Timeout | null = null
 
@@ -99,21 +98,14 @@
 				</div>
 			{/if}
 
-			<!-- Segmented Range Control -->
-			<div class="flex items-center rounded-xl border border-stroke bg-surface-2 p-1 shadow-xs">
-				{#each TIME_RANGES as r (r.id)}
-					<button
-						type="button"
-						class="cursor-pointer rounded-lg px-3 py-1 text-xs font-semibold transition-all {$statsSelectedRange ===
-						r.id
-							? 'border border-stroke-strong/60 bg-surface-0 text-text-primary shadow-sm'
-							: 'text-text-tertiary hover:text-text-secondary'}"
-						onclick={() => handleRangeChange(r.id)}
-					>
-						{r.label}
-					</button>
-				{/each}
-			</div>
+			<!-- Period (Crate control: stays on the neutral look, DESIGN.md Pulse family) -->
+			<SegmentedControl
+				variant="boxed"
+				ariaLabel={$translate('stats.range.label')}
+				options={rangeOptions}
+				value={$statsSelectedRange}
+				onchange={handleRangeChange}
+			/>
 
 			<!-- Refresh Button -->
 			<button

@@ -6,10 +6,19 @@
 	import BeatportTrackRow from './BeatportTrackRow.svelte'
 	import BeatportCartDrawer from './BeatportCartDrawer.svelte'
 	import BeatportLoginModal from './BeatportLoginModal.svelte'
-	import { Text, Icon, Spinner } from '$lib/components/common'
+	import { translate } from '$shared/i18n'
+	import { Text, Icon, Spinner, Button } from '$lib/components/common'
 
 	let searchInput = $state('')
-	let selectedSearchType = $state<'tracks' | 'releases' | 'artists' | 'playlists'>('tracks')
+	type SearchType = 'tracks' | 'releases' | 'artists' | 'playlists'
+	let selectedSearchType = $state<SearchType>('tracks')
+
+	const searchTypeOptions = $derived(
+		(['tracks', 'artists', 'releases'] as const).map((type) => ({
+			value: type,
+			label: $translate(`beatport.search.types.${type}`),
+		}))
+	)
 	let isCartOpen = $state(false)
 
 	onMount(() => {
@@ -97,27 +106,36 @@
 							bind:value={searchInput}
 							class="h-8 w-64 rounded-l-lg border border-stroke bg-surface-2 pr-3 pl-8 text-xs text-text-primary placeholder:text-text-tertiary focus:border-emerald-500 focus:outline-none"
 						/>
+						<!-- Native select joined to the field: its look is part of the frozen Beatport view (CRA-141) -->
 						<select
 							bind:value={selectedSearchType}
+							aria-label={$translate('beatport.search.type')}
 							class="h-8 cursor-pointer rounded-r-lg border-y border-r border-stroke bg-surface-3 px-2.5 text-xs text-text-secondary focus:border-emerald-500 focus:outline-none"
 						>
-							<option value="tracks">Catalogue Global</option>
-							<option value="artists">Artistes</option>
-							<option value="releases">Releases</option>
+							{#each searchTypeOptions as option (option.value)}
+								<option value={option.value}>{option.label}</option>
+							{/each}
 						</select>
 					</div>
 
-					<button
+					<Button
 						type="submit"
-						class="h-8 cursor-pointer rounded-lg bg-[#00FF96] px-3.5 text-xs font-bold text-black shadow-md shadow-[#00FF96]/10 transition-all hover:bg-[#00e687] active:scale-95"
+						variant="primary"
+						tone="beatport"
+						size="bare"
+						shape="lg"
+						glow="md/10"
+						press
+						class="h-8 px-3.5 text-xs"
 					>
 						Rechercher
-					</button>
+					</Button>
 
 					{#if $beatportStore.searchQuery.trim()}
 						<button
 							type="button"
 							class="rounded-lg border border-stroke bg-surface-2 px-2.5 py-1.5 text-xs text-text-secondary hover:text-text-primary"
+							aria-label={$translate('beatport.search.clear')}
 							onclick={handleClearSearch}
 						>
 							✕
@@ -163,14 +181,18 @@
 						</div>
 
 						<div class="mx-auto flex max-w-sm flex-col gap-3 pt-2 sm:flex-row">
-							<button
-								type="button"
-								class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#00FF96] px-4 py-3 text-xs font-bold text-black shadow-lg shadow-[#00FF96]/20 transition-all hover:scale-105 hover:bg-[#00e687]"
+							<Button
+								variant="primary"
+								tone="beatport"
+								size="bare"
+								glow="lg/20"
+								lift
+								class="flex-1 gap-2 px-4 py-3 text-xs"
 								onclick={() => beatportStore.openLoginModal()}
 							>
 								<Icon name="link" class="h-4 w-4" />
 								<span>Se connecter avec Beatport</span>
-							</button>
+							</Button>
 						</div>
 					</div>
 				</div>
@@ -189,14 +211,18 @@
 									<div class="text-[11px] text-neutral-300">{$beatportStore.error}</div>
 								</div>
 							</div>
-							<button
-								type="button"
-								class="flex flex-shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-[#00FF96] px-4 py-2 text-xs font-bold text-black shadow-md shadow-[#00FF96]/20 transition-all hover:bg-[#00e687]"
+							<Button
+								variant="primary"
+								tone="beatport"
+								size="bare"
+								shape="lg"
+								glow="md/20"
+								class="flex-shrink-0 gap-1.5 px-4 py-2 text-xs"
 								onclick={() => beatportStore.openLoginModal()}
 							>
 								<Icon name="refresh-cw" class="h-3.5 w-3.5" />
 								<span>Renouveler ma session Beatport</span>
-							</button>
+							</Button>
 						</div>
 					{/if}
 
@@ -256,14 +282,18 @@
 										</button>
 
 										{#if displayTracks.length > 0}
-											<button
-												type="button"
-												class="flex items-center gap-1.5 rounded-lg bg-[#00FF96] px-3.5 py-1 text-xs font-bold text-black shadow-md shadow-[#00FF96]/10 transition-all hover:bg-[#00e687]"
+											<Button
+												variant="primary"
+												tone="beatport"
+												size="bare"
+												shape="lg"
+												glow="md/10"
+												class="gap-1.5 px-3.5 py-1 text-xs"
 												onclick={handleAddAllVisibleToCart}
 											>
 												<Icon name="plus" class="h-3.5 w-3.5" />
 												<span>Ajouter toute la discographie au panier ({displayTracks.length})</span>
-											</button>
+											</Button>
 										{/if}
 									</div>
 								</div>

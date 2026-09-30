@@ -4,7 +4,7 @@
 	import * as statsApi from '$shared/api/stats'
 	import Icon from '$lib/components/common/Icon.svelte'
 	import ToggleSwitch from '$lib/components/common/ToggleSwitch.svelte'
-	import { Spinner } from '$lib/components/common'
+	import { Button, Spinner } from '$lib/components/common'
 	import { openUrl } from '@tauri-apps/plugin-opener'
 	import { toastStore } from '$shared/stores/toast'
 	import { listen } from '@tauri-apps/api/event'
@@ -239,14 +239,18 @@
 					<span>Déconnecter</span>
 				</button>
 			{:else}
-				<button
-					type="button"
-					class="flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#1DB954] px-3.5 py-1.5 text-xs font-bold text-black shadow-lg shadow-[#1DB954]/20 transition-all hover:bg-[#1ed760] active:scale-95"
+				<Button
+					variant="primary"
+					tone="spotify"
+					size="bare"
+					glow="lg/20"
+					press
+					class="gap-1.5 px-3.5 py-1.5 text-xs"
 					onclick={openSpotifyConnectModal}
 				>
 					<Icon name="link" class="h-3.5 w-3.5" />
 					<span>Se connecter</span>
-				</button>
+				</Button>
 			{/if}
 
 			<!-- Hidden File Input for JSON import -->
@@ -625,14 +629,18 @@
 				>
 					Annuler
 				</button>
-				<button
-					type="button"
-					class="flex cursor-pointer items-center gap-2 rounded-xl bg-[#1DB954] px-5 py-2 text-xs font-bold text-black shadow-lg shadow-[#1DB954]/25 transition-all hover:bg-[#1ed760] active:scale-95"
+				<Button
+					variant="primary"
+					tone="spotify"
+					size="bare"
+					glow="lg/25"
+					press
+					class="gap-2 px-5 py-2 text-xs"
 					onclick={handleConfirmSpotifyConnect}
 				>
 					<Icon name="link" class="h-3.5 w-3.5" />
 					<span>Se connecter à Spotify</span>
-				</button>
+				</Button>
 			</div>
 		</div>
 	</div>

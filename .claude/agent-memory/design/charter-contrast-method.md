@@ -5,7 +5,7 @@ metadata:
   type: reference
 ---
 
-The measured-contrast table in DESIGN.md was computed with a small Node WCAG script from the hex values in style.css and the Tailwind palette (no browser harness exists in the repo; `playwright-cli` is installed at /opt/homebrew/bin but there is nothing to point it at).
+The measured-contrast table in DESIGN.md was computed with a small Node WCAG script from the hex values in style.css and the Tailwind palette, before the browser harness existed (it now does: `yarn harness`, `yarn test:e2e`, which measure rendered contrast).
 
 Pitfalls worth remembering:
 - Glass surfaces must be composited before measuring: Pulse cards = surface-1 at 70% over surface-0 (#131316 dark, #fcfcfc light).

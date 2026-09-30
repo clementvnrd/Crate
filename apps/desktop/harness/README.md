@@ -40,7 +40,7 @@ Example: `http://localhost:1430/?theme=light&lang=fr&accent=amber&playing=trk-03
 | Screen | How |
 | --- | --- |
 | Library | Start page. Sidebar: playlists, folders, smart playlist, tags tab, the USB stick. |
-| Player | `Player` in the segmented control. `Mode Album` shows the album grid. |
+| Player | `Player` in the segmented control. `Album mode` (French `Mode Album`) shows the album grid. |
 | Beatport | `Beatport` in the segmented control. Charts, catalogue, purchases, favourites, playlists. |
 | Discovery | Globe button of the toolbar. |
 | Pulse | Chart button of the toolbar. |

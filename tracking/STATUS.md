@@ -197,7 +197,7 @@ _Exit criterion: Strict design rules respected._
 - [x] **D5** — Player hero with a fixed height (`h-[225px]` for about 260 px of content): at 1000×640 the transport is… — _transport never covered (verified at 1000×640); at that size the recents list keeps ~2 rows_
 - [ ] **D7** — Beatport table at 1000 px: the title column shrinks to one character
 - [ ] **D10** — Accessibility: about 25 icon buttons without a name (transport, segments, MIK badge, recents actions);…
-- [ ] **D11** — Components reinvented instead of the shared ones: 4 segmented controls, checkbox, select, spinner, tooltip and…
+- [ ] **D11** — Components reinvented instead of the shared ones: 4 segmented controls, checkbox, select, spinner, tooltip and… — _partial: shared SegmentedControl, KeyBadge, EnergyBadge and family Button props replace the copies with the look unchanged; left: Spotify connection modal, Rekordbox sync button, native checkboxes, home-made spinners in untouched files_
 - [x] **D12** — Permanent "Build 57" badge next to the logo and "PRO" labels on third-party brands
 
 ### Step 12 — Translation
@@ -250,3 +250,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Scenario B: assisted physical organisation with preview, journal and undo (backend, migration 18) | — |
 | 2026-09-30 | Scenario B: Set mode analysis, bridge tracks and proposed order (backend) | — |
 | 2026-09-30 | **Owner decisions read from Linear (3rd pass)**: Q2 cancelled (macOS only), visual language reopened after "sienne" became "cyan", Spotify reset waiting for a chat approval or the in-app button | — |
+| 2026-09-30 | Shared SegmentedControl, KeyBadge, EnergyBadge and family Button props, dark theme unchanged (D11 partial) | 11 |

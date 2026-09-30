@@ -21,8 +21,7 @@
 	import { pageActions } from '$lib/stores'
 	import { libraryStore } from '$lib/stores/library'
 	import { formatBitrate, formatDurationCompact } from '$shared/utils/format'
-	import { getCamelotColor, formatCamelotKey } from '$shared/utils/camelot'
-	import { Button, Icon, Text } from '$lib/components/common'
+	import { Button, Icon, KeyBadge, Text } from '$lib/components/common'
 	import Modal from '$lib/components/common/Modal.svelte'
 
 	type Props = {
@@ -464,16 +463,7 @@
 									</span>
 
 									{#if match.current_key}
-										{@const camelot = getCamelotColor(match.current_key)}
-										{@const formattedKey = formatCamelotKey(match.current_key)}
-										{#if camelot}
-											<span
-												class="inline-flex h-[20px] min-w-[30px] items-center justify-center rounded px-1.5 font-mono text-[10px] font-bold"
-												style="background-color: {camelot.bg}; color: {camelot.text};"
-											>
-												{formattedKey}
-											</span>
-										{/if}
+										<KeyBadge value={match.current_key} variant="chip-plain" />
 									{/if}
 
 									{#if match.current_bpm}
@@ -587,16 +577,7 @@
 									</span>
 
 									{#if match.beatport_track.key}
-										{@const camelot = getCamelotColor(match.beatport_track.key)}
-										{@const formattedKey = formatCamelotKey(match.beatport_track.key)}
-										{#if camelot}
-											<span
-												class="inline-flex h-[20px] min-w-[30px] items-center justify-center rounded px-1.5 font-mono text-[10px] font-bold"
-												style="background-color: {camelot.bg}; color: {camelot.text};"
-											>
-												{formattedKey}
-											</span>
-										{/if}
+										<KeyBadge value={match.beatport_track.key} variant="chip-plain" />
 									{/if}
 
 									{#if match.beatport_track.bpm}

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { HarmonicStatsItem } from '$shared/types'
-	import { getCamelotColor, formatCamelotKey } from '$shared/utils/camelot'
-	import Icon from '$lib/components/common/Icon.svelte'
+	import { Icon, KeyBadge } from '$lib/components/common'
+	import { getCamelotColor } from '$shared/utils/camelot'
 
 	type Props = {
 		harmonicStats: HarmonicStatsItem[]
@@ -46,6 +46,7 @@
 	{:else}
 		<div class="max-h-[360px] flex-1 space-y-2.5 overflow-y-auto pr-1">
 			{#each sortedItems as item (item.key)}
+				<!-- The key colour also fills the play-share bar below (chart use of the palette) -->
 				{@const colorInfo = getCamelotColor(item.key)}
 				{@const fillPercent = Math.min(100, Math.round((item.plays / maxPlays) * 100))}
 				<div
@@ -53,14 +54,7 @@
 				>
 					<div class="mb-1.5 flex items-center justify-between">
 						<div class="flex items-center gap-2">
-							<span
-								class="min-w-[36px] rounded border px-2 py-0.5 text-center font-mono text-xs font-bold shadow-xs"
-								style={colorInfo
-									? `background-color: ${colorInfo.bg}; color: ${colorInfo.text}; border-color: ${colorInfo.border};`
-									: 'background-color: #3b82f6; color: white;'}
-							>
-								{formatCamelotKey(item.key)}
-							</span>
+							<KeyBadge value={item.key} variant="tag-wide" />
 							{#if colorInfo?.name}
 								<span class="max-w-[150px] truncate text-xs font-medium text-text-secondary">
 									{colorInfo.name}

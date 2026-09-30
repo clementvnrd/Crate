@@ -1,2 +1,3 @@
-- [Owner visual preferences](owner-visual-preferences.md) — keep colour families (CRA-115); "neon glass"/"sienna" vocabulary mapping
+- [Owner visual preferences](owner-visual-preferences.md) — look frozen until CRA-141: no visible dark-theme change; keep colour families; vocabulary
 - [Charter contrast method](charter-contrast-method.md) — how contrast was computed without a harness; glass composite and accent-fill pitfalls
+- [Tooling pitfalls](tooling-pitfalls.md) — design:scan ignores script class maps; e2e end-of-run timeouts; switcher selectors

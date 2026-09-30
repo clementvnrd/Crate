@@ -2,7 +2,8 @@
 	import { albumsStore, playerAlbums, albumsLoading, albumsAdding, appDataDir } from '$lib/stores'
 	import type { PlayerAlbum } from '$shared/types'
 	import { getArtworkUrl } from '$shared/utils'
-	import { Icon, Tooltip } from '$lib/components/common'
+	import { translate } from '$shared/i18n'
+	import { Button, ConfirmModal, Icon, Spinner } from '$lib/components/common'
 
 	interface Props {
 		onSelectAlbum: (album: PlayerAlbum) => void
@@ -19,15 +20,16 @@
 		albumsStore.playAlbum(album, false)
 	}
 
+	let albumToRemove = $state<string | null>(null)
+
 	function handleRemoveAlbum(e: MouseEvent, albumId: string) {
 		e.stopPropagation()
-		if (
-			confirm(
-				'Voulez-vous retirer cet album du lecteur Crate ? (Les fichiers sur votre disque ne seront pas supprimés)'
-			)
-		) {
-			albumsStore.removeAlbum(albumId)
-		}
+		albumToRemove = albumId
+	}
+
+	function confirmRemoveAlbum() {
+		if (albumToRemove) albumsStore.removeAlbum(albumToRemove)
+		albumToRemove = null
 	}
 </script>
 
@@ -55,22 +57,30 @@
 			</div>
 		</div>
 
-		<button
-			type="button"
-			class="flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-3.5 py-2 text-xs font-bold text-black shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-400 active:scale-95 disabled:opacity-50"
+		<Button
+			variant="primary"
+			tone="deck"
+			size="bare"
+			glow="lg/20"
+			press
+			class="gap-2 px-3.5 py-2 text-xs"
 			onclick={handleAddAlbum}
 			disabled={$albumsAdding}
 		>
-			<Icon name={$albumsAdding ? 'loader' : 'folder-plus'} class="h-4 w-4 {$albumsAdding ? 'animate-spin' : ''}" />
+			{#if $albumsAdding}
+				<Spinner icon="loader" class="h-4 w-4" color="current" />
+			{:else}
+				<Icon name="folder-plus" class="h-4 w-4" />
+			{/if}
 			<span>{$albumsAdding ? 'Importation...' : 'Ajouter un dossier / album'}</span>
-		</button>
+		</Button>
 	</div>
 
 	<!-- Main Grid Content -->
 	<div class="flex-1 py-6">
 		{#if $albumsLoading}
 			<div class="flex h-48 items-center justify-center gap-2.5 text-text-tertiary">
-				<Icon name="loader" class="h-5 w-5 animate-spin text-cyan-500" />
+				<Spinner icon="loader" class="h-5 w-5 text-cyan-500" color="current" />
 				<span class="text-sm">Chargement des albums...</span>
 			</div>
 		{:else if $playerAlbums.length === 0}
@@ -86,14 +96,18 @@
 					Ajoutez un dossier contenant vos fichiers audio pour parcourir votre collection sous forme d'albums avec leurs
 					pochettes intégrées.
 				</p>
-				<button
-					type="button"
-					class="mt-5 flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-xs font-bold text-black shadow-md shadow-cyan-500/20 transition-all hover:bg-cyan-400 active:scale-95"
+				<Button
+					variant="primary"
+					tone="deck"
+					size="bare"
+					glow="md/20"
+					press
+					class="mt-5 gap-2 px-4 py-2.5 text-xs"
 					onclick={handleAddAlbum}
 				>
 					<Icon name="folder-plus" class="h-4 w-4" />
 					<span>Ajouter un dossier d'album</span>
-				</button>
+				</Button>
 			</div>
 		{:else}
 			<!-- Apple Music Style Album Grid -->
@@ -184,3 +198,13 @@
 		{/if}
 	</div>
 </div>
+
+<ConfirmModal
+	open={albumToRemove !== null}
+	title={$translate('player.albums.removeTitle')}
+	message={$translate('player.albums.removeMessage')}
+	confirmLabel={$translate('player.albums.removeConfirm')}
+	destructive
+	onConfirm={confirmRemoveAlbum}
+	onCancel={() => (albumToRemove = null)}
+/>

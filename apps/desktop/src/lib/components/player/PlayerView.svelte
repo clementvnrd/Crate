@@ -31,12 +31,12 @@
 		formatBpm,
 		formatKey,
 		formatBitrate,
-		getCamelotColor,
-		getEnergyInfo,
 		formatDate,
 		getHarmonicKeys,
 	} from '$shared/utils'
-	import { Icon, Text, Tooltip } from '$lib/components/common'
+	import { translate } from '$shared/i18n'
+	import { EnergyBadge, Icon, KeyBadge, SegmentedControl, Spinner, Tooltip } from '$lib/components/common'
+	import type { SegmentOption } from '$lib/components/common'
 	import AlbumGridView from './AlbumGridView.svelte'
 	import AlbumDetailView from './AlbumDetailView.svelte'
 
@@ -114,9 +114,12 @@
 		activeHeroTrack?.artwork_path ? getArtworkUrl(activeHeroTrack.artwork_path, $appDataDir) : null
 	)
 
-	const camelotInfo = $derived(activeHeroTrack?.key ? getCamelotColor(activeHeroTrack.key) : null)
+	type BottomMode = 'recent' | 'albums'
 
-	const energyInfo = $derived(activeHeroTrack?.energy ? getEnergyInfo(activeHeroTrack.energy) : null)
+	const modeOptions: SegmentOption<BottomMode>[] = $derived([
+		{ value: 'recent', label: $translate('player.mode.recent'), icon: 'disc' },
+		{ value: 'albums', label: $translate('player.mode.albums'), icon: 'folder-open' },
+	])
 
 	const effectiveDuration = $derived($playbackDuration > 0 ? $playbackDuration : activeHeroTrack?.duration_ms || 0)
 
@@ -306,6 +309,18 @@
 	}
 </script>
 
+<!-- `background`: the hero's toggle is slightly translucent, the empty hero's one is opaque (as before) -->
+{#snippet modeToggle(background: string)}
+	<SegmentedControl
+		variant="deck"
+		class={background}
+		ariaLabel={$translate('player.mode.label')}
+		options={modeOptions}
+		value={isAlbumMode ? 'albums' : 'recent'}
+		onchange={(mode) => (isAlbumMode = mode === 'albums')}
+	/>
+{/snippet}
+
 <div class="relative flex h-full w-full flex-col overflow-hidden bg-surface-0/80 text-text-primary select-none">
 	<!-- ===================================================================== -->
 	<!-- AMBIENT GLOW FLUID BACKGROUND                                         -->
@@ -416,21 +431,11 @@
 								<!-- Camelot Key & Mix Harmonique (1 Clic) -->
 								{#if activeHeroTrack.key}
 									<div class="inline-flex items-center gap-1.5">
-										{#if camelotInfo}
-											<span
-												class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold shadow-xs select-none"
-												style="background-color: {camelotInfo.bg}; color: {camelotInfo.text}; border-color: {camelotInfo.border};"
-												title="Camelot Key: {camelotInfo.name}"
-											>
-												{formatKey(activeHeroTrack.key, 'camelot')}
-											</span>
-										{:else}
-											<span
-												class="rounded-full border border-stroke-subtle bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] font-bold text-text-primary"
-											>
-												{activeHeroTrack.key}
-											</span>
-										{/if}
+										<KeyBadge
+											value={activeHeroTrack.key}
+											label={formatKey(activeHeroTrack.key, 'camelot')}
+											variant="pill"
+										/>
 
 										<button
 											type="button"
@@ -444,46 +449,16 @@
 									</div>
 								{/if}
 
-								<!-- Energy ⚡ -->
-								{#if energyInfo}
-									<span
-										class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold shadow-xs"
-										style="background-color: {energyInfo.bg}; color: {energyInfo.color}; border-color: {energyInfo.border};"
-										title="Énergie: {energyInfo.descriptor} ({activeHeroTrack.energy}/10)"
-									>
-										<span>⚡</span>
-										<span>{activeHeroTrack.energy}</span>
-									</span>
+								<!-- Energy -->
+								{#if activeHeroTrack.energy}
+									<EnergyBadge energy={activeHeroTrack.energy} variant="pill" />
 								{/if}
 							</div>
 
 							<!-- Action Buttons & Mode Switch -->
 							<div class="flex flex-shrink-0 items-center gap-3">
-								<!-- Mode Toggle: [📋 Récents | 💿 Albums] -->
-								<div
-									class="inline-flex items-center rounded-full border border-stroke-subtle bg-surface-2/90 p-0.5 shadow-inner"
-								>
-									<button
-										type="button"
-										class="flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all {!isAlbumMode
-											? 'bg-cyan-500 font-bold text-black shadow-xs'
-											: 'text-text-secondary hover:text-text-primary'}"
-										onclick={() => (isAlbumMode = false)}
-									>
-										<Icon name="disc" class="h-3 w-3" />
-										<span>Récents</span>
-									</button>
-									<button
-										type="button"
-										class="flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all {isAlbumMode
-											? 'bg-cyan-500 font-bold text-black shadow-xs'
-											: 'text-text-secondary hover:text-text-primary'}"
-										onclick={() => (isAlbumMode = true)}
-									>
-										<Icon name="folder-open" class="h-3 w-3" />
-										<span>Mode Album</span>
-									</button>
-								</div>
+								<!-- Bottom section: recent files or album mode -->
+								{@render modeToggle('bg-surface-2/90')}
 
 								{#if !activeHeroTrack.is_in_library}
 									<button
@@ -681,31 +656,8 @@
 						</div>
 					</div>
 
-					<!-- Mode Toggle even in empty hero -->
-					<div
-						class="inline-flex items-center rounded-full border border-stroke-subtle bg-surface-2 p-0.5 shadow-inner"
-					>
-						<button
-							type="button"
-							class="flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all {!isAlbumMode
-								? 'bg-cyan-500 font-bold text-black shadow-xs'
-								: 'text-text-secondary hover:text-text-primary'}"
-							onclick={() => (isAlbumMode = false)}
-						>
-							<Icon name="disc" class="h-3 w-3" />
-							<span>Récents</span>
-						</button>
-						<button
-							type="button"
-							class="flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all {isAlbumMode
-								? 'bg-cyan-500 font-bold text-black shadow-xs'
-								: 'text-text-secondary hover:text-text-primary'}"
-							onclick={() => (isAlbumMode = true)}
-						>
-							<Icon name="folder-open" class="h-3 w-3" />
-							<span>Mode Album</span>
-						</button>
-					</div>
+					<!-- Mode toggle, also available in the empty hero -->
+					{@render modeToggle('bg-surface-2')}
 				</div>
 			{/if}
 		</div>
@@ -781,7 +733,7 @@
 		<div class="min-h-0 flex-1 overflow-y-auto scroll-smooth px-6 py-1">
 			{#if $recentTracksLoading}
 				<div class="flex h-32 items-center justify-center gap-2 text-text-tertiary">
-					<Icon name="loader" class="h-4 w-4 animate-spin" />
+					<Spinner icon="loader" class="h-4 w-4" color="current" />
 					<span class="text-xs">Chargement de l'historique...</span>
 				</div>
 			{:else if $recentStandaloneTracks.length === 0}
@@ -821,7 +773,6 @@
 						{@const isPlayingThis =
 							$isPlaying && $playbackSource === 'standalone' && $standaloneTrack?.file_path === track.file_path}
 						{@const trackArtUrl = track.artwork_path ? getArtworkUrl(track.artwork_path, $appDataDir) : null}
-						{@const trackCamelot = track.key ? getCamelotColor(track.key) : null}
 
 						<!-- Track Row -->
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -894,16 +845,7 @@
 									<span class="font-mono font-bold text-cyan-600 dark:text-cyan-300">{formatBpm(track.bpm)}</span>
 								{/if}
 								{#if track.key}
-									{#if trackCamelot}
-										<span
-											class="py-0.2 rounded-full border px-1.5 text-[9px] font-extrabold shadow-xs"
-											style="background-color: {trackCamelot.bg}; color: {trackCamelot.text}; border-color: {trackCamelot.border};"
-										>
-											{formatKey(track.key, 'camelot')}
-										</span>
-									{:else}
-										<span class="font-mono text-[10px] text-text-secondary">{track.key}</span>
-									{/if}
+									<KeyBadge value={track.key} label={formatKey(track.key, 'camelot')} variant="pill-xs" />
 								{/if}
 								{#if !track.bpm && !track.key}
 									<span class="text-text-tertiary">-</span>
