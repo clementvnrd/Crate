@@ -567,5 +567,12 @@ END;
 INSERT INTO tracks_fts(rowid, title, artist, album, genre, label)
 SELECT rowid, title, artist, album, genre, label FROM tracks;
 "#,
+        // Migration 16 (fork): listens are matched to library tracks by artist and title (case and
+        // surrounding spaces ignored) for the statistics criteria of smart playlists. Only the
+        // Crate-local listens carry a track id; Rekordbox, Spotify and Mixed In Key ones do not.
+        r#"
+CREATE INDEX IF NOT EXISTS idx_listen_events_match
+    ON listen_events(lower(trim(artist)), lower(trim(title)), played_at);
+"#,
     ]
 }

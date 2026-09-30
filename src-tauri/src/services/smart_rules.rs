@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use rusqlite::types::Value;
 
 use crate::error::{CrateError, Result};
@@ -6,8 +8,53 @@ use crate::models::{
     SortDirection, TagOperator, TextOperator,
 };
 
+/// SQL of a listening statistic about library track `t`, computed from `listen_events`.
+///
+/// Listens are matched to the track by artist and title, case and surrounding spaces ignored:
+/// only Crate-local listens carry a track id, while the Rekordbox sets and the Spotify history
+/// carry just the two names. `select` and `extra` are constants written in this file, never user
+/// input. The result is a scalar subquery, so it can stand wherever a column can.
+fn listening_stat(select: &str, extra: &str) -> String {
+    format!(
+        "(SELECT {select} FROM listen_events le \
+         WHERE lower(trim(le.artist)) = lower(trim(t.artist)) \
+         AND lower(trim(le.title)) = lower(trim(t.title)){extra})"
+    )
+}
+
+/// The listening statistics a library smart playlist can filter and sort on.
+///
+/// Numeric: `listens_total`, `listens_7d`, `listens_30d`, `listens_365d`, `set_plays` (times the
+/// track was played in a Rekordbox set) and `minutes_listened`. Date: `last_listened` and
+/// `last_set_play`. A track never listened to counts 0 and has no date.
+fn listening_stat_expression(field: &str) -> Option<String> {
+    let since =
+        |days: u32| format!(" AND datetime(le.played_at) >= datetime('now', '-{days} days')");
+    const IN_A_SET: &str = " AND le.source = 'rekordbox'";
+    Some(match field {
+        "listens_total" => listening_stat("COUNT(*)", ""),
+        "listens_7d" => listening_stat("COUNT(*)", &since(7)),
+        "listens_30d" => listening_stat("COUNT(*)", &since(30)),
+        "listens_365d" => listening_stat("COUNT(*)", &since(365)),
+        "set_plays" => listening_stat("COUNT(*)", IN_A_SET),
+        "minutes_listened" => listening_stat("COALESCE(SUM(le.played_ms), 0) / 60000.0", ""),
+        // `datetime()` normalises the `T...Z` and offset forms so the comparison with
+        // `datetime('now', …)` is between values of the same shape (see [B14]).
+        "last_listened" => listening_stat("MAX(datetime(le.played_at))", ""),
+        "last_set_play" => listening_stat("MAX(datetime(le.played_at))", IN_A_SET),
+        _ => return None,
+    })
+}
+
 /// Map a field name to its SQL column for the library (tracks) context.
-fn library_field_column(field: &str) -> Result<&'static str> {
+fn library_field_column(field: &str) -> Result<Cow<'static, str>> {
+    if let Some(expression) = listening_stat_expression(field) {
+        return Ok(Cow::Owned(expression));
+    }
+    plain_library_column(field).map(Cow::Borrowed)
+}
+
+fn plain_library_column(field: &str) -> Result<&'static str> {
     match field {
         "title" => Ok("t.title"),
         "artist" => Ok("t.artist"),
@@ -53,7 +100,27 @@ fn discovery_field_column(field: &str) -> Result<&'static str> {
 }
 
 /// Map a sort field to its SQL column for the library context.
-fn library_sort_column(field: &str) -> Result<&'static str> {
+fn library_sort_column(field: &str) -> Result<Cow<'static, str>> {
+    // Sorting on a listening statistic ("most listened in the last 30 days").
+    if matches!(
+        field,
+        "listens_total"
+            | "listens_7d"
+            | "listens_30d"
+            | "listens_365d"
+            | "set_plays"
+            | "minutes_listened"
+            | "last_listened"
+            | "last_set_play"
+    ) {
+        if let Some(expression) = listening_stat_expression(field) {
+            return Ok(Cow::Owned(expression));
+        }
+    }
+    plain_library_sort_column(field).map(Cow::Borrowed)
+}
+
+fn plain_library_sort_column(field: &str) -> Result<&'static str> {
     match field {
         "date_added" => Ok("t.date_added"),
         "rating" => Ok("t.rating"),
@@ -314,6 +381,15 @@ fn build_discovery_tag_condition(
     }
 }
 
+/// The SQL column (or expression) of `field` in the given context.
+fn field_column(field: &str, context: &str) -> Result<Cow<'static, str>> {
+    if context == "discovery" {
+        discovery_field_column(field).map(Cow::Borrowed)
+    } else {
+        library_field_column(field)
+    }
+}
+
 /// Build a single condition SQL fragment.
 fn build_condition_sql(
     condition: &SmartCondition,
@@ -326,12 +402,8 @@ fn build_condition_sql(
             operator,
             value,
         } => {
-            let column = if context == "discovery" {
-                discovery_field_column(field)?
-            } else {
-                library_field_column(field)?
-            };
-            Ok(build_text_condition(column, operator, value, params))
+            let column = field_column(field, context)?;
+            Ok(build_text_condition(&column, operator, value, params))
         }
         SmartCondition::Numeric {
             field,
@@ -339,13 +411,9 @@ fn build_condition_sql(
             value,
             value2,
         } => {
-            let column = if context == "discovery" {
-                discovery_field_column(field)?
-            } else {
-                library_field_column(field)?
-            };
+            let column = field_column(field, context)?;
             Ok(build_numeric_condition(
-                column, operator, value, value2, params,
+                &column, operator, value, value2, params,
             ))
         }
         SmartCondition::Date {
@@ -353,24 +421,16 @@ fn build_condition_sql(
             operator,
             value,
         } => {
-            let column = if context == "discovery" {
-                discovery_field_column(field)?
-            } else {
-                library_field_column(field)?
-            };
-            Ok(build_date_condition(column, operator, value, params))
+            let column = field_column(field, context)?;
+            Ok(build_date_condition(&column, operator, value, params))
         }
         SmartCondition::Enum {
             field,
             operator,
             value,
         } => {
-            let column = if context == "discovery" {
-                discovery_field_column(field)?
-            } else {
-                library_field_column(field)?
-            };
-            Ok(build_enum_condition(column, operator, value, params))
+            let column = field_column(field, context)?;
+            Ok(build_enum_condition(&column, operator, value, params))
         }
         SmartCondition::Tags {
             operator, tag_ids, ..
@@ -387,7 +447,7 @@ fn build_condition_sql(
 /// Build the ORDER BY + LIMIT clause from a SmartLimit.
 fn build_limit_sql(limit: &SmartLimit, context: &str, params: &mut Vec<Value>) -> Result<String> {
     let sort_col = if context == "discovery" {
-        discovery_sort_column(&limit.sort_field)?
+        Cow::Borrowed(discovery_sort_column(&limit.sort_field)?)
     } else {
         library_sort_column(&limit.sort_field)?
     };
@@ -498,4 +558,315 @@ pub fn validate_smart_rules(rules: &SmartRules, context: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod listening_stats_tests {
+    use super::*;
+    use chrono::{Duration, Utc};
+    use rusqlite::{params_from_iter, Connection};
+
+    const NOW: fn() -> chrono::DateTime<Utc> = Utc::now;
+
+    fn library() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        for (id, artist, title) in [
+            ("A", "Artist A", "Song One"),
+            ("B", "Artist B", "Song Two"),
+            ("C", "Artist C", "Song Three"),
+            ("D", "Artist D", "Never Heard"),
+        ] {
+            conn.execute(
+                "INSERT INTO tracks (id, file_path, format, title, artist, duration_ms, date_added, date_modified)
+                 VALUES (?1, ?2, 'mp3', ?3, ?4, 200000, '2026-01-01', '2026-01-01')",
+                rusqlite::params![id, format!("/m/{id}.mp3"), title, artist],
+            )
+            .unwrap();
+        }
+        conn
+    }
+
+    /// One listen, matched to a track by the names it carries.
+    fn listen(
+        conn: &Connection,
+        n: u32,
+        source: &str,
+        artist: &str,
+        title: &str,
+        at: &str,
+        played_ms: i64,
+    ) {
+        conn.execute(
+            "INSERT INTO listen_events (id, source, title, artist, duration_ms, played_ms, played_at)
+             VALUES (?1, ?2, ?3, ?4, 200000, ?5, ?6)",
+            rusqlite::params![format!("e{n}"), source, title, artist, played_ms, at],
+        )
+        .unwrap();
+    }
+
+    fn days_ago(days: i64) -> String {
+        (NOW() - Duration::days(days)).to_rfc3339()
+    }
+
+    fn numeric(field: &str, operator: NumericOperator, value: f64) -> SmartCondition {
+        SmartCondition::Numeric {
+            field: field.to_string(),
+            operator,
+            value: Some(value),
+            value2: None,
+        }
+    }
+
+    fn rules(conditions: Vec<SmartCondition>, limit: Option<SmartLimit>) -> SmartRules {
+        SmartRules {
+            match_mode: MatchMode::All,
+            conditions,
+            limit,
+        }
+    }
+
+    fn ids(conn: &Connection, rules: &SmartRules) -> Vec<String> {
+        let (clause, params) = build_smart_query_library(rules).unwrap();
+        let sql = format!("SELECT t.id FROM tracks t WHERE {clause}");
+        let mut stmt = conn.prepare(&sql).unwrap();
+        let rows = stmt
+            .query_map(params_from_iter(params), |r| r.get::<_, String>(0))
+            .unwrap();
+        rows.map(|row| row.unwrap()).collect()
+    }
+
+    fn sorted(mut v: Vec<String>) -> Vec<String> {
+        v.sort();
+        v
+    }
+
+    #[test]
+    fn never_played_in_a_set_finds_tracks_absent_from_every_rekordbox_session() {
+        let conn = library();
+        // A was only listened to on Spotify; B was played in a set, written with other casing
+        // and stray spaces (Rekordbox does not copy the tags byte for byte).
+        listen(
+            &conn,
+            1,
+            "spotify",
+            "Artist A",
+            "Song One",
+            &days_ago(3),
+            200000,
+        );
+        listen(
+            &conn,
+            2,
+            "rekordbox",
+            "  artist b ",
+            "SONG TWO",
+            &days_ago(40),
+            200000,
+        );
+
+        let never_in_a_set = rules(
+            vec![numeric("set_plays", NumericOperator::Equals, 0.0)],
+            None,
+        );
+        assert_eq!(sorted(ids(&conn, &never_in_a_set)), ["A", "C", "D"]);
+    }
+
+    #[test]
+    fn the_thirty_day_window_uses_real_dates_whatever_the_stored_format() {
+        let conn = library();
+        // Inside the window, in three different stored shapes: `Z`, an offset, and a bare date-time.
+        listen(
+            &conn,
+            1,
+            "spotify",
+            "Artist A",
+            "Song One",
+            &days_ago(29),
+            1000,
+        );
+        let offset = (NOW() - Duration::days(10))
+            .with_timezone(&chrono::FixedOffset::east_opt(2 * 3600).unwrap())
+            .to_rfc3339();
+        listen(&conn, 2, "spotify", "Artist B", "Song Two", &offset, 1000);
+        let bare = (NOW() - Duration::days(1))
+            .format("%Y-%m-%dT%H:%M:%SZ")
+            .to_string();
+        listen(&conn, 3, "spotify", "Artist C", "Song Three", &bare, 1000);
+        // Outside the window.
+        listen(
+            &conn,
+            4,
+            "spotify",
+            "Artist D",
+            "Never Heard",
+            &days_ago(31),
+            1000,
+        );
+
+        let recent = rules(
+            vec![numeric("listens_30d", NumericOperator::GreaterThan, 0.0)],
+            None,
+        );
+        assert_eq!(sorted(ids(&conn, &recent)), ["A", "B", "C"]);
+    }
+
+    #[test]
+    fn top_tracks_of_the_last_thirty_days_sorts_by_listens_and_keeps_the_limit() {
+        let conn = library();
+        for n in 0..3 {
+            listen(
+                &conn,
+                n,
+                "spotify",
+                "Artist B",
+                "Song Two",
+                &days_ago(2),
+                1000,
+            );
+        }
+        for n in 3..5 {
+            listen(
+                &conn,
+                n,
+                "crate_local",
+                "Artist A",
+                "Song One",
+                &days_ago(5),
+                1000,
+            );
+        }
+        listen(
+            &conn,
+            5,
+            "spotify",
+            "Artist C",
+            "Song Three",
+            &days_ago(9),
+            1000,
+        );
+
+        let top = rules(
+            vec![],
+            Some(SmartLimit {
+                count: 2,
+                sort_field: "listens_30d".to_string(),
+                sort_direction: SortDirection::Descending,
+            }),
+        );
+        assert_eq!(
+            ids(&conn, &top),
+            ["B", "A"],
+            "most listened first, only two kept"
+        );
+    }
+
+    #[test]
+    fn not_listened_to_for_ninety_days_includes_never_listened_tracks() {
+        let conn = library();
+        listen(
+            &conn,
+            1,
+            "spotify",
+            "Artist A",
+            "Song One",
+            &days_ago(10),
+            1000,
+        );
+        listen(
+            &conn,
+            2,
+            "spotify",
+            "Artist C",
+            "Song Three",
+            &days_ago(200),
+            1000,
+        );
+
+        let forgotten = rules(
+            vec![SmartCondition::Date {
+                field: "last_listened".to_string(),
+                operator: DateOperator::NotInLastDays,
+                value: Some("90".to_string()),
+            }],
+            None,
+        );
+        // A was heard 10 days ago; B, D never; C long ago.
+        assert_eq!(sorted(ids(&conn, &forgotten)), ["B", "C", "D"]);
+    }
+
+    #[test]
+    fn minutes_listened_adds_up_the_played_time() {
+        let conn = library();
+        listen(
+            &conn,
+            1,
+            "spotify",
+            "Artist A",
+            "Song One",
+            &days_ago(1),
+            120_000,
+        );
+        listen(
+            &conn,
+            2,
+            "crate_local",
+            "Artist A",
+            "Song One",
+            &days_ago(2),
+            90_000,
+        );
+        listen(
+            &conn,
+            3,
+            "spotify",
+            "Artist B",
+            "Song Two",
+            &days_ago(1),
+            60_000,
+        );
+
+        let more_than_three = rules(
+            vec![numeric(
+                "minutes_listened",
+                NumericOperator::GreaterThan,
+                3.0,
+            )],
+            None,
+        );
+        assert_eq!(ids(&conn, &more_than_three), ["A"], "3.5 min vs 1 min");
+    }
+
+    #[test]
+    fn listening_criteria_are_library_only_and_unknown_fields_are_still_rejected() {
+        let ok = rules(
+            vec![numeric("listens_total", NumericOperator::GreaterThan, 0.0)],
+            None,
+        );
+        assert!(validate_smart_rules(&ok, "library").is_ok());
+        assert!(
+            validate_smart_rules(&ok, "discovery").is_err(),
+            "releases have no listening statistics"
+        );
+
+        let unknown = rules(
+            vec![numeric(
+                "listens_forever",
+                NumericOperator::GreaterThan,
+                0.0,
+            )],
+            None,
+        );
+        assert!(validate_smart_rules(&unknown, "library").is_err());
+
+        let bad_sort = rules(
+            vec![],
+            Some(SmartLimit {
+                count: 5,
+                sort_field: "listens_forever".to_string(),
+                sort_direction: SortDirection::Descending,
+            }),
+        );
+        assert!(validate_smart_rules(&bad_sort, "library").is_err());
+    }
 }
