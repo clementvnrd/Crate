@@ -252,6 +252,8 @@ pub fn run() {
             commands::library::apply_organisation,
             commands::library::undo_organisation,
             commands::library::get_organisation_batches,
+            commands::library::analyze_set,
+            commands::library::suggest_set_order,
             // Duplicate commands (desktop-only)
             #[cfg(feature = "desktop")]
             commands::duplicate::get_duplicate_groups,

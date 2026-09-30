@@ -249,3 +249,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Scenario B: Rekordbox set timeline (backend) | — |
 | 2026-09-30 | Scenario B: Crate / Mixed In Key / Rekordbox discrepancy report (backend, read only) | — |
 | 2026-09-30 | Scenario B: assisted physical organisation with preview, journal and undo (backend, migration 18) | — |
+| 2026-09-30 | Scenario B: Set mode analysis, bridge tracks and proposed order (backend) | — |

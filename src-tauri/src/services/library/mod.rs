@@ -8,6 +8,7 @@ mod organise;
 mod query;
 mod relocation;
 mod report;
+mod set_planner;
 mod suggest;
 mod update;
 pub mod waveform;
@@ -16,6 +17,7 @@ pub use mik::*;
 pub use mik_db::*;
 pub use organise::{OrganisationBatch, OrganisationPlan, OrganisationResult, OrganisationRule};
 pub use report::{read_rekordbox_xml, DiscrepancyReport};
+pub use set_planner::SetAnalysis;
 pub use suggest::NextTrackSuggestion;
 
 use std::path::PathBuf;

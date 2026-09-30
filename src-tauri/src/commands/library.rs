@@ -9,7 +9,7 @@ use crate::models::{
 };
 use crate::services::library::{
     read_rekordbox_xml, DiscrepancyReport, NextTrackSuggestion, OrganisationBatch,
-    OrganisationPlan, OrganisationResult, OrganisationRule, RescanResult,
+    OrganisationPlan, OrganisationResult, OrganisationRule, RescanResult, SetAnalysis,
 };
 use crate::services::LibraryService;
 
@@ -372,6 +372,27 @@ pub async fn get_organisation_batches(
 ) -> Result<Vec<OrganisationBatch>> {
     with_library(&app, move |library| {
         library.organisation_batches(limit.unwrap_or(10))
+    })
+    .await
+}
+
+/// Checks a DJ set in the given order: the key, tempo and energy of every transition, and for the
+/// ones that clash or jump in tempo, library tracks that could bridge them.
+#[tauri::command]
+pub async fn analyze_set(app: tauri::AppHandle, track_ids: Vec<String>) -> Result<SetAnalysis> {
+    with_library(&app, move |library| library.analyze_set(&track_ids)).await
+}
+
+/// The same tracks in an order that mixes well, as track ids. `start_track_id` opens the set; by
+/// default it is the calmest track.
+#[tauri::command]
+pub async fn suggest_set_order(
+    app: tauri::AppHandle,
+    track_ids: Vec<String>,
+    start_track_id: Option<String>,
+) -> Result<Vec<String>> {
+    with_library(&app, move |library| {
+        library.suggest_set_order(&track_ids, start_track_id.as_deref())
     })
     .await
 }
