@@ -259,3 +259,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Beatport and Player track titles readable at 1000 px (D7) | 11 |
 | 2026-09-30 | Accessible names, keyboard waveform, recents grid, switches, focus traps, reduced motion and focus outline (D10, partial) | 11 |
 | 2026-09-30 | `yarn audit` from 122 advisories to 0: Vite pin 7.3.6, transitive packages re-resolved, svelte-i18n esbuild override (Q14, partial) | 9 |
+| 2026-09-30 | Typed frontend API and contract test for the nine scenario B backends | — |

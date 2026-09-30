@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import type {
+	DiscoveryFunnel,
 	DiscoveryRelease,
 	DiscoveryReleaseCreate,
 	DiscoveryReleaseUpdate,
@@ -153,4 +154,12 @@ export async function purchaseRelease(
 		transferTags,
 		removeAfterImport,
 	})
+}
+
+/**
+ * What the discoveries became: found, added to the library, played in a set. `since` (a day,
+ * `YYYY-MM-DD`) counts only the releases added on or after it.
+ */
+export async function getDiscoveryFunnel(since?: string): Promise<DiscoveryFunnel> {
+	return invoke<DiscoveryFunnel>('get_discovery_funnel', { since: since ?? null })
 }

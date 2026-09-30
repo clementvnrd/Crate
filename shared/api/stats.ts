@@ -3,8 +3,12 @@ import type {
 	BpmBucketItem,
 	HarmonicStatsItem,
 	HeatmapCell,
+	HistoryExportFormat,
 	ListenEvent,
+	Recap,
+	RecapPeriod,
 	RekordboxSession,
+	SessionTimeline,
 	SpotifyAuthState,
 	SpotifyImportResult,
 	SpotifyNowPlaying,
@@ -146,4 +150,26 @@ export async function getMikTrackerEnabled(): Promise<boolean> {
 
 export async function setMikTrackerEnabled(enabled: boolean): Promise<void> {
 	return invoke<void>('mik_tracker_set_enabled', { enabled })
+}
+
+/**
+ * "Your week" and "Your year": the recap of a calendar period. `offset` 0 is the current period,
+ * 1 the one before, and so on.
+ */
+export async function getRecap(period: RecapPeriod, offset: number = 0): Promise<Recap> {
+	return invoke<Recap>('get_recap', { period, offset })
+}
+
+/**
+ * Writes the whole listening history, oldest first, to `path` and resolves to how many listens
+ * were written. The path comes from the native save dialog and must end in `.csv` or `.json`
+ * according to `format`.
+ */
+export async function exportListeningHistory(format: HistoryExportFormat, path: string): Promise<number> {
+	return invoke<number>('export_listening_history', { format, path })
+}
+
+/** The tracks of one Rekordbox set in order, with how every transition mixes. */
+export async function getRekordboxSessionTimeline(sessionId: string): Promise<SessionTimeline> {
+	return invoke<SessionTimeline>('get_rekordbox_session_timeline', { sessionId })
 }

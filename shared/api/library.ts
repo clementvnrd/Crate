@@ -1,9 +1,16 @@
 import { invoke } from '@tauri-apps/api/core'
 import type {
+	DiscrepancyReport,
 	DuplicateResolution,
 	FileMatchResult,
 	ImportResult,
 	ImportResultWithDuplicates,
+	NextTrackSuggestion,
+	OrganisationBatch,
+	OrganisationPlan,
+	OrganisationResult,
+	OrganisationRule,
+	SetAnalysis,
 	Track,
 	TrackColor,
 	TrackFilter,
@@ -202,4 +209,75 @@ export async function getTrackWaveform(trackId: string): Promise<number[] | null
  */
 export async function getTrackCues(trackId: string): Promise<import('../types').Cue[]> {
 	return invoke<import('../types').Cue[]>('get_track_cues', { trackId })
+}
+
+/**
+ * The tracks to play after `trackId`: first the ones that really followed it in your Rekordbox
+ * sets, then, if fewer than asked for, compatible tracks (a neighbouring key, a tempo within a
+ * deck's pitch range). `limit` is 10 by default and at most 50.
+ */
+export async function suggestNextTracks(trackId: string, limit?: number): Promise<NextTrackSuggestion[]> {
+	return invoke<NextTrackSuggestion[]>('suggest_next_tracks', { trackId, limit: limit ?? null })
+}
+
+/**
+ * Checks a DJ set in the given order: the key, tempo and energy of every transition, and for the
+ * ones that clash or jump in tempo, library tracks that could bridge them.
+ */
+export async function analyzeSet(trackIds: string[]): Promise<SetAnalysis> {
+	return invoke<SetAnalysis>('analyze_set', { trackIds })
+}
+
+/**
+ * The same tracks in an order that mixes well, as track ids. `startTrackId` opens the set; by
+ * default it is the calmest track.
+ */
+export async function suggestSetOrder(trackIds: string[], startTrackId?: string): Promise<string[]> {
+	return invoke<string[]>('suggest_set_order', { trackIds, startTrackId: startTrackId ?? null })
+}
+
+/**
+ * Where Crate, Mixed In Key and (with a Rekordbox XML export) Rekordbox disagree: keys, tempos,
+ * energy, cues, missing files, tracks one has and another lacks. Read only.
+ */
+export async function getDiscrepancyReport(rekordboxXmlPath?: string): Promise<DiscrepancyReport> {
+	return invoke<DiscrepancyReport>('get_discrepancy_report', { rekordboxXmlPath: rekordboxXmlPath ?? null })
+}
+
+/**
+ * Previews where each file would go under `rule`, without touching anything. `trackIds` limits the
+ * plan to some tracks; omit it for the whole library.
+ */
+export async function planOrganisation(rule: OrganisationRule, trackIds?: string[]): Promise<OrganisationPlan> {
+	return invoke<OrganisationPlan>('plan_organisation', { rule, trackIds: trackIds ?? null })
+}
+
+/**
+ * Moves the files. It only runs if the plan is exactly the previewed one (`expectedPlanId` is the
+ * `id` of the plan the user saw; pass the same `rule` and `trackIds`) and the user confirmed that
+ * Rekordbox and other tools that remember file paths will lose them (`understandsExternalTools`).
+ * Nothing is ever overwritten or deleted, and the batch can be undone.
+ */
+export async function applyOrganisation(
+	rule: OrganisationRule,
+	expectedPlanId: string,
+	understandsExternalTools: boolean,
+	trackIds?: string[]
+): Promise<OrganisationResult> {
+	return invoke<OrganisationResult>('apply_organisation', {
+		rule,
+		trackIds: trackIds ?? null,
+		expectedPlanId,
+		understandsExternalTools,
+	})
+}
+
+/** Puts back the files of a batch that was applied. */
+export async function undoOrganisation(batchId: string): Promise<OrganisationResult> {
+	return invoke<OrganisationResult>('undo_organisation', { batchId })
+}
+
+/** The organisation batches that were applied, latest first (10 by default). */
+export async function getOrganisationBatches(limit?: number): Promise<OrganisationBatch[]> {
+	return invoke<OrganisationBatch[]>('get_organisation_batches', { limit: limit ?? null })
 }
