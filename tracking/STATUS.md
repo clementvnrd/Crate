@@ -262,3 +262,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Typed frontend API and contract test for the nine scenario B backends | — |
 | 2026-10-01 | Interface strings extracted to 423 new en/fr keys, plays/écoutes unified, numbers and dates localised (L1 partial, L3) | 52 |
 | 2026-10-01 | Scenario B screens in Pulse: recap, discovery funnel, Rekordbox set timeline, history export (CRA-125 to CRA-128) | — |
+| 2026-10-01 | Energy column in the Rekordbox set timeline (CRA-127; jump marker left for a backend change) | — |

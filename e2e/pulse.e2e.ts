@@ -75,6 +75,9 @@ test.describe('Pulse history screens', () => {
 		await expect(dialog.getByText('Friday warehouse')).toBeVisible()
 		await expect(dialog.getByText('Harmonic transitions')).toBeVisible()
 		await expect(dialog.getByText('Opening track')).toBeVisible()
+		// Every track shows its Mixed In Key energy, or a dash when Crate does not know the file.
+		await expect(dialog.getByRole('columnheader', { name: 'Energy' })).toBeVisible()
+		await expect(dialog.getByTitle(/^Energy \d+\/10/).first()).toBeVisible()
 		await settle(page)
 
 		const report = await runAudit(page)
@@ -114,6 +117,7 @@ test.describe('Pulse history screens, empty and in French', () => {
 		await page.getByRole('button', { name: 'Ouvrir la timeline de Friday warehouse' }).click()
 		const dialog = page.locator('dialog[open]')
 		await expect(dialog.getByText('Transitions harmoniques')).toBeVisible()
+		await expect(dialog.getByRole('columnheader', { name: 'Énergie' })).toBeVisible()
 		await settle(page)
 		expect((await runAudit(page)).outOfWindow).toEqual([])
 		expect(errors).toEqual([])

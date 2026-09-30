@@ -1347,6 +1347,7 @@
 				"track": "Morceau",
 				"bpm": "BPM",
 				"key": "Tonalité",
+				"energy": "Énergie",
 				"transition": "Transition"
 			},
 			"relation": {

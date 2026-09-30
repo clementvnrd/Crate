@@ -5,7 +5,7 @@
 	import { language } from '$lib/stores'
 	import { formatDate, formatDuration, formatNumber } from '$shared/utils/format'
 	import { toErrorMessage } from '$shared/utils/errors'
-	import { Button, Icon, KeyBadge, Modal, Spinner } from '$lib/components/common'
+	import { Button, EnergyBadge, Icon, KeyBadge, Modal, Spinner } from '$lib/components/common'
 	import { formatTempoDelta, formatTimeOfDay } from './format'
 
 	type Props = {
@@ -133,6 +133,9 @@
 							{$translate('stats.timeline.columns.bpm')}
 						</th>
 						<th scope="col" class="w-16 px-2 py-1.5 font-medium">{$translate('stats.timeline.columns.key')}</th>
+						<th scope="col" class="w-16 px-2 py-1.5 font-medium">
+							{$translate('stats.timeline.columns.energy')}
+						</th>
 						<th scope="col" class="w-48 py-1.5 pl-2 font-medium">
 							{$translate('stats.timeline.columns.transition')}
 						</th>
@@ -158,6 +161,13 @@
 							<td class="px-2 py-1.5">
 								{#if track.key}
 									<KeyBadge value={track.key} variant="tag-wide" />
+								{:else}
+									<span class="text-text-secondary">—</span>
+								{/if}
+							</td>
+							<td class="px-2 py-1.5">
+								{#if track.energy !== null}
+									<EnergyBadge energy={track.energy} size="sm" />
 								{:else}
 									<span class="text-text-secondary">—</span>
 								{/if}

@@ -1347,6 +1347,7 @@
 				"track": "Track",
 				"bpm": "BPM",
 				"key": "Key",
+				"energy": "Energy",
 				"transition": "Transition"
 			},
 			"relation": {

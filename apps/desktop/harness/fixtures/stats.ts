@@ -300,7 +300,8 @@ export function sessionTimeline(sessionId: string): SessionTimeline | null {
 			duration_ms: track.duration_ms,
 			bpm: track.bpm,
 			key: relation === 'unknown' ? null : track.key,
-			energy: track.energy,
+			// Only a library track has an energy (Rekordbox never records one), so the tracks Crate does not know show a dash.
+			energy: index % 6 === 5 ? null : track.energy,
 			library_track_id: index % 6 === 5 ? null : track.id,
 			from_previous: index === 0 ? null : { harmonic: relation, bpm_delta_percent: bpmDelta },
 		})
