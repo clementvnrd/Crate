@@ -174,7 +174,7 @@ _Exit criterion: Green CI, clean fmt/lint, cross-platform builds._
 - [x] **Q11** — Files that must not be committed: `SYNTHESE_DISCUSSION.md` (personal paths),… — _Swift script deleted; the summary is archived in `tracking/history/` (private repository); fonts handled with D8_
 - [x] **Q12** — No `CLAUDE.md`: every assistant rediscovers the rules (`desktop` feature, CI clippy flags,…
 - [x] **Q13** — `yarn dev` compiles Rust in `--release`: every change costs several minutes (upstream)
-- [ ] **Q14** — 87 `yarn audit` alerts (61 high) in the transitive tooling; `cargo audit` not installed locally
+- [ ] **Q14** — 87 `yarn audit` alerts (61 high) in the transitive tooling; `cargo audit` not installed locally — _partial: `yarn audit` is at 0 (it was 122 advisories, 80 high) after re-resolving the lockfile and moving the exact Vite pin to 7.3.6; `cargo audit` is still not installed and needs the owner's go (CRA-88)_
 - [x] **Q15** — No design guard rails for assistants: the strict rules only exist in the register,… — _`DESIGN.md`, `design` agent and 5 skills, `yarn design:scan` (1,220 offending lines at the start); automatic visual verification is now `yarn test:e2e` on the versioned harness (CRA-134)_
 - [x] **B10** — Migration numbering diverging from upstream (15 entries, labelled 7 to 16, 6 skipped) — _labels fixed (6 to 15), order unchanged: the local database has already applied these migrations_
 
@@ -258,3 +258,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Mixed In Key sync releases the database lock every 50 ms instead of holding it for the whole pass | 7 |
 | 2026-09-30 | Beatport and Player track titles readable at 1000 px (D7) | 11 |
 | 2026-09-30 | Accessible names, keyboard waveform, recents grid, switches, focus traps, reduced motion and focus outline (D10, partial) | 11 |
+| 2026-09-30 | `yarn audit` from 122 advisories to 0: Vite pin 7.3.6, transitive packages re-resolved, svelte-i18n esbuild override (Q14, partial) | 9 |

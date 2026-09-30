@@ -82,6 +82,7 @@
 		"**/*.{ts,js,svelte}": "yarn lint:fix"
 	},
 	"resolutions": {
-		"vite": "7.3.0"
+		"vite": "7.3.6",
+		"**/svelte-i18n/esbuild": "0.28.2"
 	}
 }
