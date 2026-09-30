@@ -205,6 +205,19 @@ impl ExportService {
             }
         }
 
+        // The database is not needed any more: release it before building and writing the file,
+        // so the rest of the app is not blocked behind a large export.
+        drop(conn);
+
+        // Position of each track in the COLLECTION, for the playlists' `Key` attributes. A map
+        // instead of a scan per playlist entry (which was O(tracks x entries)); the first
+        // position wins, as it did with `position()`.
+        let mut key_by_track: std::collections::HashMap<&str, usize> =
+            std::collections::HashMap::with_capacity(tracks.len());
+        for (idx, track) in tracks.iter().enumerate() {
+            key_by_track.entry(track.id.as_str()).or_insert(idx + 1);
+        }
+
         // 3. Build XML
         let mut xml = String::with_capacity(1024 * 1024);
         xml.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -266,8 +279,8 @@ impl ExportService {
                 track_ids.len()
             ));
             for tid in track_ids {
-                if let Some(pos) = tracks.iter().position(|t| t.id == tid) {
-                    xml.push_str(&format!("        <TRACK Key=\"{}\" />\n", pos + 1));
+                if let Some(key) = key_by_track.get(tid.as_str()) {
+                    xml.push_str(&format!("        <TRACK Key=\"{key}\" />\n"));
                 }
             }
             xml.push_str("      </NODE>\n");
@@ -420,5 +433,49 @@ mod tests {
                 "unescaped & in {value}"
             );
         }
+    }
+    /// `Key` of each playlist entry is the 1-based position of the track in the COLLECTION, where
+    /// every track is listed once even when it sits in several playlists.
+    #[test]
+    fn test_playlist_keys_are_collection_positions_without_duplicates() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        conn.execute_batch(
+            "INSERT INTO tracks (id, file_path, title, artist, format, duration_ms, date_added, date_modified) VALUES
+               ('t1', '/Music/one.mp3', 'One', 'A', 'mp3', 200000, '2026-01-01', '2026-01-01'),
+               ('t2', '/Music/two.mp3', 'Two', 'A', 'mp3', 200000, '2026-01-01', '2026-01-01'),
+               ('t3', '/Music/three.mp3', 'Three', 'A', 'mp3', 200000, '2026-01-01', '2026-01-01');
+             INSERT INTO playlists (id, name, date_created, date_modified) VALUES
+               ('p1', 'First', '2026-01-01', '2026-01-01'),
+               ('p2', 'Second', '2026-01-01', '2026-01-01');
+             INSERT INTO playlist_tracks (playlist_id, track_id, position, date_added) VALUES
+               ('p1', 't2', 0, '2026-01-01'), ('p1', 't1', 1, '2026-01-01'),
+               ('p2', 't1', 0, '2026-01-01'), ('p2', 't3', 1, '2026-01-01');",
+        )
+        .unwrap();
+        let service = ExportService::new(std::sync::Arc::new(std::sync::Mutex::new(conn)));
+        let path = std::env::temp_dir().join(format!("crate_rb_keys_{}.xml", std::process::id()));
+        service
+            .export_rekordbox_xml(&path, Some(vec!["p1".to_string(), "p2".to_string()]))
+            .unwrap();
+        let xml = std::fs::read_to_string(&path).unwrap();
+        let _ = std::fs::remove_file(&path);
+
+        // COLLECTION order: t2, t1 (from p1), then t3 (t1 is already there).
+        let keys = |playlist: &str| -> Vec<u32> {
+            let node = xml
+                .split(&format!("<NODE Name=\"{playlist}\""))
+                .nth(1)
+                .unwrap()
+                .split("</NODE>")
+                .next()
+                .unwrap();
+            node.split("<TRACK Key=\"")
+                .skip(1)
+                .map(|t| t.split('"').next().unwrap().parse().unwrap())
+                .collect()
+        };
+        assert_eq!(keys("First"), vec![1, 2]);
+        assert_eq!(keys("Second"), vec![2, 3]);
     }
 }
