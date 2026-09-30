@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use lofty::file::AudioFile;
 use rusqlite::{Connection, OpenFlags, OptionalExtension};
@@ -66,6 +68,45 @@ pub struct MikDbCue {
     pub time_secs: f64,
     pub energy_level: Option<i32>,
     pub name: Option<String>,
+}
+
+/// How long a synchronisation pass keeps the database lock before it lets other commands in.
+const LOCK_BUDGET: Duration = Duration::from_millis(50);
+
+/// What one synchronisation pass accumulates while it goes through the songs.
+struct SyncPass {
+    result: MikSyncResult,
+    cues_changed: bool,
+    /// Tracks added or changed by the pass: they get an artwork pass afterwards.
+    touched_ids: Vec<String>,
+    valid_mik_paths: HashSet<String>,
+    synced_track_ids: HashSet<String>,
+}
+
+impl SyncPass {
+    fn new(total: usize) -> Self {
+        Self {
+            result: MikSyncResult {
+                total,
+                ..Default::default()
+            },
+            cues_changed: false,
+            touched_ids: Vec::new(),
+            valid_mik_paths: HashSet::new(),
+            synced_track_ids: HashSet::new(),
+        }
+    }
+
+    fn into_result(self) -> MikSyncResult {
+        log::info!(
+            "Mixed In Key DB Sync complete: {} added, {} updated, {} removed out of {} MIK songs",
+            self.result.added,
+            self.result.updated,
+            self.result.removed,
+            self.result.total
+        );
+        self.result
+    }
 }
 
 pub struct MikDatabaseService;
@@ -422,444 +463,549 @@ impl MikDatabaseService {
     }
 
     /// Full synchronization of Mixed In Key DB into Crate DB with Unicode path normalization.
-    /// The Mixed In Key database is only ever opened read-only.
+    /// The Mixed In Key database is only ever opened read-only, and it is read before the Crate
+    /// database lock is taken.
     pub fn sync_all_from_mik_db(
-        crate_conn: &Connection,
+        crate_conn: &Mutex<Connection>,
         artwork_service: Option<&ArtworkService>,
     ) -> Result<MikSyncResult> {
         let mik_songs = Self::read_all_songs()?;
-        Self::apply_mik_songs(crate_conn, mik_songs, artwork_service)
+        Self::apply_mik_songs_shared(crate_conn, mik_songs, artwork_service)
+    }
+
+    /// Same decisions as [`Self::apply_mik_songs`], but the database lock is only held for short
+    /// batches of songs instead of the whole pass.
+    ///
+    /// Adding a track hashes the audio, reads its tags and encodes its cover: a first import takes
+    /// minutes, and holding the lock for all of it froze every command that needs the database.
+    /// The songs are still applied one after the other, in order, by the same code (what one song
+    /// decides depends on what the songs before it did), so nothing changes for the result; only
+    /// the lock is let go every [`LOCK_BUDGET`]. A failure rolls back the batch it happened in and
+    /// keeps the batches before it, which is safe because a sync can simply be run again.
+    pub(crate) fn apply_mik_songs_shared(
+        crate_conn: &Mutex<Connection>,
+        mik_songs: Vec<MikDbSong>,
+        artwork_service: Option<&ArtworkService>,
+    ) -> Result<MikSyncResult> {
+        Self::apply_mik_songs_in_batches(
+            crate_conn,
+            mik_songs,
+            artwork_service,
+            LOCK_BUDGET,
+            // `std::sync::Mutex` is not fair: without a pause the same thread would usually take
+            // the lock straight back before a waiting command woke up.
+            &mut || std::thread::sleep(Duration::from_millis(2)),
+        )
+    }
+
+    /// [`Self::apply_mik_songs_shared`] with the budget and the pause made explicit, for tests.
+    /// `between_batches` runs each time the lock has just been released.
+    fn apply_mik_songs_in_batches(
+        crate_conn: &Mutex<Connection>,
+        mik_songs: Vec<MikDbSong>,
+        artwork_service: Option<&ArtworkService>,
+        budget: Duration,
+        between_batches: &mut dyn FnMut(),
+    ) -> Result<MikSyncResult> {
+        let mut pass = SyncPass::new(mik_songs.len());
+        let now = chrono::Utc::now().to_rfc3339();
+
+        let mut songs = mik_songs.into_iter().peekable();
+        while songs.peek().is_some() {
+            let guard = crate_conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+            let tx = guard.unchecked_transaction()?;
+            let started = Instant::now();
+            for song in songs.by_ref() {
+                Self::apply_song(&tx, song, &now, artwork_service, &mut pass)?;
+                if started.elapsed() >= budget {
+                    break;
+                }
+            }
+            tx.commit()?;
+            drop(guard);
+            between_batches();
+        }
+
+        // Covers of the tracks the pass added or changed: another file read per track.
+        let touched_ids = if artwork_service.is_some() {
+            std::mem::take(&mut pass.touched_ids)
+        } else {
+            Vec::new()
+        };
+        let mut touched = touched_ids.into_iter().peekable();
+        while touched.peek().is_some() {
+            let guard = crate_conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+            let tx = guard.unchecked_transaction()?;
+            let started = Instant::now();
+            for id in touched.by_ref() {
+                Self::fill_missing_artwork(&tx, artwork_service, &id)?;
+                if started.elapsed() >= budget {
+                    break;
+                }
+            }
+            tx.commit()?;
+            drop(guard);
+            between_batches();
+        }
+
+        let guard = crate_conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        let tx = guard.unchecked_transaction()?;
+        Self::finish_pass(&tx, &pass)?;
+        tx.commit()?;
+
+        Ok(pass.into_result())
     }
 
     /// Merges Mixed In Key songs into the Crate library.
     ///
     /// Mixed In Key only *enriches* Crate: tracks absent from Mixed In Key are never deleted, and a
     /// title/artist match never removes another Crate track nor steals the path of a file that still exists.
+    ///
+    /// The whole pass is one transaction on a connection the caller already holds. Application code
+    /// uses [`Self::apply_mik_songs_shared`], which releases the database lock regularly instead;
+    /// this version stays as the reference the tests compare it with.
+    #[cfg(test)]
     pub(crate) fn apply_mik_songs(
         crate_conn: &Connection,
         mik_songs: Vec<MikDbSong>,
         artwork_service: Option<&ArtworkService>,
     ) -> Result<MikSyncResult> {
-        let mut result = MikSyncResult {
-            total: mik_songs.len(),
-            ..Default::default()
-        };
+        let mut pass = SyncPass::new(mik_songs.len());
+        let now = chrono::Utc::now().to_rfc3339();
 
         // One transaction for the whole pass: atomic, and far fewer disk syncs.
         let tx = crate_conn.unchecked_transaction()?;
-        let crate_conn: &Connection = &tx;
-        let mut cues_changed = false;
-        let mut touched_ids: Vec<String> = Vec::new();
-
-        let now = chrono::Utc::now().to_rfc3339();
-        let mut valid_mik_paths = HashSet::new();
-        let mut synced_track_ids = HashSet::new();
-
         for song in mik_songs {
-            let fallback_path_buf;
-            let path = match song.file_path {
-                Some(ref p) if p.exists() => p.as_path(),
-                _ => {
-                    // Try to find track in Crate by title & artist to retrieve its path
-                    if let (Some(ref title), Some(ref artist)) = (&song.name, &song.artist) {
-                        let crate_path =
-                            Self::unique_title_artist_match(crate_conn, title, artist)?
-                                .map(|(_, p)| p);
-                        if let Some(cp) = crate_path {
-                            let pb = PathBuf::from(cp);
-                            if pb.exists() {
-                                fallback_path_buf = pb;
-                                fallback_path_buf.as_path()
-                            } else {
-                                continue;
-                            }
-                        } else {
-                            continue;
-                        }
-                    } else {
-                        continue;
-                    }
-                }
-            };
+            Self::apply_song(&tx, song, &now, artwork_service, &mut pass)?;
+        }
+        for id in std::mem::take(&mut pass.touched_ids) {
+            Self::fill_missing_artwork(&tx, artwork_service, &id)?;
+        }
+        Self::finish_pass(&tx, &pass)?;
+        tx.commit()?;
 
-            // Unicode NFC normalization of path to avoid APFS / CoreData decomposed Unicode differences
-            let raw_path_str = path.to_string_lossy().to_string();
-            let nfc_path_str: String = raw_path_str.nfc().collect();
-            let canonical_path_str = std::fs::canonicalize(path)
-                .map(|p| p.to_string_lossy().nfc().collect::<String>())
-                .unwrap_or_else(|_| nfc_path_str.clone());
+        Ok(pass.into_result())
+    }
 
-            valid_mik_paths.insert(nfc_path_str.clone());
-            valid_mik_paths.insert(canonical_path_str.clone());
-            valid_mik_paths.insert(raw_path_str.clone());
-
-            // Find all matching track IDs in Crate (exact, NFC, canonical, or raw)
-            let mut matching_ids = Vec::new();
-            {
-                let mut stmt = crate_conn.prepare(
-                    "SELECT id, file_path FROM tracks WHERE file_path = ?1 OR file_path = ?2 OR file_path = ?3",
-                )?;
-                let rows = stmt.query_map(
-                    rusqlite::params![&nfc_path_str, &canonical_path_str, &raw_path_str],
-                    |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
-                )?;
-                for row_res in rows.flatten() {
-                    matching_ids.push(row_res);
-                }
-            }
-
-            if matching_ids.is_empty() {
-                // Relocated file: adopt the MIK path only for a single title/artist match whose own
-                // file no longer exists. Never merge distinct files that merely share a title.
+    /// Applies one Mixed In Key song: decides which Crate track it belongs to (or adds one) and
+    /// enriches it. The decisions depend on what the songs before it in the same pass did, so
+    /// songs must be applied in order, but each call only needs the connection for its own work.
+    fn apply_song(
+        crate_conn: &Connection,
+        song: MikDbSong,
+        now: &str,
+        artwork_service: Option<&ArtworkService>,
+        pass: &mut SyncPass,
+    ) -> Result<()> {
+        let fallback_path_buf;
+        let path = match song.file_path {
+            Some(ref p) if p.exists() => p.as_path(),
+            _ => {
+                // Try to find track in Crate by title & artist to retrieve its path
                 if let (Some(ref title), Some(ref artist)) = (&song.name, &song.artist) {
-                    if let Some((id, existing_path)) =
-                        Self::unique_title_artist_match(crate_conn, title, artist)?
-                    {
-                        if !Path::new(&existing_path).exists() {
-                            matching_ids.push((id, existing_path));
+                    let crate_path =
+                        Self::unique_title_artist_match(crate_conn, title, artist)?.map(|(_, p)| p);
+                    if let Some(cp) = crate_path {
+                        let pb = PathBuf::from(cp);
+                        if pb.exists() {
+                            fallback_path_buf = pb;
+                            fallback_path_buf.as_path()
+                        } else {
+                            return Ok(());
                         }
+                    } else {
+                        return Ok(());
                     }
+                } else {
+                    return Ok(());
                 }
             }
+        };
 
-            let normalized_key = song.key.as_deref().map(MikService::normalize_key);
-            let is_mik_analyzed = song.energy.is_some() || !song.cues.is_empty();
-            let is_mik_analyzed_int = if is_mik_analyzed { 1 } else { 0 };
+        // Unicode NFC normalization of path to avoid APFS / CoreData decomposed Unicode differences
+        let raw_path_str = path.to_string_lossy().to_string();
+        let nfc_path_str: String = raw_path_str.nfc().collect();
+        let canonical_path_str = std::fs::canonicalize(path)
+            .map(|p| p.to_string_lossy().nfc().collect::<String>())
+            .unwrap_or_else(|_| nfc_path_str.clone());
 
-            if !matching_ids.is_empty() {
-                // Primary track is the first match
-                let (primary_id, _) = matching_ids.remove(0);
+        pass.valid_mik_paths.insert(nfc_path_str.clone());
+        pass.valid_mik_paths.insert(canonical_path_str.clone());
+        pass.valid_mik_paths.insert(raw_path_str.clone());
 
-                // Delete any duplicate tracks FIRST to clear UNIQUE(file_path) collisions
-                for (dup_id, _) in &matching_ids {
-                    if let Some(art_svc) = artwork_service {
-                        art_svc.delete(dup_id);
-                    }
-                    crate_conn.execute(
-                        "UPDATE OR IGNORE track_tags SET track_id = ?1 WHERE track_id = ?2",
-                        rusqlite::params![&primary_id, dup_id],
-                    )?;
-                    crate_conn.execute(
-                        "UPDATE OR IGNORE playlist_tracks SET track_id = ?1 WHERE track_id = ?2",
-                        rusqlite::params![&primary_id, dup_id],
-                    )?;
-                    crate_conn.execute("DELETE FROM cues WHERE track_id = ?1", [dup_id])?;
-                    crate_conn.execute("DELETE FROM track_tags WHERE track_id = ?1", [dup_id])?;
-                    crate_conn
-                        .execute("DELETE FROM playlist_tracks WHERE track_id = ?1", [dup_id])?;
-                    crate_conn
-                        .execute("DELETE FROM device_tracks WHERE track_id = ?1", [dup_id])?;
-                    crate_conn.execute("DELETE FROM tracks WHERE id = ?1", [dup_id])?;
-                    if let Ok(hlc) = dirty::next_hlc(crate_conn) {
-                        let _ = dirty::record_tombstone(
-                            crate_conn,
-                            buckets::TRACKS_ENTITY,
-                            dup_id,
-                            &hlc,
-                        );
-                    }
-                    let _ = dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(dup_id));
-                    log::info!("Pruned duplicate track {dup_id} for file {nfc_path_str}");
-                }
-                // Clear any track with this nfc_path_str that isn't primary_id
-                crate_conn.execute(
-                    "DELETE FROM tracks WHERE file_path = ?1 AND id != ?2",
-                    rusqlite::params![&nfc_path_str, &primary_id],
-                )?;
-
-                // Check if existing track has valid artwork on disk
-                let existing_artwork: Option<String> = crate_conn
-                    .query_row(
-                        "SELECT artwork_path FROM tracks WHERE id = ?1",
-                        [&primary_id],
-                        |r| r.get(0),
-                    )
-                    .ok()
-                    .flatten();
-
-                let mut artwork_update = existing_artwork;
-                let mut artwork_source_update = None;
-
-                if artwork_update.is_none() {
-                    if let Some(art_svc) = artwork_service {
-                        if let Some(tagged_file) = MikService::read_metadata_lenient(path) {
-                            if let Some(art_path) = art_svc.extract_from_tagged_file_or_folder(
-                                &tagged_file,
-                                path,
-                                &primary_id,
-                            ) {
-                                artwork_update = Some(art_path);
-                                artwork_source_update = Some("extracted".to_string());
-                            }
-                        }
-                    }
-                }
-
-                let normalized_bitrate =
-                    song.bitrate
-                        .map(|b| if b > 10000 { (b + 500) / 1000 } else { b });
-                let hlc = dirty::next_hlc(crate_conn)?;
-
-                // Enrich the existing track. Analysis data (BPM, key, energy) follows Mixed In Key;
-                // descriptive tags only fill empty fields, so edits made in Crate are never overwritten.
-                // The WHERE clause skips the write entirely when nothing would change.
-                let changed = crate_conn.execute(
-                    r#"
-                    UPDATE tracks
-                    SET bpm = COALESCE(?1, bpm),
-                        key = COALESCE(?2, key),
-                        energy = COALESCE(?3, energy),
-                        title = COALESCE(title, ?4),
-                        artist = COALESCE(artist, ?5),
-                        album = COALESCE(album, ?6),
-                        genre = COALESCE(genre, ?7),
-                        label = COALESCE(label, ?8),
-                        year = COALESCE(year, ?9),
-                        file_path = ?10,
-                        artwork_path = COALESCE(?11, artwork_path),
-                        artwork_source = COALESCE(?12, artwork_source),
-                        bitrate = COALESCE(?13, bitrate),
-                        analysis_source = CASE WHEN ?14 = 1 THEN 'mixed_in_key' ELSE analysis_source END,
-                        date_modified = ?15,
-                        _hlc = ?16
-                    WHERE id = ?17 AND (
-                        bpm IS NOT COALESCE(?1, bpm) OR key IS NOT COALESCE(?2, key)
-                        OR energy IS NOT COALESCE(?3, energy)
-                        OR (title IS NULL AND ?4 IS NOT NULL) OR (artist IS NULL AND ?5 IS NOT NULL)
-                        OR (album IS NULL AND ?6 IS NOT NULL) OR (genre IS NULL AND ?7 IS NOT NULL)
-                        OR (label IS NULL AND ?8 IS NOT NULL) OR (year IS NULL AND ?9 IS NOT NULL)
-                        OR file_path IS NOT ?10
-                        OR artwork_path IS NOT COALESCE(?11, artwork_path)
-                        OR bitrate IS NOT COALESCE(?13, bitrate)
-                        OR (?14 = 1 AND analysis_source IS NOT 'mixed_in_key')
-                    )
-                    "#,
-                    rusqlite::params![
-                        song.tempo,
-                        normalized_key,
-                        song.energy,
-                        song.name,
-                        song.artist,
-                        song.album,
-                        song.genre,
-                        song.label,
-                        song.year,
-                        nfc_path_str,
-                        artwork_update,
-                        artwork_source_update,
-                        normalized_bitrate,
-                        is_mik_analyzed_int,
-                        now,
-                        hlc,
-                        primary_id,
-                    ],
-                )?;
-
-                let track_cues_changed = Self::sync_mik_cues(crate_conn, &primary_id, &song.cues)?;
-                cues_changed |= track_cues_changed;
-
-                if changed > 0 || track_cues_changed {
-                    dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(&primary_id))?;
-                    touched_ids.push(primary_id.clone());
-                    result.updated += 1;
-                }
-                synced_track_ids.insert(primary_id);
-            } else {
-                // Clean up any stale track that might hold nfc_path_str before new insert
-                crate_conn.execute("DELETE FROM cues WHERE track_id IN (SELECT id FROM tracks WHERE file_path = ?1)", [&nfc_path_str])?;
-                crate_conn.execute("DELETE FROM track_tags WHERE track_id IN (SELECT id FROM tracks WHERE file_path = ?1)", [&nfc_path_str])?;
-                crate_conn.execute("DELETE FROM playlist_tracks WHERE track_id IN (SELECT id FROM tracks WHERE file_path = ?1)", [&nfc_path_str])?;
-                crate_conn.execute("DELETE FROM device_tracks WHERE track_id IN (SELECT id FROM tracks WHERE file_path = ?1)", [&nfc_path_str])?;
-                crate_conn.execute("DELETE FROM tracks WHERE file_path = ?1", [&nfc_path_str])?;
-
-                // New track from Mixed In Key - import into Crate
-                let track_id = uuid::Uuid::new_v4().to_string();
-                let file_hash = crate::services::hash::compute_audio_hash(path).ok();
-                let format = path
-                    .extension()
-                    .and_then(|e| e.to_str())
-                    .unwrap_or("mp3")
-                    .to_lowercase();
-
-                let mut duration_ms = 0i64;
-                let mut bitrate = song.bitrate;
-                let mut sample_rate = song.sample_rate;
-                let mut artwork_path = None;
-                let mut artwork_source = None;
-
-                // Read audio properties & artwork with lenient Lofty probe
-                if let Some(tagged_file) = MikService::read_metadata_lenient(path) {
-                    let props = tagged_file.properties();
-                    duration_ms = props.duration().as_millis() as i64;
-                    if bitrate.is_none() {
-                        bitrate = props.audio_bitrate().map(|b| b as i32);
-                    }
-                    if sample_rate.is_none() {
-                        sample_rate = props.sample_rate().map(|s| s as i32);
-                    }
-                    if let Some(art_svc) = artwork_service {
-                        if let Some(art_path) = art_svc.extract_from_tagged_file_or_folder(
-                            &tagged_file,
-                            path,
-                            &track_id,
-                        ) {
-                            artwork_path = Some(art_path);
-                            artwork_source = Some("extracted".to_string());
-                        }
-                    }
-                }
-
-                if (format == "wav" || format == "aiff")
-                    && (bitrate.is_none() || bitrate == Some(0) || bitrate.unwrap_or(0) <= 10)
-                {
-                    let sr = sample_rate.unwrap_or(44100);
-                    bitrate = Some((sr * 2 * 24 + 500) / 1000);
-                }
-
-                let normalized_bitrate =
-                    bitrate.map(|b| if b > 10000 { (b + 500) / 1000 } else { b });
-                let hlc = dirty::next_hlc(crate_conn)?;
-
-                let track = Track {
-                    id: track_id.clone(),
-                    file_path: nfc_path_str.clone(),
-                    file_hash,
-                    title: song.name.clone().or_else(|| {
-                        path.file_stem()
-                            .and_then(|s| s.to_str())
-                            .map(|s| s.to_string())
-                    }),
-                    artist: song.artist.clone(),
-                    album: song.album.clone(),
-                    year: song.year,
-                    genre: song.genre.clone(),
-                    label: song.label.clone(),
-                    catalog_number: None,
-                    duration_ms,
-                    bpm: song.tempo,
-                    key: normalized_key,
-                    energy: song.energy,
-                    bitrate: normalized_bitrate,
-                    sample_rate,
-                    format,
-                    analysis_source: if is_mik_analyzed {
-                        Some("mixed_in_key".to_string())
-                    } else {
-                        None
-                    },
-                    waveform_data: None,
-                    rating: song.rating.unwrap_or(0),
-                    play_count: 0,
-                    date_added: now.clone(),
-                    date_modified: now.clone(),
-                    last_played: None,
-                    rekordbox_id: None,
-                    artwork_path,
-                    artwork_source,
-                    color: None,
-                    library_root_id: None,
-                    relative_path: None,
-                    tags: vec![],
-                };
-
-                // Insert into Crate tracks table
-                crate_conn.execute(
-                    r#"
-                    INSERT INTO tracks (
-                        id, file_path, file_hash, title, artist, album, year, genre,
-                        label, catalog_number, duration_ms, bpm, key, energy, bitrate,
-                        sample_rate, format, analysis_source, waveform_data, rating,
-                        play_count, date_added, date_modified, last_played, rekordbox_id,
-                        artwork_path, artwork_source, color, library_root_id, relative_path,
-                        _hlc
-                    ) VALUES (
-                        ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8,
-                        ?9, ?10, ?11, ?12, ?13, ?14, ?15,
-                        ?16, ?17, ?18, ?19, ?20,
-                        ?21, ?22, ?23, ?24, ?25,
-                        ?26, ?27, ?28, ?29, ?30,
-                        ?31
-                    )
-                    "#,
-                    rusqlite::params![
-                        track.id,
-                        track.file_path,
-                        track.file_hash,
-                        track.title,
-                        track.artist,
-                        track.album,
-                        track.year,
-                        track.genre,
-                        track.label,
-                        track.catalog_number,
-                        track.duration_ms,
-                        track.bpm,
-                        track.key,
-                        track.energy,
-                        track.bitrate,
-                        track.sample_rate,
-                        track.format,
-                        track.analysis_source,
-                        track.waveform_data,
-                        track.rating,
-                        track.play_count,
-                        track.date_added,
-                        track.date_modified,
-                        track.last_played,
-                        track.rekordbox_id,
-                        track.artwork_path,
-                        track.artwork_source,
-                        track.color,
-                        track.library_root_id,
-                        track.relative_path,
-                        hlc,
-                    ],
-                )?;
-
-                cues_changed |= Self::sync_mik_cues(crate_conn, &track_id, &song.cues)?;
-
-                dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(&track_id))?;
-                touched_ids.push(track_id.clone());
-                synced_track_ids.insert(track_id);
-                result.added += 1;
+        // Find all matching track IDs in Crate (exact, NFC, canonical, or raw)
+        let mut matching_ids = Vec::new();
+        {
+            let mut stmt = crate_conn.prepare(
+                "SELECT id, file_path FROM tracks WHERE file_path = ?1 OR file_path = ?2 OR file_path = ?3",
+            )?;
+            let rows = stmt.query_map(
+                rusqlite::params![&nfc_path_str, &canonical_path_str, &raw_path_str],
+                |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
+            )?;
+            for row_res in rows.flatten() {
+                matching_ids.push(row_res);
             }
         }
 
+        if matching_ids.is_empty() {
+            // Relocated file: adopt the MIK path only for a single title/artist match whose own
+            // file no longer exists. Never merge distinct files that merely share a title.
+            if let (Some(ref title), Some(ref artist)) = (&song.name, &song.artist) {
+                if let Some((id, existing_path)) =
+                    Self::unique_title_artist_match(crate_conn, title, artist)?
+                {
+                    if !Path::new(&existing_path).exists() {
+                        matching_ids.push((id, existing_path));
+                    }
+                }
+            }
+        }
+
+        let normalized_key = song.key.as_deref().map(MikService::normalize_key);
+        let is_mik_analyzed = song.energy.is_some() || !song.cues.is_empty();
+        let is_mik_analyzed_int = if is_mik_analyzed { 1 } else { 0 };
+
+        if !matching_ids.is_empty() {
+            // Primary track is the first match
+            let (primary_id, _) = matching_ids.remove(0);
+
+            // Delete any duplicate tracks FIRST to clear UNIQUE(file_path) collisions
+            for (dup_id, _) in &matching_ids {
+                if let Some(art_svc) = artwork_service {
+                    art_svc.delete(dup_id);
+                }
+                crate_conn.execute(
+                    "UPDATE OR IGNORE track_tags SET track_id = ?1 WHERE track_id = ?2",
+                    rusqlite::params![&primary_id, dup_id],
+                )?;
+                crate_conn.execute(
+                    "UPDATE OR IGNORE playlist_tracks SET track_id = ?1 WHERE track_id = ?2",
+                    rusqlite::params![&primary_id, dup_id],
+                )?;
+                crate_conn.execute("DELETE FROM cues WHERE track_id = ?1", [dup_id])?;
+                crate_conn.execute("DELETE FROM track_tags WHERE track_id = ?1", [dup_id])?;
+                crate_conn.execute("DELETE FROM playlist_tracks WHERE track_id = ?1", [dup_id])?;
+                crate_conn.execute("DELETE FROM device_tracks WHERE track_id = ?1", [dup_id])?;
+                crate_conn.execute("DELETE FROM tracks WHERE id = ?1", [dup_id])?;
+                if let Ok(hlc) = dirty::next_hlc(crate_conn) {
+                    let _ =
+                        dirty::record_tombstone(crate_conn, buckets::TRACKS_ENTITY, dup_id, &hlc);
+                }
+                let _ = dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(dup_id));
+                log::info!("Pruned duplicate track {dup_id} for file {nfc_path_str}");
+            }
+            // Clear any track with this nfc_path_str that isn't primary_id
+            crate_conn.execute(
+                "DELETE FROM tracks WHERE file_path = ?1 AND id != ?2",
+                rusqlite::params![&nfc_path_str, &primary_id],
+            )?;
+
+            // Check if existing track has valid artwork on disk
+            let existing_artwork: Option<String> = crate_conn
+                .query_row(
+                    "SELECT artwork_path FROM tracks WHERE id = ?1",
+                    [&primary_id],
+                    |r| r.get(0),
+                )
+                .ok()
+                .flatten();
+
+            let mut artwork_update = existing_artwork;
+            let mut artwork_source_update = None;
+
+            if artwork_update.is_none() {
+                if let Some(art_svc) = artwork_service {
+                    if let Some(tagged_file) = MikService::read_metadata_lenient(path) {
+                        if let Some(art_path) = art_svc.extract_from_tagged_file_or_folder(
+                            &tagged_file,
+                            path,
+                            &primary_id,
+                        ) {
+                            artwork_update = Some(art_path);
+                            artwork_source_update = Some("extracted".to_string());
+                        }
+                    }
+                }
+            }
+
+            let normalized_bitrate = song
+                .bitrate
+                .map(|b| if b > 10000 { (b + 500) / 1000 } else { b });
+            let hlc = dirty::next_hlc(crate_conn)?;
+
+            // Enrich the existing track. Analysis data (BPM, key, energy) follows Mixed In Key;
+            // descriptive tags only fill empty fields, so edits made in Crate are never overwritten.
+            // The WHERE clause skips the write entirely when nothing would change.
+            let changed = crate_conn.execute(
+                r#"
+                UPDATE tracks
+                SET bpm = COALESCE(?1, bpm),
+                    key = COALESCE(?2, key),
+                    energy = COALESCE(?3, energy),
+                    title = COALESCE(title, ?4),
+                    artist = COALESCE(artist, ?5),
+                    album = COALESCE(album, ?6),
+                    genre = COALESCE(genre, ?7),
+                    label = COALESCE(label, ?8),
+                    year = COALESCE(year, ?9),
+                    file_path = ?10,
+                    artwork_path = COALESCE(?11, artwork_path),
+                    artwork_source = COALESCE(?12, artwork_source),
+                    bitrate = COALESCE(?13, bitrate),
+                    analysis_source = CASE WHEN ?14 = 1 THEN 'mixed_in_key' ELSE analysis_source END,
+                    date_modified = ?15,
+                    _hlc = ?16
+                WHERE id = ?17 AND (
+                    bpm IS NOT COALESCE(?1, bpm) OR key IS NOT COALESCE(?2, key)
+                    OR energy IS NOT COALESCE(?3, energy)
+                    OR (title IS NULL AND ?4 IS NOT NULL) OR (artist IS NULL AND ?5 IS NOT NULL)
+                    OR (album IS NULL AND ?6 IS NOT NULL) OR (genre IS NULL AND ?7 IS NOT NULL)
+                    OR (label IS NULL AND ?8 IS NOT NULL) OR (year IS NULL AND ?9 IS NOT NULL)
+                    OR file_path IS NOT ?10
+                    OR artwork_path IS NOT COALESCE(?11, artwork_path)
+                    OR bitrate IS NOT COALESCE(?13, bitrate)
+                    OR (?14 = 1 AND analysis_source IS NOT 'mixed_in_key')
+                )
+                "#,
+                rusqlite::params![
+                    song.tempo,
+                    normalized_key,
+                    song.energy,
+                    song.name,
+                    song.artist,
+                    song.album,
+                    song.genre,
+                    song.label,
+                    song.year,
+                    nfc_path_str,
+                    artwork_update,
+                    artwork_source_update,
+                    normalized_bitrate,
+                    is_mik_analyzed_int,
+                    now,
+                    hlc,
+                    primary_id,
+                ],
+            )?;
+
+            let track_cues_changed = Self::sync_mik_cues(crate_conn, &primary_id, &song.cues)?;
+            pass.cues_changed |= track_cues_changed;
+
+            if changed > 0 || track_cues_changed {
+                dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(&primary_id))?;
+                pass.touched_ids.push(primary_id.clone());
+                pass.result.updated += 1;
+            }
+            pass.synced_track_ids.insert(primary_id);
+        } else {
+            // Clean up any stale track that might hold nfc_path_str before new insert
+            crate_conn.execute(
+                "DELETE FROM cues WHERE track_id IN (SELECT id FROM tracks WHERE file_path = ?1)",
+                [&nfc_path_str],
+            )?;
+            crate_conn.execute("DELETE FROM track_tags WHERE track_id IN (SELECT id FROM tracks WHERE file_path = ?1)", [&nfc_path_str])?;
+            crate_conn.execute("DELETE FROM playlist_tracks WHERE track_id IN (SELECT id FROM tracks WHERE file_path = ?1)", [&nfc_path_str])?;
+            crate_conn.execute("DELETE FROM device_tracks WHERE track_id IN (SELECT id FROM tracks WHERE file_path = ?1)", [&nfc_path_str])?;
+            crate_conn.execute("DELETE FROM tracks WHERE file_path = ?1", [&nfc_path_str])?;
+
+            // New track from Mixed In Key - import into Crate
+            let track_id = uuid::Uuid::new_v4().to_string();
+            let file_hash = crate::services::hash::compute_audio_hash(path).ok();
+            let format = path
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("mp3")
+                .to_lowercase();
+
+            let mut duration_ms = 0i64;
+            let mut bitrate = song.bitrate;
+            let mut sample_rate = song.sample_rate;
+            let mut artwork_path = None;
+            let mut artwork_source = None;
+
+            // Read audio properties & artwork with lenient Lofty probe
+            if let Some(tagged_file) = MikService::read_metadata_lenient(path) {
+                let props = tagged_file.properties();
+                duration_ms = props.duration().as_millis() as i64;
+                if bitrate.is_none() {
+                    bitrate = props.audio_bitrate().map(|b| b as i32);
+                }
+                if sample_rate.is_none() {
+                    sample_rate = props.sample_rate().map(|s| s as i32);
+                }
+                if let Some(art_svc) = artwork_service {
+                    if let Some(art_path) =
+                        art_svc.extract_from_tagged_file_or_folder(&tagged_file, path, &track_id)
+                    {
+                        artwork_path = Some(art_path);
+                        artwork_source = Some("extracted".to_string());
+                    }
+                }
+            }
+
+            if (format == "wav" || format == "aiff")
+                && (bitrate.is_none() || bitrate == Some(0) || bitrate.unwrap_or(0) <= 10)
+            {
+                let sr = sample_rate.unwrap_or(44100);
+                bitrate = Some((sr * 2 * 24 + 500) / 1000);
+            }
+
+            let normalized_bitrate = bitrate.map(|b| if b > 10000 { (b + 500) / 1000 } else { b });
+            let hlc = dirty::next_hlc(crate_conn)?;
+
+            let track = Track {
+                id: track_id.clone(),
+                file_path: nfc_path_str.clone(),
+                file_hash,
+                title: song.name.clone().or_else(|| {
+                    path.file_stem()
+                        .and_then(|s| s.to_str())
+                        .map(|s| s.to_string())
+                }),
+                artist: song.artist.clone(),
+                album: song.album.clone(),
+                year: song.year,
+                genre: song.genre.clone(),
+                label: song.label.clone(),
+                catalog_number: None,
+                duration_ms,
+                bpm: song.tempo,
+                key: normalized_key,
+                energy: song.energy,
+                bitrate: normalized_bitrate,
+                sample_rate,
+                format,
+                analysis_source: if is_mik_analyzed {
+                    Some("mixed_in_key".to_string())
+                } else {
+                    None
+                },
+                waveform_data: None,
+                rating: song.rating.unwrap_or(0),
+                play_count: 0,
+                date_added: now.to_string(),
+                date_modified: now.to_string(),
+                last_played: None,
+                rekordbox_id: None,
+                artwork_path,
+                artwork_source,
+                color: None,
+                library_root_id: None,
+                relative_path: None,
+                tags: vec![],
+            };
+
+            // Insert into Crate tracks table
+            crate_conn.execute(
+                r#"
+                INSERT INTO tracks (
+                    id, file_path, file_hash, title, artist, album, year, genre,
+                    label, catalog_number, duration_ms, bpm, key, energy, bitrate,
+                    sample_rate, format, analysis_source, waveform_data, rating,
+                    play_count, date_added, date_modified, last_played, rekordbox_id,
+                    artwork_path, artwork_source, color, library_root_id, relative_path,
+                    _hlc
+                ) VALUES (
+                    ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8,
+                    ?9, ?10, ?11, ?12, ?13, ?14, ?15,
+                    ?16, ?17, ?18, ?19, ?20,
+                    ?21, ?22, ?23, ?24, ?25,
+                    ?26, ?27, ?28, ?29, ?30,
+                    ?31
+                )
+                "#,
+                rusqlite::params![
+                    track.id,
+                    track.file_path,
+                    track.file_hash,
+                    track.title,
+                    track.artist,
+                    track.album,
+                    track.year,
+                    track.genre,
+                    track.label,
+                    track.catalog_number,
+                    track.duration_ms,
+                    track.bpm,
+                    track.key,
+                    track.energy,
+                    track.bitrate,
+                    track.sample_rate,
+                    track.format,
+                    track.analysis_source,
+                    track.waveform_data,
+                    track.rating,
+                    track.play_count,
+                    track.date_added,
+                    track.date_modified,
+                    track.last_played,
+                    track.rekordbox_id,
+                    track.artwork_path,
+                    track.artwork_source,
+                    track.color,
+                    track.library_root_id,
+                    track.relative_path,
+                    hlc,
+                ],
+            )?;
+
+            pass.cues_changed |= Self::sync_mik_cues(crate_conn, &track_id, &song.cues)?;
+
+            dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(&track_id))?;
+            pass.touched_ids.push(track_id.clone());
+            pass.synced_track_ids.insert(track_id);
+            pass.result.added += 1;
+        }
+        Ok(())
+    }
+
+    /// Looks for the cover of a track the pass added or changed and that still has none.
+    /// Reads the audio file's tags, so it is kept apart from the SQL-only steps.
+    fn fill_missing_artwork(
+        crate_conn: &Connection,
+        artwork_service: Option<&ArtworkService>,
+        track_id: &str,
+    ) -> Result<()> {
+        let Some(art_svc) = artwork_service else {
+            return Ok(());
+        };
+        let missing: Option<String> = crate_conn
+            .query_row(
+                "SELECT file_path FROM tracks WHERE id = ?1 AND artwork_path IS NULL",
+                [track_id],
+                |r| r.get(0),
+            )
+            .ok();
+        let Some(fpath) = missing else {
+            return Ok(());
+        };
+        let p = PathBuf::from(&fpath);
+        if let Some(tagged) = MikService::read_metadata_lenient(&p) {
+            if let Some(art_path) =
+                art_svc.extract_from_tagged_file_or_folder(&tagged, &p, track_id)
+            {
+                let hlc = dirty::next_hlc(crate_conn)?;
+                crate_conn.execute(
+                    "UPDATE tracks SET artwork_path = ?1, artwork_source = 'extracted', _hlc = ?2 WHERE id = ?3",
+                    rusqlite::params![art_path, hlc, track_id],
+                )?;
+                dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(track_id))?;
+            }
+        }
+        Ok(())
+    }
+
+    /// The SQL-only end of a pass: bitrate clean-ups and the cue bucket's dirty mark.
+    fn finish_pass(crate_conn: &Connection, pass: &SyncPass) -> Result<()> {
         // Tracks absent from Mixed In Key are kept: Mixed In Key enriches Crate, it does not own it.
         let untouched: i64 =
             crate_conn.query_row("SELECT COUNT(*) FROM tracks", [], |r| r.get(0))?;
-        let untouched = (untouched as usize).saturating_sub(synced_track_ids.len());
+        let untouched = (untouched as usize).saturating_sub(pass.synced_track_ids.len());
         if untouched > 0 {
             log::debug!(
                 "{untouched} Crate track(s) are not in Mixed In Key and were left untouched"
             );
-        }
-
-        // Artwork pass limited to the tracks added or changed by this sync (not the whole library).
-        if let Some(art_svc) = artwork_service {
-            for tid in &touched_ids {
-                let missing: Option<String> = crate_conn
-                    .query_row(
-                        "SELECT file_path FROM tracks WHERE id = ?1 AND artwork_path IS NULL",
-                        [tid],
-                        |r| r.get(0),
-                    )
-                    .ok();
-                let Some(fpath) = missing else { continue };
-                let p = PathBuf::from(&fpath);
-                if let Some(tagged) = MikService::read_metadata_lenient(&p) {
-                    if let Some(art_path) =
-                        art_svc.extract_from_tagged_file_or_folder(&tagged, &p, tid)
-                    {
-                        let hlc = dirty::next_hlc(crate_conn)?;
-                        crate_conn.execute(
-                            "UPDATE tracks SET artwork_path = ?1, artwork_source = 'extracted', _hlc = ?2 WHERE id = ?3",
-                            rusqlite::params![art_path, hlc, tid],
-                        )?;
-                        dirty::mark_dirty(crate_conn, &buckets::bucket_for_track_id(tid))?;
-                    }
-                }
-            }
         }
 
         // Normalize all legacy bitrates in DB from bps to kbps (e.g. 806807 -> 807, 320000 -> 320, 2116800 -> 2117)
@@ -874,20 +1020,10 @@ impl MikDatabaseService {
             [],
         );
 
-        if cues_changed {
+        if pass.cues_changed {
             dirty::mark_dirty(crate_conn, buckets::CUES)?;
         }
-        tx.commit()?;
-
-        log::info!(
-            "Mixed In Key DB Sync complete: {} added, {} updated, {} removed out of {} MIK songs",
-            result.added,
-            result.updated,
-            result.removed,
-            result.total
-        );
-
-        Ok(result)
+        Ok(())
     }
 }
 
@@ -1250,6 +1386,140 @@ mod tests {
         );
         assert_eq!(count(&conn, "SELECT COUNT(*) FROM playlist_tracks"), 2);
         assert_eq!(count(&conn, "SELECT COUNT(*) FROM sync_tombstones"), 0);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    /// Two identical libraries plus the Mixed In Key songs that exercise every decision: an existing
+    /// track enriched with cues, a track whose Mixed In Key path no longer exists (matched by title
+    /// and artist), and two files Crate does not know yet.
+    fn sync_scenario(dir: &Path) -> (Connection, Vec<MikDbSong>) {
+        let conn = crate_db();
+        let a = touch(dir, "a.mp3");
+        let b = touch(dir, "b.mp3");
+        let c = touch(dir, "c.mp3");
+        let d = touch(dir, "d.flac");
+        insert_track(&conn, "a", &a, "Alpha", "Artist");
+        insert_track(&conn, "b", &b, "Bravo", "Artist");
+        let mut song_a = mik_song(&a, "Alpha", "Artist");
+        song_a.cues = vec![cue(1.0), cue(32.5)];
+        let gone = dir.join("gone").join("b.mp3").to_string_lossy().to_string();
+        let song_b = mik_song(&gone, "Bravo", "Artist");
+        let song_c = mik_song(&c, "Charlie", "Artist");
+        let mut song_d = mik_song(&d, "Delta", "Artist");
+        song_d.cues = vec![cue(8.0)];
+        (conn, vec![song_a, song_b, song_c, song_d])
+    }
+
+    /// Everything a sync decides, without the random ids and the timestamps.
+    fn sync_snapshot(conn: &Connection) -> Vec<String> {
+        let mut out: Vec<String> = conn
+            .prepare(
+                "SELECT file_path, title, artist, bpm, key, energy, analysis_source, bitrate, format
+                 FROM tracks ORDER BY file_path",
+            )
+            .unwrap()
+            .query_map([], |r| {
+                Ok(format!(
+                    "{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}",
+                    r.get::<_, String>(0)?,
+                    r.get::<_, Option<String>>(1)?,
+                    r.get::<_, Option<String>>(2)?,
+                    r.get::<_, Option<f64>>(3)?,
+                    r.get::<_, Option<String>>(4)?,
+                    r.get::<_, Option<i64>>(5)?,
+                    r.get::<_, Option<String>>(6)?,
+                    r.get::<_, Option<i64>>(7)?,
+                    r.get::<_, String>(8)?,
+                ))
+            })
+            .unwrap()
+            .flatten()
+            .collect();
+        out.extend(
+            conn.prepare(
+                "SELECT t.file_path, c.position_ms, c.type, c.hot_cue_index, c.name
+                 FROM cues c JOIN tracks t ON t.id = c.track_id
+                 ORDER BY t.file_path, c.position_ms",
+            )
+            .unwrap()
+            .query_map([], |r| {
+                Ok(format!(
+                    "cue {:?}|{:?}|{:?}|{:?}|{:?}",
+                    r.get::<_, String>(0)?,
+                    r.get::<_, i64>(1)?,
+                    r.get::<_, String>(2)?,
+                    r.get::<_, Option<i64>>(3)?,
+                    r.get::<_, Option<String>>(4)?,
+                ))
+            })
+            .unwrap()
+            .flatten(),
+        );
+        out
+    }
+
+    #[test]
+    fn syncing_in_batches_decides_exactly_like_one_transaction() {
+        let dir = temp_library("batches_same");
+        let (single, songs) = sync_scenario(&dir);
+        let (batched, batched_songs) = sync_scenario(&dir);
+
+        let expected = MikDatabaseService::apply_mik_songs(&single, songs, None).unwrap();
+        let batched = Mutex::new(batched);
+        // A zero budget makes every song its own batch: the most the lock is ever released.
+        let got = MikDatabaseService::apply_mik_songs_in_batches(
+            &batched,
+            batched_songs,
+            None,
+            Duration::ZERO,
+            &mut || {},
+        )
+        .unwrap();
+
+        assert_eq!(expected.added, 2, "the two unknown files are added");
+        assert_eq!(expected.updated, 2, "the two known tracks are enriched");
+        assert_eq!(
+            (got.total, got.added, got.updated, got.removed),
+            (
+                expected.total,
+                expected.added,
+                expected.updated,
+                expected.removed
+            )
+        );
+        assert_eq!(
+            sync_snapshot(&single),
+            sync_snapshot(&batched.lock().unwrap())
+        );
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn the_database_lock_is_free_between_batches() {
+        let dir = temp_library("batches_lock");
+        let (conn, songs) = sync_scenario(&dir);
+        let conn = Mutex::new(conn);
+
+        let (mut batches, mut lock_was_free) = (0, 0);
+        MikDatabaseService::apply_mik_songs_in_batches(
+            &conn,
+            songs,
+            None,
+            Duration::ZERO,
+            &mut || {
+                batches += 1;
+                if conn.try_lock().is_ok() {
+                    lock_was_free += 1;
+                }
+            },
+        )
+        .unwrap();
+
+        assert_eq!(batches, 4, "a zero budget makes one batch per song");
+        assert_eq!(
+            lock_was_free, batches,
+            "the lock is free every time the pass pauses, not just some of the times"
+        );
         let _ = std::fs::remove_dir_all(dir);
     }
 

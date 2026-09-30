@@ -127,16 +127,16 @@ use tauri::Manager;
 
 /// Full Mixed In Key sync for the startup pass and the file watcher, on the blocking pool: it
 /// reads the Mixed In Key database and the audio files' tags, which takes from milliseconds (an
-/// unchanged library) to minutes (a first import), and must not park a runtime worker.
+/// unchanged library) to minutes (a first import), and must not park a runtime worker. The sync
+/// takes the shared connection itself and only holds its lock for short batches of songs.
 #[cfg(feature = "desktop")]
 async fn sync_all_from_mik_db_blocking(
     conn: std::sync::Arc<std::sync::Mutex<rusqlite::Connection>>,
     app_data_dir: std::path::PathBuf,
 ) -> error::Result<services::library::MikSyncResult> {
     error::run_blocking(move || {
-        let guard = conn.lock().map_err(|_| error::CrateError::LockPoisoned)?;
         let artwork = services::ArtworkService::new(app_data_dir);
-        services::library::MikDatabaseService::sync_all_from_mik_db(&guard, Some(&artwork))
+        services::library::MikDatabaseService::sync_all_from_mik_db(&conn, Some(&artwork))
     })
     .await
 }
