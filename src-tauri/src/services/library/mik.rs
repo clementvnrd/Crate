@@ -338,8 +338,8 @@ impl MikService {
         clean.to_string()
     }
 
-    /// Re-sync a track's metadata and cues directly from its audio file tags on disk
-    /// Reads the Mixed In Key tags of `track`'s file and reconciles the track with them.
+    /// Re-syncs a track's metadata and cues directly from its audio file tags on disk: reads the
+    /// Mixed In Key tags of `track`'s file and reconciles the track with them.
     /// Convenience for a single track: the two steps below, back to back.
     pub fn sync_track_from_file(conn: &Connection, track: &Track) -> Result<Track> {
         Self::apply_file_sync(conn, Self::read_track_from_file(track)?)

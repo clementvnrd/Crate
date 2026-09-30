@@ -246,6 +246,7 @@ pub fn run() {
             commands::library::prune_missing_tracks,
             commands::library::get_track_waveform,
             commands::library::get_track_cues,
+            commands::library::suggest_next_tracks,
             // Duplicate commands (desktop-only)
             #[cfg(feature = "desktop")]
             commands::duplicate::get_duplicate_groups,

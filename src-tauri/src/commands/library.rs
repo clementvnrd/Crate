@@ -7,7 +7,7 @@ use crate::models::{
     DuplicateResolution, FileMatchResult, ImportResult, ImportResultWithDuplicates, Track,
     TrackFilter, TrackUpdate,
 };
-use crate::services::library::RescanResult;
+use crate::services::library::{NextTrackSuggestion, RescanResult};
 use crate::services::LibraryService;
 
 /// Runs `work` with the managed [`LibraryService`] on the blocking pool (see [`run_blocking`]).
@@ -274,4 +274,18 @@ pub async fn get_track_cues(
     track_id: String,
 ) -> Result<Vec<crate::models::Cue>> {
     with_library(&app, move |library| library.get_track_cues(&track_id)).await
+}
+
+/// Tracks to play after `track_id`: first what followed it in the user's Rekordbox sets, then
+/// library tracks that mix well with it. `limit` defaults to 10 (at most 50).
+#[tauri::command]
+pub async fn suggest_next_tracks(
+    app: tauri::AppHandle,
+    track_id: String,
+    limit: Option<usize>,
+) -> Result<Vec<NextTrackSuggestion>> {
+    with_library(&app, move |library| {
+        library.suggest_next_tracks(&track_id, limit)
+    })
+    .await
 }

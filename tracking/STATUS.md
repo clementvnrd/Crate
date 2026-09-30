@@ -243,3 +243,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Scenario B started: listening-history export to CSV/JSON (backend) | — |
 | 2026-09-30 | Scenario B: smart-playlist listening criteria (backend, migration 16) | — |
 | 2026-09-30 | Scenario B: "Your week / Your year" recap (backend) and exact statistics windows | — |
+| 2026-09-30 | Scenario B: next-track suggestion from real Rekordbox transitions (backend) and harmonic key module | — |

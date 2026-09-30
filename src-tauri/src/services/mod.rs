@@ -20,6 +20,7 @@ pub mod duplicate;
 #[cfg(feature = "desktop")]
 pub mod export;
 pub mod follow;
+pub mod harmonic;
 #[cfg(feature = "desktop")]
 pub mod hash;
 #[cfg(feature = "desktop")]
