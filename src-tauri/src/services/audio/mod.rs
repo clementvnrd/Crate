@@ -1,11 +1,12 @@
 mod fade;
+mod request;
 
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU8, Ordering};
-use std::sync::mpsc::{self, Receiver, Sender};
-use std::sync::{Arc, Mutex};
+use std::sync::mpsc::Receiver;
+use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -22,6 +23,7 @@ use crate::error::{CrateError, Result};
 use crate::models::AudioDevice;
 
 use fade::{FadeOutEnding, FadeState, PauseFade};
+use request::{Envelope, Requester};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlaybackState {
@@ -75,38 +77,23 @@ enum AudioResponse {
 }
 
 pub struct AudioService {
-    command_tx: Sender<AudioCommand>,
-    response_rx: Arc<Mutex<Receiver<AudioResponse>>>,
+    requester: Requester<AudioCommand, AudioResponse>,
 }
 
 impl AudioService {
     pub fn new() -> Result<Self> {
-        let (command_tx, command_rx) = mpsc::channel::<AudioCommand>();
-        let (response_tx, response_rx) = mpsc::channel::<AudioResponse>();
+        let (requester, command_rx) = Requester::channel();
 
         // Spawn audio thread
         thread::spawn(move || {
-            audio_thread(command_rx, response_tx);
+            audio_thread(command_rx);
         });
 
-        Ok(Self {
-            command_tx,
-            response_rx: Arc::new(Mutex::new(response_rx)),
-        })
+        Ok(Self { requester })
     }
 
     fn send_command(&self, cmd: AudioCommand) -> Result<AudioResponse> {
-        self.command_tx
-            .send(cmd)
-            .map_err(|e| CrateError::Audio(format!("Failed to send command: {e}")))?;
-
-        let rx = self
-            .response_rx
-            .lock()
-            .map_err(|_| CrateError::Audio("Failed to acquire response lock".to_string()))?;
-
-        rx.recv_timeout(Duration::from_secs(5))
-            .map_err(|e| CrateError::Audio(format!("Failed to receive response: {e}")))
+        self.requester.call(cmd, Duration::from_secs(5))
     }
 
     pub fn play_track(
@@ -326,8 +313,7 @@ impl AudioService {
 impl Clone for AudioService {
     fn clone(&self) -> Self {
         Self {
-            command_tx: self.command_tx.clone(),
-            response_rx: self.response_rx.clone(),
+            requester: self.requester.clone(),
         }
     }
 }
@@ -373,7 +359,7 @@ impl AudioPlayer {
     }
 }
 
-fn audio_thread(command_rx: Receiver<AudioCommand>, response_tx: Sender<AudioResponse>) {
+fn audio_thread(command_rx: Receiver<Envelope<AudioCommand, AudioResponse>>) {
     let mut player: Option<AudioPlayer> = None;
     let mut output_stream: Option<(OutputStream, Option<String>)> = None;
     let mut current_volume: f32 = 1.0;
@@ -382,7 +368,7 @@ fn audio_thread(command_rx: Receiver<AudioCommand>, response_tx: Sender<AudioRes
 
     loop {
         match command_rx.recv() {
-            Ok(cmd) => {
+            Ok((cmd, reply_tx)) => {
                 let response = handle_command(
                     cmd,
                     &mut player,
@@ -400,10 +386,9 @@ fn audio_thread(command_rx: Receiver<AudioCommand>, response_tx: Sender<AudioRes
                     // This was a shutdown command - but we'll keep running
                 }
 
-                if response_tx.send(response).is_err() {
-                    log::error!("Audio response channel closed");
-                    break;
-                }
+                // The caller may have given up (timeout) and dropped its reply channel: that only
+                // means nobody wants this answer, the audio thread carries on.
+                let _ = reply_tx.send(response);
             }
             Err(_) => {
                 log::info!("Audio command channel closed, shutting down audio thread");
