@@ -120,7 +120,7 @@ The backend has 35 major defects besides the critical ones, concentrated in the 
 | B30 | File associations with `rank: Default` and the `public.audio` umbrella; bundle `com.crate.app` does not exist in the native code | `tauri.conf.json:38-61`, `commands/standalone.rs:101-150` | `rank: Alternate`, remove `public.audio`, delete the FFI and the Swift script | XS |
 | B31 | `StartupFile`: race at startup, several opened files overwrite each other | `lib.rs` | Queue of paths, drained when the frontend is ready | S |
 | B32 | `delete_tracks_and_files`: Trash via `osascript` per file, silent failures, permanent deletion outside macOS | `services/library/update.rs` | `trash` crate, errors surfaced | S |
-| B33 | Blocking I/O, subprocesses (`beatportdl`, `lsof`, `osascript`) and rusqlite under `std::sync::Mutex` run on the tokio runtime | several services | `spawn_blocking` or synchronous Tauri commands; never hold the lock during disk or network I/O | M |
+| B33 | Blocking I/O, subprocesses (`beatportdl`, `lsof`, `osascript`) and rusqlite under `std::sync::Mutex` run on the tokio runtime | several services | `spawn_blocking` (not synchronous Tauri commands: in Tauri 2 a sync command runs on the main thread); never hold the lock during disk or network I/O | M |
 | B34 | Services instantiated twice: the state managed by Tauri is not the one used by the background tasks | `lib.rs:594-599` | A single shared `Arc` instance | XS |
 | B35 | `get_duplicate_count` launches a full duplicate scan on every `duplicates-updated` event | `services/duplicate.rs` | Cached counter, invalidated by mutations | S |
 

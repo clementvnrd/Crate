@@ -248,17 +248,42 @@ impl LibraryService {
         let mut updated_count = 0;
         let mut failed_count = 0;
 
-        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        // Step one, without the database: read the tags of every file. This is the slow part
+        // (seconds to minutes for a whole library) and used to run with the connection locked,
+        // so every other command waited behind it.
+        let read: Vec<(String, Result<MikFileSync>)> = tracks_to_sync
+            .iter()
+            .map(|track| (track.id.clone(), MikService::read_track_from_file(track)))
+            .collect();
 
-        for track in tracks_to_sync {
-            match MikService::sync_track_from_file(&conn, &track) {
+        // Step two, locked for as short as possible: write everything in one transaction (one
+        // commit instead of one per statement), each track in its own savepoint so a track that
+        // fails to write leaves no half-written cues behind and does not affect the others.
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        let tx = conn.unchecked_transaction()?;
+        for (track_id, read) in read {
+            let written = read.and_then(|sync| {
+                tx.execute_batch("SAVEPOINT track_sync")?;
+                match MikService::apply_file_sync(&tx, sync) {
+                    Ok(track) => {
+                        tx.execute_batch("RELEASE track_sync")?;
+                        Ok(track)
+                    }
+                    Err(e) => {
+                        let _ = tx.execute_batch("ROLLBACK TO track_sync; RELEASE track_sync");
+                        Err(e)
+                    }
+                }
+            });
+            match written {
                 Ok(_) => updated_count += 1,
                 Err(e) => {
-                    log::warn!("Failed to resync MIK metadata for track {}: {e}", track.id);
+                    log::warn!("Failed to resync MIK metadata for track {track_id}: {e}");
                     failed_count += 1;
                 }
             }
         }
+        tx.commit()?;
 
         Ok(RescanResult {
             updated_count,
@@ -518,5 +543,142 @@ mod replace_file_tests {
         crate::db::run_migrations(&conn).unwrap();
         let err = replace_track_file_in(&conn, "missing", "/x.flac", &ReplacementAudio::default());
         assert!(matches!(err, Err(CrateError::TrackNotFound(_))));
+    }
+}
+
+#[cfg(test)]
+mod resync_tests {
+    use super::*;
+    use std::path::{Path, PathBuf};
+    use std::sync::{Arc, Mutex};
+
+    /// A valid, silent, one-second mono WAV: enough for the tag reader to open.
+    fn write_silent_wav(path: &Path) {
+        let sample_rate: u32 = 8000;
+        let data_len: u32 = sample_rate * 2; // 16-bit mono, one second
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"RIFF");
+        bytes.extend_from_slice(&(36 + data_len).to_le_bytes());
+        bytes.extend_from_slice(b"WAVEfmt ");
+        bytes.extend_from_slice(&16u32.to_le_bytes());
+        bytes.extend_from_slice(&1u16.to_le_bytes()); // PCM
+        bytes.extend_from_slice(&1u16.to_le_bytes()); // mono
+        bytes.extend_from_slice(&sample_rate.to_le_bytes());
+        bytes.extend_from_slice(&(sample_rate * 2).to_le_bytes()); // byte rate
+        bytes.extend_from_slice(&2u16.to_le_bytes()); // block align
+        bytes.extend_from_slice(&16u16.to_le_bytes()); // bits per sample
+        bytes.extend_from_slice(b"data");
+        bytes.extend_from_slice(&data_len.to_le_bytes());
+        bytes.extend(std::iter::repeat_n(0u8, data_len as usize));
+        std::fs::write(path, bytes).unwrap();
+    }
+
+    struct Fixture {
+        dir: PathBuf,
+        service: LibraryService,
+        conn: Arc<Mutex<rusqlite::Connection>>,
+    }
+
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.dir);
+        }
+    }
+
+    /// Two tracks backed by real files (`t1`, `t2`) and one whose file is missing (`t3`).
+    fn fixture(name: &str) -> Fixture {
+        let dir = std::env::temp_dir().join(format!("crate_resync_{name}_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        write_silent_wav(&dir.join("one.wav"));
+        write_silent_wav(&dir.join("two.wav"));
+
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        for (id, file) in [("t1", "one.wav"), ("t2", "two.wav"), ("t3", "missing.wav")] {
+            conn.execute(
+                "INSERT INTO tracks (id, file_path, format, title, artist, duration_ms, date_added, date_modified)
+                 VALUES (?1, ?2, 'wav', ?1, 'Artist', 1000, '2026-01-01', '2026-01-01')",
+                rusqlite::params![id, dir.join(file).to_string_lossy()],
+            )
+            .unwrap();
+        }
+        let conn = Arc::new(Mutex::new(conn));
+        let service = LibraryService::new(conn.clone(), dir.clone());
+        Fixture { dir, service, conn }
+    }
+
+    fn date_modified(f: &Fixture, id: &str) -> String {
+        f.conn
+            .lock()
+            .unwrap()
+            .query_row(
+                "SELECT date_modified FROM tracks WHERE id = ?1",
+                [id],
+                |r| r.get(0),
+            )
+            .unwrap()
+    }
+
+    #[test]
+    fn resync_counts_readable_and_unreadable_tracks() {
+        let f = fixture("all");
+        let result = f.service.resync_mixed_in_key_tracks(None).unwrap();
+        assert_eq!((result.updated_count, result.failed_count), (2, 1));
+        assert_ne!(date_modified(&f, "t1"), "2026-01-01");
+        assert_ne!(date_modified(&f, "t2"), "2026-01-01");
+        assert_eq!(
+            date_modified(&f, "t3"),
+            "2026-01-01",
+            "a track whose file is missing is left untouched"
+        );
+    }
+
+    #[test]
+    fn resync_of_a_selection_only_touches_those_tracks() {
+        let f = fixture("selection");
+        let result = f
+            .service
+            .resync_mixed_in_key_tracks(Some(vec!["t2".to_string()]))
+            .unwrap();
+        assert_eq!((result.updated_count, result.failed_count), (1, 0));
+        assert_eq!(date_modified(&f, "t1"), "2026-01-01");
+        assert_ne!(date_modified(&f, "t2"), "2026-01-01");
+    }
+
+    #[test]
+    fn reading_a_file_needs_no_database_connection() {
+        // `read_track_from_file` has no connection parameter: the slow step cannot hold the lock.
+        let f = fixture("readonly");
+        let track = f.service.get_track("t1").unwrap();
+        assert!(MikService::read_track_from_file(&track).is_ok());
+
+        let missing = f.service.get_track("t3").unwrap();
+        assert!(
+            MikService::read_track_from_file(&missing).is_err(),
+            "a missing file is reported before any write"
+        );
+    }
+
+    #[test]
+    fn a_track_that_fails_to_write_does_not_affect_the_others() {
+        let f = fixture("isolation");
+        // Make the write of t1 fail (a trigger aborts any update of that row).
+        f.conn
+            .lock()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER fail_t1 BEFORE UPDATE ON tracks
+                   WHEN NEW.id = 't1'
+                   BEGIN SELECT RAISE(ABORT, 'simulated write failure'); END;",
+            )
+            .unwrap();
+
+        let result = f.service.resync_mixed_in_key_tracks(None).unwrap();
+
+        // t1 fails on write, t3 fails on read, t2 is written.
+        assert_eq!((result.updated_count, result.failed_count), (1, 2));
+        assert_eq!(date_modified(&f, "t1"), "2026-01-01");
+        assert_ne!(date_modified(&f, "t2"), "2026-01-01");
     }
 }

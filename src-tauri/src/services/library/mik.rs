@@ -14,6 +14,14 @@ use crate::error::{CrateError, Result};
 use crate::models::{Cue, Track};
 use crate::services::cloud_sync::pipeline::{buckets, dirty};
 
+/// What reading a track's file produced (see [`MikService::read_track_from_file`]): the track
+/// with its Mixed In Key values applied, and the raw analysis data (cues included), ready to be
+/// written by [`MikService::apply_file_sync`].
+pub struct MikFileSync {
+    updated: Track,
+    mik_data: MikAnalysisData,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct MikAnalysisData {
     pub bpm: Option<f64>,
@@ -331,7 +339,17 @@ impl MikService {
     }
 
     /// Re-sync a track's metadata and cues directly from its audio file tags on disk
+    /// Reads the Mixed In Key tags of `track`'s file and reconciles the track with them.
+    /// Convenience for a single track: the two steps below, back to back.
     pub fn sync_track_from_file(conn: &Connection, track: &Track) -> Result<Track> {
+        Self::apply_file_sync(conn, Self::read_track_from_file(track)?)
+    }
+
+    /// Step one of a file sync: reads the tags of the track's file. It is the slow part (disk
+    /// access and tag parsing) and takes no database connection, so callers can run it for many
+    /// tracks without holding the connection lock, then write the results with
+    /// [`Self::apply_file_sync`].
+    pub fn read_track_from_file(track: &Track) -> Result<MikFileSync> {
         let path = Path::new(&track.file_path);
         if !path.exists() {
             return Err(CrateError::FileNotFound(path.to_path_buf()));
@@ -365,6 +383,12 @@ impl MikService {
         let now = chrono::Utc::now().to_rfc3339();
         updated.date_modified = now;
 
+        Ok(MikFileSync { updated, mik_data })
+    }
+
+    /// Step two of a file sync: writes what [`Self::read_track_from_file`] found. SQL only, fast.
+    pub fn apply_file_sync(conn: &Connection, sync: MikFileSync) -> Result<Track> {
+        let MikFileSync { updated, mik_data } = sync;
         let hlc = dirty::next_hlc(conn)?;
 
         // Update tracks table

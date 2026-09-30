@@ -5,7 +5,7 @@ This file is **the** source of truth for tracking: every defect in the [register
 Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification or remaining work. The progress table is recomputed with `yarn status` (from the repository root).
 
 <!-- progress:start -->
-**Overall progress: 98 / 107 defects fixed (92%)**
+**Overall progress: 99 / 107 defects fixed (93%)**
 
 | Step | Fixed | Progress |
 | --- | --- | --- |
@@ -15,7 +15,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 4 — Safe Upgrader | 9 / 9 | ██████████ |
 | Step 5 — Clean Mixed In Key | 8 / 8 | ██████████ |
 | Step 6 — Accurate statistics | 10 / 10 | ██████████ |
-| Step 7 — Exact DJ features | 17 / 18 | █████████░ |
+| Step 7 — Exact DJ features | 18 / 18 | ██████████ |
 | Step 8 — Robust frontend | 17 / 17 | ██████████ |
 | Step 9 — Hygiene and tooling | 13 / 15 | █████████░ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
@@ -129,7 +129,7 @@ _Exit criterion: Key 3 = cue 3, search for "You'll", valid XML._
 - [x] **B30** — File associations with `rank: Default` and the `public.audio` umbrella; bundle `com.crate.app`… — _Crate appears in "Open With" without becoming the default player (open question in the report)_
 - [x] **B31** — `StartupFile`: race at startup, several opened files overwrite each other
 - [x] **B32** — `delete_tracks_and_files`: Trash through `osascript` per file, silent failures, deletion…
-- [ ] **B33** — Blocking I/O, subprocesses (`beatportdl`, `lsof`, `osascript`) and rusqlite under `std::sync::Mutex`… — _partial: beatportdl off the async runtime, MIK read and waveform decoding outside the lock; commands remain synchronous under the hood_
+- [x] **B33** — Blocking I/O, subprocesses (`beatportdl`, `lsof`, `osascript`) and rusqlite under `std::sync::Mutex`… — _every heavy command and poller now runs on the blocking pool (`run_blocking`); the lock no longer spans file reads in `resync_mixed_in_key_tracks` and the XML export; also fixed: audio replies paired with the wrong request, unbounded analysis. Left: the MIK startup/watcher sync still holds the lock while it reads files (CRA-142) and smaller items (CRA-143)_
 - [x] **B34** — Services instantiated twice: the state managed by Tauri is not the one used by the background tasks
 - [x] **B35** — `get_duplicate_count` runs a full duplicate scan on every `duplicates-updated` event
 - [x] **F1** — Keys 1 to 8 captured everywhere, with no view or modifier condition
@@ -239,3 +239,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Numbers and dates follow the app language (`formatNumber`, `formatDate`) — Pulse wording left for L1 | 12 |
 | 2026-09-30 | Backend errors in English, frequent ones translated by the interface, Spotify sign-in pages follow the app language | 12 |
 | 2026-09-30 | **Graphic charter** written in `DESIGN.md` (four colour families, scope rules, computed contrast, checklist, deviations); five small choices put to the owner | 11 |
+| 2026-09-30 | Backend work moved off the async runtime; audio reply pairing, analysis cap and USB poller fixed | 7 |
