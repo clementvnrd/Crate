@@ -166,6 +166,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 #### Documentation
 
+- **Graphic charter (CRA-140).** `DESIGN.md` now records the owner's decision to keep every colour family (CRA-115) and sets the limits that were missing: the four families (accent, Deck, Pulse, Beatport) with their purpose, scope, light and dark roles and proposed tokens, a combination matrix (where each family may appear), the rules shared by all (surfaces, tints, borders, radius, glass and glow, type, states, motion, contrast), WCAG contrast ratios computed from the real token values (dark theme holds for every family; the light theme fails wherever a family hue is used as text), a seven-step checklist for a new view, and a table of the deviations still in the code (input for D3, D7, D10, D11). The former "bring every view back to the accent" direction was replaced. Five choices that are the owner's to make are tracked in CRA-141; until then the design fixes apply the recommended option, except the Beatport surfaces, which stay untouched.
 - **[L6]** The README now announces the 15 languages actually shipped (instead of 11) and describes the fork, the tests and the tracking.
 
 #### Tooling and tracking

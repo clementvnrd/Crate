@@ -238,3 +238,4 @@ _Exit criterion: App in English: no French string._
 | 2026-09-30 | Language policy applied: EN/FR aligned and guarded by tests, one missing French key added, fallback documented | 12 |
 | 2026-09-30 | Numbers and dates follow the app language (`formatNumber`, `formatDate`) — Pulse wording left for L1 | 12 |
 | 2026-09-30 | Backend errors in English, frequent ones translated by the interface, Spotify sign-in pages follow the app language | 12 |
+| 2026-09-30 | **Graphic charter** written in `DESIGN.md` (four colour families, scope rules, computed contrast, checklist, deviations); five small choices put to the owner | 11 |
