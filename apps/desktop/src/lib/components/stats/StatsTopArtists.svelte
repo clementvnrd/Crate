@@ -23,10 +23,10 @@
 	}
 </script>
 
-<div class="flex h-full flex-col rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
+<div class="flex h-full flex-col rounded-xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
 	<div class="mb-4 flex items-center justify-between">
 		<div class="flex items-center gap-2">
-			<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-pink-500/15 text-pink-400">
+			<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-pulse-artists/15 text-pulse-artists-text">
 				<Icon name="user" class="h-4 w-4" />
 			</div>
 			<div>
@@ -69,17 +69,17 @@
 					<div class="flex h-6 w-6 flex-shrink-0 items-center justify-center font-mono text-xs font-black">
 						{#if rank === 1}
 							<span
-								class="flex h-5 w-5 items-center justify-center rounded-full border border-amber-400/40 bg-amber-400/20 text-[11px] text-amber-300"
+								class="flex h-5 w-5 items-center justify-center rounded-full border border-pulse-gold/40 bg-pulse-gold/20 text-[11px] text-pulse-gold-text"
 								>1</span
 							>
 						{:else if rank === 2}
 							<span
-								class="flex h-5 w-5 items-center justify-center rounded-full border border-slate-400/40 bg-slate-400/20 text-[11px] text-slate-300"
+								class="flex h-5 w-5 items-center justify-center rounded-full border border-pulse-silver/40 bg-pulse-silver/20 text-[11px] text-pulse-silver-text"
 								>2</span
 							>
 						{:else if rank === 3}
 							<span
-								class="flex h-5 w-5 items-center justify-center rounded-full border border-amber-600/40 bg-amber-700/20 text-[11px] text-amber-600"
+								class="flex h-5 w-5 items-center justify-center rounded-full border border-pulse-bronze/40 bg-pulse-bronze-fill/20 text-[11px] text-pulse-bronze-text"
 								>3</span
 							>
 						{:else}
@@ -107,7 +107,9 @@
 
 					<!-- Artist Name & Top Track -->
 					<div class="min-w-0 flex-1 space-y-0.5">
-						<div class="truncate text-xs font-bold text-text-primary transition-colors group-hover:text-pink-400">
+						<div
+							class="truncate text-xs font-bold text-text-primary transition-colors group-hover:text-pulse-artists-text"
+						>
 							{artist.artist}
 						</div>
 						{#if artist.top_track}

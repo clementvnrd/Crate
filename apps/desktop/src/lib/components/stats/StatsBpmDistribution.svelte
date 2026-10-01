@@ -26,10 +26,10 @@
 	let totalTracks = $derived(bpmStats.reduce((acc, b) => acc + b.count, 0) || 1)
 </script>
 
-<div class="flex h-full flex-col rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
+<div class="flex h-full flex-col rounded-xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
 	<div class="mb-4 flex items-center justify-between">
 		<div class="flex items-center gap-2">
-			<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
+			<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-pulse-listening/15 text-pulse-listening-text">
 				<Icon name="activity" class="h-4 w-4" />
 			</div>
 			<div>
@@ -66,7 +66,7 @@
 					<div class="mb-1.5 flex items-center justify-between">
 						<div class="flex items-center gap-2">
 							<span
-								class="rounded border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 font-mono text-xs font-bold text-emerald-400 shadow-xs"
+								class="rounded border border-pulse-listening/30 bg-pulse-listening/15 px-2 py-0.5 font-mono text-xs font-bold text-pulse-listening-text shadow-xs"
 							>
 								{bucket.bpm_range} BPM
 							</span>
@@ -88,7 +88,7 @@
 					<!-- Progress bar -->
 					<div class="relative h-2 w-full overflow-hidden rounded-full bg-surface-3">
 						<div
-							class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 shadow-sm transition-all duration-500"
+							class="h-full rounded-full bg-gradient-to-r from-pulse-listening to-teal-400 shadow-sm transition-all duration-500"
 							style="width: {fillPercent}%"
 						></div>
 					</div>

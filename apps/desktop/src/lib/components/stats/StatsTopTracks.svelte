@@ -16,22 +16,25 @@
 	function formatSourceLabel(source: string): { label: string; class: string } {
 		switch (source) {
 			case 'spotify':
-				return { label: 'Spotify', class: 'bg-[#1DB954]/15 text-[#1DB954] border-[#1DB954]/30' }
+				return { label: 'Spotify', class: 'bg-source-spotify/15 text-source-spotify-text border-source-spotify/30' }
 			case 'crate_local':
-				return { label: 'Crate', class: 'bg-violet-500/15 text-violet-400 border-violet-500/30' }
+				return { label: 'Crate', class: 'bg-source-crate/15 text-source-crate-text border-source-crate/30' }
 			case 'crate_beatport':
-				return { label: 'Beatport', class: 'bg-[#00FF96]/15 text-[#00FF96] border-[#00FF96]/30' }
+				return { label: 'Beatport', class: 'bg-beatport/15 text-beatport-text-strong border-beatport/30' }
 			case 'rekordbox':
-				return { label: 'Rekordbox', class: 'bg-red-500/15 text-red-400 border-red-500/30' }
+				return {
+					label: 'Rekordbox',
+					class: 'bg-source-rekordbox/15 text-source-rekordbox-text border-source-rekordbox/30',
+				}
 			case 'mixed_in_key':
-				return { label: 'MIK', class: 'bg-[#00D2FF]/15 text-[#00D2FF] border-[#00D2FF]/30' }
+				return { label: 'MIK', class: 'bg-source-mik/15 text-source-mik-text border-source-mik/30' }
 			default:
 				return { label: source, class: 'bg-surface-3 text-text-secondary border-stroke' }
 		}
 	}
 </script>
 
-<div class="flex h-full flex-col rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
+<div class="flex h-full flex-col rounded-xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
 	<div class="mb-4 flex items-center justify-between">
 		<div class="flex items-center gap-2">
 			<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-primary/15 text-brand-primary">
@@ -79,17 +82,17 @@
 					<div class="flex h-6 w-6 flex-shrink-0 items-center justify-center font-mono text-xs font-black">
 						{#if rank === 1}
 							<span
-								class="flex h-5 w-5 items-center justify-center rounded-full border border-amber-400/40 bg-amber-400/20 text-[11px] text-amber-300"
+								class="flex h-5 w-5 items-center justify-center rounded-full border border-pulse-gold/40 bg-pulse-gold/20 text-[11px] text-pulse-gold-text"
 								>1</span
 							>
 						{:else if rank === 2}
 							<span
-								class="flex h-5 w-5 items-center justify-center rounded-full border border-slate-400/40 bg-slate-400/20 text-[11px] text-slate-300"
+								class="flex h-5 w-5 items-center justify-center rounded-full border border-pulse-silver/40 bg-pulse-silver/20 text-[11px] text-pulse-silver-text"
 								>2</span
 							>
 						{:else if rank === 3}
 							<span
-								class="flex h-5 w-5 items-center justify-center rounded-full border border-amber-600/40 bg-amber-700/20 text-[11px] text-amber-600"
+								class="flex h-5 w-5 items-center justify-center rounded-full border border-pulse-bronze/40 bg-pulse-bronze-fill/20 text-[11px] text-pulse-bronze-text"
 								>3</span
 							>
 						{:else}

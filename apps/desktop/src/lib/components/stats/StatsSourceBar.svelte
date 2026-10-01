@@ -29,37 +29,37 @@
 		spotify: {
 			label: 'Spotify',
 			color: '#1DB954',
-			bgClass: 'bg-[#1DB954]',
-			textClass: 'text-[#1DB954]',
-			glowClass: 'shadow-[#1DB954]/20',
+			bgClass: 'bg-source-spotify',
+			textClass: 'text-source-spotify-text',
+			glowClass: 'shadow-source-spotify/20',
 		},
 		crate_local: {
 			label: 'Crate Local',
 			color: '#8B5CF6',
-			bgClass: 'bg-violet-500',
-			textClass: 'text-violet-400',
-			glowClass: 'shadow-violet-500/20',
+			bgClass: 'bg-source-crate',
+			textClass: 'text-source-crate-text',
+			glowClass: 'shadow-source-crate/20',
 		},
 		crate_beatport: {
 			label: 'Beatport',
 			color: '#00FF96',
-			bgClass: 'bg-[#00FF96]',
-			textClass: 'text-[#00FF96]',
-			glowClass: 'shadow-[#00FF96]/20',
+			bgClass: 'bg-beatport',
+			textClass: 'text-beatport-text-strong',
+			glowClass: 'shadow-beatport/20',
 		},
 		rekordbox: {
 			label: 'Rekordbox DJ',
 			color: '#EF4444',
-			bgClass: 'bg-red-500',
-			textClass: 'text-red-400',
-			glowClass: 'shadow-red-500/20',
+			bgClass: 'bg-source-rekordbox',
+			textClass: 'text-source-rekordbox-text',
+			glowClass: 'shadow-source-rekordbox/20',
 		},
 		mixed_in_key: {
 			label: 'Mixed In Key',
 			color: '#00D2FF',
-			bgClass: 'bg-[#00D2FF]',
-			textClass: 'text-[#00D2FF]',
-			glowClass: 'shadow-[#00D2FF]/20',
+			bgClass: 'bg-source-mik',
+			textClass: 'text-source-mik-text',
+			glowClass: 'shadow-source-mik/20',
 		},
 	}
 
@@ -119,10 +119,10 @@
 	)
 </script>
 
-<div class="rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
+<div class="rounded-xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
 	<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 		<div class="flex items-center gap-2">
-			<div class="h-2 w-2 animate-pulse rounded-full bg-emerald-400 motion-reduce:animate-none"></div>
+			<div class="h-2 w-2 animate-pulse rounded-full bg-pulse-listening-bright motion-reduce:animate-none"></div>
 			<h3 class="text-xs font-bold tracking-wider text-text-secondary uppercase">
 				{$translate('stats.sourceBar.title')}
 			</h3>
