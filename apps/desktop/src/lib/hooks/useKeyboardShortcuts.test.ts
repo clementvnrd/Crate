@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { useKeyboardShortcuts, type KeyboardShortcutHandlers } from './useKeyboardShortcuts'
+import { controlOwnsActivationKey, useKeyboardShortcuts, type KeyboardShortcutHandlers } from './useKeyboardShortcuts'
 import { uiStore, playerStore, recentTracksStore } from '$lib/stores'
 import type { StandaloneTrack } from '$shared/types'
 import * as standaloneApi from '$shared/api/standalone'
@@ -189,5 +189,152 @@ describe('useKeyboardShortcuts - Player View Spacebar', () => {
 		const jumpSpy = vi.spyOn(playerStore, 'jumpToCueIndex')
 		window.dispatchEvent(new KeyboardEvent('keydown', { key: '3', bubbles: true, cancelable: true }))
 		expect(jumpSpy).toHaveBeenCalledWith(3)
+	})
+})
+
+describe('useKeyboardShortcuts - Enter and Space on a focused control', () => {
+	let cleanup: () => void
+	let handlers: KeyboardShortcutHandlers
+	let host: HTMLDivElement
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+		playerStore.reset()
+		uiStore.reset()
+		uiStore.setActiveView('library')
+		handlers = {
+			onPlayPause: vi.fn(),
+			onFocusSearch: vi.fn(),
+			onClearSelection: vi.fn(),
+			onSelectAll: vi.fn(),
+			onOpenSettings: vi.fn(),
+			onNewPlaylist: vi.fn(),
+			onNewFolder: vi.fn(),
+			onImport: vi.fn(),
+			onDeleteSelected: vi.fn().mockReturnValue(false),
+			onPlaySelected: vi.fn(),
+			onSeekBackward: vi.fn(),
+			onSeekForward: vi.fn(),
+			onFineSeekBackward: vi.fn(),
+			onFineSeekForward: vi.fn(),
+			onPreviousTrack: vi.fn(),
+			onNextTrack: vi.fn(),
+			onVolumeUp: vi.fn(),
+			onVolumeDown: vi.fn(),
+			onToggleMute: vi.fn(),
+			onSelectPreviousTrack: vi.fn(),
+			onSelectNextTrack: vi.fn(),
+			onQuickExport: vi.fn(),
+			onJumpToPlayingTrack: vi.fn(),
+			onToggleView: vi.fn(),
+			onAddRelease: vi.fn(),
+			onRefreshMetadata: vi.fn(),
+		}
+		cleanup = useKeyboardShortcuts(handlers)
+		host = document.createElement('div')
+		document.body.appendChild(host)
+	})
+
+	afterEach(() => {
+		cleanup?.()
+		host.remove()
+	})
+
+	/** Focus `element` the way Tab does: a key press, then the focus move. */
+	function focusFromKeyboard(element: HTMLElement): void {
+		element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }))
+		element.focus()
+	}
+
+	/** Focus `element` the way a click does: a pointer press, then the focus move. */
+	function focusFromPointer(element: HTMLElement): void {
+		element.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+		element.focus()
+	}
+
+	function press(target: HTMLElement, init: KeyboardEventInit): KeyboardEvent {
+		const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init })
+		target.dispatchEvent(event)
+		return event
+	}
+
+	function make(html: string): HTMLElement {
+		host.innerHTML = html
+		return host.firstElementChild as HTMLElement
+	}
+
+	it('leaves Space to a button focused from the keyboard', () => {
+		const button = make('<button type="button">Shuffle</button>')
+		focusFromKeyboard(button)
+		const event = press(button, { code: 'Space', key: ' ' })
+		expect(event.defaultPrevented).toBe(false)
+		expect(handlers.onPlayPause).not.toHaveBeenCalled()
+	})
+
+	it('leaves Enter to a link and to a switch focused from the keyboard', () => {
+		const link = make('<a href="#x">Open</a>')
+		focusFromKeyboard(link)
+		expect(press(link, { key: 'Enter' }).defaultPrevented).toBe(false)
+
+		const toggle = make('<button type="button" role="switch" aria-checked="false">Auto</button>')
+		focusFromKeyboard(toggle)
+		expect(press(toggle, { key: 'Enter' }).defaultPrevented).toBe(false)
+		expect(handlers.onPlaySelected).not.toHaveBeenCalled()
+	})
+
+	it('keeps Space = play / pause on a button focused by a click', () => {
+		const button = make('<button type="button">Shuffle</button>')
+		focusFromPointer(button)
+		const event = press(button, { code: 'Space', key: ' ' })
+		expect(event.defaultPrevented).toBe(true)
+		expect(handlers.onPlayPause).toHaveBeenCalled()
+	})
+
+	it('keeps Space = play / pause on a slider (the waveform) focused from the keyboard', () => {
+		const slider = make('<div role="slider" tabindex="0" aria-valuenow="0">Waveform</div>')
+		focusFromKeyboard(slider)
+		press(slider, { code: 'Space', key: ' ' })
+		expect(handlers.onPlayPause).toHaveBeenCalled()
+	})
+
+	it('steps aside on a list row only for a key the row handled itself', () => {
+		const row = make('<div role="row" tabindex="0">Release</div>')
+		row.addEventListener('keydown', (e) => {
+			if (e.key === ' ') e.preventDefault()
+		})
+		focusFromKeyboard(row)
+		press(row, { code: 'Space', key: ' ' })
+		expect(handlers.onPlayPause).not.toHaveBeenCalled()
+
+		// The row has no Enter action of its own: Enter still plays the selection
+		press(row, { key: 'Enter' })
+		expect(handlers.onPlaySelected).toHaveBeenCalled()
+	})
+
+	it('keeps both shortcuts when nothing is focused', () => {
+		;(document.activeElement as HTMLElement | null)?.blur()
+		press(document.body, { code: 'Space', key: ' ' })
+		press(document.body, { key: 'Enter' })
+		expect(handlers.onPlayPause).toHaveBeenCalled()
+		expect(handlers.onPlaySelected).toHaveBeenCalled()
+	})
+})
+
+describe('controlOwnsActivationKey', () => {
+	it('recognises native and ARIA controls, and rows only when they handled the key', () => {
+		const make = (html: string) => {
+			const wrapper = document.createElement('div')
+			wrapper.innerHTML = html
+			return wrapper.firstElementChild as HTMLElement
+		}
+		expect(controlOwnsActivationKey(make('<button></button>'), false)).toBe(true)
+		expect(controlOwnsActivationKey(make('<a href="#">x</a>'), false)).toBe(true)
+		expect(controlOwnsActivationKey(make('<a>x</a>'), false)).toBe(false)
+		expect(controlOwnsActivationKey(make('<div role="checkbox"></div>'), false)).toBe(true)
+		expect(controlOwnsActivationKey(make('<div role="slider"></div>'), true)).toBe(false)
+		expect(controlOwnsActivationKey(make('<div role="treeitem"></div>'), false)).toBe(false)
+		expect(controlOwnsActivationKey(make('<div role="treeitem"></div>'), true)).toBe(true)
+		expect(controlOwnsActivationKey(document.body, true)).toBe(false)
+		expect(controlOwnsActivationKey(null, true)).toBe(false)
 	})
 })

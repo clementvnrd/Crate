@@ -70,6 +70,17 @@ describe('focusTrap action', () => {
 		trap.destroy()
 	})
 
+	it('keeps Tab inside the panel from reaching the global shortcuts (Shift+Tab switches views)', () => {
+		const { panel } = setup()
+		const trap = focusTrap(panel)
+		const reachedWindow = vi.fn()
+		window.addEventListener('keydown', reachedWindow)
+		panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }))
+		expect(reachedWindow).not.toHaveBeenCalled()
+		window.removeEventListener('keydown', reachedWindow)
+		trap.destroy()
+	})
+
 	it('calls onEscape and gives focus back to the opener when destroyed', () => {
 		const { opener, panel } = setup()
 		const onEscape = vi.fn()
