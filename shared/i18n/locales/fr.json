@@ -37,9 +37,9 @@
 			"mikSync": "Synchronisé en direct avec Mixed In Key (cliquez pour forcer)",
 			"duplicates": "Gestion des doublons",
 			"duplicatesIdle": "Duplicate Killer : gestion des doublons",
-			"duplicatesFound": "Duplicate Killer : {groups, plural, one {# groupe de doublons} other {# groupes de doublons}} ({tracks, plural, one {# piste} other {# pistes}})",
+			"duplicatesFound": "Duplicate Killer : {groups, plural, one {# groupe de doublons} other {# groupes de doublons}} ({tracks, plural, one {# morceau} other {# morceaux}})",
 			"upgraderIdle": "Beatport Quality Upgrader : améliorer la qualité en FLAC Lossless",
-			"upgraderFound": "Beatport Quality Upgrader : {count, plural, one {# piste améliorable} other {# pistes améliorables}} en FLAC Lossless",
+			"upgraderFound": "Beatport Quality Upgrader : {count, plural, one {# morceau améliorable} other {# morceaux améliorables}} en FLAC Lossless",
 			"stats": "Statistiques",
 			"statsTooltip": "Crate Pulse & statistiques",
 			"rekordboxXml": "Exporter vers Rekordbox XML",
@@ -108,10 +108,10 @@
 				"title": "Sauvegarde et restauration",
 				"description": "Créez une sauvegarde de votre bibliothèque ou restaurez-la à partir d'une sauvegarde antérieure.",
 				"createBackup": "Créer une sauvegarde",
-				"createBackupDescription": "Enregistrez toutes les pistes, playlists, tags et sorties découvertes dans un fichier de sauvegarde.",
+				"createBackupDescription": "Enregistrez tous les morceaux, playlists, tags et sorties découvertes dans un fichier de sauvegarde.",
 				"restoreFromBackup": "Restaurer à partir de la sauvegarde",
 				"restoreFromBackupDescription": "Remplacez votre bibliothèque actuelle par les données d'un fichier de sauvegarde.",
-				"restoreWarning": "Cela remplacera toutes les données de bibliothèque actuelles, y compris les pistes, les playlists, les tags et les sorties découvertes. Cette action ne peut pas être annulée.",
+				"restoreWarning": "Cela remplacera toutes les données de bibliothèque actuelles, y compris les morceaux, les playlists, les tags et les sorties découvertes. Cette action ne peut pas être annulée.",
 				"creatingBackup": "Création de la sauvegarde...",
 				"restoringBackup": "Restauration à partir de la sauvegarde...",
 				"readingData": "Lecture des données de la bibliothèque...",
@@ -129,7 +129,7 @@
 				"frequencyNever": "Jamais (désactivée)",
 				"backupTypeAutomatic": "(Automatique)",
 				"backupTypeManual": "(Manuel)",
-				"backupContents": "Cette sauvegarde contient {tracks, plural, =0 {aucune piste} =1 {1 piste} other {{tracks} pistes}}, {playlists, plural, =0 {aucune liste de lecture} =1 {1 liste de lecture} other {{playlists} listes de lecture}}, {tags, plural, =0 {aucun tag} =1 {1 tag} other {{tags} tags}} et {discoveryReleases, plural, =0 {aucune sortie de découverte} =1 {1 sortie de découverte} other {{discoveryReleases} sorties de découverte}}. Créé le {date}."
+				"backupContents": "Cette sauvegarde contient {tracks, plural, =0 {aucun morceau} =1 {1 morceau} other {{tracks} morceaux}}, {playlists, plural, =0 {aucune liste de lecture} =1 {1 liste de lecture} other {{playlists} listes de lecture}}, {tags, plural, =0 {aucun tag} =1 {1 tag} other {{tags} tags}} et {discoveryReleases, plural, =0 {aucune sortie de découverte} =1 {1 sortie de découverte} other {{discoveryReleases} sorties de découverte}}. Créé le {date}."
 			}
 		},
 		"library": {
@@ -145,7 +145,7 @@
 			"autoSyncOnConnect": "Synchronisation automatique à la connexion",
 			"autoSyncOnConnectDescription": "Quand un appareil USB se reconnecte, synchronisez automatiquement les modifications en attente.",
 			"autoSyncOnChange": "Synchronisation automatique lors de modifications de bibliothèque",
-			"autoSyncOnChangeDescription": "Quand des pistes ou des playlists sont modifiées, synchronisez automatiquement vers les appareils connectés.",
+			"autoSyncOnChangeDescription": "Quand des morceaux ou des playlists sont modifiés, synchronisez automatiquement vers les appareils connectés.",
 			"ignoredDevices": "Appareils ignorés",
 			"ignoredDevicesDescription": "Les appareils de cette liste sont cachés de la barre latérale et ne déclencheront pas la synchronisation automatique.",
 			"noIgnoredDevices": "Aucun appareil n'est actuellement ignoré",
@@ -163,15 +163,15 @@
 			"autoFetchMetadataDescription": "Récupère automatiquement les métadonnées de sortie lors de l'ajout d'une URL.",
 			"import": "Importer",
 			"transferTagsOnImport": "Transférer les tags lors de l'import",
-			"transferTagsOnImportDescription": "Transférez les tags de sortie aux pistes importées par défaut.",
+			"transferTagsOnImportDescription": "Transférez les tags de sortie aux morceaux importés par défaut.",
 			"removeReleaseAfterImport": "Supprimer la sortie après l'import",
 			"removeReleaseAfterImportDescription": "Supprimez automatiquement les sorties des découvertes après avoir importé les fichiers.",
 			"previewCache": "Cache d'aperçu",
-			"previewCacheDescription": "Les pistes découvertes en aperçu sont mises en cache localement pour une lecture instantanée lors des écoutes ultérieures.",
+			"previewCacheDescription": "Les morceaux découverts en aperçu sont mis en cache localement pour une lecture instantanée lors des écoutes ultérieures.",
 			"cacheSize": "Taille du cache",
 			"clearCache": "Effacer le cache",
 			"clearCacheConfirmMessage": "Êtes-vous sûr de vouloir effacer tous les fichiers audio d'aperçu en cache?",
-			"clearCacheWarning": "Les pistes précédemment prévisualisées devront être à nouveau diffusées en continu à partir de leur source lors de la lecture suivante. Cela peut être plus lent et certains flux peuvent ne plus être disponibles."
+			"clearCacheWarning": "Les morceaux précédemment prévisualisés devront être à nouveau diffusés en continu à partir de leur source lors de la lecture suivante. Cela peut être plus lent et certains flux peuvent ne plus être disponibles."
 		},
 		"following": {
 			"title": "Suivi",
@@ -207,7 +207,7 @@
 			"system": "Système",
 			"external": "Externe",
 			"continuousPlayback": "Lecture continue",
-			"continuousPlaybackDescription": "Lire automatiquement la piste suivante à la fin de la piste actuelle."
+			"continuousPlaybackDescription": "Lire automatiquement le morceau suivant à la fin du morceau actuel."
 		},
 		"diagnostics": {
 			"systemInfo": "Informations système",
@@ -256,7 +256,7 @@
 	"cloudSync": {
 		"signIn": {
 			"title": "Connectez-vous pour synchroniser votre bibliothèque",
-			"description": "Synchronisez vos pistes, playlists et tags sur tous vos appareils.",
+			"description": "Synchronisez vos morceaux, playlists et tags sur tous vos appareils.",
 			"button": "Se connecter avec {provider}"
 		},
 		"status": {
@@ -285,7 +285,7 @@
 		},
 		"roots": {
 			"title": "Racines de la bibliothèque",
-			"description": "Associez chaque racine de bibliothèque synchronisée à un dossier sur cet appareil pour que ses pistes soient lisibles.",
+			"description": "Associez chaque racine de bibliothèque synchronisée à un dossier sur cet appareil pour que ses morceaux soient lisibles.",
 			"map": "Associer un dossier",
 			"remap": "Réassocier",
 			"unmapped": "Non associé sur cet appareil",
@@ -313,11 +313,11 @@
 		"shuffle": "Lecture aléatoire",
 		"mute": "Muet",
 		"unmute": "Rétablir le son",
-		"noTrackSelected": "Aucune piste sélectionnée",
+		"noTrackSelected": "Aucun morceau sélectionné",
 		"volume": "Volume",
 		"tempo": "Tempo",
 		"resetTempo": "Réinitialiser le tempo",
-		"trackNotFound": "Impossible de localiser la piste en cours de lecture",
+		"trackNotFound": "Impossible de localiser le morceau en cours de lecture",
 		"mode": {
 			"label": "Affichage du lecteur",
 			"recent": "Récents",
@@ -329,7 +329,7 @@
 			"removeConfirm": "Retirer l'album",
 			"all": "Tous les albums",
 			"typeLabel": "Album",
-			"trackCount": "{count, plural, one {# piste} other {# pistes}}",
+			"trackCount": "{count, plural, one {# morceau} other {# morceaux}}",
 			"shuffle": "Aléatoire",
 			"title": "Mes albums",
 			"subtitle": "Explorez vos dossiers musicaux organisés par albums avec leurs pochettes et métadonnées",
@@ -360,14 +360,14 @@
 			"noResults": "Aucun résultat pour « {query} »",
 			"clearFilter": "Effacer le filtre"
 		},
-		"unknownTrack": "Piste inconnue",
-		"trackFallback": "Piste",
+		"unknownTrack": "Morceau inconnu",
+		"trackFallback": "Morceau",
 		"hero": {
 			"playPause": "Lecture / Pause",
 			"sourceLibrary": "Bibliothèque Crate",
 			"sourceExternal": "Fichier externe",
 			"harmonicMix": "Mix harmonique",
-			"harmonicMixHint": "Trouver les pistes compatibles (même clé, relative, ±1h, ±4 % BPM)",
+			"harmonicMixHint": "Trouver les morceaux compatibles (même clé, relative, ±1h, ±4 % BPM)",
 			"addToLibrary": "Ajouter à ma bibliothèque",
 			"adding": "Ajout…",
 			"backToStart": "Revenir au début",
@@ -397,7 +397,7 @@
 			"beatportFavorite": "Favori Beatport"
 		},
 		"toast": {
-			"noCamelotKey": "Cette piste n'a pas de tonalité Camelot définie",
+			"noCamelotKey": "Ce morceau n'a pas de tonalité Camelot définie",
 			"harmonicMix": "Mix harmonique : {title} ({key}) — clés : {keys}",
 			"harmonicMixBpm": "Mix harmonique : {title} ({key} • {bpm} BPM (±4 %)) — clés : {keys}",
 			"imported": "\"{title}\" ajouté à la bibliothèque Crate",
@@ -405,25 +405,25 @@
 			"addToLibraryFailed": "Erreur lors de l'ajout à la bibliothèque Crate",
 			"revealFailed": "Impossible de révéler le fichier dans le Finder",
 			"historyCleared": "Historique des fichiers récents effacé",
-			"albumTracksLoadFailed": "Impossible de charger les pistes de l'album",
+			"albumTracksLoadFailed": "Impossible de charger les morceaux de l'album",
 			"albumScanning": "Analyse du dossier d'album en cours…",
-			"albumImported": "Album \"{title}\" importé ({count, plural, one {# piste} other {# pistes}})",
+			"albumImported": "Album \"{title}\" importé ({count, plural, one {# morceau} other {# morceaux}})",
 			"albumAddFailed": "Erreur lors de l'ajout de l'album",
 			"albumRemoved": "Album supprimé de la liste",
 			"albumRemoveFailed": "Erreur lors de la suppression de l'album",
-			"albumEmpty": "Cet album ne contient aucune piste audio lisible",
+			"albumEmpty": "Cet album ne contient aucun morceau audio lisible",
 			"noPreviewStream": "Aucun flux audio de préécoute disponible pour ce titre.",
 			"beatportPlaybackFailed": "Erreur de lecture Beatport"
 		}
 	},
 	"library": {
-		"searchPlaceholder": "Rechercher des pistes...",
-		"importTracks": "Importer des pistes",
+		"searchPlaceholder": "Rechercher des morceaux...",
+		"importTracks": "Importer des morceaux",
 		"matching": "Correspondance",
 		"matchOr": "OU",
 		"matchAnd": "ET",
 		"clearAll": "Tout effacer",
-		"noTracksYet": "Aucune piste pour le moment",
+		"noTracksYet": "Aucun morceau pour le moment",
 		"dragDropHint": "Appuyez sur {shortcut} ou glissez-déposez des fichiers audio ici pour les importer",
 		"columns": {
 			"title": "Titre",
@@ -446,8 +446,8 @@
 			"year": "Année",
 			"color": "Couleur"
 		},
-		"track": "piste",
-		"tracks": "pistes",
+		"track": "morceau",
+		"tracks": "morceaux",
 		"item": "élément",
 		"items": "éléments",
 		"fileNotFound": "Fichier introuvable",
@@ -485,8 +485,8 @@
 		"refreshMetadata": "Actualiser les métadonnées",
 		"fetchError": "Impossible de récupérer les métadonnées à partir de cette URL",
 		"unsupportedUrl": "Cette URL n'est pas supportée",
-		"tracks": "Pistes",
-		"trackCount": "{count, plural, =1 {1 piste} other {{count} pistes}}",
+		"tracks": "Morceaux",
+		"trackCount": "{count, plural, =1 {1 morceau} other {{count} morceaux}}",
 		"openInBrowser": "Ouvrir dans le navigateur",
 		"copyUrl": "Copier l'URL",
 		"copiedUrl": "URL copiée dans le presse-papiers",
@@ -522,11 +522,11 @@
 		},
 		"addToExisting": "Ajouter à existant",
 		"addAsNew": "Ajouter comme nouvelle sortie",
-		"matchFound": "Cette piste fait partie de {albumTitle} qui est déjà dans votre liste de découvertes",
+		"matchFound": "Ce morceau fait partie de {albumTitle} qui est déjà dans votre liste de découvertes",
 		"similarFound": "Une sortie similaire existe déjà : {title} par {artist}",
 		"mergeReleases": "Fusionner les sorties",
 		"mergeConfirm": "Garder les métadonnées de :",
-		"mergeTrackCount": "{count, plural, =1 {1 piste} other {{count} pistes}} combinées",
+		"mergeTrackCount": "{count, plural, =1 {1 morceau} other {{count} morceaux}} combinés",
 		"expandAll": "Développer tout",
 		"collapseAll": "Réduire tout",
 		"showLiked": "Afficher les favoris",
@@ -601,8 +601,8 @@
 			}
 		},
 		"cancelRefresh": "Annuler l'actualisation des métadonnées",
-		"showTracks": "Afficher les pistes",
-		"hideTracks": "Masquer les pistes",
+		"showTracks": "Afficher les morceaux",
+		"hideTracks": "Masquer les morceaux",
 		"sourceOther": "Autre",
 		"scanFailed": "Échec de l'analyse de la page",
 		"fetchFailed": "Échec de la récupération",
@@ -700,18 +700,18 @@
 			"deleteItemsMessage": "{count, plural, =1 {Êtes-vous sûr de vouloir supprimer cet élément ?} other {Êtes-vous sûr de vouloir supprimer ces {count} éléments ?}}",
 			"deleteItemsBulkFolderWarning": "La sélection contient des dossiers qui contiennent des playlists qui seront également supprimées.",
 			"deleteTagTitle": "Supprimer le tag",
-			"deleteTagMessage": "Êtes-vous sûr de vouloir supprimer ce tag ? Il sera retiré de toutes les pistes.",
+			"deleteTagMessage": "Êtes-vous sûr de vouloir supprimer ce tag ? Il sera retiré de tous les morceaux.",
 			"deleteCategoryTitle": "Supprimer la catégorie",
-			"deleteCategoryMessage": "Êtes-vous sûr de vouloir supprimer cette catégorie ? Tous les tags de cette catégorie seront retirés de toutes les pistes.",
+			"deleteCategoryMessage": "Êtes-vous sûr de vouloir supprimer cette catégorie ? Tous les tags de cette catégorie seront retirés de tous les morceaux.",
 			"removeFromPlaylistTitle": "Retirer de la playlist",
-			"removeFromPlaylistMessage": "{count, plural, =0 {Retirer cette piste de la playlist ?} =1 {Retirer cette piste de la playlist ?} other {Retirer {count} pistes de la playlist ?}}",
+			"removeFromPlaylistMessage": "{count, plural, =0 {Retirer ce morceau de la playlist ?} =1 {Retirer ce morceau de la playlist ?} other {Retirer {count} morceaux de la playlist ?}}",
 			"removeFromLibraryTitle": "Supprimer de la bibliothèque",
-			"removeFromLibraryMessage": "{count, plural, =0 {Supprimer cette piste de votre bibliothèque ?} =1 {Supprimer cette piste de votre bibliothèque ?} other {Supprimer {count} pistes de votre bibliothèque ?}}",
+			"removeFromLibraryMessage": "{count, plural, =0 {Supprimer ce morceau de votre bibliothèque ?} =1 {Supprimer ce morceau de votre bibliothèque ?} other {Supprimer {count} morceaux de votre bibliothèque ?}}",
 			"removeFromLibraryWarning": "Le morceau sera retiré de Crate et de toutes les playlists, mais le fichier restera intact sur votre Mac.",
 			"deleteTrackAndFileTitle": "Supprimer le morceau",
 			"deleteTrackAndFileMessage": "{count, plural, =0 {Placer ce morceau dans la corbeille et le supprimer de la bibliothèque ?} =1 {Placer ce morceau dans la corbeille et le supprimer de la bibliothèque ?} other {Placer ces {count} morceaux dans la corbeille et les supprimer de la bibliothèque ?}}",
 			"deleteTrackAndFileWarning": "Cette action déplacera le fichier audio dans la corbeille de votre Mac.",
-			"deleteTracksFromCollection": "Supprimer également les pistes de ma collection",
+			"deleteTracksFromCollection": "Supprimer également les morceaux de ma collection",
 			"removeDiscoveryReleasesTitle": "Supprimer de la découverte",
 			"removeDiscoveryReleasesMessage": "{count, plural, =1 {Supprimer cette sortie de la découverte ?} other {Supprimer {count} sorties de la découverte ?}}",
 			"removeDiscoveryReleasesWarning": "Cette action est irréversible. Les sorties seront supprimées de toutes les playlists.",
@@ -720,16 +720,16 @@
 			"deleteReleasesFromCollection": "Supprimer également les sorties de ma collection"
 		},
 		"relocate": {
-			"title": "Relocaliser la piste",
-			"message": "Sélectionnez le nouvel emplacement de cette piste.",
+			"title": "Relocaliser le morceau",
+			"message": "Sélectionnez le nouvel emplacement de ce morceau.",
 			"selectFile": "Sélectionner le fichier de remplacement",
 			"selectFolder": "Sélectionner le dossier racine de la bibliothèque",
 			"audioFiles": "Fichiers audio",
 			"validateFailed": "Impossible de vérifier le fichier",
-			"relocateFailed": "Impossible de relocaliser la piste",
+			"relocateFailed": "Impossible de relocaliser le morceau",
 			"unknownTitle": "Titre inconnu",
-			"cloudWarning": "Cette piste a été ajoutée sur un autre appareil. Choisissez le dossier local qui contient la racine de sa bibliothèque pour la lire ici.",
-			"notFound": "Le fichier de cette piste est introuvable à son emplacement d'origine.",
+			"cloudWarning": "Ce morceau a été ajouté sur un autre appareil. Choisissez le dossier local qui contient la racine de sa bibliothèque pour la lire ici.",
+			"notFound": "Le fichier de ce morceau est introuvable à son emplacement d'origine.",
 			"validating": "Vérification du fichier…",
 			"unsupportedFormat": "Format audio non pris en charge.",
 			"matches": "Le contenu du fichier correspond ! Hash vérifié.",
@@ -762,11 +762,11 @@
 		"duplicate": {
 			"title": "Doublon détecté",
 			"progress": "Doublon {current} sur {total}",
-			"message": "Ce fichier correspond à une piste existante dans votre bibliothèque :",
+			"message": "Ce fichier correspond à un morceau existant dans votre bibliothèque :",
 			"current": "Actuel :",
 			"new": "Nouveau :",
 			"skip": "Ignorer",
-			"skipDescription": "Ne pas importer ce fichier. Laisser la piste existante inchangée.",
+			"skipDescription": "Ne pas importer ce fichier. Laisser le morceau existant inchangé.",
 			"updatePath": "Mettre à jour le chemin",
 			"updatePathDescription": "Conserver toutes les données existantes (points de repère, tags, playlists, historique de lecture) mais mettre à jour l'emplacement du fichier.",
 			"replace": "Remplacer",
@@ -781,22 +781,22 @@
 			"merge": "Fusionner",
 			"replace": "Remplacer",
 			"mergeFolder": "Déplacer le contenu de ce dossier dans le dossier existant. Vous serez invité pour les conflits imbriqués.",
-			"mergePlaylist": "Combiner les pistes des deux playlists en une seule.",
+			"mergePlaylist": "Combiner les morceaux des deux playlists en une seule.",
 			"mergeNotAvailable": "Non disponible : les deux éléments doivent être du même type pour fusionner.",
 			"replaceDescription": "Supprimer le {type} existant et mettre cet {item} à sa place.",
 			"replaceNotAvailable": "Non disponible : ne peut remplacer que des éléments du même type.",
 			"replaceFolderWarning": "Le remplacement supprimera définitivement le dossier existant et tout son contenu.",
-			"replacePlaylistWarning": "Le remplacement supprimera définitivement la playlist existante et ses associations de pistes."
+			"replacePlaylistWarning": "Le remplacement supprimera définitivement la playlist existante et ses associations de morceaux."
 		}
 	},
 	"toast": {
-		"trackAdded": "{count, plural, =0 {1 piste} =1 {1 piste} other {{count} pistes}} ajoutée(s) à {playlistName}",
-		"trackAddedWithFailed": "{count, plural, =0 {1 piste} =1 {1 piste} other {{count} pistes}} ajoutée(s) à {playlistName}, {failed} échoué(s)",
-		"tracksImported": "{count, plural, =0 {1 piste} =1 {1 piste} other {{count} pistes}} importée(s)",
-		"tracksImportedWithSkipped": "{imported, plural, =0 {1 piste} =1 {1 piste} other {{imported} pistes}} importée(s), {skipped} ignorée(s)",
-		"tracksExported": "{exported, plural, =1 {1 piste exportée} other {{exported} pistes exportées}} vers {deviceName}, {skipped, plural, =1 {1 ignorée} other {{skipped} ignorées}}",
-		"trackRemoved": "{count, plural, =0 {1 piste} =1 {1 piste} other {{count} pistes}} retirée(s) de la playlist",
-		"trackRemovedFromLibrary": "{count, plural, =0 {1 piste} =1 {1 piste} other {{count} pistes}} retirée(s) de la bibliothèque",
+		"trackAdded": "{count, plural, =0 {1 morceau} =1 {1 morceau} other {{count} morceaux}} ajouté(s) à {playlistName}",
+		"trackAddedWithFailed": "{count, plural, =0 {1 morceau} =1 {1 morceau} other {{count} morceaux}} ajouté(s) à {playlistName}, {failed} échoué(s)",
+		"tracksImported": "{count, plural, =0 {1 morceau} =1 {1 morceau} other {{count} morceaux}} importé(s)",
+		"tracksImportedWithSkipped": "{imported, plural, =0 {1 morceau} =1 {1 morceau} other {{imported} morceaux}} importé(s), {skipped} ignoré(s)",
+		"tracksExported": "{exported, plural, =1 {1 morceau exporté} other {{exported} morceaux exportés}} vers {deviceName}, {skipped, plural, =1 {1 ignoré} other {{skipped} ignorés}}",
+		"trackRemoved": "{count, plural, =0 {1 morceau} =1 {1 morceau} other {{count} morceaux}} retiré(s) de la playlist",
+		"trackRemovedFromLibrary": "{count, plural, =0 {1 morceau} =1 {1 morceau} other {{count} morceaux}} retiré(s) de la bibliothèque",
 		"movedSuccessfully": "Déplacé avec succès",
 		"mergedSuccessfully": "Fusionné avec succès",
 		"mergeCompleted": "Fusion terminée",
@@ -807,10 +807,10 @@
 		"deviceEjectFailed": "Échec de l'éjection de {name}",
 		"relocated": "\"{title}\" relocalisé",
 		"failedToResolve": "Échec de la résolution du doublon : {error}",
-		"failedToAddPlaylist": "Échec de l'ajout des pistes à la playlist",
-		"warningTracksImportedFailed": "Pistes importées mais échec de l'ajout à {playlistName}",
-		"failedToImport": "Échec de l'importation des pistes : {error}",
-		"failedToUpdateTracks": "Échec de la mise à jour des pistes",
+		"failedToAddPlaylist": "Échec de l'ajout des morceaux à la playlist",
+		"warningTracksImportedFailed": "Morceaux importés mais échec de l'ajout à {playlistName}",
+		"failedToImport": "Échec de l'importation des morceaux : {error}",
+		"failedToUpdateTracks": "Échec de la mise à jour des morceaux",
 		"failedToSetArtwork": "Échec de la définition de la pochette",
 		"failedToRemoveArtwork": "Échec de la suppression de la pochette",
 		"noArtworkInFile": "Aucune pochette trouvée dans le fichier audio"
@@ -874,7 +874,7 @@
 		"noPlaylistsAvailable": "Aucune playlist disponible",
 		"destination": "Destination",
 		"playlistsToExport": "Playlists à exporter",
-		"tracksToExport": "Pistes à exporter",
+		"tracksToExport": "Morceaux à exporter",
 		"enableSync": "Activer la synchronisation",
 		"export": "Exporter",
 		"preparing": "Préparation...",
@@ -888,22 +888,22 @@
 		"whatToDo": "Que souhaitez-vous faire ?",
 		"filesCopiedBeforeFailure": "{count, plural, =1 {1 fichier a été copié} other {{count} fichiers ont été copiés}} avant l'échec.",
 		"exportingTo": "Exportation vers {deviceName}",
-		"transferringProgress": "Transfert de {trackCount} pistes de {playlistCount} playlists",
+		"transferringProgress": "Transfert de {trackCount} morceaux de {playlistCount} playlists",
 		"noPlaylistsInFolder": "Aucune playlist à exporter dans ce dossier",
 		"resume": "Reprendre",
 		"resumeExport": "Reprendre l'export",
 		"checkpointAvailable": "Une exportation précédente peut être reprise",
-		"tracksCompleted": "{count, plural, =1 {1 piste complétée} other {{count} pistes complétées}}",
+		"tracksCompleted": "{count, plural, =1 {1 morceau complété} other {{count} morceaux complétés}}",
 		"filesRemaining": "{count, plural, =1 {1 fichier restant} other {{count} fichiers restants}}",
 		"resumeFromCheckpoint": "Reprendre depuis le dernier point de sauvegarde",
 		"toast": {
-			"rekordboxXmlSuccess": "Export Rekordbox XML réussi : {count, plural, one {# piste exportée} other {# pistes exportées}} avec grilles, clés et cues MIK !",
+			"rekordboxXmlSuccess": "Export Rekordbox XML réussi : {count, plural, one {# morceau exporté} other {# morceaux exportés}} avec grilles, clés et cues MIK !",
 			"rekordboxXmlFailed": "Échec de l'export Rekordbox : {error}"
 		}
 	},
 	"editor": {
-		"trackInfo": "Infos piste",
-		"tracksCount": "{count} pistes",
+		"trackInfo": "Infos morceau",
+		"tracksCount": "{count} morceaux",
 		"title": "Titre",
 		"artist": "Artiste",
 		"album": "Album",
@@ -969,7 +969,7 @@
 		"hide": "Masquer {appName}",
 		"hideOthers": "Masquer les autres",
 		"showAll": "Afficher tout",
-		"importTracks": "Importer des pistes...",
+		"importTracks": "Importer des morceaux...",
 		"addRelease": "Ajouter une sortie...",
 		"refreshMetadata": "Actualiser les métadonnées",
 		"newPlaylist": "Nouvelle playlist",
@@ -983,8 +983,8 @@
 		"selectAll": "Tout sélectionner",
 		"playPause": "Lecture/Pause",
 		"stop": "Arrêt",
-		"nextTrack": "Piste suivante",
-		"previousTrack": "Piste précédente",
+		"nextTrack": "Morceau suivant",
+		"previousTrack": "Morceau précédent",
 		"seekForward": "Avance rapide",
 		"seekBackward": "Retour rapide",
 		"fineSeekForward": "Avance précise",
@@ -992,7 +992,7 @@
 		"volumeUp": "Augmenter volume",
 		"volumeDown": "Diminuer volume",
 		"mute": "Muet",
-		"jumpToPlaying": "Aller à la piste en cours de lecture",
+		"jumpToPlaying": "Aller au morceau en cours de lecture",
 		"toggleEditor": "Afficher/Masquer l'éditeur",
 		"toggleView": "Basculer la vue",
 		"showDevTools": "Afficher les outils de développement",
@@ -1015,7 +1015,7 @@
 		"matchAny": "Quelconque",
 		"addCondition": "Ajouter une condition",
 		"removeCondition": "Supprimer la condition",
-		"noConditions": "Ajoutez des conditions pour filtrer les pistes automatiquement",
+		"noConditions": "Ajoutez des conditions pour filtrer les morceaux automatiquement",
 		"limit": "Limiter les résultats",
 		"limitItems": "éléments,",
 		"sortBy": "trié par",
@@ -1096,15 +1096,15 @@
 		},
 		"library": {
 			"title": "Bibliothèque",
-			"description": "Votre bibliothèque de pistes personnelle. Importez des fichiers audio pour organiser, taguer et préparer les pistes pour vos sets."
+			"description": "Votre bibliothèque de morceaux personnelle. Importez des fichiers audio pour organiser, taguer et préparer les morceaux pour vos sets."
 		},
 		"playlists": {
 			"title": "Playlists",
-			"description": "Organisez les pistes en playlists et dossiers. Créez des playlists dynamiques qui se mettent à jour automatiquement selon vos critères."
+			"description": "Organisez les morceaux en playlists et dossiers. Créez des playlists dynamiques qui se mettent à jour automatiquement selon vos critères."
 		},
 		"tags": {
 			"title": "Tags et catégories",
-			"description": "Créez des catégories et des tags pour classer votre musique. Filtrez votre bibliothèque ou tagguez plusieurs pistes à la fois."
+			"description": "Créez des catégories et des tags pour classer votre musique. Filtrez votre bibliothèque ou tagguez plusieurs morceaux à la fois."
 		},
 		"skip": "Ignorer la visite",
 		"finish": "Terminer"
@@ -1548,7 +1548,7 @@
 	},
 	"upgrader": {
 		"header": {
-			"upgradableCount": "{count, plural, one {# piste améliorable en FLAC Lossless} other {# pistes améliorables en FLAC Lossless}}"
+			"upgradableCount": "{count, plural, one {# morceau améliorable en FLAC Lossless} other {# morceaux améliorables en FLAC Lossless}}"
 		},
 		"actions": {
 			"selectAll": "Tout cocher",
@@ -1573,8 +1573,8 @@
 		"card": {
 			"scoreTitle": "Score de confiance multi-critères : {score}% (Titre : {titleScore}/40, Artiste : {artistScore}/30, Durée : {durationScore}/15, BPM : {bpmScore}/10, Clé : {keyScore}/5)",
 			"match": "{score}% de correspondance",
-			"ignore": "Ignorer cette piste",
-			"ignoreTitle": "Ne plus proposer d'upgrade pour cette piste",
+			"ignore": "Ignorer ce morceau",
+			"ignoreTitle": "Ne plus proposer d'upgrade pour ce morceau",
 			"current": "Actuel (MP3)",
 			"pause": "Mettre en pause",
 			"playLocal": "Écouter la version locale",
@@ -1589,13 +1589,13 @@
 			"selected": "Sélectionnés pour upgrade :",
 			"progress": "Mise à niveau {current}/{total} — {title}",
 			"upgrading": "Mise à niveau en cours…",
-			"replace": "{count, plural, one {Remplacer # piste par FLAC Lossless} other {Remplacer les # pistes par FLAC Lossless}}"
+			"replace": "{count, plural, one {Remplacer # morceau par FLAC Lossless} other {Remplacer les # morceaux par FLAC Lossless}}"
 		},
 		"toast": {
 			"scanFailed": "Erreur lors du scan d'upgrade",
-			"ignored": "Piste ignorée pour les futures améliorations",
-			"ignoreFailed": "Impossible d'ignorer la piste",
-			"upgraded": "{count, plural, one {# piste mise à niveau en FLAC Lossless !} other {# pistes mises à niveau en FLAC Lossless !}}",
+			"ignored": "Morceau ignoré pour les futures améliorations",
+			"ignoreFailed": "Impossible d'ignorer le morceau",
+			"upgraded": "{count, plural, one {# morceau mis à niveau en FLAC Lossless !} other {# morceaux mis à niveau en FLAC Lossless !}}",
 			"failed": "{count, plural, one {# mise à niveau a échoué.} other {# mises à niveau ont échoué.}}",
 			"upgradeFailed": "Erreur lors de la mise à niveau"
 		}
@@ -1613,7 +1613,7 @@
 		"scanning": "Analyse et recherche des doublons…",
 		"empty": {
 			"title": "Aucun doublon détecté dans votre bibliothèque !",
-			"body": "Toutes les pistes sont uniques. Votre collection est propre, optimisée et prête pour le mix."
+			"body": "Tous les morceaux sont uniques. Votre collection est propre, optimisée et prête pour le mix."
 		},
 		"unknownTitle": "Titre inconnu",
 		"match": {
@@ -1626,16 +1626,16 @@
 		"track": {
 			"pause": "Mettre en pause",
 			"play": "Écouter un extrait",
-			"recommended": "Piste recommandée (meilleure qualité)",
-			"seek": "Cliquer pour naviguer dans la piste",
+			"recommended": "Morceau recommandé (meilleure qualité)",
+			"seek": "Cliquer pour naviguer dans le morceau",
 			"cues": "{count, plural, one {# cue} other {# cues}}",
 			"markedForDeletion": "Marquée pour suppression",
-			"keep": "Conserver cette piste"
+			"keep": "Conserver ce morceau"
 		},
 		"footer": {
 			"selected": "Sélectionnées :",
 			"deleting": "Suppression en cours…",
-			"delete": "{count, plural, one {Supprimer # piste (Corbeille)} other {Supprimer les # pistes (Corbeille)}}"
+			"delete": "{count, plural, one {Supprimer # morceau (Corbeille)} other {Supprimer les # morceaux (Corbeille)}}"
 		},
 		"toast": {
 			"scanFailed": "Erreur lors du scan des doublons",
