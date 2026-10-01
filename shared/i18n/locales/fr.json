@@ -656,7 +656,8 @@
 		"relocate": "Relocaliser...",
 		"analyze": "Analyser",
 		"resyncMik": "Synchroniser avec Mixed In Key",
-		"stopAnalysis": "Arrêter l'analyse"
+		"stopAnalysis": "Arrêter l'analyse",
+		"buildSet": "Créer un set..."
 	},
 	"modals": {
 		"createPlaylist": {
@@ -1651,6 +1652,34 @@
 			"ignoreFailed": "Impossible d'ignorer le groupe",
 			"deleted": "{count, plural, one {# doublon supprimé (mis à la corbeille)} other {# doublons supprimés (mis à la corbeille)}}",
 			"deleteFailed": "Erreur lors de la suppression des doublons"
+		}
+	},
+	"setMode": {
+		"title": "Créer un set",
+		"nameLabel": "Nom du set",
+		"defaultName": "Nouveau set",
+		"empty": "Sélectionnez des morceaux dans la Bibliothèque puis choisissez « Créer un set... » pour commencer.",
+		"loadFailed": "Impossible de vérifier ce set.",
+		"stats": {
+			"tracks": "Morceaux",
+			"harmonic": "Transitions harmoniques",
+			"clashing": "Clashs de tonalité",
+			"energyJumps": "Sauts d'énergie"
+		},
+		"duration": "{duration} au total",
+		"autoOrder": "Ordre automatique",
+		"autoOrderHint": "Réorganiser ces morceaux pour l'enchaînement harmonique et énergétique le plus fluide.",
+		"moveUp": "Monter « {title} »",
+		"moveDown": "Descendre « {title} »",
+		"removeTrack": "Retirer « {title} » du set",
+		"opening": "Morceau d'ouverture",
+		"tempo": "{delta} de tempo",
+		"exportXml": "Exporter en XML Rekordbox",
+		"toast": {
+			"analyzeFailed": "Impossible de vérifier ce set",
+			"suggestFailed": "Impossible de suggérer un ordre pour ce set",
+			"exportSuccess": "Set exporté en XML Rekordbox : {count, plural, one {# morceau} other {# morceaux}}",
+			"exportFailed": "Échec de l'export du set : {error}"
 		}
 	}
 }

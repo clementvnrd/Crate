@@ -49,6 +49,7 @@
 		| { type: 'settings'; initialTab?: SettingsPage }
 		| { type: 'duplicateManager' }
 		| { type: 'beatportUpgrader' }
+		| { type: 'buildSet'; trackIds: string[] }
 		| {
 				type: 'duplicateTrack'
 				duplicates: DuplicateTrack[]
@@ -94,6 +95,7 @@
 	import { RelocateTrackModal } from '$lib/components/library'
 	import { DuplicateManagerModal } from '$lib/components/duplicates'
 	import { BeatportUpgraderModal } from '$lib/components/upgrader'
+	import { SetModeModal } from '$lib/components/djprep'
 	import { SmartPlaylistModal } from '$lib/components/playlists'
 	import { ExportModal, ExportFailureModal, QuickExportModal } from '$lib/components/export'
 	import { toastStore } from '$shared/stores/toast'
@@ -329,6 +331,10 @@
 
 	export function openBeatportUpgraderModal() {
 		activeModal = { type: 'beatportUpgrader' }
+	}
+
+	export function openBuildSetModal(trackIds: string[]) {
+		activeModal = { type: 'buildSet', trackIds }
 	}
 
 	export function openDuplicateTrackModal(
@@ -1043,6 +1049,11 @@
 <!-- Beatport Quality Upgrader Modal -->
 {#if activeModal.type === 'beatportUpgrader'}
 	<BeatportUpgraderModal open={true} onClose={closeAll} />
+{/if}
+
+<!-- Set Mode Modal -->
+{#if activeModal.type === 'buildSet'}
+	<SetModeModal open={true} trackIds={activeModal.trackIds} onClose={closeAll} />
 {/if}
 
 <!-- Duplicate Track Modal -->

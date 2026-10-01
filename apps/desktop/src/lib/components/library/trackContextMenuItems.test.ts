@@ -68,6 +68,7 @@ describe('buildTrackContextMenuItems', () => {
 		onSetColor: vi.fn(),
 		onAnalyze: vi.fn(),
 		onResyncMik: vi.fn(),
+		onBuildSet: vi.fn(),
 		t: (key: string) => key,
 	}
 
@@ -266,6 +267,34 @@ describe('buildTrackContextMenuItems', () => {
 			expect(relocateItem?.disabled).toBe(true)
 			expect(removePlaylistItem?.disabled).toBe(true)
 			expect(removeLibItem?.disabled).toBe(true)
+		})
+	})
+
+	describe('Build a set', () => {
+		it('includes "build-set" when onBuildSet is provided, and calls it', () => {
+			const onBuildSet = vi.fn()
+			const items = buildTrackContextMenuItems({
+				selectedTracks: [mockTrack, mockTrack2],
+				hasMissingTrack: false,
+				...defaultHandlers,
+				onBuildSet,
+			})
+
+			const buildSetItem = items.find((i) => i.id === 'build-set')
+			expect(buildSetItem).toBeDefined()
+			expect(buildSetItem?.label).toBe('contextMenu.buildSet')
+			buildSetItem?.action?.()
+			expect(onBuildSet).toHaveBeenCalledTimes(1)
+		})
+
+		it('omits "build-set" when onBuildSet is not provided', () => {
+			const { onBuildSet: _, ...handlersWithoutBuildSet } = defaultHandlers
+			const items = buildTrackContextMenuItems({
+				selectedTracks: [mockTrack],
+				hasMissingTrack: false,
+				...handlersWithoutBuildSet,
+			})
+			expect(items.map((i) => i.id)).not.toContain('build-set')
 		})
 	})
 

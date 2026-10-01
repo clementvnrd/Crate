@@ -59,6 +59,7 @@
 		onTrackSetColor: (color: TrackColor | null, tracks: Track[]) => void
 		onTrackAnalyze: (tracks: Track[]) => void
 		onTrackResyncMik?: (tracks: Track[]) => void
+		onTrackBuildSet?: (tracks: Track[]) => void
 
 		// Playlist callbacks
 		onPlaylistCreatePlaylist: (playlist: Playlist) => void
@@ -149,6 +150,7 @@
 		onTrackSetColor,
 		onTrackAnalyze,
 		onTrackResyncMik,
+		onTrackBuildSet,
 		onPlaylistCreatePlaylist,
 		onPlaylistCreateSmartPlaylist,
 		onPlaylistCreateFolder,
@@ -455,6 +457,14 @@
 		}
 	}
 
+	function handleTrackBuildSet() {
+		if (activeMenu.type === 'track') {
+			const tracks = activeMenu.tracks
+			closeAll()
+			onTrackBuildSet?.(tracks)
+		}
+	}
+
 	// Playlist handlers
 	function handlePlaylistCreatePlaylist(playlist: Playlist) {
 		closeAll()
@@ -735,6 +745,7 @@
 		onSetColor={handleTrackSetColor}
 		onAnalyze={handleTrackAnalyze}
 		onResyncMik={handleTrackResyncMik}
+		onBuildSet={handleTrackBuildSet}
 	/>
 {/if}
 
