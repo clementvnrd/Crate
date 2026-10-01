@@ -33,7 +33,7 @@
 				type="button"
 				class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 font-medium transition-colors {$beatportStore.navSection ===
 					'home' && !$beatportStore.selectedPlaylistId
-					? 'bg-emerald-500/20 font-semibold text-emerald-400'
+					? 'bg-beatport-tint/20 font-semibold text-beatport-text'
 					: 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'}"
 				onclick={() => handleNav('home')}
 			>
@@ -47,7 +47,7 @@
 				type="button"
 				class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 font-medium transition-colors {$beatportStore.navSection ===
 				'purchased'
-					? 'bg-emerald-500/20 font-semibold text-emerald-400'
+					? 'bg-beatport-tint/20 font-semibold text-beatport-text'
 					: 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'}"
 				onclick={() => handleNav('purchased')}
 			>
@@ -56,7 +56,9 @@
 					<span>{$translate('beatport.nav.purchased')}</span>
 				</div>
 				{#if $beatportStore.purchases.length > 0}
-					<span class="py-0.2 rounded border border-stroke bg-surface-2 px-1.5 font-mono text-[10px] text-emerald-400">
+					<span
+						class="py-0.2 rounded border border-stroke bg-surface-2 px-1.5 font-mono text-[10px] text-beatport-text"
+					>
 						{$beatportStore.purchases.length}
 					</span>
 				{/if}
@@ -66,7 +68,7 @@
 				type="button"
 				class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 font-medium transition-colors {$beatportStore.navSection ===
 				'offline'
-					? 'bg-emerald-500/20 font-semibold text-emerald-400'
+					? 'bg-beatport-tint/20 font-semibold text-beatport-text'
 					: 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'}"
 				onclick={() => handleNav('offline')}
 			>
@@ -80,7 +82,7 @@
 				type="button"
 				class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 font-medium transition-colors {$beatportStore.navSection ===
 				'favorites'
-					? 'bg-emerald-500/20 font-semibold text-emerald-400'
+					? 'bg-beatport-tint/20 font-semibold text-beatport-text'
 					: 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'}"
 				onclick={() => handleNav('favorites')}
 			>
@@ -88,7 +90,7 @@
 					<Icon name="heart" class="h-3.5 w-3.5 text-red-400" />
 					<span>{$translate('beatport.nav.favorites')}</span>
 				</div>
-				<span class="py-0.2 rounded border border-stroke bg-surface-2 px-1.5 font-mono text-[10px] text-emerald-400">
+				<span class="py-0.2 rounded border border-stroke bg-surface-2 px-1.5 font-mono text-[10px] text-beatport-text">
 					{$beatportStore.favorites.length}
 				</span>
 			</button>
@@ -118,7 +120,7 @@
 						type="text"
 						placeholder={$translate('beatport.playlists.newPlaceholder')}
 						bind:value={newPlaylistName}
-						class="w-full rounded border border-stroke bg-surface-2 px-2 py-1 text-xs text-text-primary focus:border-emerald-500 focus:outline-none"
+						class="w-full rounded border border-stroke bg-surface-2 px-2 py-1 text-xs text-text-primary focus:border-beatport-tint focus:outline-none"
 						onkeydown={(e) => e.key === 'Enter' && handleCreatePlaylist()}
 					/>
 				</div>
@@ -140,13 +142,13 @@
 							type="button"
 							class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 transition-colors {$beatportStore.selectedPlaylistId ===
 							String(pl.id)
-								? 'bg-emerald-500/20 font-semibold text-emerald-400'
+								? 'bg-beatport-tint/20 font-semibold text-beatport-text'
 								: 'text-text-secondary hover:bg-surface-2 hover:text-text-primary'}"
 							onclick={() => handleNav('playlist', String(pl.id), pl.name)}
 						>
 							<span class="truncate">{pl.name}</span>
 							<span
-								class="py-0.2 rounded border border-stroke bg-surface-2 px-1.5 font-mono text-[10px] text-emerald-400"
+								class="py-0.2 rounded border border-stroke bg-surface-2 px-1.5 font-mono text-[10px] text-beatport-text"
 							>
 								{pl.track_count}
 							</span>
@@ -165,8 +167,8 @@
 				style="-webkit-mask-image: url('/beatport-full-logo.png'); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center left; mask-image: url('/beatport-full-logo.png'); mask-size: contain; mask-repeat: no-repeat; mask-position: center left;"
 				title={$translate('beatport.title')}
 			></div>
-			<div class="flex items-center gap-1.5 text-[11px] font-medium text-emerald-500">
-				<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+			<div class="flex items-center gap-1.5 text-[11px] font-medium text-beatport-tint">
+				<span class="h-1.5 w-1.5 rounded-full bg-beatport-tint"></span>
 				<span>{$translate('beatport.connected')}</span>
 			</div>
 		</div>

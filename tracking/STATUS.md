@@ -5,7 +5,7 @@ This file is **the** source of truth for tracking: every defect in the [register
 Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification or remaining work. The progress table is recomputed with `yarn status` (from the repository root).
 
 <!-- progress:start -->
-**Overall progress: 102 / 106 defects fixed (96%)**
+**Overall progress: 103 / 106 defects fixed (97%)**
 
 | Step | Fixed | Progress |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 8 — Robust frontend | 17 / 17 | ██████████ |
 | Step 9 — Hygiene and tooling | 13 / 14 | █████████░ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
-| Step 11 — View-by-view compliance | 4 / 7 | ██████░░░░ |
+| Step 11 — View-by-view compliance | 5 / 7 | ███████░░░ |
 | Step 12 — Translation | 6 / 6 | ██████████ |
 <!-- progress:end -->
 
@@ -192,12 +192,12 @@ _Exit criterion: No invisible element in light or dark._
 
 _Exit criterion: Strict design rules respected._
 
-- [ ] **D3** — Broken light theme: Pulse integration cards dark at the top and light at the bottom; header badges…
+- [ ] **D3** — Broken light theme: Pulse integration cards dark at the top and light at the bottom; header badges… — _partial: family colour tokens with light text values, `--brand-on` on accent fills, Beatport follows the theme, the four CRA-141 touches, dark theme unchanged otherwise; left: the energy badge in light, the toolbar count badges and the Mixed In Key logo label, Beatport's "Connected" text, the palette classes listed in DESIGN.md "Known deviations"_
 - [x] **D4** — Header at minimum width (1000 px): the icons overlap the segmented control… — _verified by measurement in the harness at 1000, 1280, 1440 and 1600 px: no overlap, all tools visible_
 - [x] **D5** — Player hero with a fixed height (`h-[225px]` for about 260 px of content): at 1000×640 the transport is… — _transport never covered (verified at 1000×640); at that size the recents list keeps ~2 rows_
 - [x] **D7** — Beatport table at 1000 px: the title column shrinks to one character — _title column 52 to 288 px at 1000 px; date and genre hide below 832 and 720 px; identical from a 1400 px window; the Player recents overflow is fixed too_
 - [ ] **D10** — Accessibility: about 25 icon buttons without a name (transport, segments, MIK badge, recents actions);… — _partial: names, waveform slider, recents grid, switches, focus traps, reduced motion and the keyboard focus outline are done; left: the global shortcuts block Enter and Space on focused buttons (owner decision, CRA-100), 17 `svelte-ignore a11y`, the heatmap is not focusable_
-- [ ] **D11** — Components reinvented instead of the shared ones: 4 segmented controls, checkbox, select, spinner, tooltip and… — _partial: shared SegmentedControl, KeyBadge, EnergyBadge and family Button props replace the copies with the look unchanged; left: Spotify connection modal, Rekordbox sync button, native checkboxes, home-made spinners in untouched files_
+- [x] **D11** — Components reinvented instead of the shared ones: 4 segmented controls, checkbox, select, spinner, tooltip and… — _shared SegmentedControl, KeyBadge, EnergyBadge, Button tones, `Modal` for the Spotify panel, `Checkbox appearance="native"` and `Spinner` everywhere, dark look unchanged; the Beatport search scope stays a native `<select>`_
 - [x] **D12** — Permanent "Build 57" badge next to the logo and "PRO" labels on third-party brands
 
 ### Step 12 — Translation
@@ -266,3 +266,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-01 | French says "morceau" for a track and keeps "Cover", per the owner's answer in CRA-103 (L1 closed) | 12 |
 | 2026-10-01 | "Reset Spotify history" button in Crate Pulse: backup then delete, confirmation dialog (CRA-144) | — |
 | 2026-10-01 | Discovery funnel renamed "Crate to booth" / "Du bac à la cabine", per the owner's answer in CRA-126 | — |
+| 2026-10-01 | CRA-141 rollout: family colour tokens, black text on accent fills, Beatport follows the theme, the four touches (D3, partial); Spotify modal, Rekordbox and add-to-library buttons, native checkboxes and spinners on the shared components (D11) | 11 |

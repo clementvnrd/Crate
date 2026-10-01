@@ -76,17 +76,17 @@
 	function getCellIntensityClass(minutes: number, max: number): string {
 		if (minutes <= 0) return 'bg-surface-3/40 hover:bg-surface-3 border-transparent'
 		const ratio = minutes / max
-		if (ratio < 0.25) return 'bg-emerald-500/25 border-emerald-500/30 hover:bg-emerald-500/40 text-emerald-300'
-		if (ratio < 0.5) return 'bg-emerald-500/45 border-emerald-500/50 hover:bg-emerald-500/60 text-emerald-200'
-		if (ratio < 0.75) return 'bg-emerald-500/70 border-emerald-400 hover:bg-emerald-500/85 text-white'
-		return 'bg-emerald-400 border-emerald-300 hover:bg-emerald-300 text-black font-bold shadow-md shadow-emerald-500/20'
+		if (ratio < 0.25) return 'bg-pulse-listening/25 border-pulse-listening/30 hover:bg-pulse-listening/40'
+		if (ratio < 0.5) return 'bg-pulse-listening/45 border-pulse-listening/50 hover:bg-pulse-listening/60'
+		if (ratio < 0.75) return 'bg-pulse-listening/70 border-pulse-listening-bright hover:bg-pulse-listening/85'
+		return 'bg-pulse-listening-bright border-pulse-listening-brighter hover:bg-pulse-listening-brighter shadow-md shadow-pulse-listening/20'
 	}
 </script>
 
-<div class="space-y-4 rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
+<div class="space-y-4 rounded-xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
 	<div class="flex flex-wrap items-center justify-between gap-3">
 		<div class="flex items-center gap-2">
-			<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
+			<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-pulse-listening/15 text-pulse-listening-text">
 				<Icon name="clock" class="h-4 w-4" />
 			</div>
 			<div>
@@ -97,9 +97,9 @@
 
 		{#if peakCell}
 			<div
-				class="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400"
+				class="flex items-center gap-1.5 rounded-full border border-pulse-listening/30 bg-pulse-listening/10 px-3 py-1 text-xs font-medium text-pulse-listening-text"
 			>
-				<Icon name="flame" class="h-3.5 w-3.5 text-emerald-400" />
+				<Icon name="flame" class="h-3.5 w-3.5 text-pulse-listening-text" />
 				<span
 					>{$translate('stats.heatmap.peak')}
 					<strong
@@ -161,7 +161,7 @@
 										)}"
 									></div>
 									{#snippet content()}
-										<div class="font-bold text-emerald-400">
+										<div class="font-bold text-pulse-listening-text">
 											{$translate('stats.heatmap.tooltipRange', {
 												values: { day: day.full, from: hour, to: hour + 1 },
 											})}
@@ -182,10 +182,10 @@
 				<span>{$translate('stats.heatmap.less')}</span>
 				<div class="flex items-center gap-1">
 					<div class="h-3 w-3 rounded border border-stroke/40 bg-surface-3/40"></div>
-					<div class="h-3 w-3 rounded border border-emerald-500/30 bg-emerald-500/25"></div>
-					<div class="h-3 w-3 rounded border border-emerald-500/50 bg-emerald-500/50"></div>
-					<div class="h-3 w-3 rounded border border-emerald-400 bg-emerald-500/75"></div>
-					<div class="h-3 w-3 rounded border border-emerald-300 bg-emerald-400"></div>
+					<div class="h-3 w-3 rounded border border-pulse-listening/30 bg-pulse-listening/25"></div>
+					<div class="h-3 w-3 rounded border border-pulse-listening/50 bg-pulse-listening/50"></div>
+					<div class="h-3 w-3 rounded border border-pulse-listening-bright bg-pulse-listening/75"></div>
+					<div class="h-3 w-3 rounded border border-pulse-listening-brighter bg-pulse-listening-bright"></div>
 				</div>
 				<span>{$translate('stats.heatmap.more')}</span>
 			</div>

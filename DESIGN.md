@@ -36,6 +36,7 @@ colors:
     brand-primary: "var(--brand-primary)"   # blue #3b82f6, indigo, violet, purple, pink, rose, orange, amber, emerald, teal
     brand-hover: "var(--brand-hover)"
     brand-muted: "var(--brand-muted)"       # accent at 20%: background of the active element
+    brand-on: "var(--brand-on)"             # text on an accent fill: black or white per accent, whichever passes 4.5:1 (black for all ten)
   state:                   # identical in both themes (see "Known gaps")
     danger: "#ef4444"
     warning: "#f59e0b"
@@ -45,27 +46,34 @@ colors:
     camelot: "shared/utils/camelot.ts (CAMELOT_COLORS, getCamelotColor) — Mixed In Key 11 wheel"
     energy: "shared/utils/energy.ts (getEnergyInfo) — levels 1 to 10"
   sources:                 # third-party service colours: identify a source, nothing else (see "Graphic charter")
-    spotify: "#1DB954"
-    beatport: "#00FF96"
-    mixed-in-key: "#00D2FF"
-    rekordbox: "#EF4444"
-    crate-local: "#8B5CF6"
-  families:                # scoped colour families (see "Graphic charter"). Values as written in the code today;
-                           # they are not tokens yet (proposed names in the charter), light-theme text values are targets
-    deck:                  # Player view
-      live: "cyan-400 #22d3ee (dark text and fills), cyan-500 #06b6d4 (fills); light text: cyan-700 #0e7490 (target)"
+                           # tokens --source-<name> (fill), -text (readable text, darker in light), -wash (card gradient top)
+    spotify: "#1DB954 (--source-spotify; light text green-800)"
+    beatport: "#00FF96 (--beatport)"
+    mixed-in-key: "#00D2FF (--source-mik; light text cyan-700)"
+    rekordbox: "red-500 (--source-rekordbox; dark text red-400, light text red-700)"
+    crate-local: "violet-500 (--source-crate; dark text violet-400, light text violet-700)"
+  families:                # scoped colour families (see "Graphic charter"); tokens in style.css, section "Colour families"
+                           # (owner decision CRA-141, 2026-10-01). Dark values are the palette shades the views always had.
+    deck:                  # Player view, Duplicate Killer and Upgrader waveform previews
+      live: "--deck-live cyan-400 (fills, both themes), --deck-live-tint cyan-500"
+      live-text: "--deck-live-text cyan-400 dark / cyan-700 light; --deck-live-text-strong cyan-300 / cyan-700"
       on-live: "black"
-      cue: "amber-400 #fbbf24 (fills), amber-300 #fcd34d (dark text); light text: amber-700 #b45309 (target)"
-    pulse:                 # Pulse (statistics) view, one hue per metric; light text uses the -700 shade (target)
-      listening-time: "emerald-400 #34d399"
-      plays: "purple-400 #c084fc"
-      artists: "pink-400 #f472b6"
-      dj-sessions: "amber-400 #fbbf24"
-      keys: "cyan-400 #22d3ee"
-      ranks: "gold amber-300 #fcd34d, silver slate-300 #cbd5e1, bronze amber-600 #d97706"
-    beatport:              # Beatport view, Beatport modals, Upgrader
-      neon: "#00FF96 (fills with black text), hover #00e687"
-      secondary: "emerald-400 #34d399 (dark text); light text: emerald-700 #047857 (target)"
+      cue: "--deck-cue amber-400, --deck-cue-tint amber-500, --deck-cue-outline amber-200 dark / stroke-strong light"
+      cue-text: "--deck-cue-text amber-400 / amber-700; --deck-cue-text-strong amber-300 / amber-700"
+    pulse:                 # Pulse (statistics) view, one hue per metric: --pulse-<metric> (fill) and --pulse-<metric>-text
+      listening-time: "emerald-500 fill, text emerald-400 / emerald-800 (bright and brighter steps for the heatmap)"
+      plays: "purple-500 fill, text purple-400 / purple-700"
+      artists: "pink-500 fill, text pink-400 / pink-700"
+      dj-sessions: "amber-500 fill, text amber-400 / amber-700"
+      keys: "cyan-500 fill, text cyan-400 / cyan-700"
+      ranks: "gold amber-400 (text amber-300 / amber-800), silver slate-400 (slate-300 / zinc-600), bronze amber-600 (amber-600 / amber-800)"
+    beatport:              # Beatport view, Beatport modals, Upgrader, Beatport settings tab
+      neon: "--beatport #00FF96 (fills with black text), --beatport-hover #00e687"
+      text: "--beatport-text emerald-400 / emerald-700; --beatport-text-strong #00FF96 / emerald-700"
+      body-text: "--beatport-body-text neutral-300 / zinc-700; --beatport-body-text-strong neutral-200 / zinc-800"
+      tints: "--beatport-tint emerald-500, --beatport-deep emerald-600, --beatport-wash emerald-950 / emerald-100"
+    warning:               # the Duplicate Killer toolbar alert
+      tokens: "--warning-tint amber-500, --warning-text amber-400 / amber-700, --warning-wash amber-950 / amber-100"
 
 typography:
   family: "var(--font-family) — [data-font] chosen by the user; Open Sans by default (app.html), also Jost, DM Sans, Inter, Nunito, Fira Code, IBM Plex Mono, Source Code Pro"
@@ -117,19 +125,19 @@ window:
   check: "1000×600, 1400×900, 1920×1080"
 
 components:
-  Button: { variants: [primary, secondary, ghost, danger, ghost-danger, outline], sizes: [sm, md, lg, bare], rounded: control, tones: "primary: accent (default look); deck, beatport, spotify render today's family look (bold, rounded-lg/xl via shape, glow, press, lift), each only in its own scope" }
+  Button: { variants: [primary, secondary, ghost, danger, ghost-danger, outline], sizes: [sm, md, lg, bare], rounded: control, primary-text: "text-brand-on", tones: "primary: accent (default look); deck, beatport, spotify, rekordbox render the family look (bold, shape lg/xl/full, glow, press, lift), each only in its own scope", props: "shape, weight (bold, semibold), display (inline-flex, flex), glow, press, lift; fill replaces the primary fill for a non-accent primary (red confirm, Upgrader replace)" }
   IconButton: { sizes: [sm 24px, md 32px, lg 40px], active: "bg-brand-muted text-brand-primary", rule: "accessible name required" }
   Text: { variants: [header-1, header-2, header-3, header-4, header-table, body-1, body-2, caption, code] }
   Input: { background: surface-2, border: stroke, rounded: control }
   Select: { trigger: surface-2, menu: "surface-1 shadow-lg rounded-lg z-50" }
-  Modal: { element: "native <dialog>", background: surface-1, border: stroke, rounded: panel, shadow: shadow-xl, sizes: [sm, md, lg, xl, 2xl, 3xl, 4xl], rule: "height bounded by the window, fixed footer" }
+  Modal: { element: "native <dialog>", background: surface-1, border: stroke, rounded: panel, shadow: shadow-xl, sizes: [sm, md, lg, xl, 2xl, 3xl, 4xl, none], rule: "height bounded by the window, fixed footer", props: "panelClass and backdropClass for a family panel (Spotify connection), theme=\"dark\" for a panel that stays dark in both themes" }
   Tooltip: { background: surface-1, border: stroke, rounded: small, text: text-xs, portal: true }
   ContextMenu: { background: surface-1, rounded: control, shadow: shadow-lg }
-  Checkbox: {}
+  Checkbox: { appearance: "crate (default: accent box) or native (the system checkbox of the confirmation dialogs, Duplicate Killer and the Upgrader; label as children, labelClass, inputClass)" }
   SegmentedControl: { semantics: "radiogroup, one tab stop, arrow keys, Home/End", variants: "switcher (view switcher, sliding thumb), deck (Player, cyan fill), boxed (Pulse period)", rule: "a value that matches no option selects nothing" }
   ToggleSwitch: {}
   Slider: {}
-  Spinner: { color: "muted (default) or current", icon: "refresh (default) or loader (Player views)", motion: "motion-reduce:animate-none" }
+  Spinner: { color: "muted (default) or current", icon: "refresh (default), refresh-cw, loader (Player views, toolbar export), arc (cloud sync), ring (CSS ring, size and colour from class)", motion: "motion-reduce:animate-none", rule: "every busy indicator is a Spinner; IconButton has busy" }
   Toast: {}
   Icon: { source: "common/Icon.svelte (internal set); a Vitest test fails on an unknown name" }
   track-row: { layout: "grid, items-center, gap-2, px-3 py-1.5, text-sm", selected: "bg-brand-muted", playing: "title in text-brand-primary" }
@@ -139,7 +147,7 @@ components:
 
 # Crate — design system
 
-> **Provisional (CRA-141).** The owner likes today's look and asked to rethink the charter from scratch, because the first version prescribed changes to it. Until he answers, the sections *Graphic charter* and *Known deviations* record intent and measurements, and **nothing in them authorises a visible change** (radius, hover, toolbar colours, Beatport theme, waveform colours, tokens): where they prescribe one, it is suspended.
+> **Owner decision (CRA-141, 2026-10-01).** The owner likes today's look; the charter describes it and implements five points only: black or white text on an accent fill chosen per accent (`--brand-on`); named colour tokens for every family; the Beatport view following the light and dark themes; and four homogenisation touches (Pulse cards `rounded-xl`, no hover lift or zoom on the Pulse KPI cards, the Player's cyan in the Duplicate Killer and Upgrader waveform previews, a family colour on a toolbar shortcut only as a label or count badge). **Nothing else about the dark theme changes**: a token's dark value is the shade the view already had. Where a rule below still differs from the code, the deviation is listed in [Known deviations](#known-deviations-from-the-charter) and is not a licence to restyle.
 
 This document describes **how Crate must look**. It is read by coding assistants (the `design` agent in `.claude/agents/design.md`) before any interface work, and serves as a reference for the owner. It is extracted from the actual code (`apps/desktop/src/style.css`, `lib/components/common/`) and from the "strict design rules" of the [defect register](tracking/DEFECTS.md#design-responsive-and-accessibility).
 
@@ -184,11 +192,11 @@ The Camelot key colours (Mixed In Key 11 wheel) and energy colours encode inform
 
 ### Source colours
 
-The official colours of the services a listen or a track comes from: Spotify `#1DB954`, Beatport `#00FF96`, Mixed In Key `#00D2FF`, Rekordbox `#EF4444`, Crate local `#8B5CF6`. They **identify a source** and nothing else: a logo, a source chip or badge, a segment of the Pulse source bar, and the service's own connect button (Spotify's green button with black text). They are never a selection, hover, focus or state colour. Like data palettes, they should live in one shared map (today they are copied in `StatsSourceBar`, `StatsTopTracks`, `StatsIntegrations`, `TrackInfo`).
+The official colours of the services a listen or a track comes from: Spotify `#1DB954`, Beatport `#00FF96`, Mixed In Key `#00D2FF`, Rekordbox `#EF4444`, Crate local `#8B5CF6`. They **identify a source** and nothing else: a logo, a source chip or badge, a segment of the Pulse source bar, and the service's own connect button (Spotify's green button with black text). They are never a selection, hover, focus or state colour. They are tokens (`--source-spotify`, `--source-mik`, `--source-rekordbox`, `--source-crate`, and `--beatport`), each with a `-text` value that stays readable in the light theme; the Pulse source bar still carries its segment colours as hex values in a script map (`StatsSourceBar`).
 
 ## Graphic charter: colour families and their limits
 
-Owner decision (Linear CRA-115, 2026-09-30): Crate keeps several colour families, and each one gets precise limits, so that the whole stays consistent, professional and durable. This section is written **from the visual language that exists today**; where the code breaks it, the code is what changes (see [Known deviations](#known-deviations-from-the-charter)).
+Owner decision (Linear CRA-115, 2026-09-30): Crate keeps several colour families, and each one gets precise limits, so that the whole stays consistent, professional and durable. This section is written **from the visual language that exists today**, and its roles are tokens in `apps/desktop/src/style.css` (section "Colour families"): a component writes `text-deck-live-text`, never `text-cyan-400`. The remaining deviations are listed in [Known deviations](#known-deviations-from-the-charter).
 
 A family is four things: a **purpose** (what its colour means), a **scope** (the only places it may appear), **roles** (which element takes which colour), and **light and dark values**. Everything that is not a colour (surfaces, type, shapes, spacing, states, motion, contrast) is shared by all families and described in [Rules shared by all families](#rules-shared-by-all-families).
 
@@ -221,21 +229,23 @@ A family colour never sits next to another family's colour in the same element (
 
 - **Tokens**: `brand-primary`, `brand-hover`, `brand-muted` (20%), `bg-brand-primary/10`, `bg-brand-primary-5`, `bg-brand-primary-10`. Ten accents (`[data-accent]`), blue by default; the value is the same in both themes.
 - **Roles**: primary action fill (`Button variant="primary"`), selected row (`bg-brand-muted`), playing track title in the library (`text-brand-primary`), active icon button (`bg-brand-muted text-brand-primary`), progress of the bottom player's seek bar, logo, focus outline (`*:focus-visible`, global).
-- **Text on an accent fill** must reach 4.5:1. With today's values white text on the fill reaches it for none of the ten accents (2.06 to 4.47), black text for all ten (4.70 to 9.78). The foreground to use is an open decision (see [Known gaps](#known-gaps)); until it is taken, only `Button` puts text on an accent fill.
+- **Text on an accent fill** is `text-brand-on` (owner decision CRA-141): each `[data-accent]` block sets `--brand-on` to black or white, whichever reaches the higher contrast on that fill. Black wins for all ten accents (4.70 to 9.78:1; white gives 2.15 to 4.47). `theme.test.ts` recomputes it for every accent, so a new accent cannot ship with unreadable button text.
 - **Accent as text** on a light surface stays under 4.5:1 for every accent (2.06 to 4.28): in the light theme the accent marks with a fill, an outline or an icon, and text next to it stays `text-primary`.
 
 ### B. Deck — the Player's neon glass
 
 The only family with a material of its own: a translucent hero over the blurred artwork, and light that glows on what is live.
 
-| Role | Dark | Light | Proposed token |
+| Role | Dark | Light | Token |
 | --- | --- | --- | --- |
-| Live fill: played waveform bars, main play button, active segment, playhead progress | `cyan-400` / `cyan-500` | same fills | `--deck-live` |
+| Live fill: played waveform bars, main play button, playhead progress, waveform previews of Duplicate Killer and the Upgrader | `cyan-400` | same | `--deck-live` |
+| Live tint: active segment, now-playing row (`/10`), chip backgrounds | `cyan-500` | same | `--deck-live-tint` |
 | Text on a live fill | black | black | — |
-| Live text and icons: time readout, BPM, now-playing row, EQ bars, "Album" label | `cyan-400` (`cyan-300` for BPM) | `cyan-700` (today `cyan-600`, 3.53:1) | `--deck-live-text` |
-| Now-playing row background | `cyan-500/10` | `cyan-500/10` | — |
-| Cue fill: hot-cue pins, filled pads | `amber-400` | `amber-400` pin with a `stroke-strong` outline (the fill alone is 1.52:1) | `--deck-cue` |
-| Cue text: pad labels, cue badges | `amber-300` / `amber-400` | `amber-700` (today `amber-500`/`amber-600`, 1.84 and 3.05:1) | `--deck-cue-text` |
+| Live text and icons: time readout, now-playing row, EQ bars, "Album" label | `cyan-400` | `cyan-700` | `--deck-live-text` |
+| Strong live text: BPM, hover of live text | `cyan-300` | `cyan-700` | `--deck-live-text-strong` |
+| Cue fill: hot-cue pins, filled pads | `amber-400` (tint `amber-500`) | same | `--deck-cue`, `--deck-cue-tint` |
+| Cue pin outline | `amber-200` | `stroke-strong` (the amber fill alone is 1.52:1) | `--deck-cue-outline` |
+| Cue text: pad labels, cue badges | `amber-400` (strong `amber-300`) | `amber-700` | `--deck-cue-text`, `--deck-cue-text-strong` |
 
 - **Neon-glass material**: `bg-surface-1/60` + `backdrop-blur-xl` on the hero and on the sticky header of the recent tracks list; the ambient layer is the artwork itself, blurred (`blur-[100px]`, opacity 15% light, 30% dark), decorative and `aria-hidden`.
 - **Glow**: only on four live elements — played waveform bars, playhead, cue pins, main play button — in the family hue, at most 8 px of blur (`shadow-[0_0_6px_…]`, `shadow-lg shadow-cyan-400/40`). No glow on text, rows, cards or secondary buttons.
@@ -244,32 +254,38 @@ The only family with a material of its own: a translucent hero over the blurred 
 
 ### C. Pulse — glass dashboard
 
-| Metric | Hue (dark text, chip, chart) | Light text | Where |
-| --- | --- | --- | --- |
-| Listening time, activity heatmap | `emerald-400` / `emerald-500` fills | `emerald-700` | KPI card, heatmap, BPM distribution |
-| Plays | `purple-400` | `purple-700` | KPI card |
-| Artists | `pink-400` | `pink-700` | KPI card, top artists |
-| DJ sessions (Rekordbox) | `amber-400` | `amber-700` | KPI card |
-| Keys | `cyan-400` | `cyan-700` | harmonic wheel |
-| Rank 1, 2, 3 | gold `amber-300`, silver `slate-300`, bronze `amber-600` | `amber-700`, `zinc-600`, `amber-800` | top tracks, top artists |
+| Metric | Fill (chip, chart) | Dark text | Light text | Tokens | Where |
+| --- | --- | --- | --- | --- | --- |
+| Listening time, activity heatmap | `emerald-500` (heatmap steps `emerald-400`, `emerald-300`) | `emerald-400` | `emerald-800` | `--pulse-listening`, `-bright`, `-brighter`, `-text` | KPI card, heatmap, BPM distribution |
+| Plays | `purple-500` | `purple-400` | `purple-700` | `--pulse-plays`, `-text` | KPI card |
+| Artists | `pink-500` | `pink-400` | `pink-700` | `--pulse-artists`, `-text` | KPI card, top artists |
+| DJ sessions (Rekordbox) | `amber-500` | `amber-400` | `amber-700` | `--pulse-sessions`, `-text` | KPI card |
+| Keys | `cyan-500` | `cyan-400` | `cyan-700` | `--pulse-keys`, `-text` | harmonic wheel |
+| Rank 1, 2, 3 | gold `amber-400`, silver `slate-400`, bronze `amber-600` (`amber-700` fill) | `amber-300`, `slate-300`, `amber-600` | `amber-800`, `zinc-600`, `amber-800` | `--pulse-gold`, `--pulse-silver`, `--pulse-bronze`, `-fill`, `-text` | top tracks, top artists |
+
+Listening time and gold use the `-800` shade in the light theme because their text sits on its own tint (`/15`, `/20`), where `-700` gives 4.4:1.
 
 - **One hue per metric, fixed.** A metric keeps its hue in its KPI card, its chart and its list; a new metric gets a hue only by an owner decision and an entry in this table.
-- **Hue as tint**: the chip or icon background is the hue at 15% (`bg-emerald-500/15`), its border at 30%; a card is never fully tinted and never gradient-filled.
+- **Hue as tint**: the chip or icon background is the hue at 15% (`bg-pulse-listening/15`), its border at 30%; a card is never fully tinted and never gradient-filled.
 - **Glass cards**: the top-level cards of Pulse are `bg-surface-1/70` + `backdrop-blur-xl` + `border-stroke/60` + `shadow-lg` + `rounded-xl`, one level only (no glass inside glass, the heatmap tooltip included). The sticky header is `bg-surface-1/90` + `backdrop-blur-xl`.
-- **Halo**: one static blurred orb (`blur-2xl`, hue at 10%) in the corner of each of the four KPI cards; it does not grow or change on hover.
+- **Halo**: one static blurred orb (`blur-2xl`, hue at 10%) in the corner of each of the four KPI cards. The KPI cards do not lift and their icon does not zoom on hover (CRA-141); the hover keeps today's border, shadow and halo change.
 - **Accent in Pulse**: the header icon, the period selector, the refresh button and focus stay on the accent.
-- **Source colours** appear in Pulse on source chips, the source bar and the integration cards (border at 25%, icon); the cards' background stays a neutral surface in both themes.
+- **Source colours** appear in Pulse on source chips, the source bar and the integration cards (border at 25%, icon, and a gradient top from the source's `-wash` token, which is the neutral `surface-1` in the light theme). The Spotify connection modal keeps its dark green glass panel in both themes (`Modal theme="dark"`, `--source-spotify-panel`).
 
 ### D. Beatport — neon green
 
-| Role | Dark | Light | Proposed token |
+| Role | Dark | Light | Token |
 | --- | --- | --- | --- |
-| Primary action fill (log in, buy, add to cart, play) | `#00FF96`, hover `#00e687` | same | `--beatport` |
+| Primary action fill (log in, buy, add to cart, play) | `#00FF96`, hover `#00e687` | same | `--beatport`, `--beatport-hover` |
 | Text on the fill | black (15.74:1) | black | — |
-| Active navigation, secondary text, counters | `emerald-400` on `emerald-500/20` | `emerald-700` on `emerald-500/15` | `--beatport-text` |
-| Now-playing row | left border `#00FF96`, background `emerald-500/10` | same | — |
+| Tints, borders, count badge | `emerald-500` (`emerald-600` for the Upgrader's replace buttons) | same | `--beatport-tint`, `--beatport-deep` |
+| Washes: now-playing row, header, progress | `emerald-950` | `emerald-100` | `--beatport-wash` |
+| Active navigation, secondary text, counters | `emerald-400` | `emerald-700` | `--beatport-text` |
+| Neon text: playing title, links, codes | `#00FF96` | `emerald-700` | `--beatport-text-strong` |
+| Body copy of the gateway, login and cart panels | `neutral-300` (emphasis `neutral-200`) | `zinc-700` (`zinc-800`) | `--beatport-body-text`, `--beatport-body-text-strong` |
+| Now-playing row | left border `#00FF96`, background `beatport-tint/10` | same | — |
 
-- **Surfaces: open owner decision (CRA-141, question 4).** The Beatport view is hard-coded dark (`#121418`, `#181a20`, `#0e1014`, `#252830`, `#2e323d`) in both themes. Whether it keeps that identity or follows the theme (neutral tokens `surface-0…2` and `stroke`, no visual change in the dark theme) is the owner's choice; until it is taken the surfaces are left as they are, and every family foreground still has to reach its contrast target on the surface it actually sits on.
+- **Surfaces follow the theme (owner decision CRA-141).** The Beatport view, its modals and panels use the neutral tokens (`surface-0…4`, `stroke…`, `text-…`). Their dark values are the view's own dark surfaces (`#121418`, `#181a20`, `#0e1014`, `#252830`, `#2e323d`, white text): elements that carry `data-surface="beatport"` (the cart drawer, the login modal, the logged-out gateway card) get them through a dark-only scope in `style.css`, so the dark theme is unchanged and the light theme is Crate's light theme.
 - **Flat**: no glass, no glow (`shadow-[#00FF96]/20`), no gradient, no hover scale.
 - `#00FF96` is never text on a light surface (1.28:1).
 
@@ -277,7 +293,7 @@ The only family with a material of its own: a translucent hero over the blurred 
 
 | Topic | Rule for every family |
 | --- | --- |
-| Surfaces | Neutral tokens only (`surface-0…4`); a family colours chips, fills, text and borders, never a surface. No hard-coded surface hex. Opacity on a surface (`bg-surface-1/70`) exists only in the neon-glass material. |
+| Surfaces | Neutral tokens only (`surface-0…4`); a family colours chips, fills, text and borders, never a surface. No hard-coded surface hex (a view with its own dark surfaces scopes the neutral tokens, as `data-surface="beatport"` does). Opacity on a surface (`bg-surface-1/70`) exists only in the neon-glass material. |
 | Tints | Family hue at 10–20% for backgrounds, 20–40% for borders; hover raises the tint by one step (`/10` → `/20`). |
 | Borders | `stroke-subtle` between rows, `stroke` around controls and cards; a family border (hue at 20–40%) only on the family's own chips and active elements. |
 | Radius | The shared table in [Shapes](#shapes); `rounded-xl` only for the neon-glass cards and the Player artwork; `rounded-2xl` and `rounded-3xl` nowhere. |
@@ -328,7 +344,7 @@ WCAG 2.x ratios computed from the token and palette values in the code (2026-09-
 | States | `danger` / `warning` / `success` / `info` as text | 4.71 / 8.25 / 7.78 / 4.82 | 3.61 ✗ / 2.06 ✗ / 2.18 ✗ / 3.52 ✗ |
 | States | white on `danger` fill | 3.76 ✗ | 3.76 ✗ |
 
-What the table says: **the dark theme holds for every family**, except `text-tertiary` (3.67:1) and white text on accent and danger fills; **the light theme fails for every family hue used as text**, which is why each family has a light text value (the `-700` shades, all measured between 4.81 and 6.69).
+What the table says: **the dark theme holds for every family**, except `text-tertiary` (3.67:1) and white text on accent and danger fills; **the light theme fails for every family hue used as text**. The table records the palette values as they were before [D3]; the family tokens now carry a light text value for every role (`-700` shades, `-800` where the text sits on its own tint, `green-800` for Spotify), and `apps/desktop/src/theme.test.ts` checks every `-text` token at 4.5:1 or more on `surface-0`, `surface-1` and `surface-2` in both themes, and `--brand-on` on every accent.
 
 ### How a new view stays inside the charter
 
@@ -338,7 +354,7 @@ What the table says: **the dark theme holds for every family**, except `text-ter
 4. Surfaces, radius, type, spacing and motion come from the shared rules; glass, glow and halos only where the family allows them.
 5. Check the contrast of every new foreground and background pair against the table above (4.5:1 text, 3:1 UI), in both themes.
 6. Check the combination table: no colour of another family, no family colour in the shell beyond a label or a count badge.
-7. Run `yarn design:scan <files>`: until the family tokens exist, the scan reports family palette classes; a new one is acceptable only if it is a role of the view's family, and never outside its scope.
+7. Run `yarn design:scan <files>`: a family role is written with its token (`bg-deck-live`, `text-pulse-plays-text`, `bg-beatport`); a palette class or hex value is debt, never a new role.
 
 ## Typography
 
@@ -380,12 +396,14 @@ The one exception is the **neon-glass material**, kept by owner decision and con
 
 The components in `lib/components/common/` are **mandatory**: `Button`, `IconButton`, `Text`, `Input`, `Select`, `Checkbox`, `ToggleSwitch`, `Slider`, `Modal`, `ConfirmModal`, `InputModal`, `ContextMenu`, `Tooltip`, `Spinner`, `Toast`, `Icon`, `SegmentedControl`, `KeyBadge`, `EnergyBadge`. A need that is not covered is handled by **extending** the common component (new variant, new prop), not by copying it.
 
-A common component is on the accent by default. When a family view needs its own look on a shared control, the component takes an explicit prop (`Button tone="deck" | "beatport" | "spotify"`, `SegmentedControl variant`, `KeyBadge variant`) that reproduces that view's look exactly: the owner froze the visible look (CRA-141), so extraction shares the code and the behaviour, never imposes a new look. A view uses only its own family's tone. Merging the variants into fewer looks, and turning their classes into family tokens (D3), waits for the owner's answer.
+A common component is on the accent by default. When a family view needs its own look on a shared control, the component takes an explicit prop (`Button tone="deck" | "beatport" | "spotify" | "rekordbox"`, `SegmentedControl variant`, `KeyBadge variant`, `Checkbox appearance`, `Spinner icon`, `Modal panelClass`) that reproduces that view's look exactly: the owner keeps today's look (CRA-141), so extraction shares the code and the behaviour, never imposes a new look. A view uses only its own family's tone, and the tones are written with the family tokens.
 
-- **Button**: `primary` for the primary action of a view or modal (only one), `secondary` by default, `ghost` in toolbars, `danger` for a confirmed destructive action. With a family `tone`, `size="bare"` plus `class` give the padding, and `shape`, `glow`, `press`, `lift` reproduce the view's radius, coloured shadow, press and hover scale.
+- **Button**: `primary` for the primary action of a view or modal (only one, text `text-brand-on`), `secondary` by default, `ghost` in toolbars, `danger` for a confirmed destructive action. With a family `tone`, `size="bare"` plus `class` give the padding, and `shape` (`lg`, `xl`, `full`), `weight`, `display`, `glow`, `press`, `lift` reproduce the view's radius, weight, coloured shadow, press and hover scale; `shape` on the accent tone gives the same family layout in Crate's colour (the Player's "Add to library"). `fill` replaces the primary fill when a primary action is not on the accent (red confirmation, the Upgrader's replace buttons): a fill passed through `class` loses to the accent fill in the generated CSS.
+- **Checkbox**: always `Checkbox`. `appearance="native"` keeps the system checkbox where a view had one (confirmation dialogs, Relocate, Duplicate Killer, the Upgrader), with its label as `children`.
+- **Spinner**: every busy indicator is `Spinner` (no hand-written `animate-spin`): `refresh`, `refresh-cw` and `loader` turn an icon of the set, `arc` is the cloud sync circle, `ring` a CSS ring sized and coloured by `class`. `IconButton busy` swaps its icon for the spinner.
 - **Segmented control**: always `SegmentedControl` (view switcher, Player display mode, Pulse period). It is a radio group: one tab stop, arrow keys move the selection, a translated `ariaLabel` names the group. `switcher` for the view switcher (a segment label may carry the destination family's colour, `labelTone`), `deck` for the Player, `boxed` for Pulse's period selector.
 - **Icon button**: always `IconButton` with an accessible name (translated `title` and `aria-label`). Active state: `bg-brand-muted text-brand-primary`.
-- **Modal**: the common `Modal` (`<dialog>`, Escape, focus trap). Height bounded by the window, internal scrolling, fixed footer. A destructive action goes through `ConfirmModal`.
+- **Modal**: the common `Modal` (`<dialog>`, Escape, focus trap). Height bounded by the window, internal scrolling, fixed footer. A destructive action goes through `ConfirmModal`. A family panel (the Spotify connection) keeps its look through `size="none"`, `panelClass`, `backdropClass` and `theme="dark"`. A closed `<dialog>` still counts as a child for `space-y-*`: place a modal where it does not become the last child of a spaced stack.
 - **Track row**: dense grid, `border-b border-stroke-subtle`, selection as `bg-brand-muted`, the playing track signalled by its title in `text-brand-primary` (in the Player and Beatport views, by the family's now-playing role).
 - **Key badge**: always `KeyBadge`, colours from `getCamelotColor()` through `keyBadge.ts`, with the `variant` of its view (library `cell` with `analysis="mik" | "other"`, Beatport `cell-compact`, Duplicate Killer `chip`, Upgrader `chip-plain`, Pulse `tag` and `tag-wide`, Player `pill` and `pill-xs`). The variants keep today's sizes (9 to 12 px); bringing them to the 12 px minimum is suspended with the charter (CRA-141). A Vitest guard fails when a component calls `getCamelotColor()` or `getEnergyInfo()` outside the badges without a stated reason.
 - **Energy badge**: always `EnergyBadge`, colours from `getEnergyInfo()`: `badge` in the library, `pill` in the Player hero.
@@ -442,18 +460,19 @@ Crate is a desktop app: no mobile breakpoints in the desktop app (the mobile app
 
 1. Read this file, then the common component closest to the need.
 2. Work on one component at a time, and refer to it by its component or token name.
-3. Any new semantic colour becomes a token declared for both themes in `style.css` (and in `app.html` if it is used by the startup screen), with contrast checked; three at most. The family tokens proposed in the charter are an owner decision; a new family or a new metric hue too.
+3. Any new semantic colour becomes a token declared for both themes in `style.css` (and in `app.html` if it is used by the startup screen), with contrast checked; three at most outside the families. A family role gets its token in the "Colour families" section of `style.css`, registered in its `@theme inline` block, with a `-text` value that `theme.test.ts` checks; a new family or a new metric hue is an owner decision.
 4. Run `yarn design:scan <path>` on the files touched: no new occurrence may appear.
 5. Check visually (`crate-visual-check` skill) before declaring the work done.
 6. Update this document if a rule changes.
 
 ## Known gaps
 
-- **State colours not adapted to the light theme**: as text on `surface-1`, `warning` gives 2.06:1, `success` 2.18:1, `danger` 3.61:1, `info` 3.52:1. For text, per-theme `-text` variants will be needed (linked to D3).
-- **Family colours are not tokens yet**: the Deck, Pulse and Beatport roles are written as palette classes and hex values, with light-theme text values that the code does not use yet. Proposed tokens (owner decision, beyond the "three at most" rule): `--deck-live`, `--deck-live-text`, `--deck-cue`, `--deck-cue-text`, `--beatport`, `--beatport-text`, one `--pulse-<metric>` pair per metric, and a shared source-colour map in `shared/utils`.
-- **Text on accent fills**: white text on `brand-primary` stays under 4.5:1 for all ten accents (2.06 to 4.47); black text passes for all ten (4.70 to 9.78). Options: black text everywhere, or a per-accent `--brand-on` token. Owner decision.
+- **State colours not adapted to the light theme**: as text on `surface-1`, `warning` gives 2.06:1, `success` 2.18:1, `danger` 3.61:1, `info` 3.52:1. Only the Duplicate Killer toolbar alert has `--warning-text` so far; the other state texts still need per-theme `-text` variants (linked to D3).
+- **Accent fills still carrying white text**: `Button`, the Smart Playlist tag chips and the date field use `text-brand-on`; the accent count badges (following, filter, drag preview, merge releases) and the white check mark of `Checkbox` still draw white on the accent, a visible change in the dark theme that was left for a separate decision.
+- **Hover of black text on the accent**: `Button primary` darkens to `brand-hover` on hover, where black text gives 3.34 to 4.47:1 for five accents (blue 4.06, indigo 3.34, violet 3.69, purple 3.90, rose 4.47) while it passes at rest for all ten. Brightening the fill on hover instead of darkening it would change the dark look of every primary button; left as it is for an owner decision.
+- **The e2e audit does not read `oklch()` colours**: `ui-audit.js` parses `rgb()` and `rgba()` only, and counts the rest as unmeasured, so its `lowContrast` count misses every Tailwind palette colour (Tailwind 4 writes them in `oklch`). Family tokens resolve to the same `oklch` values; contrast of family text is checked by `theme.test.ts` and by a canvas-based measurement, not by the ratchet.
 - **`text-tertiary` in the dark theme**: 3.67:1 on `surface-1` and 3.08:1 on `surface-2`, under 4.5:1 for the labels and empty values it carries; a lighter value (for example `#8a8a93`: 5.18 and 4.35:1) would need checking against `text-secondary` so the two stay distinct.
-- **Debt measured** by `yarn design:scan apps/desktop/src` on 2026-09-30 (see the register, defects D3, D7, D10, D11): 279 palette classes, 105 hex values, 188 arbitrary sizes, 89 `xl` to `3xl` radii, 64 blur, glow or coloured shadows, 12 gradients, 89 `transition-all`, 43 `dark:`, 43 infinite animations without `motion-reduce`. Part of the palette and hex counts are now legitimate family roles; the rest is debt.
+- **Debt measured** by `yarn design:scan apps/desktop/src` (see the register, defects D3, D7, D10, D11; `yarn design:scan` gives today's counts). After the family tokens (2026-10-01) the palette classes and hex values left are debt, not family roles.
 - **Other documents still describe the former direction** ("bring every view back to the accent"): the `crate-design-system`, `crate-ui-build` and `crate-ui-audit` skills and `anti-slop-product.md` ("one colour per card"). This file is authoritative until they are updated.
 - **Internal icon set**: `Icon.svelte` contains the hand-drawn paths inherited from upstream; it is the only authorised source, and missing icons are added to it rather than introducing a library.
 - **Visual harness**: `yarn harness` (port 1430, fake Tauri backend, `apps/desktop/harness/README.md`) and `yarn test:e2e` measure every view in light and dark, at 1000×600 and 1400×900, in English and French; the counts are a ratchet in `e2e/baseline.json`. Contrast in this document is still computed from token values, the harness measures what is actually rendered.
@@ -464,8 +483,8 @@ Where the code breaks the charter today; each one is tracked in the register and
 
 | Deviation | Where | Register |
 | --- | --- | --- |
-| Family hues as text in the light theme (`-400` shades, `#00FF96`, source colours), dark gradient tops on the Pulse integration cards (Beatport's always-dark surfaces are an open decision, CRA-141) | Pulse, Beatport, Player, toolbar tool badges, view switcher | D3 |
-| Glass, glow, halos, gradients and `rounded-2xl`/`3xl` beyond the recipe (hover lift and scale on KPI cards, glow on Beatport buttons, glass tooltip inside a glass card) | Pulse, Beatport, Upgrader, Duplicate Killer | D3, D11 |
-| Family colours outside their scope: sky switch in `ToggleSwitch`, cyan export button and sky Mixed In Key badge in the toolbar, `#00E5FF` instead of the Deck cyan in the waveform previews, purple harmonic-match chip in the Player, rose instead of `danger` in Duplicate Killer | common, toolbar, modals, Player | D11 |
+| Palette classes still standing for a role in places the family tokens did not reach: the Beatport sidebar's `emerald-500` "Connected" text (2.47:1 in the light theme), the Beatport session error banner, the cart's `emerald-400` download hover, the Upgrader's teal and amber, Duplicate Killer's rose, sky and emerald, the BPM distribution's teal bar, the Spotify modal's disconnect red; hex segment colours in the Pulse source bar script (`#EF4444`, `#8B5CF6`, not the palette's red-500 and violet-500) | Beatport, Upgrader, Duplicate Killer, Pulse | D3 |
+| Glass, glow, halos, gradients and `rounded-2xl`/`3xl` beyond the recipe (glow on Beatport buttons, `rounded-2xl`/`3xl` on Beatport and Spotify panels, glass tooltip inside a glass card) | Pulse, Beatport, Upgrader, Duplicate Killer | D3, D11 |
+| Family colours outside their scope: sky switch in `ToggleSwitch`, sky Mixed In Key badge in the toolbar, purple harmonic-match chip in the Player, rose instead of `danger` in Duplicate Killer | common, toolbar, modals, Player | D11 |
 | Family borders replacing the accent focus outline; infinite animations without reduced motion | Beatport, Player, Pulse | D10 |
 | Beatport table columns without `minmax(0, …)` | Beatport | D7 |

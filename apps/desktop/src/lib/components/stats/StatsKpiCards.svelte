@@ -50,10 +50,10 @@
 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 	<!-- Card 1: Listening Time -->
 	<div
-		class="group relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-500/40 hover:shadow-emerald-500/10"
+		class="group relative overflow-hidden rounded-xl border border-pulse-listening/20 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl transition-all duration-300 hover:border-pulse-listening/40 hover:shadow-pulse-listening/10"
 	>
 		<div
-			class="pointer-events-none absolute -top-6 -right-6 h-28 w-28 rounded-full bg-emerald-500/10 blur-2xl transition-all group-hover:bg-emerald-500/20"
+			class="pointer-events-none absolute -top-6 -right-6 h-28 w-28 rounded-full bg-pulse-listening/10 blur-2xl transition-all group-hover:bg-pulse-listening/20"
 		></div>
 		<div class="flex items-start justify-between">
 			<div class="space-y-1">
@@ -72,19 +72,19 @@
 				</p>
 			</div>
 			<div
-				class="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-400 shadow-inner transition-transform duration-300 group-hover:scale-110"
+				class="flex h-11 w-11 items-center justify-center rounded-xl border border-pulse-listening/30 bg-pulse-listening/15 text-pulse-listening-text shadow-inner"
 			>
-				<Icon name="clock" class="h-5 w-5 text-emerald-400" />
+				<Icon name="clock" class="h-5 w-5 text-pulse-listening-text" />
 			</div>
 		</div>
 	</div>
 
 	<!-- Card 2: Total Plays -->
 	<div
-		class="group relative overflow-hidden rounded-2xl border border-purple-500/20 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-purple-500/40 hover:shadow-purple-500/10"
+		class="group relative overflow-hidden rounded-xl border border-pulse-plays/20 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl transition-all duration-300 hover:border-pulse-plays/40 hover:shadow-pulse-plays/10"
 	>
 		<div
-			class="pointer-events-none absolute -top-6 -right-6 h-28 w-28 rounded-full bg-purple-500/10 blur-2xl transition-all group-hover:bg-purple-500/20"
+			class="pointer-events-none absolute -top-6 -right-6 h-28 w-28 rounded-full bg-pulse-plays/10 blur-2xl transition-all group-hover:bg-pulse-plays/20"
 		></div>
 		<div class="flex items-start justify-between">
 			<div class="space-y-1">
@@ -101,19 +101,19 @@
 				<p class="text-[11px] text-text-secondary">{$translate('stats.kpi.playsHint')}</p>
 			</div>
 			<div
-				class="flex h-11 w-11 items-center justify-center rounded-xl border border-purple-500/30 bg-purple-500/15 text-purple-400 shadow-inner transition-transform duration-300 group-hover:scale-110"
+				class="flex h-11 w-11 items-center justify-center rounded-xl border border-pulse-plays/30 bg-pulse-plays/15 text-pulse-plays-text shadow-inner"
 			>
-				<Icon name="music-note" class="h-5 w-5 text-purple-400" />
+				<Icon name="music-note" class="h-5 w-5 text-pulse-plays-text" />
 			</div>
 		</div>
 	</div>
 
 	<!-- Card 3: Unique Artists -->
 	<div
-		class="group relative overflow-hidden rounded-2xl border border-pink-500/20 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-pink-500/40 hover:shadow-pink-500/10"
+		class="group relative overflow-hidden rounded-xl border border-pulse-artists/20 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl transition-all duration-300 hover:border-pulse-artists/40 hover:shadow-pulse-artists/10"
 	>
 		<div
-			class="pointer-events-none absolute -top-6 -right-6 h-28 w-28 rounded-full bg-pink-500/10 blur-2xl transition-all group-hover:bg-pink-500/20"
+			class="pointer-events-none absolute -top-6 -right-6 h-28 w-28 rounded-full bg-pulse-artists/10 blur-2xl transition-all group-hover:bg-pulse-artists/20"
 		></div>
 		<div class="flex items-start justify-between">
 			<div class="space-y-1">
@@ -130,19 +130,19 @@
 				<p class="text-[11px] text-text-secondary">{$translate('stats.kpi.artistsHint')}</p>
 			</div>
 			<div
-				class="flex h-11 w-11 items-center justify-center rounded-xl border border-pink-500/30 bg-pink-500/15 text-pink-400 shadow-inner transition-transform duration-300 group-hover:scale-110"
+				class="flex h-11 w-11 items-center justify-center rounded-xl border border-pulse-artists/30 bg-pulse-artists/15 text-pulse-artists-text shadow-inner"
 			>
-				<Icon name="user" class="h-5 w-5 text-pink-400" />
+				<Icon name="user" class="h-5 w-5 text-pulse-artists-text" />
 			</div>
 		</div>
 	</div>
 
 	<!-- Card 4: Rekordbox DJ Sessions -->
 	<div
-		class="group relative overflow-hidden rounded-2xl border border-amber-500/20 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-500/40 hover:shadow-amber-500/10"
+		class="group relative overflow-hidden rounded-xl border border-pulse-sessions/20 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl transition-all duration-300 hover:border-pulse-sessions/40 hover:shadow-pulse-sessions/10"
 	>
 		<div
-			class="pointer-events-none absolute -top-6 -right-6 h-28 w-28 rounded-full bg-amber-500/10 blur-2xl transition-all group-hover:bg-amber-500/20"
+			class="pointer-events-none absolute -top-6 -right-6 h-28 w-28 rounded-full bg-pulse-sessions/10 blur-2xl transition-all group-hover:bg-pulse-sessions/20"
 		></div>
 		<div class="flex items-start justify-between">
 			<div class="space-y-1">
@@ -163,9 +163,9 @@
 				</p>
 			</div>
 			<div
-				class="flex h-11 w-11 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-400 shadow-inner transition-transform duration-300 group-hover:scale-110"
+				class="flex h-11 w-11 items-center justify-center rounded-xl border border-pulse-sessions/30 bg-pulse-sessions/15 text-pulse-sessions-text shadow-inner"
 			>
-				<Icon name="activity" class="h-5 w-5 text-amber-400" />
+				<Icon name="activity" class="h-5 w-5 text-pulse-sessions-text" />
 			</div>
 		</div>
 	</div>

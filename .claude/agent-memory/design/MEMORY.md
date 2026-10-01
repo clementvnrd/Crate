@@ -1,3 +1,3 @@
-- [Owner visual preferences](owner-visual-preferences.md) — look frozen until CRA-141: no visible dark-theme change; keep colour families; vocabulary
+- [Owner visual preferences](owner-visual-preferences.md) — CRA-141: five approved changes only, dark look otherwise kept; families stay; vocabulary
 - [Charter contrast method](charter-contrast-method.md) — how contrast was computed without a harness; glass composite and accent-fill pitfalls
-- [Tooling pitfalls](tooling-pitfalls.md) — design:scan blind spots; audit overlaps/contrast scope; e2e flakes; global shortcuts; prettier on folders; Pulse header width
+- [Tooling pitfalls](tooling-pitfalls.md) — design:scan and audit blind spots (oklch); @theme inline; CSS class order; dialog in space-y; e2e flakes

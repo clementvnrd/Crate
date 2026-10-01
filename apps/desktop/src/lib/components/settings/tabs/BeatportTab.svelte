@@ -65,7 +65,9 @@
 				<div class="flex min-w-0 items-center gap-2">
 					{#if $beatportStore.auth.is_authenticated}
 						<span class="truncate text-xs font-semibold text-text-primary">{$beatportStore.auth.username}</span>
-						<span class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" title={$translate('beatport.connected')}
+						<span
+							class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-beatport-tint"
+							title={$translate('beatport.connected')}
 						></span>
 					{:else}
 						<span class="text-xs text-text-secondary">{$translate('settings.beatport.notConnected')}</span>

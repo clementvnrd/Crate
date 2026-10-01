@@ -94,8 +94,8 @@
 
 	const switcherLabel: Record<SegmentLabelTone, string> = {
 		default: 'text-text-primary',
-		deck: 'text-cyan-400',
-		beatport: 'text-emerald-500 dark:text-emerald-400',
+		deck: 'text-deck-live-text',
+		beatport: 'text-beatport-text',
 	}
 
 	function segmentClass(index: number, labelTone: SegmentLabelTone = 'default'): string {
@@ -109,7 +109,7 @@
 				}`
 			case 'deck':
 				return `flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all ${
-					selected ? 'bg-cyan-500 font-bold text-black shadow-xs' : 'text-text-secondary hover:text-text-primary'
+					selected ? 'bg-deck-live-tint font-bold text-black shadow-xs' : 'text-text-secondary hover:text-text-primary'
 				}`
 			case 'boxed':
 				return `cursor-pointer rounded-lg px-3 py-1 text-xs font-semibold transition-all ${

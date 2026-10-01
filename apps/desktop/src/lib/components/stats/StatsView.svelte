@@ -18,7 +18,7 @@
 		isStatsLoading,
 	} from '$shared/stores/stats'
 	import { translate } from '$shared/i18n'
-	import { Button, Icon, SegmentedControl, Tooltip, type SegmentOption } from '$lib/components/common'
+	import { Button, Icon, SegmentedControl, Spinner, Tooltip, type SegmentOption } from '$lib/components/common'
 	import { save } from '@tauri-apps/plugin-dialog'
 	import { exportListeningHistory } from '$shared/api/stats'
 	import { toastStore } from '$shared/stores/toast'
@@ -128,9 +128,9 @@
 			<!-- Now Playing Spotify Live Pill (if active) -->
 			{#if $spotifyNowPlaying?.is_playing}
 				<div
-					class="hidden animate-pulse items-center gap-2 rounded-full border border-[#1DB954]/40 bg-[#1DB954]/10 px-3 py-1 text-xs font-medium text-[#1DB954] shadow-sm motion-reduce:animate-none md:flex"
+					class="hidden animate-pulse items-center gap-2 rounded-full border border-source-spotify/40 bg-source-spotify/10 px-3 py-1 text-xs font-medium text-source-spotify-text shadow-sm motion-reduce:animate-none md:flex"
 				>
-					<span class="h-2 w-2 rounded-full bg-[#1DB954]"></span>
+					<span class="h-2 w-2 rounded-full bg-source-spotify"></span>
 					<span class="font-bold">{$translate('stats.header.liveSpotify')}</span>
 					<span class="max-w-[140px] truncate text-text-primary">
 						{$spotifyNowPlaying.title}
@@ -158,10 +158,11 @@
 					disabled={exportingHistory}
 					aria-label={$translate('stats.export.button')}
 				>
-					<Icon
-						name={exportingHistory ? 'loader' : 'download'}
-						class="h-4 w-4 {exportingHistory ? 'animate-spin motion-reduce:animate-none' : ''}"
-					/>
+					{#if exportingHistory}
+						<Spinner icon="loader" color="current" class="h-4 w-4" />
+					{:else}
+						<Icon name="download" class="h-4 w-4" />
+					{/if}
 					<span class="ml-1.5 hidden xl:inline">{$translate('stats.export.button')}</span>
 				</Button>
 			</Tooltip>
@@ -174,10 +175,11 @@
 				title={$translate('stats.header.refresh')}
 				disabled={$isStatsLoading}
 			>
-				<Icon
-					name="refresh-cw"
-					class="h-4 w-4 {$isStatsLoading ? 'animate-spin text-brand-primary motion-reduce:animate-none' : ''}"
-				/>
+				{#if $isStatsLoading}
+					<Spinner icon="refresh-cw" color="current" class="h-4 w-4 text-brand-primary" />
+				{:else}
+					<Icon name="refresh-cw" class="h-4 w-4" />
+				{/if}
 			</button>
 		</div>
 	</div>

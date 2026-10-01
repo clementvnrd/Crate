@@ -4,7 +4,7 @@
 	import * as statsApi from '$shared/api/stats'
 	import Icon from '$lib/components/common/Icon.svelte'
 	import ToggleSwitch from '$lib/components/common/ToggleSwitch.svelte'
-	import { Button, ConfirmModal, Spinner, focusTrap } from '$lib/components/common'
+	import { Button, ConfirmModal, Modal, Spinner } from '$lib/components/common'
 	import { openUrl } from '@tauri-apps/plugin-opener'
 	import { toastStore } from '$shared/stores/toast'
 	import { listen } from '@tauri-apps/api/event'
@@ -193,24 +193,25 @@
 <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
 	<!-- 1. Spotify Integration Card -->
 	<div
-		class="relative flex flex-col justify-between space-y-4 overflow-hidden rounded-2xl border border-[#1DB954]/25 bg-gradient-to-b from-[#121c15]/60 to-surface-1/80 p-5 shadow-lg backdrop-blur-xl"
+		class="relative flex flex-col justify-between space-y-4 overflow-hidden rounded-xl border border-source-spotify/25 bg-gradient-to-b from-source-spotify-wash/60 to-surface-1/80 p-5 shadow-lg backdrop-blur-xl"
 	>
 		<div class="space-y-4">
 			<div class="flex items-start justify-between">
 				<div class="flex items-center gap-3">
 					<div
-						class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-[#1DB954]/30 bg-[#1DB954]/15 text-[#1DB954] shadow-inner"
+						class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-source-spotify/30 bg-source-spotify/15 text-source-spotify-text shadow-inner"
 					>
-						<Icon name="spotify" class="h-6 w-6 text-[#1DB954]" />
+						<Icon name="spotify" class="h-6 w-6 text-source-spotify-text" />
 					</div>
 					<div>
 						<div class="flex items-center gap-2">
 							<h3 class="text-sm font-bold text-text-primary">Spotify Pulse</h3>
 							{#if spotifyAuth?.is_connected}
 								<span
-									class="inline-flex items-center gap-1 rounded-full border border-[#1DB954]/40 bg-[#1DB954]/20 px-2 py-0.5 text-[10px] font-bold text-[#1DB954]"
+									class="inline-flex items-center gap-1 rounded-full border border-source-spotify/40 bg-source-spotify/20 px-2 py-0.5 text-[10px] font-bold text-source-spotify-text"
 								>
-									<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1DB954] motion-reduce:animate-none"></span>
+									<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-source-spotify motion-reduce:animate-none"
+									></span>
 									{$translate('stats.live')}
 								</span>
 							{:else}
@@ -239,17 +240,17 @@
 
 			<!-- Live Now Playing Mini Status (if playing on Spotify) -->
 			{#if spotifyNowPlaying?.is_playing}
-				<div class="flex items-center gap-3 rounded-xl border border-[#1DB954]/30 bg-[#1DB954]/10 p-2.5">
+				<div class="flex items-center gap-3 rounded-xl border border-source-spotify/30 bg-source-spotify/10 p-2.5">
 					{#if spotifyNowPlaying.artwork_url}
 						<img src={spotifyNowPlaying.artwork_url} alt="" class="h-9 w-9 rounded-lg object-cover shadow-sm" />
 					{:else}
-						<div class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-3 text-[#1DB954]">
+						<div class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-3 text-source-spotify-text">
 							<Icon name="music-note" class="h-4 w-4" />
 						</div>
 					{/if}
 					<div class="min-w-0 flex-1">
 						<div class="flex items-center gap-1.5">
-							<span class="text-[10px] font-bold tracking-wider text-[#1DB954] uppercase"
+							<span class="text-[10px] font-bold tracking-wider text-source-spotify-text uppercase"
 								>{$translate('stats.integrations.nowPlaying')}</span
 							>
 							{#if spotifyNowPlaying.device_name}
@@ -332,24 +333,24 @@
 
 	<!-- 2. Rekordbox Integration Card -->
 	<div
-		class="relative flex flex-col justify-between space-y-4 overflow-hidden rounded-2xl border border-red-500/25 bg-gradient-to-b from-[#1c1214]/60 to-surface-1/80 p-5 shadow-lg backdrop-blur-xl"
+		class="relative flex flex-col justify-between space-y-4 overflow-hidden rounded-xl border border-source-rekordbox/25 bg-gradient-to-b from-source-rekordbox-wash/60 to-surface-1/80 p-5 shadow-lg backdrop-blur-xl"
 	>
 		<div class="space-y-4">
 			<div class="flex items-start justify-between">
 				<div class="flex items-center gap-3">
 					<div
-						class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/15 text-red-400 shadow-inner"
+						class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-source-rekordbox/30 bg-source-rekordbox/15 text-source-rekordbox-text shadow-inner"
 					>
-						<Icon name="activity" class="h-6 w-6 text-red-400" />
+						<Icon name="activity" class="h-6 w-6 text-source-rekordbox-text" />
 					</div>
 					<div>
 						<div class="flex items-center gap-2">
 							<h3 class="text-sm font-bold text-text-primary">Rekordbox DJ</h3>
 							{#if rekordboxDetected}
 								<span
-									class="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400"
+									class="inline-flex items-center gap-1 rounded-full border border-pulse-listening/40 bg-pulse-listening/20 px-2 py-0.5 text-[10px] font-bold text-pulse-listening-text"
 								>
-									<span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+									<span class="h-1.5 w-1.5 rounded-full bg-pulse-listening-bright"></span>
 									{$translate('stats.integrations.detected')}
 								</span>
 							{:else}
@@ -373,15 +374,20 @@
 					</div>
 					<div class="text-[11px] text-text-tertiary">{$translate('stats.integrations.rekordboxHint')}</div>
 				</div>
-				<span class="font-mono text-[11px] font-bold text-red-400"> master.db </span>
+				<span class="font-mono text-[11px] font-bold text-source-rekordbox-text"> master.db </span>
 			</div>
 		</div>
 
 		<!-- Action Button -->
 		<div class="pt-1">
-			<button
-				type="button"
-				class="flex cursor-pointer items-center gap-2 rounded-xl bg-red-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-lg shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95"
+			<Button
+				variant="primary"
+				tone="rekordbox"
+				size="bare"
+				display="flex"
+				glow="lg/20"
+				press
+				class="gap-2 px-3.5 py-1.5 text-xs"
 				onclick={() => statsStore.syncRekordbox()}
 				disabled={$isSyncingRekordbox}
 			>
@@ -392,30 +398,30 @@
 					<Icon name="refresh-cw" class="h-3.5 w-3.5 text-white" />
 					<span>{$translate('stats.integrations.syncRekordbox')}</span>
 				{/if}
-			</button>
+			</Button>
 		</div>
 	</div>
 
 	<!-- 3. Mixed In Key Integration Card -->
 	<div
-		class="relative flex flex-col justify-between space-y-4 overflow-hidden rounded-2xl border border-[#00D2FF]/25 bg-gradient-to-b from-[#0c1a24]/60 to-surface-1/80 p-5 shadow-lg backdrop-blur-xl"
+		class="relative flex flex-col justify-between space-y-4 overflow-hidden rounded-xl border border-source-mik/25 bg-gradient-to-b from-source-mik-wash/60 to-surface-1/80 p-5 shadow-lg backdrop-blur-xl"
 	>
 		<div class="space-y-4">
 			<div class="flex items-start justify-between">
 				<div class="flex items-center gap-3">
 					<div
-						class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-[#00D2FF]/30 bg-[#00D2FF]/15 text-[#00D2FF] shadow-inner"
+						class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-source-mik/30 bg-source-mik/15 text-source-mik-text shadow-inner"
 					>
-						<Icon name="sparkles" class="h-6 w-6 text-[#00D2FF]" />
+						<Icon name="sparkles" class="h-6 w-6 text-source-mik-text" />
 					</div>
 					<div>
 						<div class="flex items-center gap-2">
 							<h3 class="text-sm font-bold text-text-primary">Mixed In Key</h3>
 							{#if mikDetected}
 								<span
-									class="inline-flex items-center gap-1 rounded-full border border-[#00D2FF]/40 bg-[#00D2FF]/20 px-2 py-0.5 text-[10px] font-bold text-[#00D2FF]"
+									class="inline-flex items-center gap-1 rounded-full border border-source-mik/40 bg-source-mik/20 px-2 py-0.5 text-[10px] font-bold text-source-mik-text"
 								>
-									<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#00D2FF] motion-reduce:animate-none"></span>
+									<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-source-mik motion-reduce:animate-none"></span>
 									{$translate('stats.live')}
 								</span>
 							{:else}
@@ -445,7 +451,7 @@
 		<div class="flex items-center gap-2 pt-1 text-xs text-text-secondary">
 			<span
 				class="inline-block h-2 w-2 rounded-full {mikDetected
-					? 'animate-ping bg-[#00D2FF] motion-reduce:animate-none'
+					? 'animate-ping bg-source-mik motion-reduce:animate-none'
 					: 'bg-surface-4'}"
 			></span>
 			<span class="text-[11px]">
@@ -459,270 +465,271 @@
 			</span>
 		</div>
 	</div>
-</div>
 
-<!-- ========================================================================= -->
-<!-- Spotify Connection Modal (Liquid Glass) -->
-<!-- ========================================================================= -->
-{#if showSpotifyModal}
-	<div
-		class="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md duration-200 focus-visible:outline-none"
-		role="dialog"
-		aria-modal="true"
-		tabindex="-1"
-		use:focusTrap
-		onclick={(e) => {
-			if (e.target === e.currentTarget) closeSpotifyModal()
-		}}
-		onkeydown={(e) => {
-			if (e.key === 'Escape') closeSpotifyModal()
-		}}
+	<!-- ========================================================================= -->
+	<!-- Spotify Connection Modal (Liquid Glass): the common Modal (native dialog, Escape, focus trap) with the
+	     Spotify panel's own look. The panel is dark in both themes, as its colour always was (`theme="dark"`).
+	     It sits inside the grid: a closed dialog takes no cell, whereas as the last child of the page's
+	     space-y stack it would add a gap under the integration cards. -->
+	<!-- ========================================================================= -->
+	<Modal
+		open={showSpotifyModal}
+		onClose={closeSpotifyModal}
+		size="none"
+		flush
+		theme="dark"
+		backdropClass="backdrop:bg-black/70 backdrop:backdrop-blur-md"
+		panelClass="max-w-lg rounded-3xl border border-source-spotify/30 bg-source-spotify-panel/95 text-text-primary shadow-2xl backdrop-blur-2xl"
 	>
-		<div
-			class="relative w-full max-w-lg space-y-6 rounded-3xl border border-[#1DB954]/30 bg-[#0d1711]/95 p-6 text-text-primary shadow-2xl backdrop-blur-2xl"
-		>
-			<!-- Header -->
-			<div class="flex items-start justify-between">
-				<div class="flex items-center gap-3">
-					<div
-						class="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#1DB954]/40 bg-[#1DB954]/20 text-[#1DB954] shadow-lg shadow-[#1DB954]/10"
+		<div class="min-h-0 overflow-y-auto">
+			<div class="relative w-full space-y-6 p-6">
+				<!-- Header -->
+				<div class="flex items-start justify-between">
+					<div class="flex items-center gap-3">
+						<div
+							class="flex h-12 w-12 items-center justify-center rounded-2xl border border-source-spotify/40 bg-source-spotify/20 text-source-spotify-text shadow-lg shadow-source-spotify/10"
+						>
+							<Icon name="spotify" class="h-7 w-7 text-source-spotify-text" />
+						</div>
+						<div>
+							<h2 class="text-lg font-bold text-white">{$translate('stats.spotifyModal.title')}</h2>
+							<p class="text-xs text-text-secondary">{$translate('stats.spotifyModal.subtitle')}</p>
+						</div>
+					</div>
+					<button
+						type="button"
+						class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface-2 text-text-tertiary transition-colors hover:bg-surface-3 hover:text-white"
+						onclick={closeSpotifyModal}
+						aria-label={$translate('common.close')}
 					>
-						<Icon name="spotify" class="h-7 w-7 text-[#1DB954]" />
-					</div>
-					<div>
-						<h2 class="text-lg font-bold text-white">{$translate('stats.spotifyModal.title')}</h2>
-						<p class="text-xs text-text-secondary">{$translate('stats.spotifyModal.subtitle')}</p>
-					</div>
+						<Icon name="x" class="h-4 w-4" />
+					</button>
 				</div>
-				<button
-					type="button"
-					class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-surface-2 text-text-tertiary transition-colors hover:bg-surface-3 hover:text-white"
-					onclick={closeSpotifyModal}
-					aria-label={$translate('common.close')}
-				>
-					<Icon name="x" class="h-4 w-4" />
-				</button>
-			</div>
 
-			<!-- 3-Step Guide -->
-			<div class="space-y-3 rounded-2xl border border-stroke/50 bg-surface-1/80 p-4 text-xs">
-				<div class="flex items-start gap-3">
-					<span
-						class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#1DB954]/20 text-[11px] font-bold text-[#1DB954]"
-						>1</span
-					>
-					<div class="flex-1 space-y-1">
-						<div class="font-bold text-text-primary">{$translate('stats.spotifyModal.step1')}</div>
-						<div class="flex items-center gap-2">
-							<button
-								type="button"
-								class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-surface-3 px-2.5 py-1 text-[11px] font-medium text-emerald-400 transition-all hover:bg-surface-4"
-								onclick={handleOpenDeveloperDashboard}
-							>
-								<span>Spotify Developer Dashboard</span>
-								<Icon name="external-link" class="h-3 w-3" />
-							</button>
+				<!-- 3-Step Guide -->
+				<div class="space-y-3 rounded-2xl border border-stroke/50 bg-surface-1/80 p-4 text-xs">
+					<div class="flex items-start gap-3">
+						<span
+							class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-source-spotify/20 text-[11px] font-bold text-source-spotify-text"
+							>1</span
+						>
+						<div class="flex-1 space-y-1">
+							<div class="font-bold text-text-primary">{$translate('stats.spotifyModal.step1')}</div>
+							<div class="flex items-center gap-2">
+								<button
+									type="button"
+									class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-surface-3 px-2.5 py-1 text-[11px] font-medium text-emerald-400 transition-all hover:bg-surface-4"
+									onclick={handleOpenDeveloperDashboard}
+								>
+									<span>Spotify Developer Dashboard</span>
+									<Icon name="external-link" class="h-3 w-3" />
+								</button>
+							</div>
+						</div>
+					</div>
+
+					<div class="flex items-start gap-3">
+						<span
+							class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-source-spotify/20 text-[11px] font-bold text-source-spotify-text"
+							>2</span
+						>
+						<div class="flex-1 space-y-1.5">
+							<div class="font-bold text-text-primary">{$translate('stats.spotifyModal.step2')}</div>
+							<p class="text-[11px] text-text-secondary">
+								{$translate('stats.spotifyModal.appName')} <strong class="text-white">Crate</strong> &middot;
+								{$translate('stats.spotifyModal.api')}
+								<strong class="text-white">Web API</strong>
+							</p>
+							<div class="flex items-center gap-2">
+								<span class="text-[11px] text-text-tertiary">{$translate('stats.spotifyModal.redirectUri')}</span>
+								<code
+									class="rounded border border-emerald-500/20 bg-black/50 px-2 py-0.5 font-mono text-[10px] text-emerald-400"
+								>
+									http://127.0.0.1:8888/callback
+								</code>
+								<button
+									type="button"
+									class="cursor-pointer rounded bg-surface-3 px-2 py-0.5 text-[10px] font-semibold text-text-primary transition-colors hover:bg-surface-4"
+									onclick={handleCopyRedirectUri}
+								>
+									{isCopiedRedirectUri
+										? $translate('stats.spotifyModal.copied')
+										: $translate('stats.spotifyModal.copy')}
+								</button>
+							</div>
+							<p class="text-[10.5px] font-medium text-amber-300/90">
+								{$translate('stats.spotifyModal.ipWarning')}
+								<code class="rounded bg-black/40 px-1 py-0.5 font-mono text-[10px] text-amber-200"
+									>http://127.0.0.1:8888/callback</code
+								>
+								{$translate('stats.spotifyModal.ipRejects')}
+								<code class="text-amber-400/60 line-through">localhost</code>).
+							</p>
+						</div>
+					</div>
+
+					<div class="flex items-start gap-3">
+						<span
+							class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-source-spotify/20 text-[11px] font-bold text-source-spotify-text"
+							>3</span
+						>
+						<div class="flex-1">
+							<div class="font-bold text-text-primary">{$translate('stats.spotifyModal.step3')}</div>
 						</div>
 					</div>
 				</div>
 
-				<div class="flex items-start gap-3">
-					<span
-						class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#1DB954]/20 text-[11px] font-bold text-[#1DB954]"
-						>2</span
-					>
-					<div class="flex-1 space-y-1.5">
-						<div class="font-bold text-text-primary">{$translate('stats.spotifyModal.step2')}</div>
-						<p class="text-[11px] text-text-secondary">
-							{$translate('stats.spotifyModal.appName')} <strong class="text-white">Crate</strong> &middot;
-							{$translate('stats.spotifyModal.api')}
-							<strong class="text-white">Web API</strong>
-						</p>
-						<div class="flex items-center gap-2">
-							<span class="text-[11px] text-text-tertiary">{$translate('stats.spotifyModal.redirectUri')}</span>
-							<code
-								class="rounded border border-emerald-500/20 bg-black/50 px-2 py-0.5 font-mono text-[10px] text-emerald-400"
-							>
-								http://127.0.0.1:8888/callback
-							</code>
-							<button
-								type="button"
-								class="cursor-pointer rounded bg-surface-3 px-2 py-0.5 text-[10px] font-semibold text-text-primary transition-colors hover:bg-surface-4"
-								onclick={handleCopyRedirectUri}
-							>
-								{isCopiedRedirectUri ? $translate('stats.spotifyModal.copied') : $translate('stats.spotifyModal.copy')}
-							</button>
-						</div>
-						<p class="text-[10.5px] font-medium text-amber-300/90">
-							{$translate('stats.spotifyModal.ipWarning')}
-							<code class="rounded bg-black/40 px-1 py-0.5 font-mono text-[10px] text-amber-200"
-								>http://127.0.0.1:8888/callback</code
-							>
-							{$translate('stats.spotifyModal.ipRejects')}
-							<code class="text-amber-400/60 line-through">localhost</code>).
-						</p>
-					</div>
-				</div>
-
-				<div class="flex items-start gap-3">
-					<span
-						class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#1DB954]/20 text-[11px] font-bold text-[#1DB954]"
-						>3</span
-					>
-					<div class="flex-1">
-						<div class="font-bold text-text-primary">{$translate('stats.spotifyModal.step3')}</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Input Fields -->
-			<div class="space-y-4">
-				<div class="space-y-1.5">
-					<label
-						for="spotify-client-id"
-						class="flex items-center justify-between text-xs font-bold tracking-wider text-text-secondary uppercase"
-					>
-						<span>{$translate('stats.spotifyModal.clientId')}</span>
-						<span class="text-[10px] font-semibold text-emerald-400 lowercase"
-							>{$translate('stats.spotifyModal.required')}</span
+				<!-- Input Fields -->
+				<div class="space-y-4">
+					<div class="space-y-1.5">
+						<label
+							for="spotify-client-id"
+							class="flex items-center justify-between text-xs font-bold tracking-wider text-text-secondary uppercase"
 						>
-					</label>
-					<div class="relative">
-						<input
-							id="spotify-client-id"
-							type="text"
-							bind:value={spotifyClientIdInput}
-							placeholder={$translate('stats.spotifyModal.example', {
-								values: { example: '4a2b8c9d0e1f2a3b4c5d6e7f8a9b0c1d' },
-							})}
-							class="w-full rounded-xl border border-stroke bg-surface-1/90 px-4 py-2.5 font-mono text-xs text-white placeholder-text-tertiary focus:border-[#1DB954] focus:ring-2 focus:ring-[#1DB954]/20 focus:outline-none"
-							onkeydown={(e) => {
-								if (e.key === 'Enter') handleConfirmSpotifyConnect()
-							}}
-						/>
-					</div>
-				</div>
-
-				<div class="space-y-1.5">
-					<label
-						for="spotify-client-secret"
-						class="flex items-center justify-between text-xs font-bold tracking-wider text-text-secondary uppercase"
-					>
-						<span>{$translate('stats.spotifyModal.clientSecret')}</span>
-						<span class="text-[10px] font-normal text-text-tertiary lowercase"
-							>{$translate('stats.spotifyModal.optional')}</span
-						>
-					</label>
-					<div class="relative">
-						<input
-							id="spotify-client-secret"
-							type="password"
-							bind:value={spotifyClientSecretInput}
-							placeholder={hasStoredSpotifySecret
-								? $translate('stats.spotifyModal.secretStored')
-								: $translate('stats.spotifyModal.example', { values: { example: '8f7e6d5c4b3a210987654321fedcba09' } })}
-							class="w-full rounded-xl border border-stroke bg-surface-1/90 px-4 py-2.5 font-mono text-xs text-white placeholder-text-tertiary focus:border-[#1DB954] focus:ring-2 focus:ring-[#1DB954]/20 focus:outline-none"
-							onkeydown={(e) => {
-								if (e.key === 'Enter') handleConfirmSpotifyConnect()
-							}}
-						/>
-					</div>
-					<p class="text-[11px] text-text-tertiary italic">
-						{$translate('stats.spotifyModal.secretHint')}
-					</p>
-				</div>
-			</div>
-
-			<!-- Fallback Section: Collapsible Manual Code / URL Input -->
-			<div class="border-t border-stroke/40 pt-3">
-				<button
-					type="button"
-					class="flex w-full cursor-pointer items-center justify-between py-1 text-xs font-semibold text-text-tertiary transition-colors hover:text-text-primary"
-					onclick={() => (showManualCodeFallback = !showManualCodeFallback)}
-				>
-					<span class="flex items-center gap-1.5">
-						<Icon name="key" class="h-3.5 w-3.5 text-[#1DB954]" />
-						<span>{$translate('stats.spotifyModal.manualToggle')}</span>
-					</span>
-					<Icon
-						name="chevron-right"
-						class="h-3.5 w-3.5 transition-transform duration-200 {showManualCodeFallback ? 'rotate-90' : ''}"
-					/>
-				</button>
-
-				{#if showManualCodeFallback}
-					<div class="mt-2.5 space-y-2 rounded-2xl border border-stroke/50 bg-surface-1/90 p-3.5 text-xs">
-						<p class="text-[11px] leading-relaxed text-text-secondary">
-							{$translate('stats.spotifyModal.manualHelp')}
-						</p>
-						<div class="flex gap-2">
+							<span>{$translate('stats.spotifyModal.clientId')}</span>
+							<span class="text-[10px] font-semibold text-emerald-400 lowercase"
+								>{$translate('stats.spotifyModal.required')}</span
+							>
+						</label>
+						<div class="relative">
 							<input
+								id="spotify-client-id"
 								type="text"
-								bind:value={manualCodeInput}
-								placeholder={$translate('stats.spotifyModal.manualPlaceholder')}
-								class="flex-1 rounded-xl border border-stroke bg-surface-2/90 px-3 py-2 font-mono text-[11px] text-white placeholder-text-tertiary focus:border-[#1DB954] focus:ring-1 focus:ring-[#1DB954]/20 focus:outline-none"
+								bind:value={spotifyClientIdInput}
+								placeholder={$translate('stats.spotifyModal.example', {
+									values: { example: '4a2b8c9d0e1f2a3b4c5d6e7f8a9b0c1d' },
+								})}
+								class="w-full rounded-xl border border-stroke bg-surface-1/90 px-4 py-2.5 font-mono text-xs text-white placeholder-text-tertiary focus:border-source-spotify focus:ring-2 focus:ring-source-spotify/20 focus:outline-none"
 								onkeydown={(e) => {
-									if (e.key === 'Enter') handleManualCodeSubmit()
+									if (e.key === 'Enter') handleConfirmSpotifyConnect()
 								}}
 							/>
-							<button
-								type="button"
-								class="flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 px-3.5 py-2 text-xs font-bold text-emerald-400 transition-all hover:bg-emerald-500/30 active:scale-95 disabled:opacity-50"
-								onclick={handleManualCodeSubmit}
-								disabled={isSubmittingManualCode || !manualCodeInput.trim()}
-							>
-								{#if isSubmittingManualCode}
-									<Spinner class="h-3.5 w-3.5 text-emerald-400" />
-									<span>{$translate('stats.spotifyModal.validating')}</span>
-								{:else}
-									<Icon name="check" class="h-3.5 w-3.5" />
-									<span>{$translate('stats.spotifyModal.validate')}</span>
-								{/if}
-							</button>
 						</div>
 					</div>
-				{/if}
-			</div>
 
-			<!-- Modal Footer Actions -->
-			<div class="flex items-center justify-end gap-3 pt-2">
-				<button
-					type="button"
-					class="cursor-pointer rounded-xl border border-stroke bg-surface-2 px-4 py-2 text-xs font-semibold text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
-					onclick={closeSpotifyModal}
-				>
-					{$translate('common.cancel')}
-				</button>
-				<Button
-					variant="primary"
-					tone="spotify"
-					size="bare"
-					glow="lg/25"
-					press
-					class="gap-2 px-5 py-2 text-xs"
-					onclick={handleConfirmSpotifyConnect}
-				>
-					<Icon name="link" class="h-3.5 w-3.5" />
-					<span>{$translate('stats.spotifyModal.connect')}</span>
-				</Button>
+					<div class="space-y-1.5">
+						<label
+							for="spotify-client-secret"
+							class="flex items-center justify-between text-xs font-bold tracking-wider text-text-secondary uppercase"
+						>
+							<span>{$translate('stats.spotifyModal.clientSecret')}</span>
+							<span class="text-[10px] font-normal text-text-tertiary lowercase"
+								>{$translate('stats.spotifyModal.optional')}</span
+							>
+						</label>
+						<div class="relative">
+							<input
+								id="spotify-client-secret"
+								type="password"
+								bind:value={spotifyClientSecretInput}
+								placeholder={hasStoredSpotifySecret
+									? $translate('stats.spotifyModal.secretStored')
+									: $translate('stats.spotifyModal.example', {
+											values: { example: '8f7e6d5c4b3a210987654321fedcba09' },
+										})}
+								class="w-full rounded-xl border border-stroke bg-surface-1/90 px-4 py-2.5 font-mono text-xs text-white placeholder-text-tertiary focus:border-source-spotify focus:ring-2 focus:ring-source-spotify/20 focus:outline-none"
+								onkeydown={(e) => {
+									if (e.key === 'Enter') handleConfirmSpotifyConnect()
+								}}
+							/>
+						</div>
+						<p class="text-[11px] text-text-tertiary italic">
+							{$translate('stats.spotifyModal.secretHint')}
+						</p>
+					</div>
+				</div>
+
+				<!-- Fallback Section: Collapsible Manual Code / URL Input -->
+				<div class="border-t border-stroke/40 pt-3">
+					<button
+						type="button"
+						class="flex w-full cursor-pointer items-center justify-between py-1 text-xs font-semibold text-text-tertiary transition-colors hover:text-text-primary"
+						onclick={() => (showManualCodeFallback = !showManualCodeFallback)}
+					>
+						<span class="flex items-center gap-1.5">
+							<Icon name="key" class="h-3.5 w-3.5 text-source-spotify-text" />
+							<span>{$translate('stats.spotifyModal.manualToggle')}</span>
+						</span>
+						<Icon
+							name="chevron-right"
+							class="h-3.5 w-3.5 transition-transform duration-200 {showManualCodeFallback ? 'rotate-90' : ''}"
+						/>
+					</button>
+
+					{#if showManualCodeFallback}
+						<div class="mt-2.5 space-y-2 rounded-2xl border border-stroke/50 bg-surface-1/90 p-3.5 text-xs">
+							<p class="text-[11px] leading-relaxed text-text-secondary">
+								{$translate('stats.spotifyModal.manualHelp')}
+							</p>
+							<div class="flex gap-2">
+								<input
+									type="text"
+									bind:value={manualCodeInput}
+									placeholder={$translate('stats.spotifyModal.manualPlaceholder')}
+									class="flex-1 rounded-xl border border-stroke bg-surface-2/90 px-3 py-2 font-mono text-[11px] text-white placeholder-text-tertiary focus:border-source-spotify focus:ring-1 focus:ring-source-spotify/20 focus:outline-none"
+									onkeydown={(e) => {
+										if (e.key === 'Enter') handleManualCodeSubmit()
+									}}
+								/>
+								<button
+									type="button"
+									class="flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 px-3.5 py-2 text-xs font-bold text-emerald-400 transition-all hover:bg-emerald-500/30 active:scale-95 disabled:opacity-50"
+									onclick={handleManualCodeSubmit}
+									disabled={isSubmittingManualCode || !manualCodeInput.trim()}
+								>
+									{#if isSubmittingManualCode}
+										<Spinner class="h-3.5 w-3.5 text-emerald-400" />
+										<span>{$translate('stats.spotifyModal.validating')}</span>
+									{:else}
+										<Icon name="check" class="h-3.5 w-3.5" />
+										<span>{$translate('stats.spotifyModal.validate')}</span>
+									{/if}
+								</button>
+							</div>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Modal Footer Actions -->
+				<div class="flex items-center justify-end gap-3 pt-2">
+					<button
+						type="button"
+						class="cursor-pointer rounded-xl border border-stroke bg-surface-2 px-4 py-2 text-xs font-semibold text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
+						onclick={closeSpotifyModal}
+					>
+						{$translate('common.cancel')}
+					</button>
+					<Button
+						variant="primary"
+						tone="spotify"
+						size="bare"
+						glow="lg/25"
+						press
+						class="gap-2 px-5 py-2 text-xs"
+						onclick={handleConfirmSpotifyConnect}
+					>
+						<Icon name="link" class="h-3.5 w-3.5" />
+						<span>{$translate('stats.spotifyModal.connect')}</span>
+					</Button>
+				</div>
 			</div>
 		</div>
-	</div>
-{/if}
+	</Modal>
 
-<!-- ========================================================================= -->
-<!-- Reset Spotify History Confirmation -->
-<!-- ========================================================================= -->
-<ConfirmModal
-	open={showResetSpotifyConfirm}
-	title={$translate('modals.confirm.resetSpotifyHistoryTitle')}
-	message={$translate('modals.confirm.resetSpotifyHistoryMessage', { values: { count: resetSpotifyCount ?? 0 } })}
-	warnings={[
-		$translate('modals.confirm.resetSpotifyHistoryBackupWarning', { values: { path: $appDataDir } }),
-		$translate('modals.confirm.resetSpotifyHistoryResyncNote'),
-	]}
-	confirmLabel={$translate('modals.confirm.resetSpotifyHistoryTitle')}
-	destructive={true}
-	onConfirm={confirmResetSpotifyHistory}
-	onCancel={cancelResetSpotifyConfirm}
-/>
+	<!-- ========================================================================= -->
+	<!-- Reset Spotify History Confirmation (inside the grid too, for the same reason as the modal above) -->
+	<!-- ========================================================================= -->
+	<ConfirmModal
+		open={showResetSpotifyConfirm}
+		title={$translate('modals.confirm.resetSpotifyHistoryTitle')}
+		message={$translate('modals.confirm.resetSpotifyHistoryMessage', { values: { count: resetSpotifyCount ?? 0 } })}
+		warnings={[
+			$translate('modals.confirm.resetSpotifyHistoryBackupWarning', { values: { path: $appDataDir } }),
+			$translate('modals.confirm.resetSpotifyHistoryResyncNote'),
+		]}
+		confirmLabel={$translate('modals.confirm.resetSpotifyHistoryTitle')}
+		destructive={true}
+		onConfirm={confirmResetSpotifyHistory}
+		onCancel={cancelResetSpotifyConfirm}
+	/>
+</div>

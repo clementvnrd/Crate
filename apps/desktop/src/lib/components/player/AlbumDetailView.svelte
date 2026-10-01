@@ -52,7 +52,7 @@
 			class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-stroke-subtle bg-surface-1 px-3.5 py-1.5 text-xs font-semibold text-text-secondary shadow-xs transition-all hover:bg-surface-2 hover:text-text-primary active:scale-95"
 			onclick={onBack}
 		>
-			<Icon name="arrow-left" class="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
+			<Icon name="arrow-left" class="h-3.5 w-3.5 text-deck-live-text" />
 			<span>{$translate('player.albums.all')}</span>
 		</button>
 
@@ -83,7 +83,7 @@
 
 		<!-- Metadata & Play Controls -->
 		<div class="flex min-w-0 flex-1 flex-col justify-center">
-			<span class="text-[11px] font-bold tracking-wider text-cyan-600 uppercase dark:text-cyan-400">
+			<span class="text-[11px] font-bold tracking-wider text-deck-live-text uppercase">
 				{$translate('player.albums.typeLabel')}
 			</span>
 			<h1
@@ -131,7 +131,7 @@
 					class="flex cursor-pointer items-center gap-2 rounded-xl border border-stroke-subtle bg-surface-1 px-3.5 py-2 text-xs font-bold text-text-primary transition-all hover:bg-surface-2 active:scale-95"
 					onclick={handlePlayShuffle}
 				>
-					<Icon name="shuffle" class="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+					<Icon name="shuffle" class="h-4 w-4 text-deck-live-text" />
 					<span>{$translate('player.albums.shuffle')}</span>
 				</button>
 			</div>
@@ -164,29 +164,27 @@
 				<!-- svelte-ignore a11y_click_events_have_key_events -->
 				<div
 					class="group grid cursor-pointer grid-cols-[36px_minmax(200px,2fr)_120px_120px_70px] items-center gap-3 rounded-xl px-3 py-2.5 text-xs transition-colors {isPlayingThis
-						? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-300'
+						? 'bg-deck-live-tint/10 text-deck-live-text-strong'
 						: 'text-text-primary hover:bg-surface-1'}"
 					onclick={() => handlePlayTrack(track)}
 				>
 					<!-- Index / Play Icon / Equalizer Animation -->
 					<div class="flex items-center pl-1 font-mono text-text-tertiary">
 						{#if isPlayingThis}
-							<div class="flex h-3.5 w-3.5 items-end gap-[2px] text-cyan-600 dark:text-cyan-400">
-								<span class="animate-eq-1 w-[3px] rounded-full bg-cyan-600 dark:bg-cyan-400"></span>
-								<span class="animate-eq-2 w-[3px] rounded-full bg-cyan-600 dark:bg-cyan-400"></span>
-								<span class="animate-eq-3 w-[3px] rounded-full bg-cyan-600 dark:bg-cyan-400"></span>
+							<div class="flex h-3.5 w-3.5 items-end gap-[2px] text-deck-live-text">
+								<span class="animate-eq-1 w-[3px] rounded-full bg-deck-live-text"></span>
+								<span class="animate-eq-2 w-[3px] rounded-full bg-deck-live-text"></span>
+								<span class="animate-eq-3 w-[3px] rounded-full bg-deck-live-text"></span>
 							</div>
 						{:else}
 							<span class="group-hover:hidden">{track.track_number || index + 1}</span>
-							<Icon name="play" class="hidden h-3.5 w-3.5 text-cyan-600 group-hover:block dark:text-cyan-400" fill />
+							<Icon name="play" class="hidden h-3.5 w-3.5 text-deck-live-text group-hover:block" fill />
 						{/if}
 					</div>
 
 					<!-- Title & Artist -->
 					<div class="min-w-0 pr-2">
-						<div
-							class="truncate font-semibold text-text-primary transition-colors group-hover:text-cyan-600 dark:group-hover:text-cyan-400"
-						>
+						<div class="truncate font-semibold text-text-primary transition-colors group-hover:text-deck-live-text">
 							{track.title}
 						</div>
 						<div class="mt-0.5 truncate text-[11px] text-text-secondary">
@@ -207,7 +205,7 @@
 					<!-- BPM / Key -->
 					<div class="flex items-center gap-1.5">
 						{#if track.bpm}
-							<span class="font-mono font-bold text-cyan-600 dark:text-cyan-300">{formatBpm(track.bpm)}</span>
+							<span class="font-mono font-bold text-deck-live-text-strong">{formatBpm(track.bpm)}</span>
 						{/if}
 						{#if track.key}
 							<KeyBadge value={track.key} label={formatKey(track.key, 'camelot')} variant="pill-xs" />

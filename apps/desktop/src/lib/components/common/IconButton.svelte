@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from './Icon.svelte'
+	import Spinner from './Spinner.svelte'
 
 	type Props = {
 		title?: string
@@ -14,6 +15,8 @@
 		icon: string
 		iconClass?: string
 		fill?: boolean
+		/** The icon turns (the common `Spinner`) while an action runs; `icon` must be `refresh`, `refresh-cw` or `loader`. */
+		busy?: boolean
 		onclick?: (e: MouseEvent) => void
 	}
 
@@ -28,6 +31,7 @@
 		icon,
 		iconClass = '',
 		fill = false,
+		busy = false,
 		onclick,
 	}: Props = $props()
 
@@ -52,5 +56,9 @@
 	{onclick}
 	ondblclick={(e) => e.stopPropagation()}
 >
-	<Icon name={icon} class={iconClass || undefined} {fill} />
+	{#if busy}
+		<Spinner icon={icon as 'refresh' | 'refresh-cw' | 'loader'} color="current" class={iconClass || 'h-4 w-4'} />
+	{:else}
+		<Icon name={icon} class={iconClass || undefined} {fill} />
+	{/if}
 </button>

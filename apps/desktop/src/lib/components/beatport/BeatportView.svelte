@@ -111,13 +111,13 @@
 							type="text"
 							placeholder={$translate('beatport.search.placeholder')}
 							bind:value={searchInput}
-							class="h-8 w-64 rounded-l-lg border border-stroke bg-surface-2 pr-3 pl-8 text-xs text-text-primary placeholder:text-text-tertiary focus:border-emerald-500 focus:outline-none"
+							class="h-8 w-64 rounded-l-lg border border-stroke bg-surface-2 pr-3 pl-8 text-xs text-text-primary placeholder:text-text-tertiary focus:border-beatport-tint focus:outline-none"
 						/>
 						<!-- Native select joined to the field: its look is part of the frozen Beatport view (CRA-141) -->
 						<select
 							bind:value={selectedSearchType}
 							aria-label={$translate('beatport.search.type')}
-							class="h-8 cursor-pointer rounded-r-lg border-y border-r border-stroke bg-surface-3 px-2.5 text-xs text-text-secondary focus:border-emerald-500 focus:outline-none"
+							class="h-8 cursor-pointer rounded-r-lg border-y border-r border-stroke bg-surface-3 px-2.5 text-xs text-text-secondary focus:border-beatport-tint focus:outline-none"
 						>
 							{#each searchTypeOptions as option (option.value)}
 								<option value={option.value}>{option.label}</option>
@@ -152,11 +152,11 @@
 					{#if $beatportCartCount > 0}
 						<button
 							type="button"
-							class="ml-2 flex flex-shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-bold text-emerald-400 shadow-md shadow-emerald-500/10 transition-all hover:bg-emerald-500/20 active:scale-95"
+							class="ml-2 flex flex-shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-beatport-tint/40 bg-beatport-tint/10 px-3.5 py-1.5 text-xs font-bold text-beatport-text shadow-md shadow-beatport-tint/10 transition-all hover:bg-beatport-tint/20 active:scale-95"
 							onclick={() => (isCartOpen = true)}
 							title={$translate('beatport.cart.open')}
 						>
-							<Icon name="cart" class="h-4 w-4 text-emerald-400" />
+							<Icon name="cart" class="h-4 w-4 text-beatport-text" />
 							<span>{$translate('beatport.cart.button', { values: { count: $beatportCartCount } })}</span>
 							<span class="text-[11px] text-text-tertiary">· {formatDurationCompact($beatportCartDuration)}</span>
 						</button>
@@ -170,17 +170,20 @@
 			{#if !$beatportStore.auth.is_authenticated}
 				<div class="mx-auto max-w-3xl space-y-8 py-8">
 					<div
-						class="relative space-y-6 overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-[#0e1713] to-[#121418] p-8 text-center shadow-2xl shadow-emerald-950/20"
+						data-surface="beatport"
+						class="relative space-y-6 overflow-hidden rounded-3xl border border-beatport-tint/30 bg-gradient-to-b from-beatport-gateway to-surface-1 p-8 text-center shadow-2xl shadow-beatport-wash/20"
 					>
 						<div
-							class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 shadow-inner"
+							class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-beatport-tint/20 bg-beatport-tint/10 shadow-inner"
 						>
-							<Icon name="beatport" class="h-9 w-9 text-[#00FF96]" />
+							<Icon name="beatport" class="h-9 w-9 text-beatport-text-strong" />
 						</div>
 
 						<div class="mx-auto max-w-xl space-y-2">
-							<h2 class="text-2xl font-extrabold tracking-tight text-white">{$translate('beatport.gateway.title')}</h2>
-							<p class="text-xs leading-relaxed text-neutral-300">
+							<h2 class="text-2xl font-extrabold tracking-tight text-text-primary">
+								{$translate('beatport.gateway.title')}
+							</h2>
+							<p class="text-xs leading-relaxed text-beatport-body-text">
 								{$translate('beatport.gateway.description')}
 							</p>
 						</div>
@@ -234,11 +237,11 @@
 					<!-- Artist Page Header (if viewing artist) -->
 					{#if $beatportStore.navSection === 'artist'}
 						<div
-							class="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-surface-1 to-surface-2 p-6 shadow-lg"
+							class="relative overflow-hidden rounded-2xl border border-beatport-tint/30 bg-gradient-to-r from-beatport-wash/40 via-surface-1 to-surface-2 p-6 shadow-lg"
 						>
 							<div class="flex flex-col items-center gap-6 sm:flex-row">
 								<div
-									class="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-full border-2 border-[#00FF96] bg-surface-3 shadow-xl shadow-[#00FF96]/20"
+									class="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-full border-2 border-beatport bg-surface-3 shadow-xl shadow-beatport/20"
 								>
 									{#if $beatportStore.selectedArtistImage}
 										<img
@@ -247,7 +250,7 @@
 											class="h-full w-full object-cover"
 										/>
 									{:else}
-										<div class="flex h-full w-full items-center justify-center text-[#00FF96]">
+										<div class="flex h-full w-full items-center justify-center text-beatport-text-strong">
 											<Icon name="user" class="h-12 w-12" />
 										</div>
 									{/if}
@@ -255,11 +258,11 @@
 
 								<div class="flex-1 space-y-2 text-center sm:text-left">
 									<div class="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
-										<h2 class="text-2xl font-extrabold text-white">
+										<h2 class="text-2xl font-extrabold text-text-primary">
 											{$beatportStore.selectedArtistName}
 										</h2>
 										<span
-											class="rounded-full border border-[#00FF96]/40 bg-[#00FF96]/20 px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-[#00FF96] uppercase"
+											class="rounded-full border border-beatport/40 bg-beatport/20 px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-beatport-text-strong uppercase"
 										>
 											{$translate('beatport.artist.label')}
 										</span>
@@ -280,7 +283,7 @@
 									<div class="flex flex-wrap items-center justify-center gap-3 pt-2 sm:justify-start">
 										<button
 											type="button"
-											class="flex items-center gap-1.5 rounded-lg border border-stroke bg-surface-3 px-3 py-1 text-xs text-text-secondary transition-colors hover:text-white"
+											class="flex items-center gap-1.5 rounded-lg border border-stroke bg-surface-3 px-3 py-1 text-xs text-text-secondary transition-colors hover:text-text-primary"
 											onclick={() => beatportStore.setNavSection('home')}
 										>
 											{$translate('beatport.artist.back')}
@@ -320,11 +323,11 @@
 								{#each $beatportStore.searchArtists as artist (artist.id)}
 									<button
 										type="button"
-										class="group flex cursor-pointer flex-col items-center space-y-2 rounded-xl border border-stroke/60 bg-surface-1 p-3 text-center transition-all hover:border-[#00FF96]/60 hover:bg-surface-2"
+										class="group flex cursor-pointer flex-col items-center space-y-2 rounded-xl border border-stroke/60 bg-surface-1 p-3 text-center transition-all hover:border-beatport/60 hover:bg-surface-2"
 										onclick={() => beatportStore.setNavArtist(artist.id, artist.name, artist.image_url ?? undefined)}
 									>
 										<div
-											class="relative h-16 w-16 overflow-hidden rounded-full border border-stroke bg-surface-3 shadow-md transition-colors group-hover:border-[#00FF96]"
+											class="relative h-16 w-16 overflow-hidden rounded-full border border-stroke bg-surface-3 shadow-md transition-colors group-hover:border-beatport"
 										>
 											{#if artist.image_url}
 												<img
@@ -339,7 +342,7 @@
 											{/if}
 										</div>
 										<div class="w-full min-w-0">
-											<div class="truncate text-xs font-bold text-text-primary group-hover:text-[#00FF96]">
+											<div class="truncate text-xs font-bold text-text-primary group-hover:text-beatport-text-strong">
 												{artist.name}
 											</div>
 											<div class="text-[10px] text-text-tertiary">{$translate('beatport.artist.viewDiscography')}</div>
@@ -352,7 +355,7 @@
 
 					{#if $beatportStore.loading}
 						<div class="flex h-40 items-center justify-center gap-2 text-text-secondary">
-							<Spinner class="h-5 w-5 text-emerald-400" />
+							<Spinner class="h-5 w-5 text-beatport-text" />
 							<span class="text-xs">{$translate('beatport.loading')}</span>
 						</div>
 					{:else}
@@ -364,7 +367,7 @@
 									{#each $beatportStore.charts as chart (chart.id)}
 										<button
 											type="button"
-											class="group relative flex cursor-pointer items-center gap-4 rounded-xl border border-stroke/60 bg-surface-1 p-3.5 text-left transition-all hover:scale-[1.02] hover:border-emerald-500/50 hover:bg-surface-2/80"
+											class="group relative flex cursor-pointer items-center gap-4 rounded-xl border border-stroke/60 bg-surface-1 p-3.5 text-left transition-all hover:scale-[1.02] hover:border-beatport-tint/50 hover:bg-surface-2/80"
 											onclick={() => beatportStore.setNavChart(String(chart.id), chart.title)}
 										>
 											<div class="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-surface-3 shadow-md">
@@ -381,14 +384,14 @@
 												{/if}
 											</div>
 											<div class="min-w-0 flex-1">
-												<h3 class="truncate text-xs font-bold text-text-primary group-hover:text-emerald-400">
+												<h3 class="truncate text-xs font-bold text-text-primary group-hover:text-beatport-text">
 													{chart.title}
 												</h3>
 												{#if chart.description}
 													<p class="mt-0.5 line-clamp-2 text-[11px] text-text-secondary">{chart.description}</p>
 												{/if}
 												{#if chart.tracks_count}
-													<span class="mt-1 inline-block font-mono text-[10px] text-emerald-400">
+													<span class="mt-1 inline-block font-mono text-[10px] text-beatport-text">
 														{$translate('beatport.charts.trackCount', { values: { count: chart.tracks_count } })}
 													</span>
 												{/if}
@@ -421,7 +424,7 @@
 									{#if displayTracks.length > 0}
 										<button
 											type="button"
-											class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400 transition-colors hover:bg-emerald-500/20"
+											class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-beatport-tint/30 bg-beatport-tint/10 px-2.5 py-1 text-xs font-medium text-beatport-text transition-colors hover:bg-beatport-tint/20"
 											onclick={handleAddAllVisibleToCart}
 										>
 											<Icon name="plus" class="h-3.5 w-3.5" />
@@ -472,9 +475,9 @@
 									{#each $beatportStore.genres as genre (genre.id)}
 										<button
 											type="button"
-											class="flex items-center justify-between rounded-lg border border-stroke/60 bg-surface-1 px-3.5 py-2.5 text-left text-xs font-medium text-text-secondary transition-all hover:border-emerald-500/40 hover:bg-surface-2 hover:text-text-primary {$beatportStore.selectedGenreId ===
+											class="flex items-center justify-between rounded-lg border border-stroke/60 bg-surface-1 px-3.5 py-2.5 text-left text-xs font-medium text-text-secondary transition-all hover:border-beatport-tint/40 hover:bg-surface-2 hover:text-text-primary {$beatportStore.selectedGenreId ===
 											genre.id
-												? 'border-emerald-500 bg-emerald-500/10 font-semibold text-emerald-400'
+												? 'border-beatport-tint bg-beatport-tint/10 font-semibold text-beatport-text'
 												: ''}"
 											onclick={() => beatportStore.selectGenre(genre.id, genre.slug, genre.name)}
 										>

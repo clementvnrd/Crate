@@ -20,10 +20,10 @@
 	let percentFormat = $derived(new Intl.NumberFormat($language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }))
 </script>
 
-<div class="flex h-full flex-col rounded-2xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
+<div class="flex h-full flex-col rounded-xl border border-stroke/60 bg-surface-1/70 p-5 shadow-lg backdrop-blur-xl">
 	<div class="mb-4 flex items-center justify-between">
 		<div class="flex items-center gap-2">
-			<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-400">
+			<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-pulse-keys/15 text-pulse-keys-text">
 				<Icon name="disc" class="h-4 w-4" />
 			</div>
 			<div>
