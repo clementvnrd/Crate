@@ -5,6 +5,7 @@ pub mod recorder;
 pub mod rekordbox;
 pub mod session_timeline;
 pub mod spotify;
+pub mod spotify_reset;
 
 #[cfg(test)]
 mod tests;

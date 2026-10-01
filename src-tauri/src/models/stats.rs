@@ -115,6 +115,14 @@ pub struct SpotifyImportResult {
     pub total_minutes: u64,
 }
 
+/// Result of resetting the Spotify-sourced part of the listening history: how many listens were
+/// removed, and where the pre-deletion safety backup was written.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpotifyResetResult {
+    pub deleted_count: usize,
+    pub backup_path: String,
+}
+
 /// Rekordbox DJ performance session
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RekordboxSession {

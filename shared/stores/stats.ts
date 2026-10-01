@@ -8,6 +8,7 @@ import type {
 	SpotifyAuthState,
 	SpotifyImportResult,
 	SpotifyNowPlaying,
+	SpotifyResetResult,
 	StatsSummary,
 	TimeRange,
 	TopArtistItem,
@@ -37,6 +38,7 @@ export interface StatsState {
 	isLoading: boolean
 	isSyncingRekordbox: boolean
 	isImportingSpotify: boolean
+	isResettingSpotifyHistory: boolean
 	error: string | null
 }
 
@@ -57,6 +59,7 @@ const initialState: StatsState = {
 	isLoading: false,
 	isSyncingRekordbox: false,
 	isImportingSpotify: false,
+	isResettingSpotifyHistory: false,
 	error: null,
 }
 
@@ -261,6 +264,29 @@ function createStatsStore() {
 		},
 
 		/**
+		 * Deletes every Spotify-sourced listen, after a safety backup of the whole history. The
+		 * caller is responsible for confirming with the owner first; this only runs the deletion
+		 * and reports the result.
+		 */
+		async resetSpotifyHistory(): Promise<SpotifyResetResult | null> {
+			update((s) => ({ ...s, isResettingSpotifyHistory: true }))
+			try {
+				const result = await statsApi.resetSpotifyListeningHistory()
+				update((s) => ({ ...s, isResettingSpotifyHistory: false }))
+				toastStore.success(
+					get(translate)('stats.toast.spotifyHistoryReset', { values: { count: result.deleted_count } })
+				)
+				await this.refreshAll()
+				return result
+			} catch (err) {
+				const errorMsg = toErrorMessage(err, get(translate)('stats.toast.spotifyHistoryResetFailed'))
+				update((s) => ({ ...s, isResettingSpotifyHistory: false }))
+				toastStore.error(errorMsg)
+				return null
+			}
+		},
+
+		/**
 		 * Reset store
 		 */
 		reset() {
@@ -291,3 +317,4 @@ export const statsSelectedRange = derived(statsStore, ($s) => $s.selectedRange)
 export const isStatsLoading = derived(statsStore, ($s) => $s.isLoading)
 export const isSyncingRekordbox = derived(statsStore, ($s) => $s.isSyncingRekordbox)
 export const isImportingSpotify = derived(statsStore, ($s) => $s.isImportingSpotify)
+export const isResettingSpotifyHistory = derived(statsStore, ($s) => $s.isResettingSpotifyHistory)

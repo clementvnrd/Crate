@@ -717,7 +717,11 @@
 			"removeDiscoveryReleasesWarning": "This action cannot be undone. Releases will be removed from all playlists.",
 			"removeDiscoveryReleasesFromPlaylistTitle": "Remove from Playlist",
 			"removeDiscoveryReleasesFromPlaylistMessage": "{count, plural, =1 {Remove this release from the playlist?} other {Remove {count} releases from the playlist?}}",
-			"deleteReleasesFromCollection": "Also delete releases from my collection"
+			"deleteReleasesFromCollection": "Also delete releases from my collection",
+			"resetSpotifyHistoryTitle": "Reset Spotify History",
+			"resetSpotifyHistoryMessage": "{count, plural, =0 {There are no recorded Spotify listens to remove.} =1 {Remove the only recorded Spotify listen?} other {Remove all {count} recorded Spotify listens?}}",
+			"resetSpotifyHistoryBackupWarning": "A full backup of your listening history will be written to {path} before anything is deleted. This cannot be undone.",
+			"resetSpotifyHistoryResyncNote": "Spotify's \"recently played\" sync will then start again from zero and bring back only your last 50 plays — importing an official Spotify export afterwards is safe, duplicates are skipped automatically."
 		},
 		"relocate": {
 			"title": "Relocate Track",
@@ -1220,6 +1224,8 @@
 			"connect": "Connect",
 			"importing": "Importing…",
 			"importJson": "Import JSON",
+			"resetSpotifyHistory": "Reset Spotify history",
+			"resettingSpotifyHistory": "Resetting…",
 			"detected": "Detected",
 			"notDetected": "Not detected",
 			"djSessions": "{count, plural, one {# DJ session} other {# DJ sessions}}",
@@ -1273,6 +1279,8 @@
 			"importFailed": "Could not import the Spotify archive",
 			"rekordboxSynced": "Rekordbox synced: {count, plural, one {# play recorded} other {# plays recorded}}",
 			"rekordboxFailed": "Could not sync with Rekordbox",
+			"spotifyHistoryReset": "Spotify history reset: {count, plural, one {# play removed} other {# plays removed}}",
+			"spotifyHistoryResetFailed": "Could not reset the Spotify history",
 			"mikToggleFailed": "Could not change Mixed In Key tracking: {error}",
 			"redirectCopied": "Redirect URI copied to the clipboard!",
 			"clientIdRequired": "Enter a valid Spotify Client ID",

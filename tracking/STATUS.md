@@ -29,7 +29,7 @@ These actions cannot be done on the owner's behalf (personal accounts, decisions
 
 - [ ] **Change the Beatport account password**: it was in plain text in the code (C2). The code is clean, but the old password must be considered compromised.
 - [x] **Confirm that Mixed In Key stays read-only** (CRA-110, confirmed 2026-09-30). The step 2 fixes are built on that principle.
-- [ ] **Answer the open questions** in the [report](AUDIT-REPORT.md#decisions-to-make): other machines than this Mac (answered: macOS only, CRA-122) · Crate as the default player (answered: yes, CRA-124) · _the skewed Spotify history: owner wants it emptied (CRA-123), the irreversible deletion is waiting for the owner's go_
+- [ ] **Answer the open questions** in the [report](AUDIT-REPORT.md#decisions-to-make): other machines than this Mac (answered: macOS only, CRA-122) · Crate as the default player (answered: yes, CRA-124) · _the skewed Spotify history: owner wants it emptied (CRA-123); the in-app "Reset Spotify history" button is now ready in Crate Pulse (CRA-144), waiting for the owner to press it_
 
 ## Outside the register
 
@@ -264,3 +264,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-01 | Scenario B screens in Pulse: recap, discovery funnel, Rekordbox set timeline, history export (CRA-125 to CRA-128) | — |
 | 2026-10-01 | Energy column in the Rekordbox set timeline (CRA-127; jump marker left for a backend change) | — |
 | 2026-10-01 | French says "morceau" for a track and keeps "Cover", per the owner's answer in CRA-103 (L1 closed) | 12 |
+| 2026-10-01 | "Reset Spotify history" button in Crate Pulse: backup then delete, confirmation dialog (CRA-144) | — |

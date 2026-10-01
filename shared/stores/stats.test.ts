@@ -47,6 +47,8 @@ vi.mock('../api/stats', () => ({
 	setSpotifyClientSecret: vi.fn(),
 	hasSpotifyClientSecret: vi.fn(),
 	syncSpotifyRecentlyPlayed: vi.fn().mockResolvedValue(0),
+	countSpotifyListens: vi.fn(),
+	resetSpotifyListeningHistory: vi.fn(),
 }))
 
 vi.mock('@tauri-apps/plugin-opener', () => ({
@@ -258,6 +260,38 @@ describe('statsStore', () => {
 
 		expect(count).toBe(85)
 		expect(statsApi.syncRekordboxHistory).toHaveBeenCalled()
+	})
+
+	it('resets Spotify history and triggers refresh', async () => {
+		vi.mocked(statsApi.resetSpotifyListeningHistory).mockResolvedValueOnce({
+			deleted_count: 42,
+			backup_path: '/tmp/spotify-reset-backup-20261001-120000.json',
+		})
+		vi.mocked(statsApi.getStatsSummary).mockResolvedValue(mockSummary)
+		vi.mocked(statsApi.getTopTracks).mockResolvedValue(mockTopTracks)
+		vi.mocked(statsApi.getTopArtists).mockResolvedValue(mockTopArtists)
+		vi.mocked(statsApi.getHarmonicStats).mockResolvedValue(mockHarmonicStats)
+		vi.mocked(statsApi.getBpmStats).mockResolvedValue(mockBpmStats)
+		vi.mocked(statsApi.getListeningHeatmap).mockResolvedValue(mockHeatmap)
+		vi.mocked(statsApi.getRecentListens).mockResolvedValue([])
+		vi.mocked(statsApi.getSpotifyAuthState).mockResolvedValue(mockSpotifyAuth)
+		vi.mocked(statsApi.getSpotifyNowPlaying).mockResolvedValue(null)
+		vi.mocked(statsApi.getRekordboxDetectStatus).mockResolvedValue(true)
+		vi.mocked(statsApi.getRekordboxSessions).mockResolvedValue([])
+		vi.mocked(statsApi.getMikDetectStatus).mockResolvedValue(true)
+
+		const result = await statsStore.resetSpotifyHistory()
+
+		expect(result?.deleted_count).toBe(42)
+		expect(statsApi.resetSpotifyListeningHistory).toHaveBeenCalled()
+	})
+
+	it('reports a failed reset without throwing', async () => {
+		vi.mocked(statsApi.resetSpotifyListeningHistory).mockRejectedValueOnce(new Error('backup failed'))
+
+		const result = await statsStore.resetSpotifyHistory()
+
+		expect(result).toBeNull()
 	})
 
 	it('disconnects Spotify and clears auth state', async () => {

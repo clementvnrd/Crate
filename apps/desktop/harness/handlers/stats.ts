@@ -53,5 +53,13 @@ export function statsHandlers(state: HarnessState): HandlerMap {
 		},
 		// Only reached when a save dialog answers a path, which the harness never does (it always cancels).
 		export_listening_history: () => EXPORTED_LISTENS,
+
+		// Reset Spotify history: the harness's Spotify integration starts disconnected, with no
+		// recorded listens to remove.
+		count_spotify_listens: () => 0,
+		reset_spotify_listening_history: () => ({
+			deleted_count: 0,
+			backup_path: '/tmp/crate-harness/spotify-reset-backup.json',
+		}),
 	}
 }
