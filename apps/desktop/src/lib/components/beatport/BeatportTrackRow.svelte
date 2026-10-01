@@ -46,7 +46,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class="group grid {BEATPORT_TRACK_GRID} items-center gap-2 px-3 py-1.5 text-xs transition-colors select-none {isCurrentTrack
-		? 'border-l-2 border-l-[#00FF96] bg-emerald-950/40'
+		? 'border-l-2 border-l-beatport bg-beatport-wash/40'
 		: 'border-b border-stroke/40 hover:bg-surface-2/60'}"
 	onmouseenter={() => (isHovered = true)}
 	onmouseleave={() => (isHovered = false)}
@@ -58,7 +58,7 @@
 			{#if isHovered}
 				<button
 					type="button"
-					class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-[#00FF96] text-black shadow-lg shadow-[#00FF96]/30 transition-transform active:scale-95"
+					class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-beatport text-black shadow-lg shadow-beatport/30 transition-transform active:scale-95"
 					onclick={togglePlay}
 					title={$translate('beatport.track.pausePreview')}
 				>
@@ -69,19 +69,19 @@
 					class="flex h-5 w-5 items-end justify-center gap-[2px] pb-0.5"
 					title={$translate('beatport.track.nowPlaying')}
 				>
-					<span class="h-3 w-[3px] animate-pulse rounded-full bg-[#00FF96] motion-reduce:animate-none"></span>
+					<span class="h-3 w-[3px] animate-pulse rounded-full bg-beatport motion-reduce:animate-none"></span>
 					<span
-						class="h-4.5 w-[3px] animate-pulse rounded-full bg-[#00FF96] [animation-delay:150ms] motion-reduce:animate-none"
+						class="h-4.5 w-[3px] animate-pulse rounded-full bg-beatport [animation-delay:150ms] motion-reduce:animate-none"
 					></span>
 					<span
-						class="h-2.5 w-[3px] animate-pulse rounded-full bg-[#00FF96] [animation-delay:300ms] motion-reduce:animate-none"
+						class="h-2.5 w-[3px] animate-pulse rounded-full bg-beatport [animation-delay:300ms] motion-reduce:animate-none"
 					></span>
 				</div>
 			{/if}
 		{:else if isHovered || isCurrentTrack}
 			<button
 				type="button"
-				class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-emerald-500/20 text-[#00FF96] shadow-sm transition-all hover:bg-[#00FF96] hover:text-black active:scale-95"
+				class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-beatport-tint/20 text-beatport-text-strong shadow-sm transition-all hover:bg-beatport hover:text-black active:scale-95"
 				onclick={togglePlay}
 				title={$translate('beatport.track.playPreview')}
 			>
@@ -108,7 +108,7 @@
 			/>
 		{:else}
 			<div
-				class="flex h-8 w-8 items-center justify-center rounded-md border border-stroke/40 bg-surface-3 text-[10px] font-bold text-[#00FF96]"
+				class="flex h-8 w-8 items-center justify-center rounded-md border border-stroke/40 bg-surface-3 text-[10px] font-bold text-beatport-text-strong"
 			>
 				BP
 			</div>
@@ -120,8 +120,8 @@
 		<div class="flex items-center gap-1.5 truncate font-medium text-text-primary">
 			<button
 				type="button"
-				class="cursor-pointer truncate text-left hover:text-[#00FF96] {isCurrentTrack
-					? 'font-semibold text-[#00FF96]'
+				class="cursor-pointer truncate text-left hover:text-beatport-text-strong {isCurrentTrack
+					? 'font-semibold text-beatport-text-strong'
 					: ''}"
 				onclick={() => playerStore.playBeatport(track)}
 			>
@@ -136,7 +136,7 @@
 				{#each track.artists as artist, aIdx (aIdx)}
 					<button
 						type="button"
-						class="cursor-pointer transition-colors hover:text-[#00FF96] hover:underline"
+						class="cursor-pointer transition-colors hover:text-beatport-text-strong hover:underline"
 						onclick={(e) => {
 							e.stopPropagation()
 							beatportStore.setNavArtist(artist.id, artist.name, artist.image_url ?? undefined)
@@ -182,7 +182,7 @@
 		<button
 			type="button"
 			class="flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors hover:bg-surface-3 {inCart
-				? 'font-bold text-emerald-400'
+				? 'font-bold text-beatport-text'
 				: 'text-text-tertiary hover:text-text-primary'}"
 			onclick={toggleCart}
 			title={$translate(inCart ? 'beatport.cart.remove' : 'beatport.cart.add')}
@@ -210,7 +210,7 @@
 			title={$translate(inCart ? 'beatport.cart.inCart' : 'beatport.cart.add')}
 		>
 			{#if inCart}
-				<Icon name="check" class="h-3.5 w-3.5 text-[#00FF96]" />
+				<Icon name="check" class="h-3.5 w-3.5 text-beatport-text-strong" />
 			{:else}
 				<Icon name="plus" class="h-3.5 w-3.5" />
 			{/if}
