@@ -5,7 +5,7 @@ This file is **the** source of truth for tracking: every defect in the [register
 Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification or remaining work. The progress table is recomputed with `yarn status` (from the repository root).
 
 <!-- progress:start -->
-**Overall progress: 101 / 106 defects fixed (95%)**
+**Overall progress: 102 / 106 defects fixed (96%)**
 
 | Step | Fixed | Progress |
 | --- | --- | --- |
@@ -20,7 +20,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 9 — Hygiene and tooling | 13 / 14 | █████████░ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
 | Step 11 — View-by-view compliance | 4 / 7 | ██████░░░░ |
-| Step 12 — Translation | 5 / 6 | ████████░░ |
+| Step 12 — Translation | 6 / 6 | ██████████ |
 <!-- progress:end -->
 
 ## Owner-only actions
@@ -204,7 +204,7 @@ _Exit criterion: Strict design rules respected._
 
 _Exit criterion: App in English: no French string._
 
-- [ ] **L1** — 17 new components with no translation at all, about 220 strings — _partial: 423 new keys in `en.json` and `fr.json` (1259 each, in parity); hard-coded visible strings in `apps/desktop/src` go from 139 to 20 and text attributes from 51 to 4; Pulse, Player, Beatport, Upgrader, Duplicate Killer, tags, discovery and the store toasts are translated; what remains is brand names, code and data values, plus the Camelot key names in French_
+- [x] **L1** — 17 new components with no translation at all, about 220 strings — _423 new keys in `en.json` and `fr.json` (1259 each, in parity); hard-coded visible strings in `apps/desktop/src` go from 139 to 20 and text attributes from 51 to 4; Pulse, Player, Beatport, Upgrader, Duplicate Killer, tags, discovery and the store toasts are translated; French uses "morceau" for a track and keeps "Cover" (owner's wording, CRA-103); what remains is brand names, code and data values, plus the Camelot key names in French_
 - [x] **L2** — 13 locales without the 49 to 53 keys added by the fork — _decided (CRA-114): French and English complete, the other 13 fall back to English, documented in the README; Vitest guards keep EN and FR aligned; one key was missing in French and is added_
 - [x] **L3** — Numbers and units formatted the English way in French ("2,310"), "plays" and "écoutes" mixed in Pulse — _numbers and dates follow the app language (`formatNumber`, `formatDate`); Pulse says "plays" in English and "écoutes" in French throughout; Player dates and remaining counts follow the app language_
 - [x] **L4** — Rust error messages in French — _all backend messages are English; the frequent actionable ones (Beatport sign-in, invalid album folder) are translated by the interface through `localizeBackendError`; the Spotify sign-in pages follow the app language_
@@ -263,3 +263,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-01 | Interface strings extracted to 423 new en/fr keys, plays/écoutes unified, numbers and dates localised (L1 partial, L3) | 52 |
 | 2026-10-01 | Scenario B screens in Pulse: recap, discovery funnel, Rekordbox set timeline, history export (CRA-125 to CRA-128) | — |
 | 2026-10-01 | Energy column in the Rekordbox set timeline (CRA-127; jump marker left for a backend change) | — |
+| 2026-10-01 | French says "morceau" for a track and keeps "Cover", per the owner's answer in CRA-103 (L1 closed) | 12 |
