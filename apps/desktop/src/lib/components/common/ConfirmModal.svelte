@@ -2,6 +2,7 @@
 	import Modal from './Modal.svelte'
 	import Button from './Button.svelte'
 	import Text from './Text.svelte'
+	import Checkbox from './Checkbox.svelte'
 	import Icon from './Icon.svelte'
 	import { translate } from '$shared/i18n'
 
@@ -56,14 +57,14 @@
 		{/if}
 
 		{#if checkboxLabel}
-			<label class="flex cursor-pointer items-center gap-3">
-				<input
-					type="checkbox"
-					bind:checked={checkboxChecked}
-					class="h-4 w-4 rounded border-stroke bg-surface-2 text-brand-primary"
-				/>
+			<Checkbox
+				appearance="native"
+				bind:checked={checkboxChecked}
+				labelClass="flex cursor-pointer items-center gap-3"
+				inputClass="h-4 w-4 rounded border-stroke bg-surface-2 text-brand-primary"
+			>
 				<Text color="secondary" as="span">{checkboxLabel}</Text>
-			</label>
+			</Checkbox>
 		{/if}
 	</div>
 
@@ -71,7 +72,7 @@
 		<Button variant="ghost" onclick={onCancel}>{cancelLabel || $translate('common.cancel')}</Button>
 		<Button
 			variant={destructive ? 'primary' : 'primary'}
-			class={destructive ? 'bg-red-600 hover:bg-red-700' : ''}
+			fill={destructive ? 'bg-red-600 text-white hover:bg-red-700' : undefined}
 			onclick={handleConfirm}
 		>
 			{confirmLabel || $translate('common.confirm')}

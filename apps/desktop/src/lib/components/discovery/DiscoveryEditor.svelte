@@ -164,7 +164,7 @@
 					<IconButton
 						icon="refresh"
 						size="sm"
-						iconClass={refreshing ? 'animate-spin motion-reduce:animate-none h-4 w-4' : ''}
+						busy={refreshing}
 						ariaLabel={$translate('discovery.refreshMetadata')}
 						onclick={handleRefreshMetadata}
 					/>

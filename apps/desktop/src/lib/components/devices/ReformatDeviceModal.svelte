@@ -84,7 +84,7 @@
 
 	{#snippet footer()}
 		<Button variant="secondary" onclick={handleClose}>{$translate('common.cancel')}</Button>
-		<Button variant="primary" class="bg-red-600 hover:bg-red-700" onclick={handleSubmit} disabled={!isValid}>
+		<Button variant="primary" fill="bg-red-600 text-white hover:bg-red-700" onclick={handleSubmit} disabled={!isValid}>
 			{$translate('devices.reformat.confirm')}
 		</Button>
 	{/snippet}

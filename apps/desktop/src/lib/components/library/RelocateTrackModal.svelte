@@ -6,6 +6,8 @@
 	import Button from '$lib/components/common/Button.svelte'
 	import Text from '$lib/components/common/Text.svelte'
 	import Icon from '$lib/components/common/Icon.svelte'
+	import Spinner from '$lib/components/common/Spinner.svelte'
+	import Checkbox from '$lib/components/common/Checkbox.svelte'
 	import * as libraryApi from '$shared/api/library'
 	import { missingTracksStore, cloudSyncStore } from '$lib/stores'
 	import type { Track, FileMatchResult } from '$shared/types'
@@ -186,9 +188,7 @@
 		<!-- Validation Status (device-local file flow only) -->
 		{#if !isCloudSynced && validating}
 			<div class="flex items-center gap-2 text-sm text-text-secondary">
-				<div
-					class="h-4 w-4 animate-spin rounded-full border-2 border-brand-primary border-t-transparent motion-reduce:animate-none"
-				></div>
+				<Spinner icon="ring" class="h-4 w-4 border-2 border-brand-primary" />
 				{$translate('modals.relocate.validating')}
 			</div>
 		{:else if !isCloudSynced && validationResult}
@@ -214,14 +214,14 @@
 						</div>
 					</div>
 
-					<label class="flex cursor-pointer items-center gap-2">
-						<input
-							type="checkbox"
-							bind:checked={forceRelocate}
-							class="h-4 w-4 rounded border-stroke bg-surface-2 text-brand-primary focus:ring-brand-primary focus:ring-offset-0"
-						/>
+					<Checkbox
+						appearance="native"
+						bind:checked={forceRelocate}
+						labelClass="flex cursor-pointer items-center gap-2"
+						inputClass="h-4 w-4 rounded border-stroke bg-surface-2 text-brand-primary focus:ring-brand-primary focus:ring-offset-0"
+					>
 						<Text color="secondary" as="span">{$translate('modals.relocate.useAnyway')}</Text>
-					</label>
+					</Checkbox>
 				</div>
 			{/if}
 		{/if}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Tooltip } from '$lib/components/common'
+	import { Spinner, Tooltip } from '$lib/components/common'
 	import Icon from '$lib/components/common/Icon.svelte'
 	import { syncPhase, isSyncAvailable, isSignedIn } from '$shared/stores/cloudSync'
 	import { translate } from '$shared/i18n'
@@ -50,7 +50,7 @@
 			{onclick}
 		>
 			{#if $syncPhase === 'syncing'}
-				<Icon name="loader" class="h-[18px] w-[18px] animate-spin motion-reduce:animate-none" />
+				<Spinner icon="loader" color="current" class="h-[18px] w-[18px]" />
 			{:else if $syncPhase === 'error' || $syncPhase === 'offline'}
 				<Icon name="cloud-off" class="h-[18px] w-[18px]" />
 			{:else if $isSignedIn}

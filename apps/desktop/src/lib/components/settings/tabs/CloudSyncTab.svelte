@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Text } from '$lib/components/common'
+	import { Button, Spinner, Text } from '$lib/components/common'
 	import Icon from '$lib/components/common/Icon.svelte'
 	import Input from '$lib/components/common/Input.svelte'
 	import ConfirmModal from '$lib/components/common/ConfirmModal.svelte'
@@ -96,10 +96,7 @@
 				<div class="flex flex-shrink-0 items-center gap-2">
 					{#if $syncPhase === 'syncing'}
 						<div class="flex items-center gap-2 text-sm text-text-secondary">
-							<svg class="h-4 w-4 animate-spin motion-reduce:animate-none" fill="none" viewBox="0 0 24 24">
-								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-							</svg>
+							<Spinner icon="arc" color="current" class="h-4 w-4" />
 							{$translate('cloudSync.account.syncing')}
 						</div>
 					{:else}

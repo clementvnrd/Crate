@@ -3,6 +3,7 @@
 	import Button from './Button.svelte'
 	import Icon from './Icon.svelte'
 	import Text from './Text.svelte'
+	import Checkbox from './Checkbox.svelte'
 	import { translate } from '$shared/i18n'
 	import type { DuplicateTrack, DuplicateResolutionAction } from '$shared/types'
 
@@ -128,16 +129,16 @@
 		</div>
 
 		{#if totalCount > 1 && currentIndex < totalCount - 1}
-			<label class="flex items-center gap-2 pt-2">
-				<input
-					type="checkbox"
-					bind:checked={applyToAllChecked}
-					class="h-4 w-4 rounded border-stroke bg-surface-2 text-brand-primary focus:ring-0"
-				/>
+			<Checkbox
+				appearance="native"
+				bind:checked={applyToAllChecked}
+				labelClass="flex items-center gap-2 pt-2"
+				inputClass="h-4 w-4 rounded border-stroke bg-surface-2 text-brand-primary focus:ring-0"
+			>
 				<Text as="span" color="secondary">
 					{$translate('modals.duplicate.applyToAll', { values: { count: totalCount - currentIndex - 1 } })}
 				</Text>
-			</label>
+			</Checkbox>
 		{/if}
 	</div>
 
