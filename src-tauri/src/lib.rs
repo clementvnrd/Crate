@@ -530,6 +530,8 @@ pub fn run() {
             commands::stats::spotify_get_now_playing,
             commands::stats::spotify_import_history,
             commands::stats::sync_spotify_recently_played,
+            commands::stats::count_spotify_listens,
+            commands::stats::reset_spotify_listening_history,
             commands::stats::rekordbox_detect_status,
             commands::stats::rekordbox_sync_history,
             commands::stats::rekordbox_import_history_xml,

@@ -1777,3 +1777,140 @@ mod timeline_tests {
         assert!(recorder.get_session_timeline("nope").is_err());
     }
 }
+
+// ==========================================
+// Reset Spotify listening history (CRA-144)
+// ==========================================
+
+mod spotify_reset_tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    /// Inserts a raw listen for `source`, bypassing the recorder's near-duplicate rule.
+    fn insert_raw(conn: &Arc<Mutex<Connection>>, id: &str, source: &str, played_at: &str) {
+        conn.lock()
+            .unwrap()
+            .execute(
+                "INSERT INTO listen_events (id, source, title, artist, duration_ms, played_ms, played_at)
+                 VALUES (?1, ?2, ?1, 'Artist', 200000, 180000, ?3)",
+                rusqlite::params![id, source, played_at],
+            )
+            .unwrap();
+    }
+
+    fn count_sources(conn: &Arc<Mutex<Connection>>) -> (i64, i64) {
+        let conn = conn.lock().unwrap();
+        let spotify: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM listen_events WHERE source = 'spotify'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let other: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM listen_events WHERE source != 'spotify'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        (spotify, other)
+    }
+
+    struct TempFile(PathBuf);
+    impl TempFile {
+        fn new(name: &str) -> Self {
+            Self(std::env::temp_dir().join(format!(
+                "crate_spotify_reset_{name}_{}.json",
+                std::process::id()
+            )))
+        }
+    }
+    impl Drop for TempFile {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_file(&self.0);
+            let mut part = self.0.clone().into_os_string();
+            part.push(".part");
+            let _ = std::fs::remove_file(part);
+        }
+    }
+
+    #[test]
+    fn only_spotify_listens_are_deleted() {
+        let (conn, recorder) = setup_test_db();
+        insert_raw(&conn, "sp1", "spotify", "2026-01-01T10:00:00Z");
+        insert_raw(&conn, "sp2", "spotify", "2026-01-02T10:00:00Z");
+        insert_raw(&conn, "rb1", "rekordbox", "2026-01-03T10:00:00Z");
+        insert_raw(&conn, "mik1", "mixed_in_key", "2026-01-04T10:00:00Z");
+        insert_raw(&conn, "lib1", "crate_local", "2026-01-05T10:00:00Z");
+
+        let file = TempFile::new("basic");
+        let result = recorder.reset_spotify_history(&file.0).unwrap();
+
+        assert_eq!(result.deleted_count, 2);
+        let (spotify, other) = count_sources(&conn);
+        assert_eq!(spotify, 0, "every Spotify listen is gone");
+        assert_eq!(other, 3, "every other source is untouched");
+    }
+
+    #[test]
+    fn the_backup_exists_and_is_readable_and_reflects_the_state_before_deletion() {
+        let (conn, recorder) = setup_test_db();
+        insert_raw(&conn, "sp1", "spotify", "2026-01-01T10:00:00Z");
+        insert_raw(&conn, "rb1", "rekordbox", "2026-01-02T10:00:00Z");
+
+        let file = TempFile::new("backup");
+        let result = recorder.reset_spotify_history(&file.0).unwrap();
+
+        assert_eq!(result.backup_path, file.0.to_string_lossy());
+        let contents = std::fs::read_to_string(&file.0).expect("backup file must be readable");
+        let value: serde_json::Value =
+            serde_json::from_str(&contents).expect("backup must be valid JSON");
+        let items = value.as_array().unwrap();
+        assert_eq!(
+            items.len(),
+            2,
+            "the backup covers the whole history as it stood right before the delete"
+        );
+        assert!(items
+            .iter()
+            .any(|i| i["id"] == "sp1" && i["source"] == "spotify"));
+        assert!(items
+            .iter()
+            .any(|i| i["id"] == "rb1" && i["source"] == "rekordbox"));
+    }
+
+    #[test]
+    fn a_failed_backup_deletes_nothing() {
+        let (conn, recorder) = setup_test_db();
+        insert_raw(&conn, "sp1", "spotify", "2026-01-01T10:00:00Z");
+        insert_raw(&conn, "rb1", "rekordbox", "2026-01-02T10:00:00Z");
+
+        // A destination folder that does not exist makes the export fail before any row is read.
+        let bad = std::env::temp_dir()
+            .join("no_such_folder_crate_spotify_reset")
+            .join("backup.json");
+        let err = recorder.reset_spotify_history(&bad).unwrap_err();
+        assert!(!err.to_string().is_empty());
+
+        let (spotify, other) = count_sources(&conn);
+        assert_eq!(spotify, 1, "nothing was deleted when the backup failed");
+        assert_eq!(other, 1);
+        assert!(!bad.exists(), "no partial backup was left behind either");
+    }
+
+    #[test]
+    fn counts_only_spotify_listens() {
+        let (conn, recorder) = setup_test_db();
+        insert_raw(&conn, "sp1", "spotify", "2026-01-01T10:00:00Z");
+        insert_raw(&conn, "sp2", "spotify", "2026-01-02T10:00:00Z");
+        insert_raw(&conn, "rb1", "rekordbox", "2026-01-03T10:00:00Z");
+        assert_eq!(recorder.count_spotify_listens().unwrap(), 2);
+    }
+
+    #[test]
+    fn counting_an_empty_history_is_zero() {
+        let (_conn, recorder) = setup_test_db();
+        assert_eq!(recorder.count_spotify_listens().unwrap(), 0);
+    }
+}

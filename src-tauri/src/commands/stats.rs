@@ -1,9 +1,10 @@
 use tauri::{Manager, State};
 
-use crate::error::{run_blocking, Result};
+use crate::error::{run_blocking, CrateError, Result};
 use crate::models::stats::{
     BpmBucketItem, HarmonicStatsItem, HeatmapCell, ListenEvent, RekordboxSession, SpotifyAuthState,
-    SpotifyImportResult, SpotifyNowPlaying, StatsSummary, TopArtistItem, TopTrackItem,
+    SpotifyImportResult, SpotifyNowPlaying, SpotifyResetResult, StatsSummary, TopArtistItem,
+    TopTrackItem,
 };
 use crate::services::stats::recap::Recap;
 use crate::services::stats::session_timeline::SessionTimeline;
@@ -222,6 +223,33 @@ pub async fn sync_spotify_recently_played(
     spotify: State<'_, SpotifyTrackerService>,
 ) -> Result<usize> {
     spotify.sync_recently_played().await
+}
+
+/// Number of currently recorded Spotify listens — shown in the confirmation dialog before the
+/// owner resets the history.
+#[tauri::command]
+pub async fn count_spotify_listens(stats: State<'_, StatsRecorderService>) -> Result<usize> {
+    stats.count_spotify_listens()
+}
+
+/// Deletes every Spotify-sourced listen, after writing a full history backup (every source, as
+/// JSON) to a timestamped file in the app's data folder. Refuses to delete anything, with a clear
+/// reason, if that backup could not be written and verified. Every other source (the local
+/// library, Mixed In Key, Rekordbox) is left untouched.
+#[tauri::command]
+pub async fn reset_spotify_listening_history(app: tauri::AppHandle) -> Result<SpotifyResetResult> {
+    run_blocking(move || {
+        let data_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| CrateError::Backup(format!("Failed to resolve app data dir: {e}")))?;
+        std::fs::create_dir_all(&data_dir).map_err(CrateError::Io)?;
+        let timestamp = chrono::Utc::now().format("%Y%m%d-%H%M%S");
+        let backup_path = data_dir.join(format!("spotify-reset-backup-{timestamp}.json"));
+        app.state::<StatsRecorderService>()
+            .reset_spotify_history(&backup_path)
+    })
+    .await
 }
 
 // ==========================================
