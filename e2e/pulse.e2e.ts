@@ -56,7 +56,7 @@ test.describe('Pulse history screens', () => {
 
 	test('the funnel follows the Pulse period and lists the sources', async ({ page }) => {
 		const errors = await openPulse(page)
-		const funnel = page.getByRole('region', { name: 'Discovery funnel' })
+		const funnel = page.getByRole('region', { name: 'Crate to booth' })
 		await expect(funnel.getByText('Played in a set').first()).toBeVisible()
 		await expect(funnel.getByRole('rowheader', { name: 'Bandcamp' })).toBeVisible()
 

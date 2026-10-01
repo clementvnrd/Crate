@@ -1319,7 +1319,7 @@
 			"loadFailed": "Impossible de charger le récapitulatif."
 		},
 		"funnel": {
-			"title": "Entonnoir des découvertes",
+			"title": "Du bac à la cabine",
 			"subtitle": "Ce que sont devenues vos découvertes",
 			"scopeRange": "Sorties ajoutées sur la période choisie",
 			"scopeAll": "Toutes les sorties trouvées",
