@@ -265,3 +265,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-01 | Energy column in the Rekordbox set timeline (CRA-127; jump marker left for a backend change) | — |
 | 2026-10-01 | French says "morceau" for a track and keeps "Cover", per the owner's answer in CRA-103 (L1 closed) | 12 |
 | 2026-10-01 | "Reset Spotify history" button in Crate Pulse: backup then delete, confirmation dialog (CRA-144) | — |
+| 2026-10-01 | Discovery funnel renamed "Crate to booth" / "Du bac à la cabine", per the owner's answer in CRA-126 | — |

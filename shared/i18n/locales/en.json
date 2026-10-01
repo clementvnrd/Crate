@@ -1319,7 +1319,7 @@
 			"loadFailed": "Could not load the recap."
 		},
 		"funnel": {
-			"title": "Discovery funnel",
+			"title": "Crate to booth",
 			"subtitle": "What your discoveries became",
 			"scopeRange": "Releases added in the selected period",
 			"scopeAll": "Every release found",
