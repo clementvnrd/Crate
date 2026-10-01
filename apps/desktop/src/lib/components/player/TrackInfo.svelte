@@ -102,7 +102,7 @@
 			</div>
 			<div class="flex items-center gap-1 truncate text-xs text-text-secondary">
 				<span
-					class="py-0.2 inline-flex items-center rounded bg-emerald-500/20 px-1 text-[9px] font-bold text-[#00FF96]"
+					class="py-0.2 inline-flex items-center rounded bg-beatport-tint/20 px-1 text-[9px] font-bold text-beatport-text-strong"
 				>
 					BP
 				</span>

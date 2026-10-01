@@ -37,7 +37,7 @@
 		getHarmonicKeys,
 	} from '$shared/utils'
 	import { translate } from '$shared/i18n'
-	import { EnergyBadge, Icon, KeyBadge, SegmentedControl, Spinner, Tooltip } from '$lib/components/common'
+	import { Button, EnergyBadge, Icon, KeyBadge, SegmentedControl, Spinner, Tooltip } from '$lib/components/common'
 	import type { SegmentOption } from '$lib/components/common'
 	import AlbumGridView from './AlbumGridView.svelte'
 	import AlbumDetailView from './AlbumDetailView.svelte'
@@ -437,7 +437,7 @@
 							aria-label={$translate('player.hero.playPause')}
 						>
 							<div
-								class="flex h-14 w-14 items-center justify-center rounded-full bg-cyan-400 text-black shadow-lg shadow-cyan-400/50 transition-transform group-hover:scale-105 active:scale-95"
+								class="flex h-14 w-14 items-center justify-center rounded-full bg-deck-live text-black shadow-lg shadow-deck-live/50 transition-transform group-hover:scale-105 active:scale-95"
 							>
 								<Icon name={isCurrentPlayingInHero ? 'pause' : 'play'} class="ml-0.5 h-6 w-6" fill />
 							</div>
@@ -460,7 +460,7 @@
 									</span>
 								{:else}
 									<span
-										class="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-300"
+										class="inline-flex items-center gap-1 rounded-full border border-deck-cue-tint/30 bg-deck-cue-tint/15 px-2.5 py-0.5 text-[10px] font-semibold text-deck-cue-text-strong"
 									>
 										<Icon name="hard-drive" class="h-2.5 w-2.5" />
 										{$translate('player.hero.sourceExternal')}
@@ -493,7 +493,7 @@
 								<!-- BPM -->
 								{#if activeHeroTrack.bpm}
 									<span
-										class="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-0.5 font-mono text-[10px] font-bold text-cyan-600 dark:text-cyan-300"
+										class="rounded-full border border-deck-live-tint/20 bg-deck-live-tint/10 px-2.5 py-0.5 font-mono text-[10px] font-bold text-deck-live-text-strong"
 									>
 										{formatBpm(activeHeroTrack.bpm)} BPM
 									</span>
@@ -532,20 +532,27 @@
 								{@render modeToggle('bg-surface-2/90')}
 
 								{#if !activeHeroTrack.is_in_library}
-									<button
-										type="button"
-										class="flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-primary px-3 py-1.5 text-xs font-semibold text-black shadow-md shadow-brand-primary/20 transition-all hover:brightness-110 active:scale-95 disabled:opacity-50"
+									<Button
+										variant="primary"
+										size="bare"
+										shape="full"
+										weight="semibold"
+										display="flex"
+										glow="md/20"
+										press
+										class="gap-1.5 px-3 py-1.5 text-xs"
 										onclick={handleImportToLibrary}
 										disabled={isImporting}
 									>
-										<Icon
-											name={isImporting ? 'loader' : 'plus'}
-											class="h-3.5 w-3.5 {isImporting ? 'animate-spin motion-reduce:animate-none' : ''}"
-										/>
+										{#if isImporting}
+											<Spinner icon="loader" color="current" class="h-3.5 w-3.5" />
+										{:else}
+											<Icon name="plus" class="h-3.5 w-3.5" />
+										{/if}
 										<span
 											>{isImporting ? $translate('player.hero.adding') : $translate('player.hero.addToLibrary')}</span
 										>
-									</button>
+									</Button>
 								{/if}
 
 								<Tooltip text={$translate('player.recent.reveal')} position="bottom">
@@ -555,7 +562,7 @@
 										onclick={() => handleRevealInFinder(activeHeroTrack.file_path)}
 										aria-label={$translate('player.recent.reveal')}
 									>
-										<Icon name="folder-open" class="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+										<Icon name="folder-open" class="h-4 w-4 text-deck-live-text" />
 									</button>
 								</Tooltip>
 							</div>
@@ -583,7 +590,7 @@
 						<div class="flex flex-col gap-3">
 							<!-- Waveform Row with Time Markers -->
 							<div class="flex items-center gap-3">
-								<span class="w-12 text-right font-mono text-xs font-bold text-cyan-600 tabular-nums dark:text-cyan-400">
+								<span class="w-12 text-right font-mono text-xs font-bold text-deck-live-text tabular-nums">
 									{formatDuration(currentDisplayPosition)}
 								</span>
 
@@ -615,7 +622,7 @@
 											{@const isPlayed = barPercent <= progressPercent}
 											<div
 												class="flex-1 rounded-full {isPlayed
-													? 'bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.7)]'
+													? 'bg-deck-live shadow-[0_0_6px_rgba(6,182,212,0.7)]'
 													: 'bg-text-tertiary/20 group-hover:bg-text-tertiary/35'}"
 												style="height: {barHeight}%;"
 											></div>
@@ -644,12 +651,12 @@
 														})}
 											>
 												<div
-													class="flex h-3.5 w-3.5 items-center justify-center rounded-xs border border-amber-200 bg-amber-400 text-[8px] font-black text-black shadow-[0_0_8px_rgba(251,191,36,0.9)]"
+													class="flex h-3.5 w-3.5 items-center justify-center rounded-xs border border-deck-cue-outline bg-deck-cue text-[8px] font-black text-black shadow-[0_0_8px_rgba(251,191,36,0.9)]"
 												>
 													{cueNum}
 												</div>
 												<div
-													class="w-[1.5px] flex-1 bg-amber-400/80 shadow-[0_0_4px_rgba(251,191,36,0.6)] group-hover/pin:bg-amber-300"
+													class="w-[1.5px] flex-1 bg-deck-cue/80 shadow-[0_0_4px_rgba(251,191,36,0.6)] group-hover/pin:bg-deck-cue-text-strong"
 												></div>
 											</button>
 										{/each}
@@ -664,7 +671,7 @@
 									<!-- Hover Time Tooltip -->
 									{#if isHoveringWaveform && effectiveDuration > 0}
 										<div
-											class="pointer-events-none absolute top-1 -translate-x-1/2 rounded-md border border-cyan-500/40 bg-surface-1 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-400 shadow-xl"
+											class="pointer-events-none absolute top-1 -translate-x-1/2 rounded-md border border-deck-live-tint/40 bg-surface-1 px-2 py-0.5 font-mono text-[10px] font-bold text-deck-live-text shadow-xl"
 											style="left: {hoverWaveformPercent * 100}%"
 										>
 											{formatDuration(hoverWaveformPercent * effectiveDuration)}
@@ -683,7 +690,7 @@
 									<button
 										type="button"
 										class="flex flex-col items-center justify-center rounded-lg border px-1 py-1.5 transition-all select-none {pad.cue
-											? 'cursor-pointer border-amber-500/40 bg-amber-500/15 text-amber-500 shadow-xs hover:border-amber-400 hover:bg-amber-500/25 active:scale-95 dark:text-amber-400'
+											? 'cursor-pointer border-deck-cue-tint/40 bg-deck-cue-tint/15 text-deck-cue-text shadow-xs hover:border-deck-cue hover:bg-deck-cue-tint/25 active:scale-95'
 											: 'cursor-default border-white/5 bg-surface-2/40 text-text-tertiary/40 hover:bg-surface-2/60'}"
 										onclick={() => handleCuePadClick(pad.slot, pad.cue)}
 										disabled={!pad.cue}
@@ -716,7 +723,7 @@
 
 								<button
 									type="button"
-									class="flex h-[52px] w-[52px] cursor-pointer items-center justify-center rounded-full bg-cyan-400 text-black shadow-lg shadow-cyan-400/40 transition-all hover:brightness-110 active:scale-95"
+									class="flex h-[52px] w-[52px] cursor-pointer items-center justify-center rounded-full bg-deck-live text-black shadow-lg shadow-deck-live/40 transition-all hover:brightness-110 active:scale-95"
 									onclick={handleTogglePlayPause}
 									title={isCurrentPlayingInHero ? $translate('player.pause') : $translate('player.play')}
 								>
@@ -740,7 +747,7 @@
 				<div class="flex items-center justify-between px-6 py-12">
 					<div class="flex items-center gap-6">
 						<div
-							class="flex h-20 w-20 items-center justify-center rounded-2xl border border-stroke-subtle bg-surface-2 text-cyan-600 shadow-inner dark:text-cyan-400"
+							class="flex h-20 w-20 items-center justify-center rounded-2xl border border-stroke-subtle bg-surface-2 text-deck-live-text shadow-inner"
 						>
 							<Icon name="disc" class="h-10 w-10 opacity-80" />
 						</div>
@@ -771,7 +778,7 @@
 			<div class="flex items-center justify-between gap-4 pb-2">
 				<div class="flex min-w-0 flex-1 items-center gap-4">
 					<div class="flex flex-shrink-0 items-center gap-2.5">
-						<Icon name="disc" class="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+						<Icon name="disc" class="h-4 w-4 text-deck-live-text" />
 						<h2 class="text-sm font-bold text-text-primary">{$translate('player.recent.list')}</h2>
 					</div>
 
@@ -782,7 +789,7 @@
 							type="text"
 							placeholder={$translate('player.recent.filterPlaceholder')}
 							bind:value={recentSearchQuery}
-							class="h-7 w-full rounded-full border border-stroke-subtle bg-surface-2/80 pr-7 pl-8 text-xs text-text-primary transition-all placeholder:text-text-tertiary focus:border-cyan-500 focus:bg-surface-2 focus:outline-hidden"
+							class="h-7 w-full rounded-full border border-stroke-subtle bg-surface-2/80 pr-7 pl-8 text-xs text-text-primary transition-all placeholder:text-text-tertiary focus:border-deck-live-tint focus:bg-surface-2 focus:outline-hidden"
 						/>
 						{#if recentSearchQuery}
 							<button
@@ -855,25 +862,21 @@
 							activeRecentIndex
 								? 'group-focus-visible/recents:outline-2 group-focus-visible/recents:-outline-offset-2 group-focus-visible/recents:outline-brand-primary'
 								: ''} {isPlayingThis
-								? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-300'
+								? 'bg-deck-live-tint/10 text-deck-live-text-strong'
 								: 'text-text-primary hover:bg-surface-1'}"
 							data-recent-index={index}
 						>
 							<!-- Index / Play Icon / Equalizer Animation -->
 							<div class="flex items-center pl-1 font-mono text-text-tertiary">
 								{#if isPlayingThis}
-									<div class="flex h-3.5 w-3.5 items-end gap-[2px] text-cyan-600 dark:text-cyan-400">
-										<span class="animate-eq-1 w-[3px] rounded-full bg-cyan-600 dark:bg-cyan-400"></span>
-										<span class="animate-eq-2 w-[3px] rounded-full bg-cyan-600 dark:bg-cyan-400"></span>
-										<span class="animate-eq-3 w-[3px] rounded-full bg-cyan-600 dark:bg-cyan-400"></span>
+									<div class="flex h-3.5 w-3.5 items-end gap-[2px] text-deck-live-text">
+										<span class="animate-eq-1 w-[3px] rounded-full bg-deck-live-text"></span>
+										<span class="animate-eq-2 w-[3px] rounded-full bg-deck-live-text"></span>
+										<span class="animate-eq-3 w-[3px] rounded-full bg-deck-live-text"></span>
 									</div>
 								{:else}
 									<span class="group-hover:hidden">{index + 1}</span>
-									<Icon
-										name="play"
-										class="hidden h-3.5 w-3.5 text-cyan-600 group-hover:block dark:text-cyan-400"
-										fill
-									/>
+									<Icon name="play" class="hidden h-3.5 w-3.5 text-deck-live-text group-hover:block" fill />
 								{/if}
 							</div>
 
@@ -890,9 +893,7 @@
 
 							<!-- Title & Artist -->
 							<div class="min-w-0 pr-2">
-								<div
-									class="truncate font-semibold text-text-primary transition-colors group-hover:text-cyan-600 dark:group-hover:text-cyan-400"
-								>
+								<div class="truncate font-semibold text-text-primary transition-colors group-hover:text-deck-live-text">
 									{track.title || track.file_path.split('/').pop() || $translate('player.unknownTrack')}
 								</div>
 								<div class="truncate text-[11px] text-text-secondary">
@@ -918,7 +919,7 @@
 							<!-- BPM / Key -->
 							<div class="flex items-center gap-1.5">
 								{#if track.bpm}
-									<span class="font-mono font-bold text-cyan-600 dark:text-cyan-300">{formatBpm(track.bpm)}</span>
+									<span class="font-mono font-bold text-deck-live-text-strong">{formatBpm(track.bpm)}</span>
 								{/if}
 								{#if track.key}
 									<KeyBadge value={track.key} label={formatKey(track.key, 'camelot')} variant="pill-xs" />
@@ -981,7 +982,7 @@
 					<!-- Empty State -->
 					<div class="flex flex-col items-center justify-center py-12 text-center">
 						<div
-							class="mb-2.5 flex h-12 w-12 items-center justify-center rounded-2xl border border-stroke-subtle bg-surface-2 text-cyan-600 shadow-inner dark:text-cyan-400/60"
+							class="mb-2.5 flex h-12 w-12 items-center justify-center rounded-2xl border border-stroke-subtle bg-surface-2 text-deck-live-text/60 shadow-inner"
 						>
 							<Icon name="disc" class="h-6 w-6" />
 						</div>
@@ -1003,7 +1004,7 @@
 						</h3>
 						<button
 							type="button"
-							class="mt-2 cursor-pointer text-xs text-cyan-600 hover:underline dark:text-cyan-400"
+							class="mt-2 cursor-pointer text-xs text-deck-live-text hover:underline"
 							onclick={() => (recentSearchQuery = '')}
 						>
 							{$translate('player.recent.clearFilter')}

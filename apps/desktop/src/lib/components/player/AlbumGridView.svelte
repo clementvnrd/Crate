@@ -38,7 +38,7 @@
 	<div class="flex flex-shrink-0 items-center justify-between border-b border-stroke-subtle pb-5">
 		<div class="flex items-center gap-3">
 			<div
-				class="flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-600 shadow-xs dark:text-cyan-400"
+				class="flex h-9 w-9 items-center justify-center rounded-xl border border-deck-live-tint/20 bg-deck-live-tint/10 text-deck-live-text shadow-xs"
 			>
 				<Icon name="disc" class="h-5 w-5" />
 			</div>
@@ -80,14 +80,14 @@
 	<div class="flex-1 py-6">
 		{#if $albumsLoading}
 			<div class="flex h-48 items-center justify-center gap-2.5 text-text-tertiary">
-				<Spinner icon="loader" class="h-5 w-5 text-cyan-500" color="current" />
+				<Spinner icon="loader" class="h-5 w-5 text-deck-live-tint" color="current" />
 				<span class="text-sm">{$translate('player.albums.loading')}</span>
 			</div>
 		{:else if $playerAlbums.length === 0}
 			<!-- Empty State -->
 			<div class="mx-auto flex max-w-md flex-col items-center justify-center py-16 text-center">
 				<div
-					class="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl border border-stroke-subtle bg-surface-1 text-cyan-600 shadow-inner dark:text-cyan-400"
+					class="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl border border-stroke-subtle bg-surface-1 text-deck-live-text shadow-inner"
 				>
 					<Icon name="disc" class="h-10 w-10 opacity-70" />
 				</div>
@@ -120,7 +120,7 @@
 					<div class="group flex cursor-pointer flex-col" onclick={() => onSelectAlbum(album)}>
 						<!-- Square Artwork Container -->
 						<div
-							class="relative aspect-square w-full overflow-hidden rounded-2xl border border-stroke-subtle bg-surface-2/70 shadow-md transition-all duration-300 group-hover:border-cyan-500/30 group-hover:shadow-2xl"
+							class="relative aspect-square w-full overflow-hidden rounded-2xl border border-stroke-subtle bg-surface-2/70 shadow-md transition-all duration-300 group-hover:border-deck-live-tint/30 group-hover:shadow-2xl"
 						>
 							{#if artUrl}
 								<img
@@ -142,7 +142,7 @@
 							<!-- Floating Play Button on Hover -->
 							<button
 								type="button"
-								class="absolute right-3 bottom-3 z-10 flex h-10 w-10 translate-y-2 cursor-pointer items-center justify-center rounded-full bg-cyan-400 text-black opacity-0 shadow-lg shadow-cyan-400/50 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
+								class="absolute right-3 bottom-3 z-10 flex h-10 w-10 translate-y-2 cursor-pointer items-center justify-center rounded-full bg-deck-live text-black opacity-0 shadow-lg shadow-deck-live/50 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
 								onclick={(e) => handlePlayAlbumDirect(e, album)}
 								aria-label={$translate('player.albums.play')}
 							>
@@ -170,7 +170,7 @@
 						<!-- Album Title & Artist -->
 						<div class="mt-2.5 min-w-0">
 							<h3
-								class="truncate text-sm font-bold text-text-primary transition-colors group-hover:text-cyan-600 dark:group-hover:text-cyan-400"
+								class="truncate text-sm font-bold text-text-primary transition-colors group-hover:text-deck-live-text"
 								title={album.title}
 							>
 								{album.title}
