@@ -352,7 +352,7 @@
 									{!cell.isCurrentMonth
 										? 'pointer-events-none text-text-tertiary opacity-30'
 										: cell.isSelected
-											? 'cursor-pointer bg-brand-primary text-white'
+											? 'cursor-pointer bg-brand-primary text-brand-on'
 											: cell.isToday
 												? 'cursor-pointer text-text-primary ring-1 ring-brand-primary hover:bg-surface-2'
 												: 'cursor-pointer text-text-primary hover:bg-surface-2'}"
@@ -373,7 +373,7 @@
 								onclick={() => selectMonth(i)}
 								class="flex h-8 items-center justify-center rounded-md text-xs transition-colors
 								{isSelected
-									? 'cursor-pointer bg-brand-primary text-white'
+									? 'cursor-pointer bg-brand-primary text-brand-on'
 									: isCurrentMonth
 										? 'cursor-pointer text-text-primary ring-1 ring-brand-primary hover:bg-surface-2'
 										: 'cursor-pointer text-text-primary hover:bg-surface-2'}"
@@ -393,7 +393,7 @@
 								onclick={() => selectYear(year)}
 								class="flex h-8 items-center justify-center rounded-md text-xs transition-colors
 								{isSelected
-									? 'cursor-pointer bg-brand-primary text-white'
+									? 'cursor-pointer bg-brand-primary text-brand-on'
 									: isCurrentYear
 										? 'cursor-pointer text-text-primary ring-1 ring-brand-primary hover:bg-surface-2'
 										: 'cursor-pointer text-text-primary hover:bg-surface-2'}"

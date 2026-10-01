@@ -319,7 +319,7 @@
 										<button
 											type="button"
 											class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors
-												{isSelected ? 'bg-brand-primary text-white' : 'bg-surface-1 text-text-secondary hover:bg-surface-2'}"
+												{isSelected ? 'bg-brand-primary text-brand-on' : 'bg-surface-1 text-text-secondary hover:bg-surface-2'}"
 											onclick={() => toggleTag(index, tag.id)}
 										>
 											{#if isDeleted}

@@ -39,7 +39,10 @@
 /* `dark:` follows the theme chosen in Crate ([data-theme]), not the operating system's. */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
-@theme {
+/* Neutral tokens. `inline` makes utilities read the raw var() on the element itself, so a subtree can
+   redefine a theme for its own panel: a dark family panel (`data-theme="dark"` on a Modal) or Beatport's
+   own dark surfaces (`data-surface="beatport"`, below). At the root the values are the same as before. */
+@theme inline {
 	/* Surface colors - semantic naming for backgrounds */
 	--color-surface-0: var(--surface-0);
 	--color-surface-1: var(--surface-1);
@@ -57,7 +60,9 @@
 	--color-surface-3: var(--surface-3);
 	--color-surface-4: var(--surface-4);
 	--color-text-disabled: var(--text-disabled);
+}
 
+@theme {
 	/* State colors */
 	--color-danger: #ef4444;
 	--color-warning: #f59e0b;
@@ -71,6 +76,77 @@
 	--color-brand-primary: var(--brand-primary);
 	--color-brand-hover: var(--brand-hover);
 	--color-brand-muted: var(--brand-muted);
+	--color-brand-on: var(--brand-on);
+}
+
+/* Colour families (DESIGN.md, "Graphic charter", owner decision CRA-141). Values are per theme, in the
+   "Colour families" blocks below; `inline` keeps opacity modifiers working (bg-deck-live-tint/10). */
+@theme inline {
+	/* B. Deck — the Player */
+	--color-deck-live: var(--deck-live);
+	--color-deck-live-tint: var(--deck-live-tint);
+	--color-deck-live-text: var(--deck-live-text);
+	--color-deck-live-text-strong: var(--deck-live-text-strong);
+	--color-deck-cue: var(--deck-cue);
+	--color-deck-cue-tint: var(--deck-cue-tint);
+	--color-deck-cue-outline: var(--deck-cue-outline);
+	--color-deck-cue-text: var(--deck-cue-text);
+	--color-deck-cue-text-strong: var(--deck-cue-text-strong);
+
+	/* C. Pulse — one hue per metric */
+	--color-pulse-listening: var(--pulse-listening);
+	--color-pulse-listening-bright: var(--pulse-listening-bright);
+	--color-pulse-listening-brighter: var(--pulse-listening-brighter);
+	--color-pulse-listening-text: var(--pulse-listening-text);
+	--color-pulse-plays: var(--pulse-plays);
+	--color-pulse-plays-text: var(--pulse-plays-text);
+	--color-pulse-artists: var(--pulse-artists);
+	--color-pulse-artists-text: var(--pulse-artists-text);
+	--color-pulse-sessions: var(--pulse-sessions);
+	--color-pulse-sessions-text: var(--pulse-sessions-text);
+	--color-pulse-keys: var(--pulse-keys);
+	--color-pulse-keys-text: var(--pulse-keys-text);
+	--color-pulse-gold: var(--pulse-gold);
+	--color-pulse-gold-text: var(--pulse-gold-text);
+	--color-pulse-silver: var(--pulse-silver);
+	--color-pulse-silver-text: var(--pulse-silver-text);
+	--color-pulse-bronze: var(--pulse-bronze);
+	--color-pulse-bronze-fill: var(--pulse-bronze-fill);
+	--color-pulse-bronze-text: var(--pulse-bronze-text);
+
+	/* D. Beatport */
+	--color-beatport: var(--beatport);
+	--color-beatport-hover: var(--beatport-hover);
+	--color-beatport-tint: var(--beatport-tint);
+	--color-beatport-deep: var(--beatport-deep);
+	--color-beatport-wash: var(--beatport-wash);
+	--color-beatport-gateway: var(--beatport-gateway);
+	--color-beatport-text: var(--beatport-text);
+	--color-beatport-text-strong: var(--beatport-text-strong);
+	--color-beatport-body-text: var(--beatport-body-text);
+	--color-beatport-body-text-strong: var(--beatport-body-text-strong);
+
+	/* Source colours (DESIGN.md, "Source colours"): identify where a listen comes from */
+	--color-source-spotify: var(--source-spotify);
+	--color-source-spotify-hover: var(--source-spotify-hover);
+	--color-source-spotify-text: var(--source-spotify-text);
+	--color-source-spotify-wash: var(--source-spotify-wash);
+	--color-source-spotify-panel: var(--source-spotify-panel);
+	--color-source-mik: var(--source-mik);
+	--color-source-mik-text: var(--source-mik-text);
+	--color-source-mik-wash: var(--source-mik-wash);
+	--color-source-rekordbox: var(--source-rekordbox);
+	--color-source-rekordbox-hover: var(--source-rekordbox-hover);
+	--color-source-rekordbox-text: var(--source-rekordbox-text);
+	--color-source-rekordbox-wash: var(--source-rekordbox-wash);
+	--color-source-crate: var(--source-crate);
+	--color-source-crate-text: var(--source-crate-text);
+
+	/* States: per-theme values where a state colour is drawn on a tinted control */
+	--color-warning-tint: var(--warning-tint);
+	--color-warning-text: var(--warning-text);
+	--color-warning-wash: var(--warning-wash);
+	--color-warning-wash-hover: var(--warning-wash-hover);
 }
 
 /* =============================================================================
@@ -140,6 +216,175 @@
 }
 
 /* =============================================================================
+   Colour families (DESIGN.md, "Graphic charter"; owner decision CRA-141, 2026-10-01)
+
+   Each family owns one view. The dark values are exactly the Tailwind palette shades (or hex values) the
+   components used before these tokens existed, so the dark theme renders as before. Fills keep their dark
+   value in the light theme; text and icon roles take a darker shade of the same hue there (-700), so they
+   reach 4.5:1 on light surfaces. Contrast is measured in DESIGN.md, "Measured contrast".
+   ============================================================================= */
+
+:root,
+[data-theme='dark'] {
+	/* B. Deck (Player): cyan is the audio that is playing, amber is a cue */
+	--deck-live: var(--color-cyan-400); /* played waveform bars, main play buttons, glow */
+	--deck-live-tint: var(--color-cyan-500); /* tints and borders (/10 to /40), deck button and segment fill */
+	--deck-live-text: var(--color-cyan-400); /* live text and icons, EQ bars */
+	--deck-live-text-strong: var(--color-cyan-300); /* now-playing row, BPM, key pill */
+	--deck-cue: var(--color-amber-400); /* hot-cue pins and lines */
+	--deck-cue-tint: var(--color-amber-500); /* cue pad and badge tints and borders */
+	--deck-cue-outline: var(--color-amber-200); /* outline of a cue pin */
+	--deck-cue-text: var(--color-amber-400); /* cue pad labels */
+	--deck-cue-text-strong: var(--color-amber-300); /* cue badge */
+
+	/* C. Pulse: one hue per metric (fill = tints, chips, charts; text = labels and icons) */
+	--pulse-listening: var(--color-emerald-500);
+	--pulse-listening-bright: var(--color-emerald-400); /* heatmap top levels */
+	--pulse-listening-brighter: var(--color-emerald-300); /* heatmap top level outline and hover */
+	--pulse-listening-text: var(--color-emerald-400);
+	--pulse-plays: var(--color-purple-500);
+	--pulse-plays-text: var(--color-purple-400);
+	--pulse-artists: var(--color-pink-500);
+	--pulse-artists-text: var(--color-pink-400);
+	--pulse-sessions: var(--color-amber-500);
+	--pulse-sessions-text: var(--color-amber-400);
+	--pulse-keys: var(--color-cyan-500);
+	--pulse-keys-text: var(--color-cyan-400);
+	--pulse-gold: var(--color-amber-400);
+	--pulse-gold-text: var(--color-amber-300);
+	--pulse-silver: var(--color-slate-400);
+	--pulse-silver-text: var(--color-slate-300);
+	--pulse-bronze: var(--color-amber-600);
+	--pulse-bronze-fill: var(--color-amber-700);
+	--pulse-bronze-text: var(--color-amber-600);
+
+	/* D. Beatport: neon green */
+	--beatport: #00ff96; /* primary fills (black text), now-playing marker */
+	--beatport-hover: #00e687;
+	--beatport-tint: var(--color-emerald-500); /* tints, borders, focus borders, count badge */
+	--beatport-deep: var(--color-emerald-600); /* the Upgrader's replace buttons */
+	--beatport-wash: var(--color-emerald-950); /* now-playing row, header and progress washes (/10 to /60) */
+	--beatport-gateway: #0e1713; /* top of the logged-out gateway card */
+	--beatport-text: var(--color-emerald-400); /* active navigation, secondary text, counters */
+	--beatport-text-strong: #00ff96; /* neon text: playing title, links, codes */
+	--beatport-body-text: var(--color-neutral-300); /* body copy of the gateway, login and cart panels */
+	--beatport-body-text-strong: var(--color-neutral-200); /* emphasis inside that copy, tab hover */
+
+	/* Source colours: official colours of the services a listen comes from */
+	--source-spotify: #1db954;
+	--source-spotify-hover: #1ed760;
+	--source-spotify-text: #1db954;
+	--source-spotify-wash: #121c15; /* top of the Spotify integration card */
+	--source-spotify-panel: #0d1711; /* Spotify connection modal */
+	--source-mik: #00d2ff;
+	--source-mik-text: #00d2ff;
+	--source-mik-wash: #0c1a24;
+	--source-rekordbox: var(--color-red-500);
+	--source-rekordbox-hover: var(--color-red-600);
+	--source-rekordbox-text: var(--color-red-400);
+	--source-rekordbox-wash: #1c1214;
+	--source-crate: var(--color-violet-500);
+	--source-crate-text: var(--color-violet-400);
+
+	/* Warning on a tinted control (the toolbar's Duplicate Killer button when duplicates are found) */
+	--warning-tint: var(--color-amber-500);
+	--warning-text: var(--color-amber-400);
+	--warning-wash: var(--color-amber-950);
+	--warning-wash-hover: var(--color-amber-900);
+}
+
+[data-theme='light'] {
+	--deck-live: var(--color-cyan-400);
+	--deck-live-tint: var(--color-cyan-500);
+	--deck-live-text: var(--color-cyan-700);
+	--deck-live-text-strong: var(--color-cyan-700);
+	--deck-cue: var(--color-amber-400);
+	--deck-cue-tint: var(--color-amber-500);
+	--deck-cue-outline: var(--stroke-strong); /* the amber fill alone is 1.5:1 on a light surface */
+	--deck-cue-text: var(--color-amber-700);
+	--deck-cue-text-strong: var(--color-amber-700);
+
+	--pulse-listening: var(--color-emerald-500);
+	--pulse-listening-bright: var(--color-emerald-400);
+	--pulse-listening-brighter: var(--color-emerald-300);
+	--pulse-listening-text: var(--color-emerald-800); /* -700 is 4.4:1 on its own /15 chip tint */
+	--pulse-plays: var(--color-purple-500);
+	--pulse-plays-text: var(--color-purple-700);
+	--pulse-artists: var(--color-pink-500);
+	--pulse-artists-text: var(--color-pink-700);
+	--pulse-sessions: var(--color-amber-500);
+	--pulse-sessions-text: var(--color-amber-700);
+	--pulse-keys: var(--color-cyan-500);
+	--pulse-keys-text: var(--color-cyan-700);
+	--pulse-gold: var(--color-amber-400);
+	--pulse-gold-text: var(--color-amber-800); /* -700 is 4.3:1 on its own /20 rank tint */
+	--pulse-silver: var(--color-slate-400);
+	--pulse-silver-text: var(--color-zinc-600);
+	--pulse-bronze: var(--color-amber-600);
+	--pulse-bronze-fill: var(--color-amber-700);
+	--pulse-bronze-text: var(--color-amber-800);
+
+	--beatport: #00ff96;
+	--beatport-hover: #00e687;
+	--beatport-tint: var(--color-emerald-500);
+	--beatport-deep: var(--color-emerald-600);
+	--beatport-wash: var(--color-emerald-100);
+	--beatport-gateway: var(--surface-1);
+	--beatport-text: var(--color-emerald-700);
+	--beatport-text-strong: var(--color-emerald-700); /* #00ff96 is 1.3:1 as text on a light surface */
+	--beatport-body-text: var(--color-zinc-700);
+	--beatport-body-text-strong: var(--color-zinc-800);
+
+	--source-spotify: #1db954;
+	--source-spotify-hover: #1ed760;
+	--source-spotify-text: var(--color-green-800); /* green-700 is 4.497:1 on surface-2 */
+	--source-spotify-wash: var(--surface-1);
+	--source-spotify-panel: #0d1711; /* the connection modal is a dark panel in both themes (Modal theme="dark") */
+	--source-mik: #00d2ff;
+	--source-mik-text: var(--color-cyan-700);
+	--source-mik-wash: var(--surface-1);
+	--source-rekordbox: var(--color-red-500);
+	--source-rekordbox-hover: var(--color-red-600);
+	--source-rekordbox-text: var(--color-red-700);
+	--source-rekordbox-wash: var(--surface-1);
+	--source-crate: var(--color-violet-500);
+	--source-crate-text: var(--color-violet-700);
+
+	--warning-tint: var(--color-amber-500);
+	--warning-text: var(--color-amber-700);
+	--warning-wash: var(--color-amber-100); /* amber-950 makes a dark badge on a light toolbar (D3) */
+	--warning-wash-hover: var(--color-amber-200);
+}
+
+/* Beatport's own dark panels (cart drawer, sign-in modal, logged-out gateway card). These panels use the
+   neutral surface, stroke and text tokens, so the light theme gives them the app's light surfaces and text;
+   in the dark theme they keep the blue-black surfaces and neutral greys they always had (owner decision
+   CRA-141: the Beatport view follows the theme, with no visual change in the dark theme). */
+:root:not([data-theme='light']) [data-surface='beatport'] {
+	--surface-0: #0e1014;
+	--surface-1: #121418;
+	--surface-2: #181a20;
+	--surface-3: var(--color-neutral-800);
+	--surface-4: var(--color-neutral-700);
+	--stroke: #2e323d;
+	--stroke-subtle: #252830;
+	--stroke-strong: var(--color-neutral-700);
+	--text-primary: #ffffff;
+	--text-secondary: var(--color-neutral-400);
+	--text-tertiary: var(--color-neutral-500);
+	--text-disabled: var(--color-neutral-600);
+}
+
+/* The scrollbars inside those panels keep the app's colours (the rule above would otherwise tint them). */
+:root:not([data-theme='light']) [data-surface='beatport'] ::-webkit-scrollbar-thumb {
+	background: #3f3f46; /* --stroke of the dark theme */
+}
+
+:root:not([data-theme='light']) [data-surface='beatport'] ::-webkit-scrollbar-thumb:hover {
+	background: #71717a; /* --text-tertiary of the dark theme */
+}
+
+/* =============================================================================
    Accent Color Variants
    ============================================================================= */
 
@@ -148,66 +393,77 @@
 	--brand-primary: #3b82f6;
 	--brand-hover: #2563eb;
 	--brand-muted: rgba(59, 130, 246, 0.2);
+	--brand-on: #000000; /* text on the accent fill: black 5.71:1, white 3.68:1 */
 }
 
 [data-accent='blue'] {
 	--brand-primary: #3b82f6;
 	--brand-hover: #2563eb;
 	--brand-muted: rgba(59, 130, 246, 0.2);
+	--brand-on: #000000; /* text on the accent fill: black 5.71:1, white 3.68:1 */
 }
 
 [data-accent='indigo'] {
 	--brand-primary: #6366f1;
 	--brand-hover: #4f46e5;
 	--brand-muted: rgba(99, 102, 241, 0.2);
+	--brand-on: #000000; /* text on the accent fill: black 4.70:1, white 4.47:1 */
 }
 
 [data-accent='violet'] {
 	--brand-primary: #8b5cf6;
 	--brand-hover: #7c3aed;
 	--brand-muted: rgba(139, 92, 246, 0.2);
+	--brand-on: #000000; /* text on the accent fill: black 4.96:1, white 4.23:1 */
 }
 
 [data-accent='purple'] {
 	--brand-primary: #a855f7;
 	--brand-hover: #9333ea;
 	--brand-muted: rgba(168, 85, 247, 0.2);
+	--brand-on: #000000; /* text on the accent fill: black 5.31:1, white 3.96:1 */
 }
 
 [data-accent='pink'] {
 	--brand-primary: #ec4899;
 	--brand-hover: #db2777;
 	--brand-muted: rgba(236, 72, 153, 0.2);
+	--brand-on: #000000; /* text on the accent fill: black 5.95:1, white 3.53:1 */
 }
 
 [data-accent='rose'] {
 	--brand-primary: #f43f5e;
 	--brand-hover: #e11d48;
 	--brand-muted: rgba(244, 63, 94, 0.2);
+	--brand-on: #000000; /* text on the accent fill: black 5.72:1, white 3.67:1 */
 }
 
 [data-accent='orange'] {
 	--brand-primary: #f97316;
 	--brand-hover: #ea580c;
 	--brand-muted: rgba(249, 115, 22, 0.2);
+	--brand-on: #000000; /* text on the accent fill: black 7.49:1, white 2.80:1 */
 }
 
 [data-accent='amber'] {
 	--brand-primary: #f59e0b;
 	--brand-hover: #d97706;
 	--brand-muted: rgba(245, 158, 11, 0.2);
+	--brand-on: #000000; /* text on the accent fill: black 9.78:1, white 2.15:1 */
 }
 
 [data-accent='emerald'] {
 	--brand-primary: #10b981;
 	--brand-hover: #059669;
 	--brand-muted: rgba(16, 185, 129, 0.2);
+	--brand-on: #000000; /* text on the accent fill: black 8.28:1, white 2.54:1 */
 }
 
 [data-accent='teal'] {
 	--brand-primary: #14b8a6;
 	--brand-hover: #0d9488;
 	--brand-muted: rgba(20, 184, 166, 0.2);
+	--brand-on: #000000; /* text on the accent fill: black 8.44:1, white 2.49:1 */
 }
 
 /* =============================================================================
