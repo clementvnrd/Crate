@@ -321,7 +321,8 @@
 		"mode": {
 			"label": "Affichage du lecteur",
 			"recent": "Récents",
-			"albums": "Mode Album"
+			"albums": "Mode Album",
+			"suggestions": "Morceaux suggérés"
 		},
 		"albums": {
 			"removeTitle": "Retirer cet album ?",
@@ -359,6 +360,26 @@
 			"emptyHint": "Double-cliquez sur un fichier audio dans le Finder ou ouvrez-le avec Crate pour l'écouter directement sans encombrer votre bibliothèque.",
 			"noResults": "Aucun résultat pour « {query} »",
 			"clearFilter": "Effacer le filtre"
+		},
+		"suggestions": {
+			"title": "Morceaux suggérés",
+			"subtitle": "Appris à partir des transitions que vous avez vraiment jouées dans vos sets Rekordbox",
+			"play": "Lire « {title} »",
+			"badgeHistory": "{count, plural, one {# fois} other {# fois}}",
+			"badgeCompatible": "Compatible",
+			"historyTooltipWithDate": "Enchaîné juste après ce morceau {count, plural, one {# fois} other {# fois}} — la dernière fois le {date}",
+			"historyTooltipNoDate": "Enchaîné juste après ce morceau {count, plural, one {# fois} other {# fois}}",
+			"compatibleTooltip": "Jamais encore enchaîné après ce morceau — tonalité et tempo compatibles",
+			"noTrackTitle": "Rien n'est en cours de lecture",
+			"noTrackHint": "Lancez un morceau pour voir ce que vous enchaînez habituellement après lui.",
+			"notInLibraryTitle": "Ajoutez ce morceau à votre bibliothèque",
+			"notInLibraryHint": "Les suggestions s'appuient sur votre bibliothèque Crate et vos sets Rekordbox — « {title} » doit d'abord être dans votre bibliothèque.",
+			"loading": "Analyse de vos transitions…",
+			"emptyTitle": "Pas encore de suggestion",
+			"emptyHint": "Jouez d'autres sets via Rekordbox, ou renseignez le tempo et la tonalité de ce morceau, pour que Crate apprenne ce qui s'enchaîne bien après lui.",
+			"errorTitle": "Impossible de charger les suggestions",
+			"retry": "Réessayer",
+			"playFailed": "Impossible de lire « {title} » — il n'est peut-être plus dans votre bibliothèque"
 		},
 		"unknownTrack": "Morceau inconnu",
 		"trackFallback": "Morceau",

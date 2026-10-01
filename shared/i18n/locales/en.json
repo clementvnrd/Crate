@@ -321,7 +321,8 @@
 		"mode": {
 			"label": "Player display",
 			"recent": "Recent",
-			"albums": "Album mode"
+			"albums": "Album mode",
+			"suggestions": "Suggested next"
 		},
 		"albums": {
 			"removeTitle": "Remove this album?",
@@ -359,6 +360,26 @@
 			"emptyHint": "Double-click an audio file in the Finder or open it with Crate to play it without cluttering your library.",
 			"noResults": "No results for “{query}”",
 			"clearFilter": "Clear filter"
+		},
+		"suggestions": {
+			"title": "Suggested next",
+			"subtitle": "Learned from the transitions you've actually played in your Rekordbox sets",
+			"play": "Play \"{title}\"",
+			"badgeHistory": "{count, plural, one {# time} other {# times}}",
+			"badgeCompatible": "Compatible",
+			"historyTooltipWithDate": "Played next {count, plural, one {# time} other {# times}} after this track — last on {date}",
+			"historyTooltipNoDate": "Played next {count, plural, one {# time} other {# times}} after this track",
+			"compatibleTooltip": "Not played after this track yet — a compatible key and tempo",
+			"noTrackTitle": "Nothing is playing",
+			"noTrackHint": "Play a track to see what you usually mix into next.",
+			"notInLibraryTitle": "Add this track to your library",
+			"notInLibraryHint": "Suggestions are learned from your Crate library and your Rekordbox sets — \"{title}\" needs to be in your library first.",
+			"loading": "Looking at your transitions…",
+			"emptyTitle": "No suggestions yet",
+			"emptyHint": "Play more sets through Rekordbox, or give this track a BPM and a key, so Crate can learn what mixes well after it.",
+			"errorTitle": "Couldn't load suggestions",
+			"retry": "Try again",
+			"playFailed": "Couldn't play \"{title}\" — it may no longer be in your library"
 		},
 		"unknownTrack": "Unknown track",
 		"trackFallback": "Track",
