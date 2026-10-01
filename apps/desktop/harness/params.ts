@@ -11,5 +11,6 @@ export function readParams(search: string = window.location.search): HarnessPara
 		dev: query.get('dev') === '1',
 		latencyMs: Number.isFinite(latency) && latency > 0 ? Math.min(latency, 10_000) : 0,
 		playingTrackId: query.get('playing') || null,
+		discrepancyReportFails: query.get('discrepancyReport') === 'fail',
 	}
 }

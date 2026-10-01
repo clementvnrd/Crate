@@ -19,6 +19,7 @@ This repository is a **personal, private fork** of [blackboxaudio/crate](https:/
 - **Crate Pulse**: multi-source listening statistics (Spotify, local player, Mixed In Key, Rekordbox sessions)
 - **Duplicate Killer**, albums view, FTS5 full-text search, Rekordbox XML export
 - **Beatport Quality Upgrader**: MP3 → FLAC replacement via the third-party tool `beatportdl`
+- **Discrepancy report**: read-only comparison of Crate against Mixed In Key and a Rekordbox XML export (key, tempo, energy, cues, missing files, tracks only on one side)
 
 > ⚠️ **Current state: being repaired.** A full audit (25 September 2026) found ~180 defects, 15 of them critical and able to affect data. Until steps 1 to 7 of the plan are ticked, keep backups of `crate.db`, `db.key` and `Collection11.mikdb`.
 

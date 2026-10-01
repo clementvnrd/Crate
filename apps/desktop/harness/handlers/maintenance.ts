@@ -1,6 +1,6 @@
 import type { HandlerMap } from '../types'
 import type { HarnessState } from '../state'
-import { DUPLICATE_SCAN } from '../fixtures/maintenance'
+import { discrepancyReport, DUPLICATE_SCAN } from '../fixtures/maintenance'
 import { UPGRADE_MATCHES } from '../fixtures/beatport'
 
 // Duplicate Killer and Beatport Quality Upgrader: both report nothing on an empty library.
@@ -26,5 +26,10 @@ export function maintenanceHandlers(state: HarnessState): HandlerMap {
 			match_count: empty ? 0 : UPGRADE_MATCHES.length,
 			eligible_mp3_count: empty ? 0 : 5,
 		}),
+
+		get_discrepancy_report: ({ rekordboxXmlPath }) => {
+			if (state.params.discrepancyReportFails) throw 'Could not open the Mixed In Key database'
+			return discrepancyReport(empty, (rekordboxXmlPath as string) ?? null)
+		},
 	}
 }

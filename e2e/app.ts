@@ -165,6 +165,11 @@ export const VIEWS: ViewSpec[] = [
 		open: (page) => page.getByRole('button', { name: 'Beatport Quality Upgrader' }).click(),
 		landmark: (page) => page.locator('dialog[open]').getByText('Beatport Quality Upgrader').first(),
 	},
+	{
+		id: 'discrepancy',
+		open: (page) => page.getByRole('button', { name: /^(Discrepancy report|Rapport d'écarts)$/ }).click(),
+		landmark: (page) => page.locator('dialog[open]').getByText(/^(Discrepancy report|Rapport d'écarts)$/),
+	},
 ]
 
 // -----------------------------------------------------------------------------
