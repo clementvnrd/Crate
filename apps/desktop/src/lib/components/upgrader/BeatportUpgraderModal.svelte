@@ -22,7 +22,7 @@
 	import { translate } from '$shared/i18n'
 	import { libraryStore } from '$lib/stores/library'
 	import { formatBitrate, formatDurationCompact } from '$shared/utils/format'
-	import { Button, Icon, KeyBadge, Text } from '$lib/components/common'
+	import { Button, Checkbox, Icon, KeyBadge, Spinner, Text } from '$lib/components/common'
 	import Modal from '$lib/components/common/Modal.svelte'
 
 	type Props = {
@@ -195,7 +195,7 @@
 			<div class="flex items-center gap-3">
 				<!-- Sparkles Upgrader Icon -->
 				<div
-					class="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/20 via-teal-500/15 to-emerald-600/10 text-emerald-400 shadow-sm"
+					class="flex h-9 w-9 items-center justify-center rounded-xl border border-beatport-tint/30 bg-gradient-to-br from-beatport-tint/20 via-teal-500/15 to-beatport-deep/10 text-beatport-text shadow-sm"
 				>
 					<Icon name="sparkles" class="h-5 w-5 stroke-[2.2]" />
 				</div>
@@ -204,7 +204,7 @@
 						<Text variant="header-1" weight="bold">Beatport Quality Upgrader</Text>
 						{#if $upgraderMatchCount > 0}
 							<span
-								class="rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-400"
+								class="rounded-full border border-beatport-tint/30 bg-beatport-tint/15 px-2.5 py-0.5 text-xs font-semibold text-beatport-text"
 							>
 								{$translate('upgrader.header.upgradableCount', { values: { count: $upgraderMatchCount } })}
 							</span>
@@ -239,10 +239,11 @@
 					disabled={$isUpgraderLoading}
 					title={$translate('upgrader.actions.refreshTitle')}
 				>
-					<Icon
-						name="refresh-cw"
-						class="h-3.5 w-3.5 {$isUpgraderLoading ? 'animate-spin text-emerald-400 motion-reduce:animate-none' : ''}"
-					/>
+					{#if $isUpgraderLoading}
+						<Spinner icon="refresh-cw" color="current" class="h-3.5 w-3.5 text-beatport-text" />
+					{:else}
+						<Icon name="refresh-cw" class="h-3.5 w-3.5" />
+					{/if}
 					<span>{$translate('upgrader.actions.refresh')}</span>
 				</button>
 
@@ -262,10 +263,10 @@
 		<div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
 			{#if isAuthRequired && !$isUpgraderLoading}
 				<div
-					class="mx-auto my-6 flex max-w-lg flex-col items-center justify-center gap-5 rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/30 via-surface-2 to-surface-1 p-8 text-center shadow-lg"
+					class="mx-auto my-6 flex max-w-lg flex-col items-center justify-center gap-5 rounded-2xl border border-beatport-tint/30 bg-gradient-to-b from-beatport-wash/30 via-surface-2 to-surface-1 p-8 text-center shadow-lg"
 				>
 					<div
-						class="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/20 text-emerald-400 shadow-md"
+						class="flex h-16 w-16 items-center justify-center rounded-2xl border border-beatport-tint/30 bg-beatport-tint/20 text-beatport-text shadow-md"
 					>
 						<Icon name="beatport" class="h-8 w-8 fill-current" />
 					</div>
@@ -277,7 +278,8 @@
 					</div>
 					<Button
 						variant="primary"
-						class="flex items-center gap-2 bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-emerald-950/50 hover:bg-emerald-500"
+						fill="bg-beatport-deep text-white hover:bg-beatport-tint"
+						class="flex items-center gap-2 px-5 py-2.5 text-xs font-semibold shadow-lg shadow-beatport-wash/50"
 						onclick={handleConnectBeatport}
 					>
 						<Icon name="beatport" class="h-4 w-4 fill-current" />
@@ -288,12 +290,13 @@
 				<div class="flex h-80 flex-col items-center justify-center gap-4 px-4 text-center">
 					<div class="relative flex h-16 w-16 items-center justify-center">
 						<div
-							class="absolute inset-0 animate-ping rounded-full border-3 border-emerald-500/20 motion-reduce:animate-none"
+							class="absolute inset-0 animate-ping rounded-full border-3 border-beatport-tint/20 motion-reduce:animate-none"
 						></div>
-						<div
-							class="h-14 w-14 animate-spin rounded-full border-3 border-emerald-500 border-t-transparent shadow-lg shadow-emerald-500/20 motion-reduce:animate-none"
-						></div>
-						<Icon name="sparkles" class="absolute h-6 w-6 animate-pulse text-emerald-400 motion-reduce:animate-none" />
+						<Spinner icon="ring" class="h-14 w-14 border-3 border-beatport-tint shadow-lg shadow-beatport-tint/20" />
+						<Icon
+							name="sparkles"
+							class="absolute h-6 w-6 animate-pulse text-beatport-text motion-reduce:animate-none"
+						/>
 					</div>
 					<div class="space-y-1">
 						<Text variant="header-2" weight="bold" class="text-text-primary"
@@ -307,7 +310,7 @@
 			{:else if $upgraderMatches.length === 0}
 				<div class="flex h-80 flex-col items-center justify-center gap-4 px-4 text-center">
 					<div
-						class="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/20 text-emerald-400 shadow-lg"
+						class="flex h-16 w-16 items-center justify-center rounded-2xl border border-beatport-tint/30 bg-beatport-tint/20 text-beatport-text shadow-lg"
 					>
 						<Icon name="check" class="h-8 w-8 stroke-[3]" />
 					</div>
@@ -323,9 +326,9 @@
 			{:else}
 				{#if $isUpgraderLoading}
 					<div
-						class="mb-2 flex animate-pulse items-center justify-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-950/20 px-3.5 py-2 text-xs font-medium text-emerald-400 motion-reduce:animate-none"
+						class="mb-2 flex animate-pulse items-center justify-center gap-2.5 rounded-lg border border-beatport-tint/30 bg-beatport-wash/20 px-3.5 py-2 text-xs font-medium text-beatport-text motion-reduce:animate-none"
 					>
-						<Icon name="refresh-cw" class="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+						<Spinner icon="refresh-cw" color="current" class="h-3.5 w-3.5" />
 						<span>{$translate('upgrader.refreshing')}</span>
 					</div>
 				{/if}
@@ -343,7 +346,7 @@
 
 					<div
 						class="rounded-xl border bg-surface-2/70 p-4 shadow-sm transition-all hover:border-stroke-strong
-						{isSelected ? 'border-emerald-500/40 bg-emerald-950/10' : 'border-stroke'}"
+						{isSelected ? 'border-beatport-tint/40 bg-beatport-wash/10' : 'border-stroke'}"
 					>
 						<!-- Match Header: Track Title + Confidence Score + Ignore Button -->
 						<div class="mb-3 flex items-center justify-between border-b border-stroke/40 pb-3">
@@ -356,7 +359,7 @@
 								<span
 									class="inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 font-mono text-[11px] font-bold
 									{match.confidence_score >= 90
-										? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-400'
+										? 'border-beatport-tint/30 bg-beatport-tint/15 text-beatport-text'
 										: 'border-teal-500/30 bg-teal-500/15 text-teal-300'}"
 									title={$translate('upgrader.card.scoreTitle', {
 										values: {
@@ -406,8 +409,8 @@
 										type="button"
 										class="group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all hover:cursor-pointer
 										{isLocalPlaying
-											? 'border-[#00E5FF] bg-[#00E5FF] text-black shadow-md shadow-[#00E5FF]/40'
-											: 'border-stroke bg-surface-2 text-text-primary hover:border-[#00E5FF]/60 hover:bg-[#00E5FF]/15 hover:text-[#00E5FF]'}"
+											? 'border-deck-live bg-deck-live text-black shadow-md shadow-deck-live/40'
+											: 'border-stroke bg-surface-2 text-text-primary hover:border-deck-live/60 hover:bg-deck-live/15 hover:text-deck-live-text'}"
 										onclick={() => handleTogglePlayLocal(match)}
 										title={isLocalPlaying ? $translate('upgrader.card.pause') : $translate('upgrader.card.playLocal')}
 									>
@@ -433,7 +436,7 @@
 								<div
 									role="button"
 									tabindex="0"
-									class="group/wave relative flex h-8 w-full cursor-pointer items-center justify-between gap-[2px] rounded-lg border border-stroke/40 bg-surface-0/70 px-2 py-1 transition-all select-none hover:border-[#00E5FF]/40 hover:bg-surface-0"
+									class="group/wave relative flex h-8 w-full cursor-pointer items-center justify-between gap-[2px] rounded-lg border border-stroke/40 bg-surface-0/70 px-2 py-1 transition-all select-none hover:border-deck-live/40 hover:bg-surface-0"
 									onclick={(e) => handleWaveformClickLocal(e, match)}
 									onkeydown={(e) => {
 										if (e.key === 'Enter' || e.key === ' ') {
@@ -448,8 +451,8 @@
 										<div class="flex h-full flex-1 items-center justify-center">
 											<div
 												class="w-full rounded-full transition-all duration-75 {isPast
-													? 'bg-[#00E5FF] shadow-[0_0_6px_rgba(0,229,255,0.7)]'
-													: 'bg-[#38BDF8]/35 group-hover/wave:bg-[#38BDF8]/55'}"
+													? 'bg-deck-live shadow-[0_0_6px_rgba(6,182,212,0.7)]'
+													: 'bg-deck-live/35 group-hover/wave:bg-deck-live/55'}"
 												style="height: {Math.max(18, Math.round(barHeight * 100))}%;"
 											></div>
 										</div>
@@ -457,7 +460,7 @@
 
 									{#if isLocalCurrent}
 										<div
-											class="pointer-events-none absolute inset-y-0 w-[2px] bg-[#00E5FF] shadow-[0_0_8px_#00E5FF] transition-[left] duration-100"
+											class="pointer-events-none absolute inset-y-0 w-[2px] bg-deck-live shadow-[0_0_8px_var(--deck-live)] transition-[left] duration-100"
 											style="left: {localProgress}%;"
 										></div>
 									{/if}
@@ -506,12 +509,12 @@
 							<!-- Center Column: Transformation Arrow & Quality Benefit -->
 							<div class="flex flex-col items-center justify-center gap-2 py-2 text-center lg:col-span-2">
 								<div
-									class="flex h-10 w-10 items-center justify-center rounded-full border border-emerald-500/40 bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-emerald-400/30 text-emerald-400 shadow-md"
+									class="flex h-10 w-10 items-center justify-center rounded-full border border-beatport-tint/40 bg-gradient-to-r from-amber-500/20 via-beatport-tint/20 to-emerald-400/30 text-beatport-text shadow-md"
 								>
 									<Icon name="arrow-right" class="h-5 w-5 stroke-[2.5]" />
 								</div>
 								<div class="space-y-0.5">
-									<span class="font-mono text-[11px] font-bold tracking-wide text-emerald-400 uppercase">
+									<span class="font-mono text-[11px] font-bold tracking-wide text-beatport-text uppercase">
 										MP3 ➔ FLAC
 									</span>
 									<p class="text-[10px] font-medium text-text-tertiary">{$translate('upgrader.card.losslessStudio')}</p>
@@ -520,16 +523,16 @@
 
 							<!-- Right Column: Beatport FLAC Lossless Version -->
 							<div
-								class="space-y-2.5 rounded-xl border border-emerald-500/40 bg-surface-1/90 p-3.5 shadow-sm lg:col-span-5"
+								class="space-y-2.5 rounded-xl border border-beatport-tint/40 bg-surface-1/90 p-3.5 shadow-sm lg:col-span-5"
 							>
 								<div class="flex items-center justify-between">
 									<span
-										class="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-emerald-400 uppercase"
+										class="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-beatport-text uppercase"
 									>
-										<span class="inline-block h-2 w-2 rounded-full bg-emerald-400"></span>
+										<span class="inline-block h-2 w-2 rounded-full bg-beatport-text"></span>
 										Beatport (FLAC Lossless)
 									</span>
-									<span class="font-mono text-xs font-semibold text-emerald-400 tabular-nums">
+									<span class="font-mono text-xs font-semibold text-beatport-text tabular-nums">
 										{match.beatport_track.duration_formatted || formatDurationCompact(match.beatport_track.duration_ms)}
 									</span>
 								</div>
@@ -537,7 +540,7 @@
 								<div class="flex items-start gap-3">
 									<!-- Beatport Artwork or Play Button -->
 									<div
-										class="group relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-emerald-500/30 bg-surface-2"
+										class="group relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-beatport-tint/30 bg-surface-2"
 									>
 										{#if match.beatport_track.artwork_url}
 											<img
@@ -549,7 +552,7 @@
 										<button
 											type="button"
 											class="absolute inset-0 flex items-center justify-center bg-black/60 transition-opacity hover:cursor-pointer
-											{isBpPlaying ? 'bg-[#00FF96]/80 text-black opacity-100' : 'text-white opacity-0 group-hover:opacity-100'}"
+											{isBpPlaying ? 'bg-beatport/80 text-black opacity-100' : 'text-white opacity-0 group-hover:opacity-100'}"
 											onclick={() => handleTogglePlayBeatport(match)}
 											title={isBpPlaying ? $translate('upgrader.card.pause') : $translate('upgrader.card.playPreview')}
 										>
@@ -581,7 +584,7 @@
 								<!-- Badges row -->
 								<div class="flex flex-wrap items-center gap-1.5">
 									<span
-										class="inline-flex h-[20px] items-center rounded border border-emerald-500/30 bg-emerald-500/15 px-1.5 font-mono text-[10px] font-bold tracking-wider text-emerald-400 uppercase"
+										class="inline-flex h-[20px] items-center rounded border border-beatport-tint/30 bg-beatport-tint/15 px-1.5 font-mono text-[10px] font-bold tracking-wider text-beatport-text uppercase"
 									>
 										FLAC LOSSLESS (24-bit / 44.1kHz)
 									</span>
@@ -592,7 +595,7 @@
 
 									{#if match.beatport_track.bpm}
 										<span
-											class="inline-flex h-[20px] items-center rounded border border-emerald-500/30 bg-emerald-500/10 px-1.5 font-mono text-[10px] text-emerald-400"
+											class="inline-flex h-[20px] items-center rounded border border-beatport-tint/30 bg-beatport-tint/10 px-1.5 font-mono text-[10px] text-beatport-text"
 										>
 											{Math.round(match.beatport_track.bpm)} bpm
 										</span>
@@ -609,7 +612,7 @@
 
 								<!-- Beatport Release Info / URL -->
 								<div class="flex items-center gap-1.5 truncate text-[11px] text-text-tertiary">
-									<Icon name="beatport" class="h-3 w-3 shrink-0 text-emerald-400" />
+									<Icon name="beatport" class="h-3 w-3 shrink-0 text-beatport-text" />
 									<span class="truncate">
 										{match.beatport_track.release_name || $translate('upgrader.card.officialCatalogue')}
 										{match.beatport_track.release_date ? `(${match.beatport_track.release_date.slice(0, 4)})` : ''}
@@ -620,19 +623,17 @@
 
 						<!-- Card Bottom: Checkbox -->
 						<div class="mt-3 flex items-center justify-between border-t border-stroke/40 pt-3">
-							<label
-								class="flex items-center gap-2 text-xs font-medium select-none hover:cursor-pointer {isSelected
-									? 'text-emerald-400'
+							<Checkbox
+								appearance="native"
+								checked={isSelected}
+								onchange={() => upgraderStore.toggleMatchSelection(match.track_id)}
+								labelClass="flex items-center gap-2 text-xs font-medium select-none hover:cursor-pointer {isSelected
+									? 'text-beatport-text'
 									: 'text-text-secondary'}"
+								inputClass="h-4 w-4 rounded border-stroke bg-surface-2 text-beatport-tint hover:cursor-pointer focus:ring-beatport-tint"
 							>
-								<input
-									type="checkbox"
-									checked={isSelected}
-									onchange={() => upgraderStore.toggleMatchSelection(match.track_id)}
-									class="h-4 w-4 rounded border-stroke bg-surface-2 text-emerald-500 hover:cursor-pointer focus:ring-emerald-500"
-								/>
 								<span>{$translate('upgrader.card.replace')}</span>
-							</label>
+							</Checkbox>
 
 							<span class="font-mono text-[11px] text-text-tertiary">
 								{$translate('upgrader.card.replaceNote')}
@@ -649,7 +650,7 @@
 		>
 			<div class="text-xs">
 				<span class="text-text-secondary">{$translate('upgrader.footer.selected')}</span>
-				<span class="ml-1 font-mono font-bold text-emerald-400">{$selectedUpgradeCount}</span>
+				<span class="ml-1 font-mono font-bold text-beatport-text">{$selectedUpgradeCount}</span>
 			</div>
 
 			<div class="flex items-center gap-3">
@@ -665,10 +666,11 @@
 					variant="primary"
 					onclick={handleExecuteUpgrade}
 					disabled={$selectedUpgradeCount === 0 || $isUpgrading || isAuthRequired}
-					class="border-emerald-500 bg-emerald-600 py-1.5 text-xs font-semibold shadow-md shadow-emerald-950/40 hover:bg-emerald-500"
+					fill="bg-beatport-deep text-white hover:bg-beatport-tint"
+					class="border-beatport-tint py-1.5 text-xs font-semibold shadow-md shadow-beatport-wash/40"
 				>
 					{#if $isUpgrading}
-						<Icon name="refresh-cw" class="mr-2 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+						<Spinner icon="refresh-cw" color="current" class="mr-2 h-3.5 w-3.5" />
 						{#if $upgradeProgress}
 							{$translate('upgrader.footer.progress', {
 								values: {

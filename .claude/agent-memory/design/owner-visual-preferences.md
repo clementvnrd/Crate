@@ -1,15 +1,15 @@
 ---
 name: owner-visual-preferences
-description: Clément's visual decisions for Crate's UI — today's look is frozen (CRA-141), keep colour families, his colour vocabulary
+description: Clément's visual decisions for Crate's UI — CRA-141 (2026-10-01) allows exactly five changes, the dark look is otherwise kept; colour families stay; his vocabulary
 metadata:
   type: feedback
 ---
 
-**Freeze (CRA-141, 2026-09-30): no visible change in the dark theme.** Clément likes today's look (Player neon glass in cyan and amber, Pulse colour per metric, coloured toolbar badges, Beatport neon green) and reopened the charter because the first version *prescribed changes* to it. Until he answers CRA-141: no colour, radius, glow, font weight, text size, hover/press or layout change, no new colour token — even when DESIGN.md's charter or a "rule" (rounded-md buttons, no glow, 12 px data text) says otherwise.
+**CRA-141 decided (2026-10-01): the dark look stays, except five approved points.** (1) black/white text on accent fills per accent (`--brand-on`, black for all ten); (2) family colour tokens instead of palette classes; (3) Beatport follows the light/dark theme; (4) four touches: Pulse cards rounded-xl, no hover lift/zoom on Pulse KPI cards, DK/Upgrader waveform previews in the Player cyan, toolbar shortcuts coloured only on a label or count badge. Anything else visible in the dark theme is still off-limits.
 
-**Why:** a D11 pass that unified buttons, badges and checkboxes onto the common components' look (rounded-md, font-medium, no glow, 12 px keys, Crate Checkbox) was sent back in full: "remove every visible change".
+**Why:** a first D11 pass that unified buttons, badges and checkboxes onto the common look was sent back in full ("remove every visible change"); he likes today's look and only approved these points one by one.
 
-**How to apply:** when extracting a shared component, give it props/variants so each call site renders pixel-identical to before; never change the look to fit the component. Allowed meanwhile: accessible names, roles, keyboard handling, translations (same French words), a11y cursor fixes, bug fixes of wrong state (e.g. a highlight on the wrong segment), replacing `confirm()` with ConfirmModal, light-theme text that cannot be read (darker shade of the same hue), new screens reusing today's look. Compare dark 1400×900 screenshots before/after and list every difference.
+**How to apply:** a token's dark value must equal the palette shade it replaces (write it as `var(--color-cyan-400)`); prove it with a before/after dark pixel diff of every harness scene and list each difference. When a change is not clearly inside the five points, leave it and report it as a decision (still open after CRA-141: white text on accent count badges and the Checkbox check mark, the darker accent hover under black text, the energy badge and toolbar count badges in light, the MIK logo's sky label).
 
 Colour families stay (CRA-115): never propose "bring the view back to the accent" for Player, Pulse or Beatport.
 

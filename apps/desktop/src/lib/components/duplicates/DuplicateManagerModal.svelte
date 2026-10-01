@@ -13,7 +13,7 @@
 	import { language } from '$lib/stores'
 	import { translate } from '$shared/i18n'
 	import { formatBitrate, formatDurationCompact, formatNumber } from '$shared/utils/format'
-	import { Button, Icon, KeyBadge, Text } from '$lib/components/common'
+	import { Button, Checkbox, Icon, KeyBadge, Spinner, Text } from '$lib/components/common'
 	import Modal from '$lib/components/common/Modal.svelte'
 
 	type Props = {
@@ -217,12 +217,11 @@
 					disabled={$isDuplicateLoading}
 					title={$translate('duplicates.actions.refreshTitle')}
 				>
-					<Icon
-						name="refresh-cw"
-						class="h-3.5 w-3.5 {$isDuplicateLoading
-							? 'animate-spin text-brand-primary motion-reduce:animate-none'
-							: ''}"
-					/>
+					{#if $isDuplicateLoading}
+						<Spinner icon="refresh-cw" color="current" class="h-3.5 w-3.5 text-brand-primary" />
+					{:else}
+						<Icon name="refresh-cw" class="h-3.5 w-3.5" />
+					{/if}
 					<span>{$translate('duplicates.actions.refresh')}</span>
 				</button>
 
@@ -242,9 +241,7 @@
 		<div class="min-h-0 flex-1 space-y-5 overflow-y-auto p-6">
 			{#if $isDuplicateLoading && $duplicateGroups.length === 0}
 				<div class="flex h-72 flex-col items-center justify-center gap-3">
-					<div
-						class="h-10 w-10 animate-spin rounded-full border-3 border-brand-primary border-t-transparent motion-reduce:animate-none"
-					></div>
+					<Spinner icon="ring" class="h-10 w-10 border-3 border-brand-primary" />
 					<Text variant="body-1" class="font-medium text-text-secondary">{$translate('duplicates.scanning')}</Text>
 				</div>
 			{:else if $duplicateGroups.length === 0}
@@ -330,8 +327,8 @@
 													type="button"
 													class="group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all hover:cursor-pointer
 													{isPlayingThis
-														? 'border-[#00E5FF] bg-[#00E5FF] text-black shadow-md shadow-[#00E5FF]/40'
-														: 'border-stroke bg-surface-2 text-text-primary hover:border-[#00E5FF]/60 hover:bg-[#00E5FF]/15 hover:text-[#00E5FF]'}"
+														? 'border-deck-live bg-deck-live text-black shadow-md shadow-deck-live/40'
+														: 'border-stroke bg-surface-2 text-text-primary hover:border-deck-live/60 hover:bg-deck-live/15 hover:text-deck-live-text'}"
 													onclick={() => handleTogglePlay(track)}
 													title={isPlayingThis
 														? $translate('duplicates.track.pause')
@@ -367,7 +364,7 @@
 												{/if}
 												<span
 													class="font-mono text-xs font-semibold tabular-nums {isPlayingThis
-														? 'text-[#00E5FF]'
+														? 'text-deck-live-text'
 														: 'text-text-secondary'}"
 												>
 													{#if isPlayingThis}
@@ -383,7 +380,7 @@
 										<div
 											role="button"
 											tabindex="0"
-											class="group/wave relative flex h-9 w-full cursor-pointer items-center justify-between gap-[2px] rounded-lg border border-stroke/40 bg-surface-0/70 px-2.5 py-1.5 transition-all select-none hover:border-[#00E5FF]/40 hover:bg-surface-0"
+											class="group/wave relative flex h-9 w-full cursor-pointer items-center justify-between gap-[2px] rounded-lg border border-stroke/40 bg-surface-0/70 px-2.5 py-1.5 transition-all select-none hover:border-deck-live/40 hover:bg-surface-0"
 											onclick={(e) => handleWaveformClick(e, track)}
 											onkeydown={(e) => {
 												if (e.key === 'Enter' || e.key === ' ') {
@@ -398,8 +395,8 @@
 												<div class="flex h-full flex-1 items-center justify-center">
 													<div
 														class="w-full rounded-full transition-all duration-75 {isPast
-															? 'bg-[#00E5FF] shadow-[0_0_6px_rgba(0,229,255,0.7)]'
-															: 'bg-[#38BDF8]/35 group-hover/wave:bg-[#38BDF8]/55'}"
+															? 'bg-deck-live shadow-[0_0_6px_rgba(6,182,212,0.7)]'
+															: 'bg-deck-live/35 group-hover/wave:bg-deck-live/55'}"
 														style="height: {Math.max(16, Math.round(barHeight * 100))}%;"
 													></div>
 												</div>
@@ -408,7 +405,7 @@
 											{#if isCurrent}
 												<!-- Glowing Playhead -->
 												<div
-													class="pointer-events-none absolute inset-y-0 w-[2px] bg-[#00E5FF] shadow-[0_0_8px_#00E5FF] transition-[left] duration-100"
+													class="pointer-events-none absolute inset-y-0 w-[2px] bg-deck-live shadow-[0_0_8px_var(--deck-live)] transition-[left] duration-100"
 													style="left: {progressPercent}%;"
 												></div>
 											{/if}
@@ -482,23 +479,21 @@
 
 									<!-- Action Checkbox -->
 									<div class="flex items-center justify-between border-t border-stroke/40 pt-2.5">
-										<label
-											class="flex items-center gap-2 text-xs font-medium select-none hover:cursor-pointer {isSelectedForDeletion
+										<Checkbox
+											appearance="native"
+											checked={isSelectedForDeletion}
+											onchange={() => duplicateStore.toggleTrackSelection(track.id)}
+											labelClass="flex items-center gap-2 text-xs font-medium select-none hover:cursor-pointer {isSelectedForDeletion
 												? 'text-rose-400'
 												: 'text-text-secondary'}"
+											inputClass="h-4 w-4 rounded border-stroke bg-surface-2 text-rose-500 hover:cursor-pointer focus:ring-rose-500"
 										>
-											<input
-												type="checkbox"
-												checked={isSelectedForDeletion}
-												onchange={() => duplicateStore.toggleTrackSelection(track.id)}
-												class="h-4 w-4 rounded border-stroke bg-surface-2 text-rose-500 hover:cursor-pointer focus:ring-rose-500"
-											/>
 											<span
 												>{isSelectedForDeletion
 													? $translate('duplicates.track.markedForDeletion')
 													: $translate('duplicates.track.keep')}</span
 											>
-										</label>
+										</Checkbox>
 									</div>
 								</div>
 							{/each}
@@ -531,7 +526,7 @@
 					class="py-1.5 text-xs font-semibold shadow-md shadow-rose-950/40"
 				>
 					{#if isDeleting}
-						<Icon name="refresh-cw" class="mr-2 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+						<Spinner icon="refresh-cw" color="current" class="mr-2 h-3.5 w-3.5" />
 						{$translate('duplicates.footer.deleting')}
 					{:else}
 						<Icon name="trash" class="mr-2 h-3.5 w-3.5" />

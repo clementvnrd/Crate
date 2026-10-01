@@ -2,7 +2,7 @@
 	import { toErrorMessage } from '$shared/utils/errors'
 	import { onMount } from 'svelte'
 	import { listen } from '@tauri-apps/api/event'
-	import { Button, IconButton, Tooltip, MixedInKeyLogo } from '$lib/components/common'
+	import { Button, IconButton, Tooltip, MixedInKeyLogo, Spinner } from '$lib/components/common'
 	import Icon from '$lib/components/common/Icon.svelte'
 	import { SyncStatusIndicator } from '$lib/components/cloud-sync'
 	import { isDev, libraryStore, language } from '$lib/stores'
@@ -130,12 +130,11 @@
 				<MixedInKeyLogo variant="icon" size="sm" animated={syncingMik} />
 			</span>
 			<div class="h-3 w-px bg-stroke"></div>
-			<Icon
-				name="refresh-cw"
-				class="h-3 w-3 text-sky-400 {syncingMik
-					? 'animate-spin motion-reduce:animate-none'
-					: 'transition-transform duration-300 group-hover:rotate-180'}"
-			/>
+			{#if syncingMik}
+				<Spinner icon="refresh-cw" color="current" class="h-3 w-3 text-sky-400" />
+			{:else}
+				<Icon name="refresh-cw" class="h-3 w-3 text-sky-400 transition-transform duration-300 group-hover:rotate-180" />
+			{/if}
 		</button>
 	</Tooltip>
 
@@ -153,12 +152,12 @@
 			type="button"
 			class="relative flex h-8 w-8 items-center justify-center rounded-lg border shadow-sm transition-all hover:cursor-pointer active:scale-95
 			{$duplicateGroupCount > 0
-				? 'border-amber-500/40 bg-amber-950/30 text-amber-300 hover:border-amber-400 hover:bg-amber-900/40'
+				? 'border-warning-tint/40 bg-warning-wash/30 text-warning-text hover:border-warning-text hover:bg-warning-wash-hover/40'
 				: 'border-stroke bg-surface-2/80 text-text-secondary hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary'}"
 			onclick={onOpenDuplicates}
 			aria-label={$translate('nav.toolbar.duplicates')}
 		>
-			<Icon name="clone" class="h-4 w-4 {$duplicateGroupCount > 0 ? 'text-amber-400' : 'text-text-secondary'}" />
+			<Icon name="clone" class="h-4 w-4 {$duplicateGroupCount > 0 ? 'text-warning-text' : 'text-text-secondary'}" />
 			{#if $duplicateGroupCount > 0}
 				<span
 					class="absolute -right-1 -bottom-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-surface-0 bg-red-500 px-1 font-mono text-[10px] font-bold text-white shadow-md"
@@ -179,17 +178,14 @@
 	>
 		<button
 			type="button"
-			class="relative flex h-8 w-8 items-center justify-center rounded-lg border shadow-sm transition-all hover:cursor-pointer active:scale-95
-			{$upgraderMatchCount > 0
-				? 'border-emerald-500/40 bg-emerald-950/30 text-emerald-300 hover:border-emerald-400 hover:bg-emerald-900/40'
-				: 'border-stroke bg-surface-2/80 text-text-secondary hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary'}"
+			class="relative flex h-8 w-8 items-center justify-center rounded-lg border border-stroke bg-surface-2/80 text-text-secondary shadow-sm transition-all hover:cursor-pointer hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary active:scale-95"
 			onclick={onOpenUpgrader}
 			aria-label="Beatport Quality Upgrader"
 		>
-			<Icon name="sparkles" class="h-4 w-4 {$upgraderMatchCount > 0 ? 'text-emerald-400' : 'text-text-secondary'}" />
+			<Icon name="sparkles" class="h-4 w-4 text-text-secondary" />
 			{#if $upgraderMatchCount > 0}
 				<span
-					class="absolute -right-1 -bottom-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-surface-0 bg-emerald-500 px-1 font-mono text-[10px] font-bold text-white shadow-md"
+					class="absolute -right-1 -bottom-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-surface-0 bg-beatport-tint px-1 font-mono text-[10px] font-bold text-white shadow-md"
 				>
 					{$upgraderMatchCount}
 				</span>
@@ -231,15 +227,16 @@
 	<Tooltip text={$translate('nav.toolbar.rekordboxXmlTooltip')} position="bottom" delay={250}>
 		<button
 			type="button"
-			class="relative flex h-8 w-8 items-center justify-center rounded-lg border border-stroke bg-surface-2/80 text-text-secondary shadow-sm transition-all hover:cursor-pointer hover:border-cyan-500/50 hover:bg-cyan-950/30 hover:text-cyan-400 active:scale-95 disabled:opacity-50"
+			class="relative flex h-8 w-8 items-center justify-center rounded-lg border border-stroke bg-surface-2/80 text-text-secondary shadow-sm transition-all hover:cursor-pointer hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary active:scale-95 disabled:opacity-50"
 			onclick={handleExportRekordboxXml}
 			disabled={exportingXml}
 			aria-label={$translate('nav.toolbar.rekordboxXml')}
 		>
-			<Icon
-				name={exportingXml ? 'loader' : 'download'}
-				class="h-4 w-4 text-cyan-400 {exportingXml ? 'animate-spin motion-reduce:animate-none' : ''}"
-			/>
+			{#if exportingXml}
+				<Spinner icon="loader" color="current" class="h-4 w-4 text-text-secondary" />
+			{:else}
+				<Icon name="download" class="h-4 w-4 text-text-secondary" />
+			{/if}
 		</button>
 	</Tooltip>
 
