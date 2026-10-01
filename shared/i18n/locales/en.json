@@ -43,7 +43,9 @@
 			"stats": "Statistics",
 			"statsTooltip": "Crate Pulse & statistics",
 			"rekordboxXml": "Export to Rekordbox XML",
-			"rekordboxXmlTooltip": "Export the collection as Rekordbox XML (ready for CDJ / Rekordbox)"
+			"rekordboxXmlTooltip": "Export the collection as Rekordbox XML (ready for CDJ / Rekordbox)",
+			"discrepancyReport": "Discrepancy report",
+			"discrepancyReportTooltip": "Compare Crate, Mixed In Key and Rekordbox for differences"
 		}
 	},
 	"settings": {
@@ -1651,6 +1653,66 @@
 			"ignoreFailed": "Could not ignore the group",
 			"deleted": "{count, plural, one {# duplicate deleted (moved to Trash)} other {# duplicates deleted (moved to Trash)}}",
 			"deleteFailed": "Could not delete the duplicates"
+		}
+	},
+	"discrepancy": {
+		"title": "Discrepancy report",
+		"subtitle": "{count, plural, one {# track in Crate} other {# tracks in Crate}}",
+		"actions": {
+			"refresh": "Refresh",
+			"refreshTitle": "Run the comparison again"
+		},
+		"loading": "Comparing Crate, Mixed In Key and Rekordbox…",
+		"loadFailed": "Could not build the report",
+		"allClear": {
+			"title": "Nothing to report",
+			"body": "No missing file and no metadata difference were found."
+		},
+		"missingFiles": {
+			"title": "Missing files",
+			"count": "{count, plural, one {# file} other {# files}}",
+			"empty": "Every file is where Crate expects it.",
+			"truncated": "Showing 500 of {total}.",
+			"reason": {
+				"missing": "Missing",
+				"volume_unmounted": "Drive not connected"
+			},
+			"reasonHint": {
+				"missing": "The file is gone from where Crate expects it.",
+				"volume_unmounted": "The drive holding this file looks unplugged, not necessarily missing."
+			}
+		},
+		"mixedInKey": {
+			"title": "Mixed In Key",
+			"unavailable": "Mixed In Key isn't installed, or its database can't be read."
+		},
+		"rekordbox": {
+			"title": "Rekordbox",
+			"noXml": "Compare with Rekordbox by choosing an exported collection (File → Export Collection in xml format, in Rekordbox).",
+			"chooseXml": "Choose a Rekordbox XML export…",
+			"changeXml": "Use a different export",
+			"xmlDialogTitle": "Choose a Rekordbox XML export",
+			"xmlFilter": "Rekordbox XML"
+		},
+		"comparison": {
+			"matched": "{count, plural, one {# track matches} other {# tracks match}}",
+			"differencesTitle": "Differences",
+			"differencesEmpty": "No metadata difference.",
+			"truncated": "Showing 500 of {total}.",
+			"missingFromOther": "In Crate, not in {tool}",
+			"missingFromOtherEmpty": "Every Crate track was found in {tool}.",
+			"missingFromCrate": "In {tool}, not in Crate",
+			"missingFromCrateEmpty": "{tool} has nothing Crate doesn't already have.",
+			"missingFromCrateHint": "Possible import: only {tool} has this track."
+		},
+		"field": {
+			"key": "Key",
+			"bpm": "Tempo",
+			"energy": "Energy",
+			"cues": "Cues",
+			"note": {
+				"half_or_double_time": "Half/double tempo"
+			}
 		}
 	}
 }

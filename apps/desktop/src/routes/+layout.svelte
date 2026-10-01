@@ -454,6 +454,7 @@
 					onDevTools={() => $pageActions?.handleToggleDevTools()}
 					onOpenDuplicates={() => $pageActions?.getModalOrchestrator()?.openDuplicateManagerModal()}
 					onOpenUpgrader={() => $pageActions?.getModalOrchestrator()?.openBeatportUpgraderModal()}
+					onOpenDiscrepancyReport={() => $pageActions?.getModalOrchestrator()?.openDiscrepancyReportModal()}
 				/>
 			</div>
 

@@ -49,6 +49,7 @@
 		| { type: 'settings'; initialTab?: SettingsPage }
 		| { type: 'duplicateManager' }
 		| { type: 'beatportUpgrader' }
+		| { type: 'discrepancyReport' }
 		| {
 				type: 'duplicateTrack'
 				duplicates: DuplicateTrack[]
@@ -91,7 +92,7 @@
 	import { TagInputModal } from '$lib/components/tags'
 	import { DeviceInfoModal, ReformatDeviceModal } from '$lib/components/devices'
 	import { SettingsModal } from '$lib/components/settings'
-	import { RelocateTrackModal } from '$lib/components/library'
+	import { RelocateTrackModal, DiscrepancyReportModal } from '$lib/components/library'
 	import { DuplicateManagerModal } from '$lib/components/duplicates'
 	import { BeatportUpgraderModal } from '$lib/components/upgrader'
 	import { SmartPlaylistModal } from '$lib/components/playlists'
@@ -329,6 +330,10 @@
 
 	export function openBeatportUpgraderModal() {
 		activeModal = { type: 'beatportUpgrader' }
+	}
+
+	export function openDiscrepancyReportModal() {
+		activeModal = { type: 'discrepancyReport' }
 	}
 
 	export function openDuplicateTrackModal(
@@ -1043,6 +1048,11 @@
 <!-- Beatport Quality Upgrader Modal -->
 {#if activeModal.type === 'beatportUpgrader'}
 	<BeatportUpgraderModal open={true} onClose={closeAll} />
+{/if}
+
+<!-- Discrepancy Report Modal (Crate / Mixed In Key / Rekordbox) -->
+{#if activeModal.type === 'discrepancyReport'}
+	<DiscrepancyReportModal open={true} onClose={closeAll} />
 {/if}
 
 <!-- Duplicate Track Modal -->
