@@ -170,44 +170,159 @@ impl ExportService {
             }
         };
 
-        let track_count = tracks.len();
-
         // 2. Fetch cues for all exported tracks
-        let mut cues_by_track: std::collections::HashMap<String, Vec<Cue>> =
-            std::collections::HashMap::new();
-        {
-            let mut cue_stmt = conn.prepare(
-                r#"
-                SELECT id, track_id, position_ms, type, loop_end_ms, hot_cue_index, name, color
-                FROM cues
-                ORDER BY position_ms ASC
-                "#,
-            )?;
-            let cue_rows = cue_stmt.query_map([], |row| {
-                let cue_type_str: String = row.get(3)?;
-                let cue_type = cue_type_str.parse().unwrap_or(CueType::Memory);
-                Ok(Cue {
-                    id: row.get(0)?,
-                    track_id: row.get(1)?,
-                    position_ms: row.get(2)?,
-                    cue_type,
-                    loop_end_ms: row.get(4)?,
-                    hot_cue_index: row.get(5)?,
-                    name: row.get(6)?,
-                    color: row.get(7)?,
-                })
-            })?;
-            for cue in cue_rows.flatten() {
-                cues_by_track
-                    .entry(cue.track_id.clone())
-                    .or_default()
-                    .push(cue);
-            }
-        }
+        let cues_by_track = Self::fetch_cues(&conn)?;
 
         // The database is not needed any more: release it before building and writing the file,
         // so the rest of the app is not blocked behind a large export.
         drop(conn);
+
+        Self::write_rekordbox_xml(target_path, &tracks, &cues_by_track, &playlist_track_map)
+    }
+
+    /// Export a caller-ordered list of tracks (e.g. a Set-mode plan) to a standard Pioneer
+    /// rekordbox.xml file, as a single playlist named `set_name` holding exactly that order.
+    /// Track ids that no longer resolve to a library track (deleted since being added to the set)
+    /// are skipped rather than failing the whole export; at least one must resolve.
+    pub fn export_set_rekordbox_xml(
+        &self,
+        target_path: &Path,
+        track_ids: &[String],
+        set_name: &str,
+    ) -> Result<usize> {
+        if track_ids.is_empty() {
+            return Err(CrateError::InvalidOperation(
+                "A set needs at least one track".to_string(),
+            ));
+        }
+
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+
+        let placeholders = vec!["?"; track_ids.len()].join(",");
+        let sql = format!(
+            r#"
+            SELECT id, file_path, file_hash,
+                   title, artist, album, year, genre, label, catalog_number,
+                   duration_ms, bpm, key, energy, bitrate, sample_rate, format,
+                   analysis_source, NULL as waveform_data,
+                   rating, play_count,
+                   date_added, date_modified, last_played,
+                   rekordbox_id, artwork_path, artwork_source, color,
+                   library_root_id, relative_path
+            FROM tracks
+            WHERE id IN ({placeholders})
+            "#
+        );
+        let mut stmt = conn.prepare(&sql)?;
+        let params: Vec<&dyn rusqlite::ToSql> = track_ids
+            .iter()
+            .map(|id| id as &dyn rusqlite::ToSql)
+            .collect();
+        let rows = stmt.query_map(params.as_slice(), |row| {
+            Ok(Track {
+                id: row.get(0)?,
+                file_path: row.get(1)?,
+                file_hash: row.get(2)?,
+                title: row.get(3)?,
+                artist: row.get(4)?,
+                album: row.get(5)?,
+                year: row.get(6)?,
+                genre: row.get(7)?,
+                label: row.get(8)?,
+                catalog_number: row.get(9)?,
+                duration_ms: row.get(10)?,
+                bpm: row.get(11)?,
+                key: row.get(12)?,
+                energy: row.get(13)?,
+                bitrate: row.get(14)?,
+                sample_rate: row.get(15)?,
+                format: row.get(16)?,
+                analysis_source: row.get(17)?,
+                waveform_data: None,
+                rating: row.get(19)?,
+                play_count: row.get(20)?,
+                date_added: row.get(21)?,
+                date_modified: row.get(22)?,
+                last_played: row.get(23)?,
+                rekordbox_id: row.get(24)?,
+                artwork_path: row.get(25)?,
+                artwork_source: row.get(26)?,
+                color: row.get(27)?,
+                library_root_id: row.get(28)?,
+                relative_path: row.get(29)?,
+                tags: Vec::new(),
+            })
+        })?;
+        let by_id: std::collections::HashMap<String, Track> =
+            rows.flatten().map(|t| (t.id.clone(), t)).collect();
+
+        // Keep the caller's order, dropping ids that no longer exist in the library.
+        let tracks: Vec<Track> = track_ids
+            .iter()
+            .filter_map(|id| by_id.get(id).cloned())
+            .collect();
+        if tracks.is_empty() {
+            return Err(CrateError::InvalidOperation(
+                "None of this set's tracks were found in the library".to_string(),
+            ));
+        }
+
+        let cues_by_track = Self::fetch_cues(&conn)?;
+        drop(conn);
+
+        let playlist_track_map = vec![(
+            "set".to_string(),
+            set_name.to_string(),
+            tracks.iter().map(|t| t.id.clone()).collect(),
+        )];
+
+        Self::write_rekordbox_xml(target_path, &tracks, &cues_by_track, &playlist_track_map)
+    }
+
+    /// Every cue, grouped by track id. Not filtered to a given track set (same as before this was
+    /// extracted): callers only ever look up the ids they care about.
+    fn fetch_cues(conn: &Connection) -> Result<std::collections::HashMap<String, Vec<Cue>>> {
+        let mut cues_by_track: std::collections::HashMap<String, Vec<Cue>> =
+            std::collections::HashMap::new();
+        let mut cue_stmt = conn.prepare(
+            r#"
+            SELECT id, track_id, position_ms, type, loop_end_ms, hot_cue_index, name, color
+            FROM cues
+            ORDER BY position_ms ASC
+            "#,
+        )?;
+        let cue_rows = cue_stmt.query_map([], |row| {
+            let cue_type_str: String = row.get(3)?;
+            let cue_type = cue_type_str.parse().unwrap_or(CueType::Memory);
+            Ok(Cue {
+                id: row.get(0)?,
+                track_id: row.get(1)?,
+                position_ms: row.get(2)?,
+                cue_type,
+                loop_end_ms: row.get(4)?,
+                hot_cue_index: row.get(5)?,
+                name: row.get(6)?,
+                color: row.get(7)?,
+            })
+        })?;
+        for cue in cue_rows.flatten() {
+            cues_by_track
+                .entry(cue.track_id.clone())
+                .or_default()
+                .push(cue);
+        }
+        Ok(cues_by_track)
+    }
+
+    /// Builds the COLLECTION + PLAYLISTS XML from already-fetched data and writes it to
+    /// `target_path`. Shared by the library/playlists export and the Set-mode export.
+    fn write_rekordbox_xml(
+        target_path: &Path,
+        tracks: &[Track],
+        cues_by_track: &std::collections::HashMap<String, Vec<Cue>>,
+        playlist_track_map: &[(String, String, Vec<String>)],
+    ) -> Result<usize> {
+        let track_count = tracks.len();
 
         // Position of each track in the COLLECTION, for the playlists' `Key` attributes. A map
         // instead of a scan per playlist entry (which was O(tracks x entries)); the first
@@ -218,7 +333,7 @@ impl ExportService {
             key_by_track.entry(track.id.as_str()).or_insert(idx + 1);
         }
 
-        // 3. Build XML
+        // Build XML
         let mut xml = String::with_capacity(1024 * 1024);
         xml.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         xml.push_str("<DJ_PLAYLISTS Version=\"1.0.0\">\n");
@@ -272,7 +387,7 @@ impl ExportService {
         xml.push_str("    <NODE Type=\"0\" Name=\"ROOT\">\n");
 
         for (_pid, pname, track_ids) in playlist_track_map {
-            let p_escaped = xml_escape(&pname);
+            let p_escaped = xml_escape(pname);
             xml.push_str(&format!(
                 "      <NODE Name=\"{}\" Type=\"1\" KeyType=\"0\" Entries=\"{}\">\n",
                 p_escaped,
@@ -477,5 +592,94 @@ mod tests {
         };
         assert_eq!(keys("First"), vec![1, 2]);
         assert_eq!(keys("Second"), vec![2, 3]);
+    }
+
+    fn seed_tracks(conn: &rusqlite::Connection) {
+        conn.execute_batch(
+            "INSERT INTO tracks (id, file_path, title, artist, format, duration_ms, date_added, date_modified) VALUES
+               ('t1', '/Music/one.mp3', 'One', 'A', 'mp3', 200000, '2026-01-01', '2026-01-01'),
+               ('t2', '/Music/two.mp3', 'Two', 'A', 'mp3', 200000, '2026-01-01', '2026-01-01'),
+               ('t3', '/Music/three.mp3', 'Three', 'A', 'mp3', 200000, '2026-01-01', '2026-01-01');",
+        )
+        .unwrap();
+    }
+
+    /// A Set-mode export writes the caller's order, not the COLLECTION's insertion order, and
+    /// groups every track under a single playlist node named after the set.
+    #[test]
+    fn test_set_export_keeps_the_caller_order_in_a_single_named_playlist() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        seed_tracks(&conn);
+        let service = ExportService::new(std::sync::Arc::new(std::sync::Mutex::new(conn)));
+        let path = std::env::temp_dir().join(format!("crate_rb_set_{}.xml", std::process::id()));
+
+        let track_ids = vec!["t3".to_string(), "t1".to_string(), "t2".to_string()];
+        let count = service
+            .export_set_rekordbox_xml(&path, &track_ids, "Friday warehouse")
+            .unwrap();
+        assert_eq!(count, 3);
+
+        let xml = std::fs::read_to_string(&path).unwrap();
+        let _ = std::fs::remove_file(&path);
+
+        assert!(xml.contains("<NODE Name=\"Friday warehouse\" Type=\"1\" KeyType=\"0\" Entries=\"3\">"));
+
+        // The COLLECTION itself is written in the caller's order (Three, One, Two) — not the
+        // table's insertion order (One, Two, Three).
+        let names: Vec<&str> = xml
+            .split("<TRACK TrackID=")
+            .skip(1)
+            .map(|entry| entry.split("Name=\"").nth(1).unwrap().split('"').next().unwrap())
+            .collect();
+        assert_eq!(names, vec!["Three", "One", "Two"]);
+
+        // Exactly one playlist node, referencing every COLLECTION position once, in order.
+        let node = xml
+            .split("<NODE Name=\"Friday warehouse\"")
+            .nth(1)
+            .unwrap()
+            .split("</NODE>")
+            .next()
+            .unwrap();
+        let keys: Vec<u32> = node
+            .split("<TRACK Key=\"")
+            .skip(1)
+            .map(|t| t.split('"').next().unwrap().parse().unwrap())
+            .collect();
+        assert_eq!(keys, vec![1, 2, 3]);
+    }
+
+    /// A track id removed from the library since being added to the set is skipped, not fatal.
+    #[test]
+    fn test_set_export_skips_unresolvable_track_ids() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        seed_tracks(&conn);
+        let service = ExportService::new(std::sync::Arc::new(std::sync::Mutex::new(conn)));
+        let path = std::env::temp_dir().join(format!("crate_rb_set_missing_{}.xml", std::process::id()));
+
+        let track_ids = vec!["t1".to_string(), "deleted".to_string(), "t2".to_string()];
+        let count = service
+            .export_set_rekordbox_xml(&path, &track_ids, "Set")
+            .unwrap();
+        assert_eq!(count, 2);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    /// An empty set, or a set made entirely of ids that no longer exist, is rejected outright
+    /// rather than silently writing an empty file.
+    #[test]
+    fn test_set_export_rejects_empty_or_fully_unresolvable_sets() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        seed_tracks(&conn);
+        let service = ExportService::new(std::sync::Arc::new(std::sync::Mutex::new(conn)));
+        let path = std::env::temp_dir().join(format!("crate_rb_set_empty_{}.xml", std::process::id()));
+
+        assert!(service.export_set_rekordbox_xml(&path, &[], "Set").is_err());
+        assert!(service
+            .export_set_rekordbox_xml(&path, &["ghost".to_string()], "Set")
+            .is_err());
     }
 }

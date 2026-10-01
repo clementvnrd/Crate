@@ -59,3 +59,11 @@ export async function exportRekordboxXml(targetPath: string, playlistIds?: strin
 		playlistIds: playlistIds ?? null,
 	})
 }
+
+/**
+ * Export a Set-mode plan (a caller-ordered list of track ids) to Pioneer Rekordbox XML, as a
+ * single playlist named `setName` holding that exact order.
+ */
+export async function exportSetRekordboxXml(targetPath: string, trackIds: string[], setName: string): Promise<number> {
+	return invoke<number>('export_set_rekordbox_xml', { targetPath, trackIds, setName })
+}

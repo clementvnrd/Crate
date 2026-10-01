@@ -121,3 +121,23 @@ pub async fn export_rekordbox_xml(
     })
     .await
 }
+
+/// Export a Set-mode plan (a caller-ordered list of track ids) to Pioneer rekordbox.xml, as a
+/// single playlist named `set_name` holding that exact order.
+#[tauri::command]
+pub async fn export_set_rekordbox_xml(
+    target_path: String,
+    track_ids: Vec<String>,
+    set_name: String,
+    export_service: State<'_, Arc<ExportService>>,
+) -> Result<usize> {
+    let export_service = export_service.inner().clone();
+    run_blocking(move || {
+        export_service.export_set_rekordbox_xml(
+            std::path::Path::new(&target_path),
+            &track_ids,
+            &set_name,
+        )
+    })
+    .await
+}

@@ -366,6 +366,8 @@ pub fn run() {
             commands::export::resume_export,
             #[cfg(feature = "desktop")]
             commands::export::export_rekordbox_xml,
+            #[cfg(feature = "desktop")]
+            commands::export::export_set_rekordbox_xml,
             // Sync commands (desktop-only)
             #[cfg(feature = "desktop")]
             commands::sync::sync_device,
