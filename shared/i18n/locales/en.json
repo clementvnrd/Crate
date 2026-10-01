@@ -155,7 +155,10 @@
 			"exportFormatPdb": "Rekordbox PDB",
 			"exportFormatPdbDescription": "Legacy format for older CDJs",
 			"exportFormatDeviceLibraryPlus": "Device Library Plus",
-			"exportFormatDeviceLibraryPlusDescription": "For OPUS-QUAD, OMNIS-DUO, XDJ-AZ"
+			"exportFormatDeviceLibraryPlusDescription": "For OPUS-QUAD, OMNIS-DUO, XDJ-AZ",
+			"organisation": "Physical organisation",
+			"organisationDescription": "Rename and move the audio files on disk to match a folder and naming rule. A preview always shows every planned move before anything happens, and an applied run can be undone.",
+			"organisationOpen": "Open the organisation tool"
 		},
 		"discovery": {
 			"metadata": "Metadata",
@@ -721,7 +724,13 @@
 			"resetSpotifyHistoryTitle": "Reset Spotify History",
 			"resetSpotifyHistoryMessage": "{count, plural, =0 {There are no recorded Spotify listens to remove.} =1 {Remove the only recorded Spotify listen?} other {Remove all {count} recorded Spotify listens?}}",
 			"resetSpotifyHistoryBackupWarning": "A full backup of your listening history will be written to {path} before anything is deleted. This cannot be undone.",
-			"resetSpotifyHistoryResyncNote": "Spotify's \"recently played\" sync will then start again from zero and bring back only your last 50 plays — importing an official Spotify export afterwards is safe, duplicates are skipped automatically."
+			"resetSpotifyHistoryResyncNote": "Spotify's \"recently played\" sync will then start again from zero and bring back only your last 50 plays — importing an official Spotify export afterwards is safe, duplicates are skipped automatically.",
+			"applyOrganisationTitle": "Move the files?",
+			"applyOrganisationMessage": "{count, plural, one {# file will be moved to its new location now.} other {# files will be moved to their new location now.}}",
+			"applyOrganisationWarning": "Rekordbox and other tools that remember file paths will lose track of every file that moves, until you resync them.",
+			"applyOrganisationCheckbox": "I understand that tools like Rekordbox will lose track of the moved files",
+			"undoOrganisationTitle": "Undo this run?",
+			"undoOrganisationMessage": "{count, plural, one {# file will be put back exactly where it was.} other {# files will be put back exactly where they were.}}"
 		},
 		"relocate": {
 			"title": "Relocate Track",
@@ -1651,6 +1660,83 @@
 			"ignoreFailed": "Could not ignore the group",
 			"deleted": "{count, plural, one {# duplicate deleted (moved to Trash)} other {# duplicates deleted (moved to Trash)}}",
 			"deleteFailed": "Could not delete the duplicates"
+		}
+	},
+	"organisation": {
+		"title": "Organise files on disk",
+		"subtitle": "Rename and move your audio files to match a folder and naming rule you choose. Nothing moves until you review and confirm the preview.",
+		"rule": {
+			"heading": "Naming rule",
+			"destination": "Destination folder",
+			"destinationPlaceholder": "Choose a folder",
+			"browse": "Browse…",
+			"browseTitle": "Choose the destination folder",
+			"template": "Folder and file name",
+			"templateHelp": "Tokens: {artist}, {album}, {title}, {year}, {genre}, {label}, {bpm}, {key}, {energy}. Must include {title}.",
+			"presets": {
+				"heading": "Common rules",
+				"artistAlbumTrack": "Artist / Album / Artist - Title",
+				"artistAlbumTitle": "Artist / Album / Title",
+				"genreArtistTitle": "Genre / Artist / Title"
+			},
+			"runDryRun": "Run the dry run",
+			"computing": "Computing the dry run…"
+		},
+		"planError": "The dry run could not be computed",
+		"summary": {
+			"toMove": "Will move",
+			"alreadyInPlace": "Already in place",
+			"blocked": "Blocked"
+		},
+		"empty": {
+			"title": "The library is already organised",
+			"body": "Every file already matches this rule. There is nothing to move."
+		},
+		"warning": {
+			"blocked": "{count, plural, one {# file cannot be moved — see its status below.} other {# files cannot be moved — see their status below.}}",
+			"externalTools": "Moving files makes Rekordbox and other tools that remember file paths lose track of them."
+		},
+		"status": {
+			"move": "Will move",
+			"alreadyInPlace": "Already in place",
+			"sourceMissing": "File not found",
+			"targetExists": "Target taken",
+			"crossVolume": "Different volume"
+		},
+		"table": {
+			"heading": "Planned moves",
+			"track": "Track",
+			"from": "Current location",
+			"to": "New location",
+			"status": "Status"
+		},
+		"apply": {
+			"button": "{count, plural, one {Move # file} other {Move # files}}",
+			"applying": "Moving files…"
+		},
+		"result": {
+			"success": "{count, plural, one {# file moved.} other {# files moved.}}",
+			"partialFailureTitle": "{count, plural, one {# file could not be moved:} other {# files could not be moved:}}"
+		},
+		"batches": {
+			"heading": "Past runs",
+			"empty": "No organisation run has been applied yet.",
+			"summary": "{files, plural, one {# file moved} other {# files moved}}",
+			"undoneCount": "{count, plural, one {# already undone} other {# already undone}}",
+			"undo": "Undo",
+			"undoing": "Undoing…",
+			"fullyUndone": "Undone",
+			"undoResultPartial": "{count, plural, one {# file could not be put back:} other {# files could not be put back:}}"
+		},
+		"toast": {
+			"planFailed": "Could not compute the dry run",
+			"applied": "{count, plural, one {# file moved} other {# files moved}}",
+			"applyPartialFailure": "{count, plural, one {# file could not be moved} other {# files could not be moved}}",
+			"applyFailed": "Could not move the files",
+			"mustAcknowledge": "Check the box to confirm you understand before moving files.",
+			"undone": "{count, plural, one {# file put back} other {# files put back}}",
+			"undoPartialFailure": "{count, plural, one {# file could not be put back} other {# files could not be put back}}",
+			"undoFailed": "Could not undo this run"
 		}
 	}
 }
