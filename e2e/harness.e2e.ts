@@ -65,7 +65,7 @@ test('appearance parameters reach the app', async ({ page }) => {
 	await expect(html).toHaveAttribute('data-theme', 'light')
 	await expect(html).toHaveAttribute('data-accent', 'amber')
 	await expect(html).toHaveAttribute('data-font', 'fira-code')
-	await expect(page.getByText('16 pistes')).toBeVisible()
+	await expect(page.getByText('16 morceaux')).toBeVisible()
 })
 
 test('?beatport=out starts logged out, the default is logged in', async ({ page }) => {
