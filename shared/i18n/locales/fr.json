@@ -717,7 +717,11 @@
 			"removeDiscoveryReleasesWarning": "Cette action est irréversible. Les sorties seront supprimées de toutes les playlists.",
 			"removeDiscoveryReleasesFromPlaylistTitle": "Retirer de la playlist",
 			"removeDiscoveryReleasesFromPlaylistMessage": "{count, plural, =1 {Retirer cette sortie de la playlist ?} other {Retirer {count} sorties de la playlist ?}}",
-			"deleteReleasesFromCollection": "Supprimer également les sorties de ma collection"
+			"deleteReleasesFromCollection": "Supprimer également les sorties de ma collection",
+			"resetSpotifyHistoryTitle": "Réinitialiser l'historique Spotify",
+			"resetSpotifyHistoryMessage": "{count, plural, =0 {Aucune écoute Spotify enregistrée à supprimer.} =1 {Supprimer l'unique écoute Spotify enregistrée ?} other {Supprimer les {count} écoutes Spotify enregistrées ?}}",
+			"resetSpotifyHistoryBackupWarning": "Une sauvegarde complète de votre historique d'écoute sera enregistrée dans {path} avant toute suppression. Cette action est irréversible.",
+			"resetSpotifyHistoryResyncNote": "La synchronisation « écoutes récentes » de Spotify repartira ensuite de zéro et ne ramènera que vos 50 dernières écoutes — importer un export officiel Spotify par la suite est sans risque, les doublons sont ignorés automatiquement."
 		},
 		"relocate": {
 			"title": "Relocaliser le morceau",
@@ -1220,6 +1224,8 @@
 			"connect": "Se connecter",
 			"importing": "Import…",
 			"importJson": "Importer JSON",
+			"resetSpotifyHistory": "Réinitialiser l'historique Spotify",
+			"resettingSpotifyHistory": "Réinitialisation…",
 			"detected": "Détecté",
 			"notDetected": "Non détecté",
 			"djSessions": "{count, plural, one {# session DJ} other {# sessions DJ}}",
@@ -1273,6 +1279,8 @@
 			"importFailed": "Erreur lors de l'import de l'archive Spotify",
 			"rekordboxSynced": "Rekordbox synchronisé : {count, plural, one {# écoute enregistrée} other {# écoutes enregistrées}}",
 			"rekordboxFailed": "Erreur lors de la synchronisation avec Rekordbox",
+			"spotifyHistoryReset": "Historique Spotify réinitialisé : {count, plural, one {# écoute supprimée} other {# écoutes supprimées}}",
+			"spotifyHistoryResetFailed": "Erreur lors de la réinitialisation de l'historique Spotify",
 			"mikToggleFailed": "Impossible de modifier le suivi Mixed In Key : {error}",
 			"redirectCopied": "Redirect URI copié dans le presse-papiers !",
 			"clientIdRequired": "Veuillez renseigner un Client ID Spotify valide",

@@ -12,6 +12,7 @@ import type {
 	SpotifyAuthState,
 	SpotifyImportResult,
 	SpotifyNowPlaying,
+	SpotifyResetResult,
 	StatsSummary,
 	TimeRange,
 	TopArtistItem,
@@ -113,6 +114,20 @@ export async function importSpotifyHistoryJson(jsonContent: string): Promise<Spo
 
 export async function syncSpotifyRecentlyPlayed(): Promise<number> {
 	return invoke<number>('sync_spotify_recently_played')
+}
+
+/** Number of currently recorded Spotify listens, shown before the owner confirms a reset. */
+export async function countSpotifyListens(): Promise<number> {
+	return invoke<number>('count_spotify_listens')
+}
+
+/**
+ * Deletes every Spotify-sourced listen, after writing a full history backup to the app's data
+ * folder. Refuses to delete anything if that backup failed. Every other source (library, Mixed In
+ * Key, Rekordbox) is left untouched.
+ */
+export async function resetSpotifyListeningHistory(): Promise<SpotifyResetResult> {
+	return invoke<SpotifyResetResult>('reset_spotify_listening_history')
 }
 
 // ==========================================

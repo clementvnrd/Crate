@@ -1,15 +1,17 @@
 <script lang="ts">
 	import type { SpotifyAuthState, SpotifyNowPlaying, RekordboxSession } from '$shared/types'
-	import { statsStore, isSyncingRekordbox, isImportingSpotify } from '$shared/stores/stats'
+	import { statsStore, isSyncingRekordbox, isImportingSpotify, isResettingSpotifyHistory } from '$shared/stores/stats'
 	import * as statsApi from '$shared/api/stats'
 	import Icon from '$lib/components/common/Icon.svelte'
 	import ToggleSwitch from '$lib/components/common/ToggleSwitch.svelte'
-	import { Button, Spinner, focusTrap } from '$lib/components/common'
+	import { Button, ConfirmModal, Spinner, focusTrap } from '$lib/components/common'
 	import { openUrl } from '@tauri-apps/plugin-opener'
 	import { toastStore } from '$shared/stores/toast'
 	import { listen } from '@tauri-apps/api/event'
 	import { onMount } from 'svelte'
 	import { translate } from '$shared/i18n'
+	import { toErrorMessage } from '$shared/utils/errors'
+	import { appDataDir } from '$lib/stores/app'
 
 	type Props = {
 		spotifyAuth: SpotifyAuthState | null
@@ -37,6 +39,34 @@
 		} catch (err) {
 			toastStore.error($translate('stats.toast.mikToggleFailed', { values: { error: String(err) } }))
 		}
+	}
+
+	// Reset Spotify history: an irreversible action, so it goes through the shared confirmation
+	// dialog, which states how many listens will be removed and where the safety backup lands
+	// before the owner can confirm.
+	let showResetSpotifyConfirm = $state(false)
+	let resetSpotifyCount = $state<number | null>(null)
+	let isLoadingResetSpotifyCount = $state(false)
+
+	async function openResetSpotifyConfirm() {
+		isLoadingResetSpotifyCount = true
+		try {
+			resetSpotifyCount = await statsApi.countSpotifyListens()
+			showResetSpotifyConfirm = true
+		} catch (err) {
+			toastStore.error(toErrorMessage(err, $translate('stats.toast.spotifyHistoryResetFailed')))
+		} finally {
+			isLoadingResetSpotifyCount = false
+		}
+	}
+
+	function cancelResetSpotifyConfirm() {
+		showResetSpotifyConfirm = false
+	}
+
+	async function confirmResetSpotifyHistory() {
+		showResetSpotifyConfirm = false
+		await statsStore.resetSpotifyHistory()
 	}
 
 	let fileInputRef: HTMLInputElement | undefined
@@ -282,6 +312,21 @@
 					<span>{$translate('stats.integrations.importJson')}</span>
 				{/if}
 			</button>
+
+			<Button
+				variant="ghost-danger"
+				size="sm"
+				onclick={openResetSpotifyConfirm}
+				disabled={isLoadingResetSpotifyCount || $isResettingSpotifyHistory}
+			>
+				{#if isLoadingResetSpotifyCount || $isResettingSpotifyHistory}
+					<Spinner class="h-3.5 w-3.5" />
+					<span>{$translate('stats.integrations.resettingSpotifyHistory')}</span>
+				{:else}
+					<Icon name="trash" class="h-3.5 w-3.5" />
+					<span>{$translate('stats.integrations.resetSpotifyHistory')}</span>
+				{/if}
+			</Button>
 		</div>
 	</div>
 
@@ -664,3 +709,20 @@
 		</div>
 	</div>
 {/if}
+
+<!-- ========================================================================= -->
+<!-- Reset Spotify History Confirmation -->
+<!-- ========================================================================= -->
+<ConfirmModal
+	open={showResetSpotifyConfirm}
+	title={$translate('modals.confirm.resetSpotifyHistoryTitle')}
+	message={$translate('modals.confirm.resetSpotifyHistoryMessage', { values: { count: resetSpotifyCount ?? 0 } })}
+	warnings={[
+		$translate('modals.confirm.resetSpotifyHistoryBackupWarning', { values: { path: $appDataDir } }),
+		$translate('modals.confirm.resetSpotifyHistoryResyncNote'),
+	]}
+	confirmLabel={$translate('modals.confirm.resetSpotifyHistoryTitle')}
+	destructive={true}
+	onConfirm={confirmResetSpotifyHistory}
+	onCancel={cancelResetSpotifyConfirm}
+/>

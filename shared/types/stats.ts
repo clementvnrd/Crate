@@ -90,6 +90,12 @@ export interface SpotifyImportResult {
 	total_minutes: number
 }
 
+/** Result of resetting the Spotify-sourced part of the listening history. */
+export interface SpotifyResetResult {
+	deleted_count: number
+	backup_path: string
+}
+
 /** Rekordbox DJ performance session */
 export interface RekordboxSession {
 	id: string

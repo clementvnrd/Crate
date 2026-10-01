@@ -14,7 +14,13 @@ import {
 	suggestSetOrder,
 	undoOrganisation,
 } from './library'
-import { exportListeningHistory, getRecap, getRekordboxSessionTimeline } from './stats'
+import {
+	countSpotifyListens,
+	exportListeningHistory,
+	getRecap,
+	getRekordboxSessionTimeline,
+	resetSpotifyListeningHistory,
+} from './stats'
 
 // Tauri turns the camelCase keys of the JavaScript side into the snake_case parameters of the Rust
 // commands, and an `Option` parameter is sent as `null` when it is absent. These tests pin the
@@ -40,6 +46,16 @@ describe('the listening-history commands', () => {
 	it('reads the timeline of one set', async () => {
 		await getRekordboxSessionTimeline('session-1')
 		expect(invoke).toHaveBeenCalledWith('get_rekordbox_session_timeline', { sessionId: 'session-1' })
+	})
+
+	it('counts Spotify listens with no arguments', async () => {
+		await countSpotifyListens()
+		expect(invoke).toHaveBeenCalledWith('count_spotify_listens')
+	})
+
+	it('resets the Spotify history with no arguments', async () => {
+		await resetSpotifyListeningHistory()
+		expect(invoke).toHaveBeenCalledWith('reset_spotify_listening_history')
 	})
 
 	it('reads the discovery funnel for all time, or from a day', async () => {
