@@ -58,7 +58,7 @@ Every `.md` document (README, CHANGELOG, `tracking/`, `DESIGN.md`, `.claude/` ag
 - Every fix references an identifier from the defect register (`tracking/DEFECTS.md`): `fix(zone): description [B12]`.
 - In the **same commit**: tick the box in `tracking/STATUS.md` (italic note when partial or deferred), run `yarn status`, add the entry to `CHANGELOG.md` (section "Personal fork — change log"), and a line to the session log in `STATUS.md`.
 - Update the README and other `.md` files whenever documented behaviour changes.
-- Small thematic commits, pushed to `origin`.
+- **Delivery by pull request (Clément, 2026-10-01).** `gh` is installed and the Linear workspace's issue limit is no longer a blocker, so the flow planned on 2026-09-30 is now active: small thematic commits on a branch named after the issue's `gitBranchName`, a pull request into `develop` (the real integration branch on `origin`; the assistant's own mirror branch `clementvnrd/develop` is no longer the delivery target), `Refs CRA-n` (or `Closes CRA-n`) in the PR body so Linear links it, then the issue moves to **In Review** with a comment giving the PR link. **Never merge a pull request and never enable auto-merge**: Clément merges from Linear's Reviews tab, and that merge is his validation. If he requests changes, the issue returns to **In Progress**.
 
 ### Linear — the live board (Clément, 2026-09-30)
 
