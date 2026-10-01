@@ -9,6 +9,10 @@ import { getStoredBoolean, getStoredNumber, setStoredBoolean, setStoredNumber } 
 // and the playlist-tree multi-selection. Split out of the shared `ui` store so that mobile (which
 // has none of this chrome) can reuse the cross-platform view/selection/filter state in `ui.ts`.
 
+/** Bounds of the right sidebar (track editor) width, in px. */
+export const RIGHT_SIDEBAR_MIN_WIDTH = 280
+export const RIGHT_SIDEBAR_MAX_WIDTH = 500
+
 interface UILayoutState {
 	// Sidebar
 	sidebarWidth: number
@@ -103,7 +107,7 @@ function createUILayoutStore() {
 		 * Set right sidebar width
 		 */
 		setRightSidebarWidth(width: number) {
-			const clampedWidth = Math.max(280, Math.min(500, width))
+			const clampedWidth = Math.max(RIGHT_SIDEBAR_MIN_WIDTH, Math.min(RIGHT_SIDEBAR_MAX_WIDTH, width))
 			setStoredNumber('rightSidebarWidth', clampedWidth)
 			update((state) => ({ ...state, rightSidebarWidth: clampedWidth }))
 		},

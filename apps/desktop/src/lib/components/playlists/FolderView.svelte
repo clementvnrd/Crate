@@ -119,8 +119,9 @@
 	</Breadcrumbs>
 
 	<!-- Content -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="flex-1 overflow-auto p-6" oncontextmenu={handleContentContextMenu}>
+	<!-- Right-click on the empty space between the cards opens a "New…" menu, a pointer shortcut (from the keyboard,
+	     Cmd+N and Cmd+Shift+N create a playlist or a folder); the cards are buttons. Hence a presentation role. -->
+	<div class="flex-1 overflow-auto p-6" role="presentation" oncontextmenu={handleContentContextMenu}>
 		{#if sortedChildren.length === 0}
 			<div class="flex h-full flex-col items-center justify-center text-text-tertiary" role="region">
 				<Icon name="folder" class="mb-3 h-12 w-12" />

@@ -23,7 +23,8 @@
 		"back": "Retour",
 		"viewArtwork": "Afficher la pochette",
 		"albumArtwork": "Pochette de l'album",
-		"unknownError": "Erreur inconnue"
+		"unknownError": "Erreur inconnue",
+		"resizePanel": "Redimensionner le panneau"
 	},
 	"nav": {
 		"library": "Bibliothèque",

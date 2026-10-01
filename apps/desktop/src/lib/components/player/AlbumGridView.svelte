@@ -114,35 +114,75 @@
 				{#each $playerAlbums as album (album.id)}
 					{@const artUrl = album.artwork_path ? getArtworkUrl(album.artwork_path, $appDataDir) : null}
 
-					<!-- Album Card -->
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<div class="group flex cursor-pointer flex-col" onclick={() => onSelectAlbum(album)}>
-						<!-- Square Artwork Container -->
-						<div
-							class="relative aspect-square w-full overflow-hidden rounded-2xl border border-stroke-subtle bg-surface-2/70 shadow-md transition-all duration-300 group-hover:border-deck-live-tint/30 group-hover:shadow-2xl"
+					<!-- Album Card: the card itself is a button that opens the album (from the keyboard too). The play and
+					     remove buttons sit over the artwork as its siblings, never inside it (no button in a button). -->
+					<div class="group relative flex flex-col">
+						<button
+							type="button"
+							class="flex w-full cursor-pointer flex-col text-left"
+							onclick={() => onSelectAlbum(album)}
 						>
-							{#if artUrl}
-								<img
-									src={artUrl}
-									alt={album.title}
-									class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-								/>
-							{:else}
-								<div class="flex h-full w-full items-center justify-center bg-surface-2 text-text-tertiary">
-									<Icon name="disc" class="h-12 w-12 opacity-30" />
-								</div>
-							{/if}
-
-							<!-- Hover Overlay Gradient -->
+							<!-- Square Artwork Container -->
 							<div
-								class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-							></div>
+								class="relative aspect-square w-full overflow-hidden rounded-2xl border border-stroke-subtle bg-surface-2/70 shadow-md transition-all duration-300 group-hover:border-deck-live-tint/30 group-hover:shadow-2xl"
+							>
+								{#if artUrl}
+									<!-- Decorative here: the card is named by the title below -->
+									<img
+										src={artUrl}
+										alt=""
+										class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+									/>
+								{:else}
+									<div class="flex h-full w-full items-center justify-center bg-surface-2 text-text-tertiary">
+										<Icon name="disc" class="h-12 w-12 opacity-30" />
+									</div>
+								{/if}
 
+								<!-- Hover Overlay Gradient -->
+								<div
+									class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+								></div>
+
+								<!-- Track Count Badge on Bottom Left -->
+								<div
+									class="pointer-events-none absolute bottom-2.5 left-2.5 rounded-md bg-black/60 px-2 py-0.5 font-mono text-[10px] font-medium text-white/90 opacity-0 backdrop-blur-md transition-opacity duration-200 group-hover:opacity-100"
+								>
+									{$translate('player.albums.trackCount', { values: { count: album.track_count } })}
+								</div>
+							</div>
+
+							<!-- Album Title & Artist -->
+							<div class="mt-2.5 min-w-0">
+								<div
+									class="truncate text-sm font-bold text-text-primary transition-colors group-hover:text-deck-live-text"
+									title={album.title}
+								>
+									{album.title}
+								</div>
+								<div class="mt-0.5 truncate text-xs font-medium text-text-secondary" title={album.artist}>
+									{album.artist}
+								</div>
+								<div class="mt-1 flex items-center gap-1.5 text-[10px] text-text-tertiary">
+									{#if album.year}
+										<span>{album.year}</span>
+										{#if album.genre}
+											<span>•</span>
+										{/if}
+									{/if}
+									{#if album.genre}
+										<span class="truncate">{album.genre}</span>
+									{/if}
+								</div>
+							</div>
+						</button>
+
+						<!-- Actions over the artwork: the same square as the artwork; shown on hover, or when focused -->
+						<div class="pointer-events-none absolute inset-x-0 top-0 aspect-square overflow-hidden">
 							<!-- Floating Play Button on Hover -->
 							<button
 								type="button"
-								class="absolute right-3 bottom-3 z-10 flex h-10 w-10 translate-y-2 cursor-pointer items-center justify-center rounded-full bg-deck-live text-black opacity-0 shadow-lg shadow-deck-live/50 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
+								class="pointer-events-auto absolute right-3 bottom-3 z-10 flex h-10 w-10 translate-y-2 cursor-pointer items-center justify-center rounded-full bg-deck-live text-black opacity-0 shadow-lg shadow-deck-live/50 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 hover:scale-110 focus-visible:translate-y-0 focus-visible:opacity-100 active:scale-95"
 								onclick={(e) => handlePlayAlbumDirect(e, album)}
 								aria-label={$translate('player.albums.play')}
 							>
@@ -152,43 +192,12 @@
 							<!-- Delete/Remove Icon Button on Top Right -->
 							<button
 								type="button"
-								class="absolute top-2.5 right-2.5 z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-black/60 text-text-tertiary opacity-0 backdrop-blur-md transition-all duration-200 group-hover:opacity-100 hover:bg-black/80 hover:text-red-400 active:scale-95"
+								class="pointer-events-auto absolute top-2.5 right-2.5 z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-black/60 text-text-tertiary opacity-0 backdrop-blur-md transition-all duration-200 group-hover:opacity-100 hover:bg-black/80 hover:text-red-400 focus-visible:opacity-100 active:scale-95"
 								onclick={(e) => handleRemoveAlbum(e, album.id)}
 								title={$translate('player.albums.removeFromList')}
 							>
 								<Icon name="trash" class="h-3.5 w-3.5" />
 							</button>
-
-							<!-- Track Count Badge on Bottom Left -->
-							<div
-								class="pointer-events-none absolute bottom-2.5 left-2.5 rounded-md bg-black/60 px-2 py-0.5 font-mono text-[10px] font-medium text-white/90 opacity-0 backdrop-blur-md transition-opacity duration-200 group-hover:opacity-100"
-							>
-								{$translate('player.albums.trackCount', { values: { count: album.track_count } })}
-							</div>
-						</div>
-
-						<!-- Album Title & Artist -->
-						<div class="mt-2.5 min-w-0">
-							<h3
-								class="truncate text-sm font-bold text-text-primary transition-colors group-hover:text-deck-live-text"
-								title={album.title}
-							>
-								{album.title}
-							</h3>
-							<p class="mt-0.5 truncate text-xs font-medium text-text-secondary" title={album.artist}>
-								{album.artist}
-							</p>
-							<div class="mt-1 flex items-center gap-1.5 text-[10px] text-text-tertiary">
-								{#if album.year}
-									<span>{album.year}</span>
-									{#if album.genre}
-										<span>•</span>
-									{/if}
-								{/if}
-								{#if album.genre}
-									<span class="truncate">{album.genre}</span>
-								{/if}
-							</div>
 						</div>
 					</div>
 				{/each}

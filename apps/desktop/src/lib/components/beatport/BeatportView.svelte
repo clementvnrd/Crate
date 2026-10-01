@@ -453,7 +453,11 @@
 								</div>
 
 								<!-- Table Rows -->
-								<div class="divide-y divide-stroke/30">
+								<div
+									class="divide-y divide-stroke/30"
+									role={displayTracks.length > 0 ? 'list' : undefined}
+									aria-label={displayTracks.length > 0 ? sectionTitle : undefined}
+								>
 									{#if displayTracks.length === 0}
 										<div class="p-8 text-center text-xs text-text-tertiary">
 											{$translate('beatport.table.empty')}
