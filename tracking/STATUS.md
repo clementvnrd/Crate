@@ -270,3 +270,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-01 | Next-track suggestions screen in the Player: ranked history-then-compatible list, one-click play (CRA-133) | — |
 | 2026-10-01 | Assisted physical organisation screen, Settings → Library: dry run with every planned move shown, apply gated behind a fresh acknowledgement each time, undo from "Past runs" (CRA-130) | — |
 | 2026-10-02 | D10 closed: Enter/Space on keyboard-focused controls (owner choice 1a), no hand cursor on the Pulse source bar, keyboard heatmap, 15 of 17 `svelte-ignore a11y` resolved (CRA-100) | 11 |
+| 2026-10-01 | Smart-playlist listening criteria exposed in the rule editor: never played in a set, top N over 7/30/365 days, discovered this month (frontend, CRA-131) | — |
