@@ -84,7 +84,7 @@
 						<Text variant="caption" truncate>{release.artist || $translate('common.unknownArtist')}</Text>
 					</div>
 					{#if selectedTargetId === release.id}
-						<div class="shrink-0 rounded-full bg-brand-primary px-2 py-0.5 text-xs text-white">
+						<div class="shrink-0 rounded-full bg-brand-primary px-2 py-0.5 text-xs text-brand-on">
 							{$translate('discovery.mergeTarget')}
 						</div>
 					{/if}

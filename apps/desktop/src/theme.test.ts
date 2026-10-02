@@ -96,6 +96,13 @@ describe('text on an accent fill (--brand-on)', () => {
 		expect(on).toEqual(best)
 		expect(contrast(fill, on)).toBeGreaterThanOrEqual(4.5)
 	})
+
+	it.each(accents)('%s: the same text still reads at 4.5:1 or more on the hover fill (--brand-hover)', (accent) => {
+		const declarations = block(`[data-accent='${accent}']`)
+		const hover = hexToRgb(declarations['--brand-hover'])
+		const on = hexToRgb(declarations['--brand-on'])
+		expect(contrast(hover, on)).toBeGreaterThanOrEqual(4.5)
+	})
 })
 
 describe('colour family tokens', () => {
@@ -112,7 +119,7 @@ describe('colour family tokens', () => {
 		}
 	})
 
-	const textTokens = familyTokens.filter((token) => /-text(-strong)?$/.test(token))
+	const textTokens = familyTokens.filter((token) => /-text(-[a-z]+)?$/.test(token))
 
 	it.each(textTokens)('%s reads at 4.5:1 or more on the light surfaces', (token) => {
 		const colour = resolve(lightFamilies[token], { ...lightNeutrals, ...lightFamilies })

@@ -391,35 +391,35 @@
 /* Default (blue) - only when no accent is explicitly set */
 :root:not([data-accent]) {
 	--brand-primary: #3b82f6;
-	--brand-hover: #2563eb;
+	--brand-hover: #60a5fa; /* blue-400: lighter on hover so black text stays above 4.5:1 */
 	--brand-muted: rgba(59, 130, 246, 0.2);
 	--brand-on: #000000; /* text on the accent fill: black 5.71:1, white 3.68:1 */
 }
 
 [data-accent='blue'] {
 	--brand-primary: #3b82f6;
-	--brand-hover: #2563eb;
+	--brand-hover: #60a5fa; /* blue-400: lighter on hover so black text stays above 4.5:1 */
 	--brand-muted: rgba(59, 130, 246, 0.2);
 	--brand-on: #000000; /* text on the accent fill: black 5.71:1, white 3.68:1 */
 }
 
 [data-accent='indigo'] {
 	--brand-primary: #6366f1;
-	--brand-hover: #4f46e5;
+	--brand-hover: #818cf8; /* indigo-400: lighter on hover so black text stays above 4.5:1 */
 	--brand-muted: rgba(99, 102, 241, 0.2);
 	--brand-on: #000000; /* text on the accent fill: black 4.70:1, white 4.47:1 */
 }
 
 [data-accent='violet'] {
 	--brand-primary: #8b5cf6;
-	--brand-hover: #7c3aed;
+	--brand-hover: #a78bfa; /* violet-400: lighter on hover so black text stays above 4.5:1 */
 	--brand-muted: rgba(139, 92, 246, 0.2);
 	--brand-on: #000000; /* text on the accent fill: black 4.96:1, white 4.23:1 */
 }
 
 [data-accent='purple'] {
 	--brand-primary: #a855f7;
-	--brand-hover: #9333ea;
+	--brand-hover: #c084fc; /* purple-400: lighter on hover so black text stays above 4.5:1 */
 	--brand-muted: rgba(168, 85, 247, 0.2);
 	--brand-on: #000000; /* text on the accent fill: black 5.31:1, white 3.96:1 */
 }
@@ -433,7 +433,7 @@
 
 [data-accent='rose'] {
 	--brand-primary: #f43f5e;
-	--brand-hover: #e11d48;
+	--brand-hover: #fb7185; /* rose-400: lighter on hover so black text stays above 4.5:1 */
 	--brand-muted: rgba(244, 63, 94, 0.2);
 	--brand-on: #000000; /* text on the accent fill: black 5.72:1, white 3.67:1 */
 }
