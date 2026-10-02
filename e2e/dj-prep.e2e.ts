@@ -43,7 +43,7 @@ test.describe('Set mode', () => {
 		await expect(dialog.getByText('Build a set')).toBeVisible()
 		await expect(dialog.getByText('Afterglow Protocol')).toBeVisible()
 		await expect(dialog.getByText('Paper Lanterns')).toBeVisible()
-		await expect(dialog.getByText('Key clash')).toBeVisible()
+		await expect(dialog.getByText('Key clash', { exact: true })).toBeVisible()
 		await settle(page)
 
 		const report = await runAudit(page)
