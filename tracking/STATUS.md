@@ -267,3 +267,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-01 | "Reset Spotify history" button in Crate Pulse: backup then delete, confirmation dialog (CRA-144) | — |
 | 2026-10-01 | Discovery funnel renamed "Crate to booth" / "Du bac à la cabine", per the owner's answer in CRA-126 | — |
 | 2026-10-01 | CRA-141 rollout: family colour tokens, black text on accent fills, Beatport follows the theme, the four touches (D3, partial); Spotify modal, Rekordbox and add-to-library buttons, native checkboxes and spinners on the shared components (D11) | 11 |
+| 2026-10-01 | Energy-jump detection added to the Rekordbox set timeline (CRA-127), closing the gap left by the energy column: same threshold as the set planner, now shared from one place | — |
