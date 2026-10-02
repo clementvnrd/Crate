@@ -20,6 +20,8 @@ export interface FieldDefinition {
 	labelKey: string
 	type: FieldType
 	enumValues?: { value: string; labelKey: string }[]
+	/** Extra context shown next to the field in a tooltip, e.g. what counts as a "listen". */
+	helpKey?: string
 }
 
 const LIBRARY_FIELDS: FieldDefinition[] = [
@@ -37,9 +39,64 @@ const LIBRARY_FIELDS: FieldDefinition[] = [
 	{ field: 'duration_ms', labelKey: 'smartPlaylist.fields.durationMs', type: 'numeric' },
 	{ field: 'bitrate', labelKey: 'smartPlaylist.fields.bitrate', type: 'numeric' },
 	{ field: 'sample_rate', labelKey: 'smartPlaylist.fields.sampleRate', type: 'numeric' },
-	{ field: 'date_added', labelKey: 'smartPlaylist.fields.dateAdded', type: 'date' },
+	{
+		field: 'date_added',
+		labelKey: 'smartPlaylist.fields.dateAdded',
+		type: 'date',
+		helpKey: 'smartPlaylist.fieldsHelp.dateAdded',
+	},
 	{ field: 'last_played', labelKey: 'smartPlaylist.fields.lastPlayed', type: 'date' },
 	{ field: 'date_modified', labelKey: 'smartPlaylist.fields.dateModified', type: 'date' },
+	// Listening statistics (migration 16): matched to the track by artist and title from
+	// listen_events, which covers Crate-local listens, Rekordbox sets, Spotify and Mixed In Key.
+	{
+		field: 'listens_total',
+		labelKey: 'smartPlaylist.fields.listensTotal',
+		type: 'numeric',
+		helpKey: 'smartPlaylist.fieldsHelp.listensTotal',
+	},
+	{
+		field: 'listens_7d',
+		labelKey: 'smartPlaylist.fields.listens7d',
+		type: 'numeric',
+		helpKey: 'smartPlaylist.fieldsHelp.listens7d',
+	},
+	{
+		field: 'listens_30d',
+		labelKey: 'smartPlaylist.fields.listens30d',
+		type: 'numeric',
+		helpKey: 'smartPlaylist.fieldsHelp.listens30d',
+	},
+	{
+		field: 'listens_365d',
+		labelKey: 'smartPlaylist.fields.listens365d',
+		type: 'numeric',
+		helpKey: 'smartPlaylist.fieldsHelp.listens365d',
+	},
+	{
+		field: 'set_plays',
+		labelKey: 'smartPlaylist.fields.setPlays',
+		type: 'numeric',
+		helpKey: 'smartPlaylist.fieldsHelp.setPlays',
+	},
+	{
+		field: 'minutes_listened',
+		labelKey: 'smartPlaylist.fields.minutesListened',
+		type: 'numeric',
+		helpKey: 'smartPlaylist.fieldsHelp.minutesListened',
+	},
+	{
+		field: 'last_listened',
+		labelKey: 'smartPlaylist.fields.lastListened',
+		type: 'date',
+		helpKey: 'smartPlaylist.fieldsHelp.lastListened',
+	},
+	{
+		field: 'last_set_play',
+		labelKey: 'smartPlaylist.fields.lastSetPlay',
+		type: 'date',
+		helpKey: 'smartPlaylist.fieldsHelp.lastSetPlay',
+	},
 	{
 		field: 'color',
 		labelKey: 'smartPlaylist.fields.color',
@@ -191,6 +248,15 @@ const LIBRARY_SORT_FIELDS: SortFieldDefinition[] = [
 	{ value: 'bpm', labelKey: 'smartPlaylist.sortFields.bpm' },
 	{ value: 'title', labelKey: 'smartPlaylist.sortFields.title' },
 	{ value: 'artist', labelKey: 'smartPlaylist.sortFields.artist' },
+	// Listening statistics, e.g. "top 30 days": sort by listens_30d descending, limit N.
+	{ value: 'listens_total', labelKey: 'smartPlaylist.sortFields.listensTotal' },
+	{ value: 'listens_7d', labelKey: 'smartPlaylist.sortFields.listens7d' },
+	{ value: 'listens_30d', labelKey: 'smartPlaylist.sortFields.listens30d' },
+	{ value: 'listens_365d', labelKey: 'smartPlaylist.sortFields.listens365d' },
+	{ value: 'set_plays', labelKey: 'smartPlaylist.sortFields.setPlays' },
+	{ value: 'minutes_listened', labelKey: 'smartPlaylist.sortFields.minutesListened' },
+	{ value: 'last_listened', labelKey: 'smartPlaylist.sortFields.lastListened' },
+	{ value: 'last_set_play', labelKey: 'smartPlaylist.sortFields.lastSetPlay' },
 	{ value: 'random', labelKey: 'smartPlaylist.sortFields.random' },
 ]
 

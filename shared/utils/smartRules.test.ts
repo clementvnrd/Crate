@@ -33,7 +33,7 @@ describe('smartRules utils', () => {
 
 		it('returns library fields for "library" or any other context', () => {
 			const libraryFields = getFieldsForContext('library')
-			expect(libraryFields).toHaveLength(20)
+			expect(libraryFields).toHaveLength(28)
 			const fieldNames = libraryFields.map((f) => f.field)
 			expect(fieldNames).toContain('bpm')
 			expect(fieldNames).toContain('rating')
@@ -45,6 +45,26 @@ describe('smartRules utils', () => {
 
 			const defaultFields = getFieldsForContext('unknown-context')
 			expect(defaultFields).toEqual(libraryFields)
+		})
+
+		it('exposes the listening-statistics fields added for stats-based smart playlists', () => {
+			const fieldNames = getFieldsForContext('library').map((f) => f.field)
+			expect(fieldNames).toEqual(
+				expect.arrayContaining([
+					'listens_total',
+					'listens_7d',
+					'listens_30d',
+					'listens_365d',
+					'set_plays',
+					'minutes_listened',
+					'last_listened',
+					'last_set_play',
+				])
+			)
+			// Listening statistics have no meaning for discovery releases.
+			const discoveryFieldNames = getFieldsForContext('discovery').map((f) => f.field)
+			expect(discoveryFieldNames).not.toContain('set_plays')
+			expect(discoveryFieldNames).not.toContain('listens_30d')
 		})
 	})
 
@@ -61,6 +81,20 @@ describe('smartRules utils', () => {
 			expect(sourceTypeDef?.type).toBe('enum')
 			expect(sourceTypeDef?.enumValues).toBeDefined()
 			expect(sourceTypeDef?.enumValues?.length).toBeGreaterThan(0)
+
+			const setPlaysDef = getFieldDefinition('set_plays', 'library')
+			expect(setPlaysDef).toBeDefined()
+			expect(setPlaysDef?.type).toBe('numeric')
+			expect(setPlaysDef?.helpKey).toBe('smartPlaylist.fieldsHelp.setPlays')
+
+			const lastListenedDef = getFieldDefinition('last_listened', 'library')
+			expect(lastListenedDef).toBeDefined()
+			expect(lastListenedDef?.type).toBe('date')
+		})
+
+		it('returns undefined for listening-statistics fields outside the library context', () => {
+			expect(getFieldDefinition('set_plays', 'discovery')).toBeUndefined()
+			expect(getFieldDefinition('listens_30d', 'discovery')).toBeUndefined()
 		})
 
 		it('returns undefined for non-existent field in context', () => {
@@ -145,10 +179,33 @@ describe('smartRules utils', () => {
 		it('returns library sort fields for "library" or any other context', () => {
 			const sortFields = getSortFieldsForContext('library')
 			const values = sortFields.map((s) => s.value)
-			expect(values).toEqual(['date_added', 'rating', 'play_count', 'bpm', 'title', 'artist', 'random'])
+			expect(values).toEqual([
+				'date_added',
+				'rating',
+				'play_count',
+				'bpm',
+				'title',
+				'artist',
+				'listens_total',
+				'listens_7d',
+				'listens_30d',
+				'listens_365d',
+				'set_plays',
+				'minutes_listened',
+				'last_listened',
+				'last_set_play',
+				'random',
+			])
 
 			const defaultFields = getSortFieldsForContext('custom')
 			expect(defaultFields).toEqual(sortFields)
+		})
+
+		it('lets a "top 30 days" limit sort by a listening statistic over a chosen period', () => {
+			const values = getSortFieldsForContext('library').map((s) => s.value)
+			expect(values).toContain('listens_30d')
+			expect(values).toContain('listens_7d')
+			expect(values).toContain('listens_365d')
 		})
 	})
 
@@ -181,6 +238,30 @@ describe('smartRules utils', () => {
 			expect(condition).toEqual({
 				type: 'date',
 				field: 'date_added',
+				operator: 'in_last_days',
+				value: '30',
+			})
+		})
+
+		it('defaults "times played in a set" to equals 0, i.e. never played in a set', () => {
+			const fieldDef = getFieldDefinition('set_plays', 'library')
+			expect(fieldDef).toBeDefined()
+			const condition = createDefaultCondition(fieldDef as FieldDefinition)
+			expect(condition).toEqual({
+				type: 'numeric',
+				field: 'set_plays',
+				operator: 'equals',
+				value: 0,
+			})
+		})
+
+		it('creates default condition for a listening-statistic date field', () => {
+			const fieldDef = getFieldDefinition('last_listened', 'library')
+			expect(fieldDef).toBeDefined()
+			const condition = createDefaultCondition(fieldDef as FieldDefinition)
+			expect(condition).toEqual({
+				type: 'date',
+				field: 'last_listened',
 				operator: 'in_last_days',
 				value: '30',
 			})
