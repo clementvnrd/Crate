@@ -33,6 +33,11 @@ export function formatTempoDelta(percent: number, locale: string): string {
 	}).format(percent / 100)
 }
 
+/** An energy change, signed, as a whole number ("+3", "-2"). */
+export function formatEnergyDelta(delta: number, locale: string): string {
+	return new Intl.NumberFormat(locale, { maximumFractionDigits: 0, signDisplay: 'exceptZero' }).format(delta)
+}
+
 /** Local hour of the day (0 to 23) in the language's clock ("10 PM", "22 h"). */
 export function formatHour(hour: number, locale: string): string {
 	return new Intl.DateTimeFormat(locale, { hour: 'numeric' }).format(new Date(2026, 0, 1, hour))

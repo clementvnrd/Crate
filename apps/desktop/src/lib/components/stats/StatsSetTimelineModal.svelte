@@ -6,7 +6,7 @@
 	import { formatDate, formatDuration, formatNumber } from '$shared/utils/format'
 	import { toErrorMessage } from '$shared/utils/errors'
 	import { Button, EnergyBadge, Icon, KeyBadge, Modal, Spinner } from '$lib/components/common'
-	import { formatTempoDelta, formatTimeOfDay } from './format'
+	import { formatEnergyDelta, formatTempoDelta, formatTimeOfDay } from './format'
 
 	type Props = {
 		open: boolean
@@ -93,7 +93,7 @@
 			<p class="py-8 text-center text-sm text-text-secondary">{$translate('stats.timeline.empty')}</p>
 		{:else if timeline}
 			<!-- How the set mixes, at a glance -->
-			<dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+			<dl class="grid grid-cols-2 gap-3 sm:grid-cols-5">
 				<div class="rounded-lg bg-surface-2 p-3">
 					<dt class="text-xs text-text-secondary">{$translate('stats.timeline.tracks')}</dt>
 					<dd class="mt-1 text-lg font-semibold text-text-primary tabular-nums">
@@ -116,6 +116,12 @@
 					<dt class="text-xs text-text-secondary">{$translate('stats.timeline.unknown')}</dt>
 					<dd class="mt-1 text-lg font-semibold text-text-primary tabular-nums">
 						{formatNumber(timeline.unknown_transitions, $language)}
+					</dd>
+				</div>
+				<div class="rounded-lg bg-surface-2 p-3">
+					<dt class="text-xs text-text-secondary">{$translate('stats.timeline.energyJumps')}</dt>
+					<dd class="mt-1 text-lg font-semibold text-text-primary tabular-nums">
+						{formatNumber(timeline.energy_jumps, $language)}
 					</dd>
 				</div>
 			</dl>
@@ -185,6 +191,22 @@
 											{$translate('stats.timeline.tempo', {
 												values: { delta: formatTempoDelta(transition.bpm_delta_percent, $language) },
 											})}
+										</div>
+									{/if}
+									{#if transition.energy_delta !== null}
+										<div
+											class="flex items-center gap-1.5 tabular-nums {transition.energy_jump
+												? 'text-warning'
+												: 'text-text-secondary'}"
+										>
+											{#if transition.energy_jump}
+												<Icon name="alert-triangle" class="h-3.5 w-3.5 flex-shrink-0" />
+											{/if}
+											<span>
+												{$translate('stats.timeline.energyChange', {
+													values: { delta: formatEnergyDelta(transition.energy_delta, $language) },
+												})}
+											</span>
 										</div>
 									{/if}
 								{:else}

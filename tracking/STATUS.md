@@ -272,3 +272,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-02 | D10 closed: Enter/Space on keyboard-focused controls (owner choice 1a), no hand cursor on the Pulse source bar, keyboard heatmap, 15 of 17 `svelte-ignore a11y` resolved (CRA-100) | 11 |
 | 2026-10-01 | Smart-playlist listening criteria exposed in the rule editor: never played in a set, top N over 7/30/365 days, discovered this month (frontend, CRA-131) | — |
 | 2026-10-01 | Scenario B: discrepancy report screen, Crate / Mixed In Key / Rekordbox, read only (CRA-129) | — |
+| 2026-10-01 | Energy-jump detection added to the Rekordbox set timeline (CRA-127), closing the gap left by the energy column: same threshold as the set planner, now shared from one place | — |

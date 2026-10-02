@@ -1524,7 +1524,7 @@ mod recap_tests {
 
 mod timeline_tests {
     use super::*;
-    use crate::services::harmonic::HarmonicRelation;
+    use crate::services::harmonic::{HarmonicRelation, ENERGY_JUMP};
 
     fn session(conn: &Arc<Mutex<Connection>>, id: &str) {
         conn.lock()
@@ -1706,14 +1706,117 @@ mod timeline_tests {
         assert_eq!(transition(1).bpm_delta_percent, Some(5.0));
         assert_eq!(transition(2).harmonic, HarmonicRelation::Clash);
         assert_eq!(transition(3).harmonic, HarmonicRelation::Unknown);
+        // None of these tracks matched a library track, so none has an energy: the change is
+        // unknown rather than miscounted as a jump.
+        assert_eq!(
+            (transition(1).energy_delta, transition(1).energy_jump),
+            (None, false)
+        );
         assert_eq!(
             (
                 timeline.harmonic_transitions,
                 timeline.clashing_transitions,
-                timeline.unknown_transitions
+                timeline.unknown_transitions,
+                timeline.energy_jumps
             ),
-            (1, 1, 1)
+            (1, 1, 1, 0)
         );
+    }
+
+    #[test]
+    fn an_energy_jump_is_flagged_and_counted_with_the_set_planners_threshold() {
+        let (conn, recorder) = setup_test_db();
+        session(&conn, "s1");
+        library(&conn, "t1", "A", "One", "8A", 120.0, 4);
+        library(&conn, "t2", "A", "Two", "8A", 120.0, 4 + ENERGY_JUMP - 1); // below the threshold
+        library(&conn, "t3", "A", "Three", "8A", 120.0, 4 + ENERGY_JUMP - 1 + ENERGY_JUMP); // crosses it
+        played(
+            &conn,
+            "e1",
+            "s1",
+            "rekordbox",
+            "One",
+            "A",
+            "2026-09-25T22:00:00Z",
+            Some(120.0),
+            Some("8A"),
+        );
+        played(
+            &conn,
+            "e2",
+            "s1",
+            "rekordbox",
+            "Two",
+            "A",
+            "2026-09-25T22:01:00Z",
+            Some(120.0),
+            Some("8A"),
+        );
+        played(
+            &conn,
+            "e3",
+            "s1",
+            "rekordbox",
+            "Three",
+            "A",
+            "2026-09-25T22:02:00Z",
+            Some(120.0),
+            Some("8A"),
+        );
+
+        let timeline = recorder.get_session_timeline("s1").unwrap();
+        let transition = |i: usize| timeline.tracks[i].from_previous.clone().unwrap();
+        assert_eq!(
+            (transition(1).energy_delta, transition(1).energy_jump),
+            (Some(ENERGY_JUMP - 1), false),
+            "just under the threshold is not a jump"
+        );
+        assert_eq!(
+            (transition(2).energy_delta, transition(2).energy_jump),
+            (Some(ENERGY_JUMP), true),
+            "exactly the threshold already counts, like the set planner"
+        );
+        assert_eq!(timeline.energy_jumps, 1);
+    }
+
+    #[test]
+    fn a_track_missing_from_the_library_has_no_energy_and_is_never_counted_as_a_jump() {
+        let (conn, recorder) = setup_test_db();
+        session(&conn, "s1");
+        library(&conn, "t1", "A", "One", "8A", 120.0, 4);
+        // "Two" matches no library track, so Crate cannot know its energy.
+        played(
+            &conn,
+            "e1",
+            "s1",
+            "rekordbox",
+            "One",
+            "A",
+            "2026-09-25T22:00:00Z",
+            Some(120.0),
+            Some("8A"),
+        );
+        played(
+            &conn,
+            "e2",
+            "s1",
+            "rekordbox",
+            "Two",
+            "A",
+            "2026-09-25T22:01:00Z",
+            Some(120.0),
+            Some("8A"),
+        );
+
+        let timeline = recorder.get_session_timeline("s1").unwrap();
+        assert_eq!(timeline.tracks[1].energy, None);
+        let transition = timeline.tracks[1].from_previous.clone().unwrap();
+        assert_eq!(
+            (transition.energy_delta, transition.energy_jump),
+            (None, false),
+            "a missing energy is a dash, never a jump"
+        );
+        assert_eq!(timeline.energy_jumps, 0);
     }
 
     #[test]
@@ -1770,9 +1873,10 @@ mod timeline_tests {
             (
                 timeline.harmonic_transitions,
                 timeline.clashing_transitions,
-                timeline.unknown_transitions
+                timeline.unknown_transitions,
+                timeline.energy_jumps
             ),
-            (0, 0, 0)
+            (0, 0, 0, 0)
         );
         assert!(recorder.get_session_timeline("nope").is_err());
     }

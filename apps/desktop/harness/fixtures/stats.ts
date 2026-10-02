@@ -278,6 +278,10 @@ export function recap(period: RecapPeriod, offset: number, empty: boolean): Reca
 
 const TRANSITIONS: HarmonicRelation[] = ['adjacent', 'same', 'relative', 'adjacent', 'clash', 'adjacent', 'unknown']
 
+/** Mirrors the Rust threshold in `services::harmonic::ENERGY_JUMP`, shared with the set planner,
+ * so this harness fixture agrees with the real app on what counts as a jump. */
+const ENERGY_JUMP = 3
+
 /** The tracks of one Rekordbox set in order, cycling through the played library tracks. */
 export function sessionTimeline(sessionId: string): SessionTimeline | null {
 	const session = REKORDBOX_SESSIONS.find((entry) => entry.id === sessionId)
@@ -291,6 +295,10 @@ export function sessionTimeline(sessionId: string): SessionTimeline | null {
 		const relation = TRANSITIONS[(index + session.total_tracks) % TRANSITIONS.length]
 		const bpmDelta =
 			previous && previous.bpm && track.bpm ? Math.round(((track.bpm - previous.bpm) / previous.bpm) * 1000) / 10 : null
+		// Only a library track has an energy (Rekordbox never records one), so the tracks Crate does not know show a dash.
+		const energy = index % 6 === 5 ? null : track.energy
+		const energyDelta = previous && previous.energy !== null && energy !== null ? energy - previous.energy : null
+		const energyJump = energyDelta !== null && Math.abs(energyDelta) >= ENERGY_JUMP
 		tracks.push({
 			position: index + 1,
 			played_at: new Date(playedAt).toISOString(),
@@ -300,10 +308,12 @@ export function sessionTimeline(sessionId: string): SessionTimeline | null {
 			duration_ms: track.duration_ms,
 			bpm: track.bpm,
 			key: relation === 'unknown' ? null : track.key,
-			// Only a library track has an energy (Rekordbox never records one), so the tracks Crate does not know show a dash.
-			energy: index % 6 === 5 ? null : track.energy,
+			energy,
 			library_track_id: index % 6 === 5 ? null : track.id,
-			from_previous: index === 0 ? null : { harmonic: relation, bpm_delta_percent: bpmDelta },
+			from_previous:
+				index === 0
+					? null
+					: { harmonic: relation, bpm_delta_percent: bpmDelta, energy_delta: energyDelta, energy_jump: energyJump },
 		})
 		playedAt += Math.round(track.duration_ms * 0.7)
 	}
@@ -316,6 +326,7 @@ export function sessionTimeline(sessionId: string): SessionTimeline | null {
 		).length,
 		clashing_transitions: transitions.filter((relation) => relation === 'clash').length,
 		unknown_transitions: transitions.filter((relation) => relation === 'unknown').length,
+		energy_jumps: tracks.filter((entry) => entry.from_previous?.energy_jump).length,
 	}
 }
 
