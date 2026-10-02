@@ -158,7 +158,7 @@
 			<div class="flex items-center gap-3">
 				<!-- Modern sleek icon -->
 				<div
-					class="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-primary/30 bg-gradient-to-br from-brand-primary/20 via-brand-primary/10 to-sky-500/10 text-brand-primary shadow-sm"
+					class="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-primary/30 bg-gradient-to-br from-brand-primary/20 via-brand-primary/10 to-tool-fuzzy/10 text-brand-primary shadow-sm"
 				>
 					<svg
 						class="h-5 w-5"
@@ -247,7 +247,7 @@
 			{:else if $duplicateGroups.length === 0}
 				<div class="flex h-80 flex-col items-center justify-center gap-4 px-4 text-center">
 					<div
-						class="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/20 text-emerald-400 shadow-lg"
+						class="flex h-16 w-16 items-center justify-center rounded-2xl border border-tool-match/30 bg-tool-match/20 text-tool-match-text shadow-lg"
 					>
 						<Icon name="check" class="h-8 w-8 stroke-[3]" />
 					</div>
@@ -275,14 +275,14 @@
 
 								{#if group.match_type === 'exact_hash'}
 									<span
-										class="inline-flex shrink-0 items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-400"
+										class="inline-flex shrink-0 items-center gap-1 rounded-md border border-tool-match/30 bg-tool-match/15 px-2 py-0.5 text-[10px] font-medium text-tool-match-text"
 									>
 										<Icon name="sparkles" class="h-3 w-3" />
 										{$translate('duplicates.match.exactHash')}
 									</span>
 								{:else}
 									<span
-										class="inline-flex shrink-0 items-center gap-1 rounded-md border border-sky-500/30 bg-sky-500/15 px-2 py-0.5 text-[10px] font-medium text-sky-400"
+										class="inline-flex shrink-0 items-center gap-1 rounded-md border border-tool-fuzzy/30 bg-tool-fuzzy/15 px-2 py-0.5 text-[10px] font-medium text-tool-fuzzy-text"
 									>
 										<Icon name="clone" class="h-3 w-3" />
 										{$translate('duplicates.match.metadata')}
@@ -313,9 +313,9 @@
 								<div
 									class="relative flex flex-col justify-between gap-3 rounded-xl border p-3.5 transition-all
 									{isSelectedForDeletion
-										? 'border-rose-500/40 bg-rose-950/15'
+										? 'border-tool-delete/40 bg-tool-delete-wash/15'
 										: track.recommended_keep
-											? 'border-amber-500/30 bg-surface-1/90 shadow-sm'
+											? 'border-tool-local/30 bg-surface-1/90 shadow-sm'
 											: 'border-stroke/60 bg-surface-1/70'}"
 								>
 									<!-- Track Top Info -->
@@ -430,7 +430,7 @@
 											<!-- Energy Badge -->
 											{#if track.energy}
 												<span
-													class="inline-flex h-[20px] items-center rounded border border-amber-500/30 bg-amber-500/10 px-1.5 font-mono text-[10px] font-bold text-amber-400 select-none"
+													class="inline-flex h-[20px] items-center rounded border border-tool-energy/30 bg-tool-energy/10 px-1.5 font-mono text-[10px] font-bold text-tool-energy-text select-none"
 												>
 													⚡ {track.energy}
 												</span>
@@ -440,7 +440,7 @@
 											{#if track.format}
 												<span
 													class="inline-flex h-[20px] items-center rounded px-1.5 font-mono text-[10px] font-bold tracking-wider uppercase select-none {lossless
-														? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+														? 'border border-tool-match/30 bg-tool-match/10 text-tool-match-text'
 														: 'border border-stroke/50 bg-surface-2 text-text-secondary'}"
 												>
 													{track.format}
@@ -460,7 +460,7 @@
 											<!-- Cues Badge -->
 											{#if track.cue_count > 0}
 												<span
-													class="inline-flex h-[20px] items-center rounded border border-indigo-500/30 bg-indigo-500/15 px-1.5 font-mono text-[10px] font-medium text-indigo-300 select-none"
+													class="inline-flex h-[20px] items-center rounded border border-tool-cues/30 bg-tool-cues/15 px-1.5 font-mono text-[10px] font-medium text-tool-cues-text select-none"
 												>
 													{$translate('duplicates.track.cues', { values: { count: track.cue_count } })}
 												</span>
@@ -484,9 +484,9 @@
 											checked={isSelectedForDeletion}
 											onchange={() => duplicateStore.toggleTrackSelection(track.id)}
 											labelClass="flex items-center gap-2 text-xs font-medium select-none hover:cursor-pointer {isSelectedForDeletion
-												? 'text-rose-400'
+												? 'text-tool-delete-text'
 												: 'text-text-secondary'}"
-											inputClass="h-4 w-4 rounded border-stroke bg-surface-2 text-rose-500 hover:cursor-pointer focus:ring-rose-500"
+											inputClass="h-4 w-4 rounded border-stroke bg-surface-2 text-tool-delete hover:cursor-pointer focus:ring-tool-delete"
 										>
 											<span
 												>{isSelectedForDeletion
@@ -523,7 +523,7 @@
 					variant="danger"
 					onclick={handleDeleteSelected}
 					disabled={$selectedDuplicateCount === 0 || isDeleting}
-					class="py-1.5 text-xs font-semibold shadow-md shadow-rose-950/40"
+					class="py-1.5 text-xs font-semibold shadow-md shadow-tool-delete-wash/40"
 				>
 					{#if isDeleting}
 						<Spinner icon="refresh-cw" color="current" class="mr-2 h-3.5 w-3.5" />

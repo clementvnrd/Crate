@@ -167,7 +167,7 @@
 				style="-webkit-mask-image: url('/beatport-full-logo.png'); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center left; mask-image: url('/beatport-full-logo.png'); mask-size: contain; mask-repeat: no-repeat; mask-position: center left;"
 				title={$translate('beatport.title')}
 			></div>
-			<div class="flex items-center gap-1.5 text-[11px] font-medium text-beatport-tint">
+			<div class="flex items-center gap-1.5 text-[11px] font-medium text-beatport-status-text">
 				<span class="h-1.5 w-1.5 rounded-full bg-beatport-tint"></span>
 				<span>{$translate('beatport.connected')}</span>
 			</div>

@@ -113,6 +113,7 @@
 	--color-pulse-bronze: var(--pulse-bronze);
 	--color-pulse-bronze-fill: var(--pulse-bronze-fill);
 	--color-pulse-bronze-text: var(--pulse-bronze-text);
+	--color-pulse-listening-end: var(--pulse-listening-end);
 
 	/* D. Beatport */
 	--color-beatport: var(--beatport);
@@ -125,6 +126,8 @@
 	--color-beatport-text-strong: var(--beatport-text-strong);
 	--color-beatport-body-text: var(--beatport-body-text);
 	--color-beatport-body-text-strong: var(--beatport-body-text-strong);
+	--color-beatport-bright: var(--beatport-bright);
+	--color-beatport-status-text: var(--beatport-status-text);
 
 	/* Source colours (DESIGN.md, "Source colours"): identify where a listen comes from */
 	--color-source-spotify: var(--source-spotify);
@@ -132,6 +135,8 @@
 	--color-source-spotify-text: var(--source-spotify-text);
 	--color-source-spotify-wash: var(--source-spotify-wash);
 	--color-source-spotify-panel: var(--source-spotify-panel);
+	--color-source-spotify-link-tint: var(--source-spotify-link-tint);
+	--color-source-spotify-link-text: var(--source-spotify-link-text);
 	--color-source-mik: var(--source-mik);
 	--color-source-mik-text: var(--source-mik-text);
 	--color-source-mik-wash: var(--source-mik-wash);
@@ -147,6 +152,29 @@
 	--color-warning-text: var(--warning-text);
 	--color-warning-wash: var(--warning-wash);
 	--color-warning-wash-hover: var(--warning-wash-hover);
+	--color-warning-text-strong: var(--warning-text-strong);
+	--color-warning-text-soft: var(--warning-text-soft);
+	--color-danger-tint: var(--danger-tint);
+	--color-danger-text: var(--danger-text);
+
+	/* Library tools: the roles shared by Duplicate Killer and the Upgrader */
+	--color-tool-match: var(--tool-match);
+	--color-tool-match-text: var(--tool-match-text);
+	--color-tool-fuzzy: var(--tool-fuzzy);
+	--color-tool-fuzzy-text: var(--tool-fuzzy-text);
+	--color-tool-partial: var(--tool-partial);
+	--color-tool-partial-text: var(--tool-partial-text);
+	--color-tool-local: var(--tool-local);
+	--color-tool-local-dot: var(--tool-local-dot);
+	--color-tool-local-text: var(--tool-local-text);
+	--color-tool-local-text-strong: var(--tool-local-text-strong);
+	--color-tool-energy: var(--tool-energy);
+	--color-tool-energy-text: var(--tool-energy-text);
+	--color-tool-delete: var(--tool-delete);
+	--color-tool-delete-wash: var(--tool-delete-wash);
+	--color-tool-delete-text: var(--tool-delete-text);
+	--color-tool-cues: var(--tool-cues);
+	--color-tool-cues-text: var(--tool-cues-text);
 }
 
 /* =============================================================================
@@ -257,6 +285,7 @@
 	--pulse-bronze: var(--color-amber-600);
 	--pulse-bronze-fill: var(--color-amber-700);
 	--pulse-bronze-text: var(--color-amber-600);
+	--pulse-listening-end: var(--color-teal-400); /* end of the BPM distribution bars */
 
 	/* D. Beatport: neon green */
 	--beatport: #00ff96; /* primary fills (black text), now-playing marker */
@@ -269,6 +298,8 @@
 	--beatport-text-strong: #00ff96; /* neon text: playing title, links, codes */
 	--beatport-body-text: var(--color-neutral-300); /* body copy of the gateway, login and cart panels */
 	--beatport-body-text-strong: var(--color-neutral-200); /* emphasis inside that copy, tab hover */
+	--beatport-bright: var(--color-emerald-400); /* hover of the cart's download button, Upgrader arrow */
+	--beatport-status-text: var(--color-emerald-500); /* "Connected" in the Beatport sidebar */
 
 	/* Source colours: official colours of the services a listen comes from */
 	--source-spotify: #1db954;
@@ -276,6 +307,8 @@
 	--source-spotify-text: #1db954;
 	--source-spotify-wash: #121c15; /* top of the Spotify integration card */
 	--source-spotify-panel: #0d1711; /* Spotify connection modal */
+	--source-spotify-link-tint: var(--color-emerald-500); /* links, codes and the manual-code button of that modal */
+	--source-spotify-link-text: var(--color-emerald-400);
 	--source-mik: #00d2ff;
 	--source-mik-text: #00d2ff;
 	--source-mik-wash: #0c1a24;
@@ -291,6 +324,33 @@
 	--warning-text: var(--color-amber-400);
 	--warning-wash: var(--color-amber-950);
 	--warning-wash-hover: var(--color-amber-900);
+	--warning-text-strong: var(--color-amber-300); /* title of a warning banner */
+	--warning-text-soft: var(--color-amber-200); /* code inside a warning */
+
+	/* Danger on a tinted control (Spotify's "Disconnect") */
+	--danger-tint: var(--color-red-500);
+	--danger-text: var(--color-red-400);
+
+	/* Library tools: Duplicate Killer and the Upgrader */
+	--tool-match: var(--color-emerald-500); /* identical audio, lossless file, nothing to clean */
+	--tool-match-text: var(--color-emerald-400);
+	--tool-fuzzy: var(--color-sky-500); /* metadata match */
+	--tool-fuzzy-text: var(--color-sky-400);
+	--tool-partial: var(--color-teal-500); /* Upgrader match under 90% */
+	--tool-partial-text: var(--color-teal-300);
+	--tool-local: var(
+		--color-amber-500
+	); /* the local file: Upgrader's current side, Duplicate Killer's recommended keep */
+	--tool-local-dot: var(--color-amber-400);
+	--tool-local-text: var(--color-amber-400);
+	--tool-local-text-strong: var(--color-amber-300);
+	--tool-energy: var(--color-amber-500); /* energy chip */
+	--tool-energy-text: var(--color-amber-400);
+	--tool-delete: var(--color-rose-500); /* marked for deletion */
+	--tool-delete-wash: var(--color-rose-950);
+	--tool-delete-text: var(--color-rose-400);
+	--tool-cues: var(--color-indigo-500); /* cue count */
+	--tool-cues-text: var(--color-indigo-300);
 }
 
 [data-theme='light'] {
@@ -323,6 +383,7 @@
 	--pulse-bronze: var(--color-amber-600);
 	--pulse-bronze-fill: var(--color-amber-700);
 	--pulse-bronze-text: var(--color-amber-800);
+	--pulse-listening-end: var(--color-teal-400);
 
 	--beatport: #00ff96;
 	--beatport-hover: #00e687;
@@ -330,16 +391,20 @@
 	--beatport-deep: var(--color-emerald-600);
 	--beatport-wash: var(--color-emerald-100);
 	--beatport-gateway: var(--surface-1);
-	--beatport-text: var(--color-emerald-700);
+	--beatport-text: var(--color-emerald-800); /* -700 is 4.3:1 on its own /15 tint */
 	--beatport-text-strong: var(--color-emerald-700); /* #00ff96 is 1.3:1 as text on a light surface */
 	--beatport-body-text: var(--color-zinc-700);
 	--beatport-body-text-strong: var(--color-zinc-800);
+	--beatport-bright: var(--color-emerald-400);
+	--beatport-status-text: var(--color-emerald-700); /* emerald-500 is 2.5:1 on a light surface */
 
 	--source-spotify: #1db954;
 	--source-spotify-hover: #1ed760;
 	--source-spotify-text: var(--color-green-800); /* green-700 is 4.497:1 on surface-2 */
 	--source-spotify-wash: var(--surface-1);
 	--source-spotify-panel: #0d1711; /* the connection modal is a dark panel in both themes (Modal theme="dark") */
+	--source-spotify-link-tint: var(--color-emerald-500);
+	--source-spotify-link-text: var(--color-emerald-700); /* not drawn: the modal resolves its dark values */
 	--source-mik: #00d2ff;
 	--source-mik-text: var(--color-cyan-700);
 	--source-mik-wash: var(--surface-1);
@@ -354,6 +419,29 @@
 	--warning-text: var(--color-amber-700);
 	--warning-wash: var(--color-amber-100); /* amber-950 makes a dark badge on a light toolbar (D3) */
 	--warning-wash-hover: var(--color-amber-200);
+	--warning-text-strong: var(--color-amber-800);
+	--warning-text-soft: var(--color-amber-800);
+
+	--danger-tint: var(--color-red-500);
+	--danger-text: var(--color-red-700);
+
+	--tool-match: var(--color-emerald-500);
+	--tool-match-text: var(--color-emerald-800); /* -700 is 4.3:1 on its own tint */
+	--tool-fuzzy: var(--color-sky-500);
+	--tool-fuzzy-text: var(--color-sky-800);
+	--tool-partial: var(--color-teal-500);
+	--tool-partial-text: var(--color-teal-800);
+	--tool-local: var(--color-amber-500);
+	--tool-local-dot: var(--color-amber-400);
+	--tool-local-text: var(--color-amber-800);
+	--tool-local-text-strong: var(--color-amber-800);
+	--tool-energy: var(--color-amber-500);
+	--tool-energy-text: var(--color-amber-800);
+	--tool-delete: var(--color-rose-500);
+	--tool-delete-wash: var(--color-rose-100);
+	--tool-delete-text: var(--color-rose-700);
+	--tool-cues: var(--color-indigo-500);
+	--tool-cues-text: var(--color-indigo-700);
 }
 
 /* Beatport's own dark panels (cart drawer, sign-in modal, logged-out gateway card). These panels use the

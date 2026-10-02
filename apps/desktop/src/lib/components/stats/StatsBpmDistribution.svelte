@@ -88,7 +88,7 @@
 					<!-- Progress bar -->
 					<div class="relative h-2 w-full overflow-hidden rounded-full bg-surface-3">
 						<div
-							class="h-full rounded-full bg-gradient-to-r from-pulse-listening to-teal-400 shadow-sm transition-all duration-500"
+							class="h-full rounded-full bg-gradient-to-r from-pulse-listening to-pulse-listening-end shadow-sm transition-all duration-500"
 							style="width: {fillPercent}%"
 						></div>
 					</div>

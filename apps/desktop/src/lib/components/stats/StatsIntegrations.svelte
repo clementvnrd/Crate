@@ -269,7 +269,7 @@
 			{#if spotifyAuth?.is_connected}
 				<button
 					type="button"
-					class="flex cursor-pointer items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 transition-all hover:bg-red-500/20 active:scale-95"
+					class="flex cursor-pointer items-center gap-1.5 rounded-xl border border-danger-tint/30 bg-danger-tint/10 px-3 py-1.5 text-xs font-bold text-danger-text transition-all hover:bg-danger-tint/20 active:scale-95"
 					onclick={() => statsStore.disconnectSpotify()}
 				>
 					<Icon name="x" class="h-3.5 w-3.5" />
@@ -518,7 +518,7 @@
 							<div class="flex items-center gap-2">
 								<button
 									type="button"
-									class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-surface-3 px-2.5 py-1 text-[11px] font-medium text-emerald-400 transition-all hover:bg-surface-4"
+									class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-source-spotify-link-tint/20 bg-surface-3 px-2.5 py-1 text-[11px] font-medium text-source-spotify-link-text transition-all hover:bg-surface-4"
 									onclick={handleOpenDeveloperDashboard}
 								>
 									<span>Spotify Developer Dashboard</span>
@@ -543,7 +543,7 @@
 							<div class="flex items-center gap-2">
 								<span class="text-[11px] text-text-tertiary">{$translate('stats.spotifyModal.redirectUri')}</span>
 								<code
-									class="rounded border border-emerald-500/20 bg-black/50 px-2 py-0.5 font-mono text-[10px] text-emerald-400"
+									class="rounded border border-source-spotify-link-tint/20 bg-black/50 px-2 py-0.5 font-mono text-[10px] text-source-spotify-link-text"
 								>
 									http://127.0.0.1:8888/callback
 								</code>
@@ -557,13 +557,13 @@
 										: $translate('stats.spotifyModal.copy')}
 								</button>
 							</div>
-							<p class="text-[10.5px] font-medium text-amber-300/90">
+							<p class="text-[10.5px] font-medium text-warning-text-strong/90">
 								{$translate('stats.spotifyModal.ipWarning')}
-								<code class="rounded bg-black/40 px-1 py-0.5 font-mono text-[10px] text-amber-200"
+								<code class="rounded bg-black/40 px-1 py-0.5 font-mono text-[10px] text-warning-text-soft"
 									>http://127.0.0.1:8888/callback</code
 								>
 								{$translate('stats.spotifyModal.ipRejects')}
-								<code class="text-amber-400/60 line-through">localhost</code>).
+								<code class="text-warning-text/60 line-through">localhost</code>).
 							</p>
 						</div>
 					</div>
@@ -587,7 +587,7 @@
 							class="flex items-center justify-between text-xs font-bold tracking-wider text-text-secondary uppercase"
 						>
 							<span>{$translate('stats.spotifyModal.clientId')}</span>
-							<span class="text-[10px] font-semibold text-emerald-400 lowercase"
+							<span class="text-[10px] font-semibold text-source-spotify-link-text lowercase"
 								>{$translate('stats.spotifyModal.required')}</span
 							>
 						</label>
@@ -673,12 +673,12 @@
 								/>
 								<button
 									type="button"
-									class="flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 px-3.5 py-2 text-xs font-bold text-emerald-400 transition-all hover:bg-emerald-500/30 active:scale-95 disabled:opacity-50"
+									class="flex cursor-pointer items-center gap-1.5 rounded-xl border border-source-spotify-link-tint/40 bg-source-spotify-link-tint/20 px-3.5 py-2 text-xs font-bold text-source-spotify-link-text transition-all hover:bg-source-spotify-link-tint/30 active:scale-95 disabled:opacity-50"
 									onclick={handleManualCodeSubmit}
 									disabled={isSubmittingManualCode || !manualCodeInput.trim()}
 								>
 									{#if isSubmittingManualCode}
-										<Spinner class="h-3.5 w-3.5 text-emerald-400" />
+										<Spinner class="h-3.5 w-3.5 text-source-spotify-link-text" />
 										<span>{$translate('stats.spotifyModal.validating')}</span>
 									{:else}
 										<Icon name="check" class="h-3.5 w-3.5" />

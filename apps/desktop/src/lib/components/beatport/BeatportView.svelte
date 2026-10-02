@@ -210,13 +210,13 @@
 					<!-- Error / Expired Session Notice -->
 					{#if $beatportStore.error}
 						<div
-							class="flex flex-col items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-950/40 p-4 text-xs text-amber-200 shadow-lg sm:flex-row"
+							class="flex flex-col items-center justify-between gap-3 rounded-xl border border-warning-tint/40 bg-warning-wash/40 p-4 text-xs text-warning-text-soft shadow-lg sm:flex-row"
 						>
 							<div class="flex items-center gap-3">
-								<Icon name="alert-triangle" class="h-5 w-5 flex-shrink-0 text-amber-400" />
+								<Icon name="alert-triangle" class="h-5 w-5 flex-shrink-0 text-warning-text" />
 								<div>
-									<div class="font-bold text-amber-300">{$translate('beatport.session.title')}</div>
-									<div class="text-[11px] text-neutral-300">{$beatportStore.error}</div>
+									<div class="font-bold text-warning-text-strong">{$translate('beatport.session.title')}</div>
+									<div class="text-[11px] text-beatport-body-text">{$beatportStore.error}</div>
 								</div>
 							</div>
 							<Button
