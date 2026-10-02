@@ -5,12 +5,18 @@ import { preparePage, harnessUrl, settle, unmockedCommands, waitForApp, watchErr
 // XML export is given, Rekordbox. Replaces the old silent automatic purge of tracks missing from Mixed
 // In Key with a reviewable report (see [C3]).
 
+async function openFromSettings(page: Page): Promise<void> {
+	await page.getByRole('button', { name: 'Settings' }).click()
+	await page.getByRole('button', { name: 'Library', exact: true }).click()
+	await page.getByRole('button', { name: 'Open the discrepancy report' }).click()
+}
+
 async function openDiscrepancyReport(page: Page): Promise<{ errors: string[]; dialog: Locator }> {
 	const errors = watchErrors(page)
 	await preparePage(page)
 	await page.goto(harnessUrl())
 	await waitForApp(page)
-	await page.getByRole('button', { name: 'Discrepancy report' }).click()
+	await openFromSettings(page)
 	const dialog = page.locator('dialog[open]')
 	await expect(dialog.getByText('Discrepancy report')).toBeVisible()
 	await settle(page)
@@ -26,9 +32,11 @@ test.describe('Discrepancy report', () => {
 		await expect(dialog.getByText('16 tracks in Crate')).toBeVisible()
 
 		const missing = dialog.locator('section', { has: page.getByRole('heading', { name: /Missing files/ }) })
-		await expect(missing.getByText('Neon Rain', { exact: false })).toBeVisible()
+		// `.first()`: the full (untruncated) file path text also contains the title, since fixture file names are
+		// "Artist - Title.ext", so the plain title string matches both the title line and the path line below it.
+		await expect(missing.getByText('Neon Rain', { exact: false }).first()).toBeVisible()
 		await expect(missing.getByText('Missing', { exact: true })).toBeVisible()
-		await expect(missing.getByText('Undertow', { exact: false })).toBeVisible()
+		await expect(missing.getByText('Undertow', { exact: false }).first()).toBeVisible()
 		await expect(missing.getByText('Drive not connected')).toBeVisible()
 
 		expect(errors).toEqual([])
@@ -69,7 +77,7 @@ test.describe('Discrepancy report', () => {
 		await preparePage(page)
 		await page.goto(harnessUrl({ params: { library: 'empty' } }))
 		await waitForApp(page)
-		await page.getByRole('button', { name: 'Discrepancy report' }).click()
+		await openFromSettings(page)
 		const dialog = page.locator('dialog[open]')
 		await expect(dialog.getByText('Discrepancy report')).toBeVisible()
 		await settle(page)
@@ -84,7 +92,7 @@ test.describe('Discrepancy report', () => {
 		await preparePage(page)
 		await page.goto(harnessUrl({ params: { discrepancyReport: 'fail' } }))
 		await waitForApp(page)
-		await page.getByRole('button', { name: 'Discrepancy report' }).click()
+		await openFromSettings(page)
 		const dialog = page.locator('dialog[open]')
 		await expect(dialog.getByText('Could not build the report')).toBeVisible()
 

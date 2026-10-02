@@ -161,6 +161,86 @@
 			"crushedColumns": 0,
 			"pageOverflowX": 0
 		},
+		"discrepancy-dark-1000-en": {
+			"lowContrast": 57,
+			"smallText": 50,
+			"unnamedControls": 0,
+			"pointerOnly": 0,
+			"overlaps": 39,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"discrepancy-dark-1000-fr": {
+			"lowContrast": 57,
+			"smallText": 50,
+			"unnamedControls": 0,
+			"pointerOnly": 0,
+			"overlaps": 39,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"discrepancy-dark-1400-en": {
+			"lowContrast": 58,
+			"smallText": 52,
+			"unnamedControls": 0,
+			"pointerOnly": 0,
+			"overlaps": 16,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"discrepancy-dark-1400-fr": {
+			"lowContrast": 58,
+			"smallText": 52,
+			"unnamedControls": 0,
+			"pointerOnly": 0,
+			"overlaps": 17,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"discrepancy-light-1000-en": {
+			"lowContrast": 72,
+			"smallText": 50,
+			"unnamedControls": 0,
+			"pointerOnly": 0,
+			"overlaps": 39,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"discrepancy-light-1000-fr": {
+			"lowContrast": 72,
+			"smallText": 50,
+			"unnamedControls": 0,
+			"pointerOnly": 0,
+			"overlaps": 39,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"discrepancy-light-1400-en": {
+			"lowContrast": 73,
+			"smallText": 52,
+			"unnamedControls": 0,
+			"pointerOnly": 0,
+			"overlaps": 16,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
+		"discrepancy-light-1400-fr": {
+			"lowContrast": 73,
+			"smallText": 52,
+			"unnamedControls": 0,
+			"pointerOnly": 0,
+			"overlaps": 17,
+			"outOfWindow": 0,
+			"crushedColumns": 0,
+			"pageOverflowX": 0
+		},
 		"duplicates-dark-1000-en": {
 			"lowContrast": 66,
 			"smallText": 82,
