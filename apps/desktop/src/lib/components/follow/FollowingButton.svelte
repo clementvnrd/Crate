@@ -18,7 +18,7 @@
 		<Icon name="rss" />
 		{#if $followNewCount > 0}
 			<span
-				class="absolute -top-1.5 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-brand-primary px-0.5 text-[9px] leading-none font-bold text-white"
+				class="absolute -top-1.5 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-brand-primary px-0.5 text-[9px] leading-none font-bold text-brand-on"
 			>
 				{$followNewCount > 99 ? '99+' : $followNewCount}
 			</span>

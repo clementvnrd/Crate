@@ -153,7 +153,7 @@
 
 					<button
 						type="button"
-						class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-beatport-tint py-3 text-xs font-bold text-black shadow-lg shadow-beatport-tint/20 transition-all hover:bg-emerald-400 active:scale-98"
+						class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-beatport-tint py-3 text-xs font-bold text-black shadow-lg shadow-beatport-tint/20 transition-all hover:bg-beatport-bright active:scale-98"
 						onclick={handleDownload}
 					>
 						<Icon name="download" class="h-4 w-4" />

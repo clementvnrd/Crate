@@ -77,7 +77,7 @@
 			<!-- Multi-track count badge -->
 			{#if additionalCount > 0}
 				<div
-					class="absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-primary px-1.5 text-xs font-medium text-white"
+					class="absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-primary px-1.5 text-xs font-medium text-brand-on"
 				>
 					+{additionalCount}
 				</div>
@@ -101,7 +101,7 @@
 			<!-- Multi-release count badge -->
 			{#if additionalCount > 0}
 				<div
-					class="absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-primary px-1.5 text-xs font-medium text-white"
+					class="absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-primary px-1.5 text-xs font-medium text-brand-on"
 				>
 					+{additionalCount}
 				</div>
@@ -126,7 +126,7 @@
 			<!-- Multi-playlist count badge -->
 			{#if additionalCount > 0}
 				<div
-					class="absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-primary px-1.5 text-xs font-medium text-white"
+					class="absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-primary px-1.5 text-xs font-medium text-brand-on"
 				>
 					+{additionalCount}
 				</div>
