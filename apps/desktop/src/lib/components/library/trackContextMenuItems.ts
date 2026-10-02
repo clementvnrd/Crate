@@ -19,6 +19,7 @@ export interface BuildTrackContextMenuOptions {
 	onSetColor?: (color: TrackColor | null) => void
 	onAnalyze?: () => void
 	onResyncMik?: () => void
+	onBuildSet?: () => void
 }
 
 /**
@@ -43,6 +44,7 @@ export function buildTrackContextMenuItems(options: BuildTrackContextMenuOptions
 		onSetColor,
 		onAnalyze,
 		onResyncMik,
+		onBuildSet,
 	} = options
 
 	const items: ContextMenuItem[] = []
@@ -119,6 +121,16 @@ export function buildTrackContextMenuItems(options: BuildTrackContextMenuOptions
 			label: t('contextMenu.addToPlaylist'),
 			icon: 'list-plus',
 			disabled: true,
+		})
+	}
+
+	// "Build a set" - check the harmonic/energy flow of this selection and export it to Rekordbox
+	if (onBuildSet) {
+		items.push({
+			id: 'build-set',
+			label: t('contextMenu.buildSet'),
+			icon: 'shuffle',
+			action: onBuildSet,
 		})
 	}
 

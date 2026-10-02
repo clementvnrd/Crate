@@ -25,6 +25,7 @@
 		onSetColor?: (color: TrackColor | null) => void
 		onAnalyze?: () => void
 		onResyncMik?: () => void
+		onBuildSet?: () => void
 	}
 
 	let {
@@ -46,6 +47,7 @@
 		onSetColor,
 		onAnalyze,
 		onResyncMik,
+		onBuildSet,
 	}: Props = $props()
 
 	// Platform-specific label for "View in Finder/Explorer"
@@ -87,6 +89,7 @@
 			onSetColor,
 			onAnalyze,
 			onResyncMik,
+			onBuildSet,
 		})
 	})
 </script>

@@ -684,7 +684,8 @@
 		"relocate": "Relocate...",
 		"analyze": "Analyze",
 		"resyncMik": "Sync with Mixed In Key",
-		"stopAnalysis": "Stop analysis"
+		"stopAnalysis": "Stop analysis",
+		"buildSet": "Build a set..."
 	},
 	"modals": {
 		"createPlaylist": {
@@ -1851,6 +1852,34 @@
 			"note": {
 				"half_or_double_time": "Half/double tempo"
 			}
+		}
+	},
+	"setMode": {
+		"title": "Build a set",
+		"nameLabel": "Set name",
+		"defaultName": "New set",
+		"empty": "Select tracks in the Library and choose \"Build a set...\" to start one.",
+		"loadFailed": "Could not check this set.",
+		"stats": {
+			"tracks": "Tracks",
+			"harmonic": "Harmonic transitions",
+			"clashing": "Key clashes",
+			"energyJumps": "Energy jumps"
+		},
+		"duration": "{duration} total",
+		"autoOrder": "Auto-order",
+		"autoOrderHint": "Reorder these tracks for the smoothest harmonic and energy flow.",
+		"moveUp": "Move \"{title}\" up",
+		"moveDown": "Move \"{title}\" down",
+		"removeTrack": "Remove \"{title}\" from the set",
+		"opening": "Opening track",
+		"tempo": "{delta} tempo",
+		"exportXml": "Export to Rekordbox XML",
+		"toast": {
+			"analyzeFailed": "Could not check this set",
+			"suggestFailed": "Could not suggest an order for this set",
+			"exportSuccess": "Set exported to Rekordbox XML: {count, plural, one {# track} other {# tracks}}",
+			"exportFailed": "Set export failed: {error}"
 		}
 	}
 }
