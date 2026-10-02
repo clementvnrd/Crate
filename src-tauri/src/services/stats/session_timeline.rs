@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::StatsRecorderService;
 use crate::error::{CrateError, Result};
 use crate::models::stats::RekordboxSession;
-use crate::services::harmonic::{bpm_delta_percent, relation, HarmonicRelation};
+use crate::services::harmonic::{bpm_delta_percent, relation, HarmonicRelation, ENERGY_JUMP};
 
 /// How a track was mixed in from the one before it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -14,6 +14,12 @@ pub struct SessionTransition {
     pub harmonic: HarmonicRelation,
     /// Tempo change in percent (positive = faster).
     pub bpm_delta_percent: Option<f64>,
+    /// Energy change from the previous track (positive = higher). `None` when either track's
+    /// energy is unknown.
+    pub energy_delta: Option<i32>,
+    /// The energy changes by `ENERGY_JUMP` levels or more — the same threshold the set planner
+    /// uses, so the two screens agree on what counts as a jump.
+    pub energy_jump: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,6 +51,8 @@ pub struct SessionTimeline {
     pub clashing_transitions: usize,
     /// Transitions where a key is missing on either side.
     pub unknown_transitions: usize,
+    /// Transitions where the energy jumps by `ENERGY_JUMP` levels or more.
+    pub energy_jumps: usize,
 }
 
 impl StatsRecorderService {
@@ -112,7 +120,7 @@ impl StatsRecorderService {
             .map_err(CrateError::Database)?;
 
         let mut tracks: Vec<SessionTrack> = Vec::with_capacity(rows.len());
-        let (mut harmonic, mut clashing, mut unknown) = (0, 0, 0);
+        let (mut harmonic, mut clashing, mut unknown, mut jumps) = (0, 0, 0, 0);
         for (i, (played_at, title, artist, album, duration_ms, bpm, key, energy, library_id)) in
             rows.into_iter().enumerate()
         {
@@ -123,9 +131,16 @@ impl StatsRecorderService {
                     HarmonicRelation::Unknown => unknown += 1,
                     _ => harmonic += 1,
                 }
+                let energy_delta = previous.energy.zip(energy).map(|(x, y)| y - x);
+                let energy_jump = energy_delta.is_some_and(|d| d.abs() >= ENERGY_JUMP);
+                if energy_jump {
+                    jumps += 1;
+                }
                 SessionTransition {
                     harmonic: harmonic_relation,
                     bpm_delta_percent: bpm_delta_percent(previous.bpm, bpm),
+                    energy_delta,
+                    energy_jump,
                 }
             });
             tracks.push(SessionTrack {
@@ -149,6 +164,7 @@ impl StatsRecorderService {
             harmonic_transitions: harmonic,
             clashing_transitions: clashing,
             unknown_transitions: unknown,
+            energy_jumps: jumps,
         })
     }
 }

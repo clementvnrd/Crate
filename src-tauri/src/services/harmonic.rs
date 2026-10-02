@@ -149,6 +149,11 @@ pub fn bpm_delta_percent(from: Option<f64>, to: Option<f64>) -> Option<f64> {
 /// The pitch range of a standard DJ deck: a tempo within this many percent can be matched.
 pub const PITCH_RANGE_PERCENT: f64 = 6.0;
 
+/// An energy change of at least this many levels (the 1 to 10 scale) is a jump a DJ feels.
+/// Shared by the set planner (`services::library::set_planner`) and the Rekordbox session
+/// timeline (`services::stats::session_timeline`) so both screens agree on what counts as one.
+pub const ENERGY_JUMP: i32 = 3;
+
 #[cfg(test)]
 mod tests {
     use super::*;

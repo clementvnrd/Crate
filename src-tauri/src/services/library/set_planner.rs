@@ -12,11 +12,9 @@ use serde::{Deserialize, Serialize};
 
 use super::*;
 use crate::services::harmonic::{
-    bpm_delta_percent, relation, HarmonicRelation, PITCH_RANGE_PERCENT,
+    bpm_delta_percent, relation, HarmonicRelation, ENERGY_JUMP, PITCH_RANGE_PERCENT,
 };
 
-/// An energy change of at least this many levels is reported as a jump.
-const ENERGY_JUMP: i32 = 3;
 /// Bridge tracks offered per difficult transition.
 const MAX_BRIDGES: usize = 3;
 /// Most tracks in a set (and so the most the 2-opt pass works on).
