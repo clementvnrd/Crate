@@ -213,48 +213,51 @@ impl ExportService {
             WHERE id IN ({placeholders})
             "#
         );
-        let mut stmt = conn.prepare(&sql)?;
-        let params: Vec<&dyn rusqlite::ToSql> = track_ids
-            .iter()
-            .map(|id| id as &dyn rusqlite::ToSql)
-            .collect();
-        let rows = stmt.query_map(params.as_slice(), |row| {
-            Ok(Track {
-                id: row.get(0)?,
-                file_path: row.get(1)?,
-                file_hash: row.get(2)?,
-                title: row.get(3)?,
-                artist: row.get(4)?,
-                album: row.get(5)?,
-                year: row.get(6)?,
-                genre: row.get(7)?,
-                label: row.get(8)?,
-                catalog_number: row.get(9)?,
-                duration_ms: row.get(10)?,
-                bpm: row.get(11)?,
-                key: row.get(12)?,
-                energy: row.get(13)?,
-                bitrate: row.get(14)?,
-                sample_rate: row.get(15)?,
-                format: row.get(16)?,
-                analysis_source: row.get(17)?,
-                waveform_data: None,
-                rating: row.get(19)?,
-                play_count: row.get(20)?,
-                date_added: row.get(21)?,
-                date_modified: row.get(22)?,
-                last_played: row.get(23)?,
-                rekordbox_id: row.get(24)?,
-                artwork_path: row.get(25)?,
-                artwork_source: row.get(26)?,
-                color: row.get(27)?,
-                library_root_id: row.get(28)?,
-                relative_path: row.get(29)?,
-                tags: Vec::new(),
-            })
-        })?;
-        let by_id: std::collections::HashMap<String, Track> =
-            rows.flatten().map(|t| (t.id.clone(), t)).collect();
+        // Scoped so `stmt` (and the rows it yields) are dropped here, before `conn` is dropped
+        // below — otherwise the borrow checker sees `conn` still borrowed at that point.
+        let by_id: std::collections::HashMap<String, Track> = {
+            let mut stmt = conn.prepare(&sql)?;
+            let params: Vec<&dyn rusqlite::ToSql> = track_ids
+                .iter()
+                .map(|id| id as &dyn rusqlite::ToSql)
+                .collect();
+            let rows = stmt.query_map(params.as_slice(), |row| {
+                Ok(Track {
+                    id: row.get(0)?,
+                    file_path: row.get(1)?,
+                    file_hash: row.get(2)?,
+                    title: row.get(3)?,
+                    artist: row.get(4)?,
+                    album: row.get(5)?,
+                    year: row.get(6)?,
+                    genre: row.get(7)?,
+                    label: row.get(8)?,
+                    catalog_number: row.get(9)?,
+                    duration_ms: row.get(10)?,
+                    bpm: row.get(11)?,
+                    key: row.get(12)?,
+                    energy: row.get(13)?,
+                    bitrate: row.get(14)?,
+                    sample_rate: row.get(15)?,
+                    format: row.get(16)?,
+                    analysis_source: row.get(17)?,
+                    waveform_data: None,
+                    rating: row.get(19)?,
+                    play_count: row.get(20)?,
+                    date_added: row.get(21)?,
+                    date_modified: row.get(22)?,
+                    last_played: row.get(23)?,
+                    rekordbox_id: row.get(24)?,
+                    artwork_path: row.get(25)?,
+                    artwork_source: row.get(26)?,
+                    color: row.get(27)?,
+                    library_root_id: row.get(28)?,
+                    relative_path: row.get(29)?,
+                    tags: Vec::new(),
+                })
+            })?;
+            rows.flatten().map(|t| (t.id.clone(), t)).collect()
+        };
 
         // Keep the caller's order, dropping ids that no longer exist in the library.
         let tracks: Vec<Track> = track_ids
