@@ -21,6 +21,7 @@ export {
 	currentWaveformBars,
 } from '$shared/stores/player'
 export { recentTracksStore, recentStandaloneTracks, recentTracksLoading } from './recentTracks'
+export { suggestionsStore, nextTrackSuggestions, suggestionsLoading, suggestionsError } from './suggestions'
 export { tagsStore, allTags, getTagById, getCategoryById, computeTagStates } from '$shared/stores/tags'
 export { playlistsStore, rootPlaylists, getPlaylistChildren, buildPlaylistTree } from '$shared/stores/playlists'
 export type { PlaylistTreeNode } from '$shared/stores/playlists'

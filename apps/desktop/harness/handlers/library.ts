@@ -1,4 +1,4 @@
-import type { Track, TrackFilter, TrackUpdate } from '$shared/types'
+import type { HarmonicRelation, NextTrackSuggestion, Track, TrackFilter, TrackUpdate } from '$shared/types'
 import type { HandlerMap } from '../types'
 import type { HarnessState } from '../state'
 import { DEVICES, cuesFor, waveformFor } from '../fixtures/library'
@@ -40,6 +40,106 @@ function requireTrack(state: HarnessState, id: unknown): Track {
 	const track = state.tracks.find((entry) => entry.id === id)
 	if (!track) throw `Track not found: ${String(id)}`
 	return track
+}
+
+// =============================================================================
+// Next-track suggestions (CRA-133)
+// =============================================================================
+// The harness has no Rekordbox listen-history table, so "history" suggestions come from a small
+// static map pinned to a couple of library tracks; everything else falls back to the same
+// same-key-then-tempo logic as the real backend (`suggest.rs`), for a realistic ranked list.
+
+const CAMELOT = /^([1-9]|1[0-2])([AB])$/i
+const PITCH_RANGE_PERCENT = 6
+
+function relation(a: string | null, b: string | null): HarmonicRelation {
+	const ma = a?.trim().match(CAMELOT)
+	const mb = b?.trim().match(CAMELOT)
+	if (!ma || !mb) return 'unknown'
+	const numA = parseInt(ma[1], 10)
+	const numB = parseInt(mb[1], 10)
+	const letterA = ma[2].toUpperCase()
+	const letterB = mb[2].toUpperCase()
+	if (numA === numB && letterA === letterB) return 'same'
+	if (numA === numB) return 'relative'
+	const adjacent = [numA === 12 ? 1 : numA + 1, numA === 1 ? 12 : numA - 1]
+	if (letterA === letterB && adjacent.includes(numB)) return 'adjacent'
+	return 'clash'
+}
+
+function bpmDeltaPercent(current: number | null, candidate: number | null): number | null {
+	if (!current || current <= 0 || candidate === null) return null
+	return ((candidate - current) / current) * 100
+}
+
+/** A fixed "you've played this after it" transition, so the panel has a realistic history-sourced
+ * row in screenshots and e2e without a real listen-history store behind it. `trk-04` (10B) is a key
+ * clash against `trk-01` (8A): the owner mixed into it anyway, which `trk-06` (9A, adjacent and in
+ * range) is left free to illustrate as the compatible fallback below it. */
+const SUGGESTION_HISTORY: Record<string, { id: string; times: number; lastAt: string }[]> = {
+	'trk-01': [{ id: 'trk-04', times: 1, lastAt: '2026-09-06 23:02:00' }],
+}
+
+function compatibleIds(state: HarnessState, current: Track, taken: Set<string>, want: number): string[] {
+	if (want <= 0 || !current.bpm || current.bpm <= 0) return []
+	const spread = (current.bpm * PITCH_RANGE_PERCENT) / 100
+	return state.tracks
+		.filter(
+			(track) =>
+				!taken.has(track.id) &&
+				track.bpm !== null &&
+				track.bpm >= current.bpm! - spread &&
+				track.bpm <= current.bpm! + spread
+		)
+		.map((track) => {
+			const rel = relation(current.key, track.key)
+			const level = rel === 'same' ? 0 : rel === 'adjacent' || rel === 'relative' ? 1 : rel === 'unknown' ? 2 : -1
+			return { id: track.id, level, delta: Math.abs((track.bpm ?? 0) - current.bpm!) }
+		})
+		.filter((entry) => entry.level >= 0)
+		.sort((a, b) => a.level - b.level || a.delta - b.delta || a.id.localeCompare(b.id))
+		.slice(0, want)
+		.map((entry) => entry.id)
+}
+
+function suggestNextTracks(state: HarnessState, trackId: unknown, limit: unknown): NextTrackSuggestion[] {
+	const current = requireTrack(state, trackId)
+	const max = typeof limit === 'number' ? limit : 10
+	const taken = new Set([current.id])
+	const suggestions: NextTrackSuggestion[] = []
+
+	for (const entry of SUGGESTION_HISTORY[current.id] ?? []) {
+		if (suggestions.length >= max) break
+		if (taken.has(entry.id)) continue
+		const track = state.tracks.find((candidate) => candidate.id === entry.id)
+		if (!track) continue
+		taken.add(track.id)
+		suggestions.push({
+			track,
+			source: 'history',
+			times_played_after: entry.times,
+			last_played_after: entry.lastAt,
+			harmonic: relation(current.key, track.key),
+			bpm_delta_percent: bpmDeltaPercent(current.bpm, track.bpm),
+		})
+	}
+
+	if (suggestions.length < max) {
+		for (const id of compatibleIds(state, current, taken, max - suggestions.length)) {
+			const track = state.tracks.find((candidate) => candidate.id === id)
+			if (!track) continue
+			suggestions.push({
+				track,
+				source: 'compatible',
+				times_played_after: 0,
+				last_played_after: null,
+				harmonic: relation(current.key, track.key),
+				bpm_delta_percent: bpmDeltaPercent(current.bpm, track.bpm),
+			})
+		}
+	}
+
+	return suggestions
 }
 
 export function libraryHandlers(state: HarnessState): HandlerMap {
@@ -94,6 +194,8 @@ export function libraryHandlers(state: HarnessState): HandlerMap {
 			return state.tracks.filter((track) => members.has(track.id))
 		},
 		preview_smart_rules_count: () => Math.min(state.tracks.length, 4),
+
+		suggest_next_tracks: ({ trackId, limit }) => suggestNextTracks(state, trackId, limit),
 
 		get_devices: () => DEVICES,
 	}
