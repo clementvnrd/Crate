@@ -44,6 +44,49 @@ export interface KeyboardShortcutHandlers {
 }
 
 // =============================================================================
+// Enter and Space on a focused control
+// =============================================================================
+
+/**
+ * Controls that answer Enter and Space themselves, natively or through their ARIA role. When one of them has
+ * keyboard focus, the global Enter (play the selection) and Space (play / pause) shortcuts step aside so the key
+ * activates the control instead of being swallowed. Sliders are deliberately left out: Enter and Space mean nothing
+ * to a slider, so on the waveform or the seek bar Space keeps toggling playback.
+ */
+const CONTROL_SELECTOR = [
+	'button',
+	'a[href]',
+	'summary',
+	'select',
+	'[role="button"]',
+	'[role="link"]',
+	'[role="switch"]',
+	'[role="checkbox"]',
+	'[role="radio"]',
+	'[role="tab"]',
+	'[role="menuitem"]',
+	'[role="menuitemcheckbox"]',
+	'[role="menuitemradio"]',
+	'[role="option"]',
+].join(', ')
+
+/**
+ * List rows only step aside for a key they handled themselves (they called `preventDefault`): a row without an
+ * Enter or Space action of its own leaves the key to the shortcut, as before.
+ */
+const ROW_SELECTOR = '[role="row"], [role="treeitem"], [role="gridcell"]'
+
+/**
+ * Whether the focused `element` owns Enter and Space, so the global shortcut must not run. `handledByElement` is
+ * whether the element's own handler already consumed the key (`event.defaultPrevented`).
+ */
+export function controlOwnsActivationKey(element: Element | null, handledByElement: boolean): boolean {
+	if (!element || element === document.body || element === document.documentElement) return false
+	if (element.matches(CONTROL_SELECTOR)) return true
+	return handledByElement && element.matches(ROW_SELECTOR)
+}
+
+// =============================================================================
 // Hook
 // =============================================================================
 
@@ -78,6 +121,10 @@ export interface KeyboardShortcutHandlers {
  * - Cmd/Ctrl+D: add release (handled by native menu)
  * - Cmd/Ctrl+R: refresh metadata for selected discovery releases
  *
+ * Enter and Space are left to a button, link, switch, checkbox, tab, menu item or list row that has keyboard focus
+ * (see `controlOwnsActivationKey`), so a control reached with Tab can be activated; everywhere else they keep their
+ * shortcut.
+ *
  * @returns Cleanup function to remove the event listener
  */
 export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): () => void {
@@ -111,6 +158,24 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): () => 
 		isModalOpen,
 	} = handlers
 
+	// How the focused element got its focus. Enter and Space only go to a control focused from the keyboard (Tab,
+	// arrows, focus given back by a dialog closed with Escape): a control focused by a click (Chromium focuses
+	// buttons on click, every engine focuses rows with a tabindex) keeps today's Space = play / pause.
+	let lastInputWasPointer = false
+	let focusCameFromPointer = false
+
+	function handlePointerDown(): void {
+		lastInputWasPointer = true
+	}
+
+	function handleAnyKeydown(): void {
+		lastInputWasPointer = false
+	}
+
+	function handleFocusIn(): void {
+		focusCameFromPointer = lastInputWasPointer
+	}
+
 	function handleKeydown(e: KeyboardEvent): void {
 		if (isModalOpen?.()) return
 		if (isNativeDialogOpen()) return
@@ -120,6 +185,16 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): () => 
 		if (e.key === 'Tab' && e.shiftKey && !inputFocused) {
 			e.preventDefault()
 			onToggleView()
+			return
+		}
+
+		// Enter or Space on a control that has keyboard focus: the control handles it, not the shortcut
+		if (
+			(e.code === 'Space' || e.key === 'Enter') &&
+			!inputFocused &&
+			!focusCameFromPointer &&
+			controlOwnsActivationKey(document.activeElement, e.defaultPrevented)
+		) {
 			return
 		}
 
@@ -323,9 +398,15 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): () => 
 		}
 	}
 
+	window.addEventListener('pointerdown', handlePointerDown, true)
+	window.addEventListener('keydown', handleAnyKeydown, true)
+	window.addEventListener('focusin', handleFocusIn, true)
 	window.addEventListener('keydown', handleKeydown)
 
 	return () => {
+		window.removeEventListener('pointerdown', handlePointerDown, true)
+		window.removeEventListener('keydown', handleAnyKeydown, true)
+		window.removeEventListener('focusin', handleFocusIn, true)
 		window.removeEventListener('keydown', handleKeydown)
 	}
 }

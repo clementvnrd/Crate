@@ -23,7 +23,8 @@
 		"back": "Back",
 		"viewArtwork": "View artwork",
 		"albumArtwork": "Album artwork",
-		"unknownError": "Unknown error"
+		"unknownError": "Unknown error",
+		"resizePanel": "Resize panel"
 	},
 	"nav": {
 		"library": "Library",

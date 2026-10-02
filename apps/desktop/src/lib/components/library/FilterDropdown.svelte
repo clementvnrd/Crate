@@ -3,7 +3,9 @@
 	import Icon from '$lib/components/common/Icon.svelte'
 	import Button from '$lib/components/common/Button.svelte'
 	import Tooltip from '$lib/components/common/Tooltip.svelte'
+	import { focusTrap, nextFocusIndex } from '$lib/components/common/focusTrap'
 	import { translate } from '$shared/i18n'
+	import { tick } from 'svelte'
 	import { scale, slide, fade } from 'svelte/transition'
 
 	type Props = {
@@ -200,6 +202,52 @@
 		clearTimeout(closeTimer)
 	}
 
+	// Keyboard (and click) access to a category's tags. The pointer still opens the flyout on hover, as before; a click
+	// opens it at once, and from the keyboard (Enter, Space or Right arrow on the category) focus moves to its first tag.
+	// Inside the flyout, Tab cycles through the tags and Escape or Left arrow goes back to the category.
+	async function openFlyout(categoryId: string, focusFirstTag: boolean) {
+		clearTimeout(openTimer)
+		clearTimeout(closeTimer)
+		openCategoryId = categoryId
+		if (!focusFirstTag) return
+		await tick()
+		flyoutEl?.querySelector<HTMLElement>('button')?.focus()
+	}
+
+	function handleCategoryClick(categoryId: string, e: MouseEvent) {
+		// `detail` is 0 when Enter or Space activated the button
+		openFlyout(categoryId, e.detail === 0)
+	}
+
+	function handleCategoryKeydown(categoryId: string, e: KeyboardEvent) {
+		if (e.key !== 'ArrowRight') return
+		e.preventDefault()
+		e.stopPropagation()
+		openFlyout(categoryId, true)
+	}
+
+	function closeFlyoutToCategory() {
+		const categoryId = openCategoryId
+		openCategoryId = null
+		if (categoryId) rowEls[categoryId]?.focus()
+	}
+
+	function handleFlyoutKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape' || e.key === 'ArrowLeft') {
+			e.preventDefault()
+			e.stopPropagation()
+			closeFlyoutToCategory()
+			return
+		}
+		if (e.key === 'Tab' && flyoutEl) {
+			const tags = [...flyoutEl.querySelectorAll<HTMLElement>('button')]
+			const index = nextFocusIndex(tags.length, tags.indexOf(document.activeElement as HTMLElement), e.shiftKey)
+			e.preventDefault()
+			e.stopPropagation()
+			if (index >= 0) tags[index].focus()
+		}
+	}
+
 	function handleFlyoutLeave() {
 		closeTimer = setTimeout(() => {
 			openCategoryId = null
@@ -300,6 +348,7 @@
 			class="z-50 min-w-[200px] rounded-md border border-stroke bg-surface-1 shadow-lg"
 			style={popoverStyle}
 			transition:scale={{ start: 0.95, duration: 200 }}
+			use:focusTrap
 		>
 			<div class="p-1.5">
 				<!-- Liked filter -->
@@ -389,15 +438,20 @@
 					{#each tagCategories as category (category.id)}
 						{@const color = category.color || '#6366f1'}
 						{@const count = activeCounts.get(category.id) ?? 0}
-						<!-- svelte-ignore a11y_no_static_element_interactions -->
-						<div
+						<!-- A button: Enter, Space or Right arrow opens the category's tags (the hover still does) -->
+						<button
+							type="button"
 							bind:this={rowEls[category.id]}
-							class="flex items-center gap-2 rounded px-2 py-1.5 transition-colors hover:cursor-pointer hover:bg-surface-2 {openCategoryId ===
+							class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition-colors hover:cursor-pointer hover:bg-surface-2 {openCategoryId ===
 							category.id
 								? 'bg-surface-2'
 								: ''}"
+							aria-haspopup="true"
+							aria-expanded={openCategoryId === category.id}
 							onmouseenter={() => handleCategoryEnter(category.id)}
 							onmouseleave={() => handleCategoryLeave()}
+							onclick={(e) => handleCategoryClick(category.id, e)}
+							onkeydown={(e) => handleCategoryKeydown(category.id, e)}
 						>
 							<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {color};"></span>
 							<span class="max-w-[120px] truncate text-xs text-text-primary">{category.name}</span>
@@ -411,7 +465,7 @@
 								</span>
 							{/if}
 							<Icon name="chevron-right" class="h-3 w-3 shrink-0 text-text-tertiary" />
-						</div>
+						</button>
 					{/each}
 
 					<!-- Clear all button -->
@@ -440,10 +494,12 @@
 		{#if openCategoryId}
 			{@const flyoutCategory = tagCategories.find((c) => c.id === openCategoryId)}
 			{#if flyoutCategory && flyoutCategory.tags.length > 0}
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<!-- A labelled group of toggle buttons; the pointer handlers only keep it open while hovered -->
 				<div
 					bind:this={flyoutEl}
 					use:portal
+					role="group"
+					aria-label={flyoutCategory.name}
 					class="z-50 max-h-[280px] max-w-[240px] min-w-[140px] overflow-y-auto rounded-md border border-stroke bg-surface-1 shadow-lg"
 					style={flyoutStyle}
 					onmouseenter={handleFlyoutEnter}
@@ -458,9 +514,11 @@
 								type="button"
 								class="rounded px-1.5 py-0.5 text-[11px] leading-snug font-medium transition-colors hover:cursor-pointer"
 								style={chipStyle(color, isActive, hoveredTagId === tag.id)}
+								aria-pressed={isActive}
 								onmouseenter={() => (hoveredTagId = tag.id)}
 								onmouseleave={() => (hoveredTagId = null)}
 								onclick={() => onToggleTagFilter(tag.id)}
+								onkeydown={handleFlyoutKeydown}
 							>
 								{tag.name}
 							</button>

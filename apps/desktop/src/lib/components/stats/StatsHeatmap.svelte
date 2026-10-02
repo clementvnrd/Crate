@@ -4,6 +4,7 @@
 	import { language } from '$lib/stores'
 	import { formatNumber } from '$shared/utils/format'
 	import { Icon, Tooltip } from '$lib/components/common'
+	import { heatmapCellForKey } from './heatmapKeys'
 
 	type Props = {
 		heatmap: HeatmapCell[]
@@ -73,6 +74,33 @@
 		})
 	}
 
+	// Keyboard: the grid is one tab stop; arrows move the active cell (heatmapKeys.ts), whose tooltip opens and which is
+	// announced through aria-activedescendant. Only for keyboard focus: a heatmap focused by a click leaves the arrows
+	// to the global seek and volume shortcuts, like the Player's recent files.
+	const uid = $props.id()
+	const cellId = (row: number, col: number) => `${uid}-cell-${row}-${col}`
+
+	let gridEl: HTMLDivElement | undefined = $state()
+	let activeRow = $state(0)
+	let activeCol = $state(0)
+	let keyboardActive = $state(false)
+
+	function handleGridFocus() {
+		keyboardActive = !!gridEl?.matches(':focus-visible')
+	}
+
+	function handleGridKeydown(e: KeyboardEvent) {
+		if (e.target !== e.currentTarget || !gridEl?.matches(':focus-visible')) return
+		const next = heatmapCellForKey(e, { row: activeRow, col: activeCol }, DAYS.length, HOURS.length)
+		if (!next) return
+		e.preventDefault()
+		e.stopPropagation()
+		keyboardActive = true
+		activeRow = next.row
+		activeCol = next.col
+		document.getElementById(cellId(next.row, next.col))?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+	}
+
 	function getCellIntensityClass(minutes: number, max: number): string {
 		if (minutes <= 0) return 'bg-surface-3/40 hover:bg-surface-3 border-transparent'
 		const ratio = minutes / max
@@ -117,9 +145,19 @@
 		<div class="h-48 w-full animate-pulse rounded-xl bg-surface-3 motion-reduce:animate-none"></div>
 	{:else}
 		<div class="overflow-x-auto pb-2">
-			<div class="min-w-[700px] space-y-1.5">
-				<!-- Hours Headers (0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h) -->
-				<div class="flex items-center pl-10 font-mono text-[10px] text-text-tertiary">
+			<div
+				bind:this={gridEl}
+				class="group/heatmap min-w-[700px] space-y-1.5 focus-visible:outline-none"
+				role="grid"
+				tabindex="0"
+				aria-label={$translate('stats.heatmap.title')}
+				aria-activedescendant={cellId(activeRow, activeCol)}
+				onfocus={handleGridFocus}
+				onblur={() => (keyboardActive = false)}
+				onkeydown={handleGridKeydown}
+			>
+				<!-- Hours Headers (0h, 3h, 6h, 9h, 12h, 15h, 18h, 21h): every cell names its own hours -->
+				<div class="flex items-center pl-10 font-mono text-[10px] text-text-tertiary" aria-hidden="true">
 					{#each HOURS as hour (hour)}
 						<div class="flex-1 text-center">
 							{#if hour % 3 === 0}
@@ -130,10 +168,10 @@
 				</div>
 
 				<!-- Days Rows -->
-				{#each DAYS as day (day.id)}
-					<div class="flex items-center gap-2">
+				{#each DAYS as day, row (day.id)}
+					<div class="flex items-center gap-2" role="row">
 						<!-- Day Label -->
-						<span class="w-8 text-right font-mono text-[11px] font-bold text-text-tertiary">
+						<span class="w-8 text-right font-mono text-[11px] font-bold text-text-tertiary" role="rowheader">
 							{day.label}
 						</span>
 
@@ -145,20 +183,27 @@
 								{@const plays = cell?.plays ?? 0}
 								{@const description = cellDescription(day.full, hour, mins, plays)}
 								<!-- Same bubble as before (instant, two lines); the cell is described for screen readers -->
+								{@const active = row === activeRow && hour === activeCol}
 								<Tooltip
 									text={description}
 									wrapperClass="flex flex-1"
+									wrapperRole="presentation"
+									open={keyboardActive && active}
 									fade={false}
 									bubbleClass="rounded-lg border border-stroke bg-surface-0/95 px-2.5 py-1.5 text-[11px] font-medium whitespace-nowrap text-text-primary shadow-2xl backdrop-blur-md"
 								>
 									<div
-										role="img"
+										id={cellId(row, hour)}
+										role="gridcell"
 										aria-label={description}
+										aria-selected={active}
 										title={description}
 										class="flex h-6 flex-1 items-center justify-center rounded border text-[9px] transition-all {getCellIntensityClass(
 											mins,
 											maxMinutes
-										)}"
+										)} {active
+											? 'group-focus-visible/heatmap:outline-2 group-focus-visible/heatmap:outline-offset-1 group-focus-visible/heatmap:outline-brand-primary'
+											: ''}"
 									></div>
 									{#snippet content()}
 										<div class="font-bold text-pulse-listening-text">

@@ -139,7 +139,7 @@
 		<div class="relative flex h-3.5 w-full overflow-hidden rounded-full bg-surface-3 p-0.5 shadow-inner">
 			{#each sourceBreakdown as item (item.id)}
 				<div
-					class="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full {item.bgClass} cursor-pointer hover:opacity-90"
+					class="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full {item.bgClass} hover:opacity-90"
 					style="width: {item.percentage}%"
 					role="img"
 					aria-label={segmentLabel(item)}

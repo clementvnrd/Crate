@@ -43,8 +43,10 @@
 	}
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- An item of the track list (BeatportView). The hover only swaps the index for a play button and a double-click
+     plays the preview: pointer shortcuts for the title button, which plays it from the keyboard. -->
 <div
+	role="listitem"
 	class="group grid {BEATPORT_TRACK_GRID} items-center gap-2 px-3 py-1.5 text-xs transition-colors select-none {isCurrentTrack
 		? 'border-l-2 border-l-beatport bg-beatport-wash/40'
 		: 'border-b border-stroke/40 hover:bg-surface-2/60'}"

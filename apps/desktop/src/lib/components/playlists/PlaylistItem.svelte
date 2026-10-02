@@ -219,6 +219,8 @@
 	onpointercancel={handlePointerUp}
 	onkeydown={(e) => {
 		if (e.key === 'Enter') {
+			// Marked as handled: from the keyboard, Enter opens the playlist and no longer also plays the selection
+			e.preventDefault()
 			onclick?.(new MouseEvent('click'))
 		}
 	}}

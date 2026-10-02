@@ -11,6 +11,8 @@ metadata:
 
 **How to apply:** a token's dark value must equal the palette shade it replaces (write it as `var(--color-cyan-400)`); prove it with a before/after dark pixel diff of every harness scene and list each difference. When a change is not clearly inside the five points, leave it and report it as a decision (still open after CRA-141: white text on accent count badges and the Checkbox check mark, the darker accent hover under black text, the energy badge and toolbar count badges in light, the MIK logo's sky label).
 
+**Accessibility choices (CRA-100, 2026-10-01: "1a / 2i oui / 2ii non").** Enter/Space go to a keyboard-focused control (1a) but Shift+Tab keeps switching views (1b not chosen); the hand cursor is removed where a click does nothing (2i); the focus ring icon buttons show after a mouse click STAYS (2ii refused): do not make it keyboard-only. Focus states, roles and keyboard handling are fine without asking.
+
 Colour families stay (CRA-115): never propose "bring the view back to the accent" for Player, Pulse or Beatport.
 
 His vocabulary: "neon glass" = Player glass hero with glowing cyan waveform and amber cues, and the Pulse glass cards; "sienne" was a mis-transcription of "cyan". Ask rather than guess when he names a colour. See [[charter-contrast-method]], [[tooling-pitfalls]].
