@@ -192,7 +192,7 @@ _Exit criterion: No invisible element in light or dark._
 
 _Exit criterion: Strict design rules respected._
 
-- [ ] **D3** — Broken light theme: Pulse integration cards dark at the top and light at the bottom; header badges… — _partial: family colour tokens with light text values, `--brand-on` on accent fills, Beatport follows the theme, the four CRA-141 touches, dark theme unchanged otherwise; left: the energy badge in light, the toolbar count badges and the Mixed In Key logo label, Beatport's "Connected" text, the palette classes listed in DESIGN.md "Known deviations"_
+- [ ] **D3** — Broken light theme: Pulse integration cards dark at the top and light at the bottom; header badges… — _partial: family colour tokens with light text values, `--brand-on` on every accent fill (buttons, count badges, check mark) and on hover, Beatport follows the theme, the four CRA-141 touches, the last listed palette classes on tokens; dark theme unchanged otherwise; left: the energy badge in light (data palette), the toolbar count badges and the Mixed In Key logo label, the upstream red danger/like classes_
 - [x] **D4** — Header at minimum width (1000 px): the icons overlap the segmented control… — _verified by measurement in the harness at 1000, 1280, 1440 and 1600 px: no overlap, all tools visible_
 - [x] **D5** — Player hero with a fixed height (`h-[225px]` for about 260 px of content): at 1000×640 the transport is… — _transport never covered (verified at 1000×640); at that size the recents list keeps ~2 rows_
 - [x] **D7** — Beatport table at 1000 px: the title column shrinks to one character — _title column 52 to 288 px at 1000 px; date and genre hide below 832 and 720 px; identical from a 1400 px window; the Player recents overflow is fixed too_
@@ -267,3 +267,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-01 | "Reset Spotify history" button in Crate Pulse: backup then delete, confirmation dialog (CRA-144) | — |
 | 2026-10-01 | Discovery funnel renamed "Crate to booth" / "Du bac à la cabine", per the owner's answer in CRA-126 | — |
 | 2026-10-01 | CRA-141 rollout: family colour tokens, black text on accent fills, Beatport follows the theme, the four touches (D3, partial); Spotify modal, Rekordbox and add-to-library buttons, native checkboxes and spinners on the shared components (D11) | 11 |
+| 2026-10-02 | CRA-96 follow-up: black text on accent badges and the check mark, lighter accent hover for five accents, the last listed palette classes on tokens (D3, partial) | 11 |

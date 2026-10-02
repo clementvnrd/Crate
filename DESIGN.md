@@ -34,7 +34,7 @@ colors:
     stroke-strong: "#a1a1aa"
   accent:                  # [data-accent], chosen in Settings > Display; blue by default
     brand-primary: "var(--brand-primary)"   # blue #3b82f6, indigo, violet, purple, pink, rose, orange, amber, emerald, teal
-    brand-hover: "var(--brand-hover)"
+    brand-hover: "var(--brand-hover)"       # -600 shade, or -400 for blue, indigo, violet, purple, rose so that black text stays above 4.5:1
     brand-muted: "var(--brand-muted)"       # accent at 20%: background of the active element
     brand-on: "var(--brand-on)"             # text on an accent fill: black or white per accent, whichever passes 4.5:1 (black for all ten)
   state:                   # identical in both themes (see "Known gaps")
@@ -69,11 +69,22 @@ colors:
       ranks: "gold amber-400 (text amber-300 / amber-800), silver slate-400 (slate-300 / zinc-600), bronze amber-600 (amber-600 / amber-800)"
     beatport:              # Beatport view, Beatport modals, Upgrader, Beatport settings tab
       neon: "--beatport #00FF96 (fills with black text), --beatport-hover #00e687"
-      text: "--beatport-text emerald-400 / emerald-700; --beatport-text-strong #00FF96 / emerald-700"
+      text: "--beatport-text emerald-400 / emerald-800; --beatport-text-strong #00FF96 / emerald-700; --beatport-status-text emerald-500 / emerald-700 (\"Connected\")"
+      bright: "--beatport-bright emerald-400 (cart download hover, Upgrader arrow)"
       body-text: "--beatport-body-text neutral-300 / zinc-700; --beatport-body-text-strong neutral-200 / zinc-800"
       tints: "--beatport-tint emerald-500, --beatport-deep emerald-600, --beatport-wash emerald-950 / emerald-100"
-    warning:               # the Duplicate Killer toolbar alert
-      tokens: "--warning-tint amber-500, --warning-text amber-400 / amber-700, --warning-wash amber-950 / amber-100"
+    warning:               # the Duplicate Killer toolbar alert, the Beatport session banner
+      tokens: "--warning-tint amber-500, --warning-text amber-400 / amber-700, --warning-text-strong amber-300 / amber-800, --warning-text-soft amber-200 / amber-800, --warning-wash amber-950 / amber-100"
+    danger:                # a destructive control on a tint (Spotify's Disconnect)
+      tokens: "--danger-tint red-500, --danger-text red-400 / red-700"
+    tools:                 # Duplicate Killer and the Upgrader: --tool-<role> (fill, both themes) and --tool-<role>-text
+      match: "emerald-500, text emerald-400 / emerald-800 (identical audio, lossless file, nothing to clean)"
+      fuzzy: "sky-500, text sky-400 / sky-800 (metadata match)"
+      partial: "teal-500, text teal-300 / teal-800 (Upgrader match under 90%)"
+      local: "amber-500, dot amber-400, text amber-400 / amber-800, strong amber-300 / amber-800 (the local file, the recommended keep)"
+      energy: "amber-500, text amber-400 / amber-800 (energy chip)"
+      delete: "rose-500, wash rose-950 / rose-100, text rose-400 / rose-700 (marked for deletion)"
+      cues: "indigo-500, text indigo-300 / indigo-700 (cue count)"
 
 typography:
   family: "var(--font-family) — [data-font] chosen by the user; Open Sans by default (app.html), also Jost, DM Sans, Inter, Nunito, Fira Code, IBM Plex Mono, Source Code Pro"
@@ -229,7 +240,7 @@ A family colour never sits next to another family's colour in the same element (
 
 - **Tokens**: `brand-primary`, `brand-hover`, `brand-muted` (20%), `bg-brand-primary/10`, `bg-brand-primary-5`, `bg-brand-primary-10`. Ten accents (`[data-accent]`), blue by default; the value is the same in both themes.
 - **Roles**: primary action fill (`Button variant="primary"`), selected row (`bg-brand-muted`), playing track title in the library (`text-brand-primary`), active icon button (`bg-brand-muted text-brand-primary`), progress of the bottom player's seek bar, logo, focus outline (`*:focus-visible`, global).
-- **Text on an accent fill** is `text-brand-on` (owner decision CRA-141): each `[data-accent]` block sets `--brand-on` to black or white, whichever reaches the higher contrast on that fill. Black wins for all ten accents (4.70 to 9.78:1; white gives 2.15 to 4.47). `theme.test.ts` recomputes it for every accent, so a new accent cannot ship with unreadable button text.
+- **Text on an accent fill** is `text-brand-on` (owner decision CRA-141): each `[data-accent]` block sets `--brand-on` to black or white, whichever reaches the higher contrast on that fill. Black wins for all ten accents (4.70 to 9.78:1; white gives 2.15 to 4.47). Every text on an accent fill uses it: buttons, the count badges (following, filter, drag preview, merge releases), the `Checkbox` check mark, tag chips and the date picker. On hover the fill takes `brand-hover`, the `-600` shade, except for blue, indigo, violet, purple and rose, where the darker shade put black text under 4.5:1: those five lighten to their `-400` shade instead (7.04 to 8.26:1). `theme.test.ts` recomputes both for every accent, so a new accent cannot ship with unreadable text at rest or on hover.
 - **Accent as text** on a light surface stays under 4.5:1 for every accent (2.06 to 4.28): in the light theme the accent marks with a fill, an outline or an icon, and text next to it stays `text-primary`.
 
 ### B. Deck — the Player's neon glass
@@ -263,14 +274,14 @@ The only family with a material of its own: a translucent hero over the blurred 
 | Keys | `cyan-500` | `cyan-400` | `cyan-700` | `--pulse-keys`, `-text` | harmonic wheel |
 | Rank 1, 2, 3 | gold `amber-400`, silver `slate-400`, bronze `amber-600` (`amber-700` fill) | `amber-300`, `slate-300`, `amber-600` | `amber-800`, `zinc-600`, `amber-800` | `--pulse-gold`, `--pulse-silver`, `--pulse-bronze`, `-fill`, `-text` | top tracks, top artists |
 
-Listening time and gold use the `-800` shade in the light theme because their text sits on its own tint (`/15`, `/20`), where `-700` gives 4.4:1.
+Listening time and gold use the `-800` shade in the light theme because their text sits on its own tint (`/15`, `/20`), where `-700` gives 4.4:1. The BPM distribution bars run from `--pulse-listening` to `--pulse-listening-end` (`teal-400`). The source bar's legend dots take the same token as their segment.
 
 - **One hue per metric, fixed.** A metric keeps its hue in its KPI card, its chart and its list; a new metric gets a hue only by an owner decision and an entry in this table.
 - **Hue as tint**: the chip or icon background is the hue at 15% (`bg-pulse-listening/15`), its border at 30%; a card is never fully tinted and never gradient-filled.
 - **Glass cards**: the top-level cards of Pulse are `bg-surface-1/70` + `backdrop-blur-xl` + `border-stroke/60` + `shadow-lg` + `rounded-xl`, one level only (no glass inside glass, the heatmap tooltip included). The sticky header is `bg-surface-1/90` + `backdrop-blur-xl`.
 - **Halo**: one static blurred orb (`blur-2xl`, hue at 10%) in the corner of each of the four KPI cards. The KPI cards do not lift and their icon does not zoom on hover (CRA-141); the hover keeps today's border, shadow and halo change.
 - **Accent in Pulse**: the header icon, the period selector, the refresh button and focus stay on the accent.
-- **Source colours** appear in Pulse on source chips, the source bar and the integration cards (border at 25%, icon, and a gradient top from the source's `-wash` token, which is the neutral `surface-1` in the light theme). The Spotify connection modal keeps its dark green glass panel in both themes (`Modal theme="dark"`, `--source-spotify-panel`).
+- **Source colours** appear in Pulse on source chips, the source bar and the integration cards (border at 25%, icon, and a gradient top from the source's `-wash` token, which is the neutral `surface-1` in the light theme). The Spotify connection modal keeps its dark green glass panel in both themes (`Modal theme="dark"`, `--source-spotify-panel`); its links, codes and manual-code button use `--source-spotify-link-tint` and `--source-spotify-link-text` (emerald), its warning the warning tokens, and the card's "Disconnect" the danger tokens.
 
 ### D. Beatport — neon green
 
@@ -280,7 +291,9 @@ Listening time and gold use the `-800` shade in the light theme because their te
 | Text on the fill | black (15.74:1) | black | — |
 | Tints, borders, count badge | `emerald-500` (`emerald-600` for the Upgrader's replace buttons) | same | `--beatport-tint`, `--beatport-deep` |
 | Washes: now-playing row, header, progress | `emerald-950` | `emerald-100` | `--beatport-wash` |
-| Active navigation, secondary text, counters | `emerald-400` | `emerald-700` | `--beatport-text` |
+| Active navigation, secondary text, counters | `emerald-400` | `emerald-800` (on its own `/15` tint `-700` gives 4.3:1) | `--beatport-text` |
+| "Connected" status in the sidebar | `emerald-500` | `emerald-700` | `--beatport-status-text` |
+| Bright fill: the cart's download hover, the Upgrader's arrow | `emerald-400` | same | `--beatport-bright` |
 | Neon text: playing title, links, codes | `#00FF96` | `emerald-700` | `--beatport-text-strong` |
 | Body copy of the gateway, login and cart panels | `neutral-300` (emphasis `neutral-200`) | `zinc-700` (`zinc-800`) | `--beatport-body-text`, `--beatport-body-text-strong` |
 | Now-playing row | left border `#00FF96`, background `beatport-tint/10` | same | — |
@@ -288,6 +301,20 @@ Listening time and gold use the `-800` shade in the light theme because their te
 - **Surfaces follow the theme (owner decision CRA-141).** The Beatport view, its modals and panels use the neutral tokens (`surface-0…4`, `stroke…`, `text-…`). Their dark values are the view's own dark surfaces (`#121418`, `#181a20`, `#0e1014`, `#252830`, `#2e323d`, white text): elements that carry `data-surface="beatport"` (the cart drawer, the login modal, the logged-out gateway card) get them through a dark-only scope in `style.css`, so the dark theme is unchanged and the light theme is Crate's light theme.
 - **Flat**: no glass, no glow (`shadow-[#00FF96]/20`), no gradient, no hover scale.
 - `#00FF96` is never text on a light surface (1.28:1).
+
+### Library tools — Duplicate Killer and the Upgrader
+
+Not a family: these two modals use the accent, the Deck cyan for their waveform previews and the Beatport family for the Upgrader's Beatport side. Their own chips and markers are role tokens, `--tool-<role>` for the fill (tints at 10 to 30%, both themes) and `--tool-<role>-text` for the text, with a light value at `-800` because the text sits on its own tint:
+
+| Role | Fill | Dark text | Light text | Token |
+| --- | --- | --- | --- | --- |
+| Identical audio, lossless file, nothing left to clean | `emerald-500` | `emerald-400` | `emerald-800` | `--tool-match` |
+| Metadata match | `sky-500` | `sky-400` | `sky-800` | `--tool-fuzzy` |
+| Upgrader match under 90% | `teal-500` | `teal-300` | `teal-800` | `--tool-partial` |
+| The local file (Upgrader's "Current"), the recommended keep | `amber-500`, dot `amber-400` | `amber-400`, strong `amber-300` | `amber-800` | `--tool-local` |
+| Energy chip | `amber-500` | `amber-400` | `amber-800` | `--tool-energy` |
+| Marked for deletion | `rose-500`, wash `rose-950` (light `rose-100`) | `rose-400` | `rose-700` | `--tool-delete` |
+| Cue count | `indigo-500` | `indigo-300` | `indigo-700` | `--tool-cues` |
 
 ### Rules shared by all families
 
@@ -468,8 +495,8 @@ Crate is a desktop app: no mobile breakpoints in the desktop app (the mobile app
 ## Known gaps
 
 - **State colours not adapted to the light theme**: as text on `surface-1`, `warning` gives 2.06:1, `success` 2.18:1, `danger` 3.61:1, `info` 3.52:1. Only the Duplicate Killer toolbar alert has `--warning-text` so far; the other state texts still need per-theme `-text` variants (linked to D3).
-- **Accent fills still carrying white text**: `Button`, the Smart Playlist tag chips and the date field use `text-brand-on`; the accent count badges (following, filter, drag preview, merge releases) and the white check mark of `Checkbox` still draw white on the accent, a visible change in the dark theme that was left for a separate decision.
-- **Hover of black text on the accent**: `Button primary` darkens to `brand-hover` on hover, where black text gives 3.34 to 4.47:1 for five accents (blue 4.06, indigo 3.34, violet 3.69, purple 3.90, rose 4.47) while it passes at rest for all ten. Brightening the fill on hover instead of darkening it would change the dark look of every primary button; left as it is for an owner decision.
+- **Count badges of the toolbar**: the Duplicate Killer (`red`) and Upgrader (`beatport-tint`) count badges keep white text, 3.8 and 2.5:1; they are not accent fills, and black text on them would change the dark toolbar.
+- **State colours elsewhere**: the remaining `red-*` classes (Beatport's favourite heart and remove hovers, the sign-out hover, library and sync errors) are the upstream danger and like patterns; they move to `--danger-*` when those views are reworked.
 - **The e2e audit does not read `oklch()` colours**: `ui-audit.js` parses `rgb()` and `rgba()` only, and counts the rest as unmeasured, so its `lowContrast` count misses every Tailwind palette colour (Tailwind 4 writes them in `oklch`). Family tokens resolve to the same `oklch` values; contrast of family text is checked by `theme.test.ts` and by a canvas-based measurement, not by the ratchet.
 - **`text-tertiary` in the dark theme**: 3.67:1 on `surface-1` and 3.08:1 on `surface-2`, under 4.5:1 for the labels and empty values it carries; a lighter value (for example `#8a8a93`: 5.18 and 4.35:1) would need checking against `text-secondary` so the two stay distinct.
 - **Debt measured** by `yarn design:scan apps/desktop/src` (see the register, defects D3, D7, D10, D11; `yarn design:scan` gives today's counts). After the family tokens (2026-10-01) the palette classes and hex values left are debt, not family roles.
@@ -483,8 +510,8 @@ Where the code breaks the charter today; each one is tracked in the register and
 
 | Deviation | Where | Register |
 | --- | --- | --- |
-| Palette classes still standing for a role in places the family tokens did not reach: the Beatport sidebar's `emerald-500` "Connected" text (2.47:1 in the light theme), the Beatport session error banner, the cart's `emerald-400` download hover, the Upgrader's teal and amber, Duplicate Killer's rose, sky and emerald, the BPM distribution's teal bar, the Spotify modal's disconnect red; hex segment colours in the Pulse source bar script (`#EF4444`, `#8B5CF6`, not the palette's red-500 and violet-500) | Beatport, Upgrader, Duplicate Killer, Pulse | D3 |
+| `text-white` and `bg-black/40–70` inside the Spotify connection modal (a panel that is dark in both themes) and on the Upgrader's artwork overlay; the harmonic wheel's `#3b82f6` fallback for a key without a colour | Pulse, Upgrader | D3 |
 | Glass, glow, halos, gradients and `rounded-2xl`/`3xl` beyond the recipe (glow on Beatport buttons, `rounded-2xl`/`3xl` on Beatport and Spotify panels, glass tooltip inside a glass card) | Pulse, Beatport, Upgrader, Duplicate Killer | D3, D11 |
-| Family colours outside their scope: sky switch in `ToggleSwitch`, sky Mixed In Key badge in the toolbar, purple harmonic-match chip in the Player, rose instead of `danger` in Duplicate Killer | common, toolbar, modals, Player | D11 |
+| Family colours outside their scope: sky switch in `ToggleSwitch`, sky Mixed In Key badge in the toolbar, purple harmonic-match chip in the Player | common, toolbar, Player | D11 |
 | Family borders replacing the accent focus outline; infinite animations without reduced motion | Beatport, Player, Pulse | D10 |
 | Beatport table columns without `minmax(0, …)` | Beatport | D7 |
