@@ -1349,6 +1349,7 @@
 			"harmonic": "Transitions harmoniques",
 			"clashing": "Conflits de tonalité",
 			"unknown": "Tonalités inconnues",
+			"energyJumps": "Sauts d'énergie",
 			"columns": {
 				"position": "#",
 				"time": "Heure",
@@ -1367,6 +1368,7 @@
 			},
 			"opening": "Morceau d'ouverture",
 			"tempo": "Tempo {delta}",
+			"energyChange": "Énergie {delta}",
 			"notInLibrary": "Absent de la bibliothèque",
 			"empty": "Ce set ne contient aucun morceau.",
 			"loadFailed": "Impossible de charger ce set."

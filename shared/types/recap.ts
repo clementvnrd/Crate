@@ -50,6 +50,10 @@ export interface SessionTransition {
 	harmonic: HarmonicRelation
 	/** Tempo change from the previous track, in percent. */
 	bpm_delta_percent: number | null
+	/** Energy change from the previous track (positive = higher). `null` when either track's energy is unknown. */
+	energy_delta: number | null
+	/** The energy changes by the set planner's threshold (3 levels) or more. */
+	energy_jump: boolean
 }
 
 export interface SessionTrack {
@@ -76,4 +80,6 @@ export interface SessionTimeline {
 	harmonic_transitions: number
 	clashing_transitions: number
 	unknown_transitions: number
+	/** Transitions where the energy jumps by the set planner's threshold (3 levels) or more. */
+	energy_jumps: number
 }

@@ -1349,6 +1349,7 @@
 			"harmonic": "Harmonic transitions",
 			"clashing": "Key clashes",
 			"unknown": "Unknown keys",
+			"energyJumps": "Energy jumps",
 			"columns": {
 				"position": "#",
 				"time": "Time",
@@ -1367,6 +1368,7 @@
 			},
 			"opening": "Opening track",
 			"tempo": "{delta} tempo",
+			"energyChange": "{delta} energy",
 			"notInLibrary": "Not in the library",
 			"empty": "This set has no tracks.",
 			"loadFailed": "Could not load this set."
