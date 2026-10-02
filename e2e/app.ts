@@ -165,6 +165,17 @@ export const VIEWS: ViewSpec[] = [
 		open: (page) => page.getByRole('button', { name: 'Beatport Quality Upgrader' }).click(),
 		landmark: (page) => page.locator('dialog[open]').getByText('Beatport Quality Upgrader').first(),
 	},
+	{
+		id: 'discrepancy',
+		// Settings → Library → "Open the discrepancy report": opening it swaps Settings for the report in the
+		// same single-modal orchestrator (never both at once, so no new control sits behind another dialog).
+		open: async (page) => {
+			await page.getByRole('button', { name: /^(Settings|Paramètres)$/ }).click()
+			await page.getByRole('button', { name: /^(Library|Bibliothèque)$/, exact: true }).click()
+			await page.getByRole('button', { name: /^(Open the discrepancy report|Ouvrir le rapport d'écarts)$/ }).click()
+		},
+		landmark: (page) => page.locator('dialog[open]').getByText(/^(Discrepancy report|Rapport d'écarts)$/),
+	},
 ]
 
 // -----------------------------------------------------------------------------

@@ -159,7 +159,10 @@
 			"exportFormatDeviceLibraryPlusDescription": "For OPUS-QUAD, OMNIS-DUO, XDJ-AZ",
 			"organisation": "Physical organisation",
 			"organisationDescription": "Rename and move the audio files on disk to match a folder and naming rule. A preview always shows every planned move before anything happens, and an applied run can be undone.",
-			"organisationOpen": "Open the organisation tool"
+			"organisationOpen": "Open the organisation tool",
+			"maintenance": "Maintenance",
+			"maintenanceDescription": "A read-only report of where Crate, Mixed In Key and (with a Rekordbox export) Rekordbox disagree: key, tempo, energy, cues, missing files, tracks only on one side. Nothing is changed or deleted.",
+			"openDiscrepancyReport": "Open the discrepancy report"
 		},
 		"discovery": {
 			"metadata": "Metadata",
@@ -1786,6 +1789,66 @@
 			"undone": "{count, plural, one {# file put back} other {# files put back}}",
 			"undoPartialFailure": "{count, plural, one {# file could not be put back} other {# files could not be put back}}",
 			"undoFailed": "Could not undo this run"
+		}
+	},
+	"discrepancy": {
+		"title": "Discrepancy report",
+		"subtitle": "{count, plural, one {# track in Crate} other {# tracks in Crate}}",
+		"actions": {
+			"refresh": "Refresh",
+			"refreshTitle": "Run the comparison again"
+		},
+		"loading": "Comparing Crate, Mixed In Key and Rekordbox…",
+		"loadFailed": "Could not build the report",
+		"allClear": {
+			"title": "Nothing to report",
+			"body": "No missing file and no metadata difference were found."
+		},
+		"missingFiles": {
+			"title": "Missing files",
+			"count": "{count, plural, one {# file} other {# files}}",
+			"empty": "Every file is where Crate expects it.",
+			"truncated": "Showing 500 of {total}.",
+			"reason": {
+				"missing": "Missing",
+				"volume_unmounted": "Drive not connected"
+			},
+			"reasonHint": {
+				"missing": "The file is gone from where Crate expects it.",
+				"volume_unmounted": "The drive holding this file looks unplugged, not necessarily missing."
+			}
+		},
+		"mixedInKey": {
+			"title": "Mixed In Key",
+			"unavailable": "Mixed In Key isn't installed, or its database can't be read."
+		},
+		"rekordbox": {
+			"title": "Rekordbox",
+			"noXml": "Compare with Rekordbox by choosing an exported collection (File → Export Collection in xml format, in Rekordbox).",
+			"chooseXml": "Choose a Rekordbox XML export…",
+			"changeXml": "Use a different export",
+			"xmlDialogTitle": "Choose a Rekordbox XML export",
+			"xmlFilter": "Rekordbox XML"
+		},
+		"comparison": {
+			"matched": "{count, plural, one {# track matches} other {# tracks match}}",
+			"differencesTitle": "Differences",
+			"differencesEmpty": "No metadata difference.",
+			"truncated": "Showing 500 of {total}.",
+			"missingFromOther": "In Crate, not in {tool}",
+			"missingFromOtherEmpty": "Every Crate track was found in {tool}.",
+			"missingFromCrate": "In {tool}, not in Crate",
+			"missingFromCrateEmpty": "{tool} has nothing Crate doesn't already have.",
+			"missingFromCrateHint": "Possible import: only {tool} has this track."
+		},
+		"field": {
+			"key": "Key",
+			"bpm": "Tempo",
+			"energy": "Energy",
+			"cues": "Cues",
+			"note": {
+				"half_or_double_time": "Half/double tempo"
+			}
 		}
 	}
 }

@@ -30,6 +30,7 @@ The app starts on the library with 16 tracks, in the dark theme, in English, log
 | `playing` | a track id, e.g. `trk-03` | Show that library track, paused, in the player bar. |
 | `dev` | `1` | Report a development build (DEV badge, developer tools button). |
 | `latency` | milliseconds, e.g. `400` | Delay every command: loading states. |
+| `discrepancyReport` | `fail` | Make `get_discrepancy_report` reject (the discrepancy report's error state). |
 
 Example: `http://localhost:1430/?theme=light&lang=fr&accent=amber&playing=trk-03`.
 
@@ -47,6 +48,7 @@ Example: `http://localhost:1430/?theme=light&lang=fr&accent=amber&playing=trk-03
 | Settings | The gear button of the toolbar (named `Settings` / `Paramètres`), or `Cmd+,` / `Ctrl+,`. Every tab opens. |
 | Duplicate Killer | Overlapping-squares button with the red badge. |
 | Beatport Quality Upgrader | Sparkles button with the green badge. |
+| Discrepancy report | Settings → Library tab → "Open the discrepancy report". |
 
 ## How the fake backend answers
 
@@ -80,7 +82,7 @@ Typed with the real types of `shared/types`, deterministic (no `Math.random`, no
 | `fixtures/beatport.ts` | 10 genres, 6 charts, 24 catalogue tracks, 3 playlists, favourites, purchases, artist pages, and the 3 Upgrader matches. |
 | `fixtures/discovery.ts` | 6 releases (Bandcamp, SoundCloud, YouTube, Discogs, one without metadata), 3 followed sources (one in error), the discovery funnel by source. |
 | `fixtures/stats.ts` | Pulse: summary, top tracks and artists, harmonic and BPM stats, heatmap, recent listens, 3 Rekordbox sessions, scaled by the selected time range; the week and year recap (any offset), the timeline of each set, the history export count. |
-| `fixtures/maintenance.ts` | Duplicate Killer: two groups (exact hash, metadata match). |
+| `fixtures/maintenance.ts` | Duplicate Killer: two groups (exact hash, metadata match). Discrepancy report: 2 missing files (one `missing`, one `volume_unmounted`), a Mixed In Key comparison with a key/tempo difference and both "missing from" lists, a Rekordbox comparison once an XML path is given. |
 | `fixtures/system.ts` | Settings (appearance read from localStorage), app info, audio devices, diagnostics, cloud sync (signed out), Mixed In Key status, backup info. |
 
 ## Add a fixture or a handler
