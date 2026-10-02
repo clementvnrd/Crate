@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { KeyNotationFormat, ExportFormat, UsbDevice } from '$shared/types'
-	import { Text, Checkbox } from '$lib/components/common'
+	import { Button, Text, Checkbox } from '$lib/components/common'
 	import DeviceItem from '$lib/components/devices/DeviceItem.svelte'
+	import LibraryOrganiserModal from '$lib/components/library/LibraryOrganiserModal.svelte'
 	import {
 		settingsStore,
 		keyNotationFormat,
@@ -13,6 +14,8 @@
 	} from '$shared/stores/settings'
 	import { devices } from '$lib/stores/devices'
 	import { translate } from '$shared/i18n'
+
+	let showOrganiserModal = $state(false)
 
 	function handleKeyNotationFormatChange(format: KeyNotationFormat) {
 		settingsStore.setKeyNotationFormat(format)
@@ -194,4 +197,15 @@
 			</div>
 		{/if}
 	</section>
+
+	<!-- Physical Organisation Section -->
+	<section>
+		<Text variant="header-3" class="mb-2">{$translate('settings.library.organisation')}</Text>
+		<Text variant="caption" as="p" class="mb-3">{$translate('settings.library.organisationDescription')}</Text>
+		<Button variant="secondary" onclick={() => (showOrganiserModal = true)}>
+			{$translate('settings.library.organisationOpen')}
+		</Button>
+	</section>
 </div>
+
+<LibraryOrganiserModal open={showOrganiserModal} onClose={() => (showOrganiserModal = false)} />
