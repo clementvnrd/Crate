@@ -1,4 +1,14 @@
-import type { DuplicateGroup, DuplicateScanResult, DuplicateTrackInfo, Track } from '$shared/types'
+import type {
+	DiscrepancyReport,
+	DuplicateGroup,
+	DuplicateScanResult,
+	DuplicateTrackInfo,
+	MissingFile,
+	ReportComparison,
+	ReportSection,
+	ReportTrackRef,
+	Track,
+} from '$shared/types'
 import { isoAgo } from './reference'
 import { TRACKS } from './library'
 
@@ -95,4 +105,80 @@ export const DUPLICATE_SCAN: DuplicateScanResult = {
 	total_duplicate_tracks: GROUPS.reduce((sum, group) => sum + group.tracks.length - 1, 0),
 	total_groups: GROUPS.length,
 	total_reclaimable_bytes: GROUPS.reduce((sum, group) => sum + group.reclaimable_bytes, 0),
+}
+
+// Discrepancy report (CRA-129): Mixed In Key is always available in the harness, Rekordbox only once
+// an XML export path is given. Read only — nothing here is ever mutated or deleted.
+
+function trackRef(id: string): ReportTrackRef {
+	const track = trackById(id)
+	return { id: track.id, title: track.title ?? '', artist: track.artist ?? '', file_path: track.file_path }
+}
+
+const MISSING_FILES: ReportSection<MissingFile> = {
+	total: 2,
+	items: [
+		{ track: trackRef('trk-04'), reason: 'missing' },
+		{ track: trackRef('trk-06'), reason: 'volume_unmounted' },
+	],
+}
+
+const MIK_COMPARISON: ReportComparison = {
+	matched: TRACKS.length - 2,
+	differences: {
+		total: 1,
+		items: [
+			{
+				track: trackRef('trk-08'),
+				fields: [
+					{ field: 'key', crate_value: '8A', other_value: '9A', note: null },
+					{ field: 'bpm', crate_value: '128.00', other_value: '64.00', note: 'half_or_double_time' },
+				],
+			},
+		],
+	},
+	missing_from_other: { total: 1, items: [trackRef('trk-10')] },
+	missing_from_crate: {
+		total: 1,
+		items: [
+			{
+				id: null,
+				title: 'Analog Dreams',
+				artist: 'Night Lab',
+				file_path: '/Volumes/Harness/MIK Only/Analog Dreams.mp3',
+			},
+		],
+	},
+}
+
+const REKORDBOX_COMPARISON: ReportComparison = {
+	matched: TRACKS.length - 1,
+	differences: { total: 0, items: [] },
+	missing_from_other: { total: 1, items: [trackRef('trk-11')] },
+	missing_from_crate: { total: 0, items: [] },
+}
+
+const CLEAN_COMPARISON: ReportComparison = {
+	matched: 0,
+	differences: { total: 0, items: [] },
+	missing_from_other: { total: 0, items: [] },
+	missing_from_crate: { total: 0, items: [] },
+}
+
+/** `rekordboxXmlPath` mirrors the real command: give one to include the Rekordbox comparison. */
+export function discrepancyReport(libraryEmpty: boolean, rekordboxXmlPath: string | null): DiscrepancyReport {
+	if (libraryEmpty) {
+		return {
+			crate_tracks: 0,
+			missing_files: { total: 0, items: [] },
+			mixed_in_key: CLEAN_COMPARISON,
+			rekordbox: rekordboxXmlPath ? CLEAN_COMPARISON : null,
+		}
+	}
+	return {
+		crate_tracks: TRACKS.length,
+		missing_files: MISSING_FILES,
+		mixed_in_key: MIK_COMPARISON,
+		rekordbox: rekordboxXmlPath ? REKORDBOX_COMPARISON : null,
+	}
 }

@@ -41,6 +41,7 @@
 	import type { SegmentOption } from '$lib/components/common'
 	import AlbumGridView from './AlbumGridView.svelte'
 	import AlbumDetailView from './AlbumDetailView.svelte'
+	import SuggestedNextPanel from './SuggestedNextPanel.svelte'
 	import { waveformSeekTarget } from './waveformSeek'
 	import { recentRowForKey } from './recentKeys'
 
@@ -48,7 +49,7 @@
 	// State & Derived Track
 	// =========================================================================
 
-	let isAlbumMode = $state(false)
+	let bottomMode = $state<BottomMode>('recent')
 	let isImporting = $state(false)
 	let isHoveringWaveform = $state(false)
 	let hoverWaveformPercent = $state(0)
@@ -127,12 +128,18 @@
 		activeHeroTrack?.artwork_path ? getArtworkUrl(activeHeroTrack.artwork_path, $appDataDir) : null
 	)
 
-	type BottomMode = 'recent' | 'albums'
+	type BottomMode = 'recent' | 'albums' | 'suggestions'
 
 	const modeOptions: SegmentOption<BottomMode>[] = $derived([
 		{ value: 'recent', label: $translate('player.mode.recent'), icon: 'disc' },
 		{ value: 'albums', label: $translate('player.mode.albums'), icon: 'folder-open' },
+		{ value: 'suggestions', label: $translate('player.mode.suggestions'), icon: 'sparkles' },
 	])
+
+	// The library track id to suggest from. Only the 'library' playback source is guaranteed to carry a
+	// real `tracks.id`: a standalone file already `is_in_library` still keeps its standalone pseudo-id
+	// until it is reopened from the library (see `markStandaloneInLibrary`), so it is left out here.
+	const suggestionsTrackId = $derived($playbackSource === 'library' ? ($currentTrack?.id ?? null) : null)
 
 	const effectiveDuration = $derived($playbackDuration > 0 ? $playbackDuration : activeHeroTrack?.duration_ms || 0)
 
@@ -387,8 +394,8 @@
 		class={background}
 		ariaLabel={$translate('player.mode.label')}
 		options={modeOptions}
-		value={isAlbumMode ? 'albums' : 'recent'}
-		onchange={(mode) => (isAlbumMode = mode === 'albums')}
+		value={bottomMode}
+		onchange={(mode) => (bottomMode = mode)}
 	/>
 {/snippet}
 
@@ -767,9 +774,17 @@
 	</div>
 
 	<!-- ===================================================================== -->
-	<!-- 2. BOTTOM SECTION: [FICHIERS RÉCENTS] OR [MODE ALBUM]                 -->
+	<!-- 2. BOTTOM SECTION: [FICHIERS RÉCENTS] OR [SUGGESTED NEXT] OR [MODE ALBUM] -->
 	<!-- ===================================================================== -->
-	{#if !isAlbumMode}
+	{#if bottomMode === 'suggestions'}
+		<SuggestedNextPanel
+			trackId={suggestionsTrackId}
+			hasTrack={activeHeroTrack !== null}
+			trackTitle={activeHeroTrack?.title ?? null}
+			onImportToLibrary={activeHeroTrack && !activeHeroTrack.is_in_library ? handleImportToLibrary : undefined}
+			importing={isImporting}
+		/>
+	{:else if bottomMode === 'recent'}
 		<!-- EN-TÊTE DES RÉCENTS FIXE PLEINE LARGEUR (NE DOIT PAS SCROLLER) -->
 		<div
 			class="z-20 w-full flex-shrink-0 border-y border-stroke-subtle bg-surface-0/90 px-6 py-2 shadow-xs backdrop-blur-md"

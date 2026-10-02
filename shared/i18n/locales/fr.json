@@ -23,7 +23,8 @@
 		"back": "Retour",
 		"viewArtwork": "Afficher la pochette",
 		"albumArtwork": "Pochette de l'album",
-		"unknownError": "Erreur inconnue"
+		"unknownError": "Erreur inconnue",
+		"resizePanel": "Redimensionner le panneau"
 	},
 	"nav": {
 		"library": "Bibliothèque",
@@ -155,7 +156,13 @@
 			"exportFormatPdb": "Rekordbox PDB",
 			"exportFormatPdbDescription": "Format hérité pour les anciens CDJ",
 			"exportFormatDeviceLibraryPlus": "Device Library Plus",
-			"exportFormatDeviceLibraryPlusDescription": "Pour OPUS-QUAD, OMNIS-DUO, XDJ-AZ"
+			"exportFormatDeviceLibraryPlusDescription": "Pour OPUS-QUAD, OMNIS-DUO, XDJ-AZ",
+			"organisation": "Organisation physique",
+			"organisationDescription": "Renommez et déplacez les fichiers audio sur le disque selon une règle de dossiers et de nommage. Un aperçu montre toujours chaque déplacement prévu avant toute action, et un run appliqué peut être annulé.",
+			"organisationOpen": "Ouvrir l'outil d'organisation",
+			"maintenance": "Maintenance",
+			"maintenanceDescription": "Un rapport en lecture seule des écarts entre Crate, Mixed In Key et (avec un export Rekordbox) Rekordbox : clé, tempo, énergie, cues, fichiers manquants, morceaux présents d'un seul côté. Rien n'est modifié ni supprimé.",
+			"openDiscrepancyReport": "Ouvrir le rapport d'écarts"
 		},
 		"discovery": {
 			"metadata": "Métadonnées",
@@ -321,7 +328,8 @@
 		"mode": {
 			"label": "Affichage du lecteur",
 			"recent": "Récents",
-			"albums": "Mode Album"
+			"albums": "Mode Album",
+			"suggestions": "Morceaux suggérés"
 		},
 		"albums": {
 			"removeTitle": "Retirer cet album ?",
@@ -359,6 +367,26 @@
 			"emptyHint": "Double-cliquez sur un fichier audio dans le Finder ou ouvrez-le avec Crate pour l'écouter directement sans encombrer votre bibliothèque.",
 			"noResults": "Aucun résultat pour « {query} »",
 			"clearFilter": "Effacer le filtre"
+		},
+		"suggestions": {
+			"title": "Morceaux suggérés",
+			"subtitle": "Appris à partir des transitions que vous avez vraiment jouées dans vos sets Rekordbox",
+			"play": "Lire « {title} »",
+			"badgeHistory": "{count, plural, one {# fois} other {# fois}}",
+			"badgeCompatible": "Compatible",
+			"historyTooltipWithDate": "Enchaîné juste après ce morceau {count, plural, one {# fois} other {# fois}} — la dernière fois le {date}",
+			"historyTooltipNoDate": "Enchaîné juste après ce morceau {count, plural, one {# fois} other {# fois}}",
+			"compatibleTooltip": "Jamais encore enchaîné après ce morceau — tonalité et tempo compatibles",
+			"noTrackTitle": "Rien n'est en cours de lecture",
+			"noTrackHint": "Lancez un morceau pour voir ce que vous enchaînez habituellement après lui.",
+			"notInLibraryTitle": "Ajoutez ce morceau à votre bibliothèque",
+			"notInLibraryHint": "Les suggestions s'appuient sur votre bibliothèque Crate et vos sets Rekordbox — « {title} » doit d'abord être dans votre bibliothèque.",
+			"loading": "Analyse de vos transitions…",
+			"emptyTitle": "Pas encore de suggestion",
+			"emptyHint": "Jouez d'autres sets via Rekordbox, ou renseignez le tempo et la tonalité de ce morceau, pour que Crate apprenne ce qui s'enchaîne bien après lui.",
+			"errorTitle": "Impossible de charger les suggestions",
+			"retry": "Réessayer",
+			"playFailed": "Impossible de lire « {title} » — il n'est peut-être plus dans votre bibliothèque"
 		},
 		"unknownTrack": "Morceau inconnu",
 		"trackFallback": "Morceau",
@@ -656,7 +684,8 @@
 		"relocate": "Relocaliser...",
 		"analyze": "Analyser",
 		"resyncMik": "Synchroniser avec Mixed In Key",
-		"stopAnalysis": "Arrêter l'analyse"
+		"stopAnalysis": "Arrêter l'analyse",
+		"buildSet": "Créer un set..."
 	},
 	"modals": {
 		"createPlaylist": {
@@ -721,7 +750,13 @@
 			"resetSpotifyHistoryTitle": "Réinitialiser l'historique Spotify",
 			"resetSpotifyHistoryMessage": "{count, plural, =0 {Aucune écoute Spotify enregistrée à supprimer.} =1 {Supprimer l'unique écoute Spotify enregistrée ?} other {Supprimer les {count} écoutes Spotify enregistrées ?}}",
 			"resetSpotifyHistoryBackupWarning": "Une sauvegarde complète de votre historique d'écoute sera enregistrée dans {path} avant toute suppression. Cette action est irréversible.",
-			"resetSpotifyHistoryResyncNote": "La synchronisation « écoutes récentes » de Spotify repartira ensuite de zéro et ne ramènera que vos 50 dernières écoutes — importer un export officiel Spotify par la suite est sans risque, les doublons sont ignorés automatiquement."
+			"resetSpotifyHistoryResyncNote": "La synchronisation « écoutes récentes » de Spotify repartira ensuite de zéro et ne ramènera que vos 50 dernières écoutes — importer un export officiel Spotify par la suite est sans risque, les doublons sont ignorés automatiquement.",
+			"applyOrganisationTitle": "Déplacer les fichiers ?",
+			"applyOrganisationMessage": "{count, plural, one {# fichier va être déplacé vers son nouvel emplacement maintenant.} other {# fichiers vont être déplacés vers leur nouvel emplacement maintenant.}}",
+			"applyOrganisationWarning": "Rekordbox et les autres outils qui mémorisent les chemins de fichiers perdront la trace de chaque fichier déplacé, jusqu'à ce que vous les resynchronisiez.",
+			"applyOrganisationCheckbox": "Je comprends que des outils comme Rekordbox perdront la trace des fichiers déplacés",
+			"undoOrganisationTitle": "Annuler ce run ?",
+			"undoOrganisationMessage": "{count, plural, one {# fichier va être remis exactement là où il était.} other {# fichiers vont être remis exactement là où ils étaient.}}"
 		},
 		"relocate": {
 			"title": "Relocaliser le morceau",
@@ -1045,12 +1080,31 @@
 			"dateAdded": "Date d'ajout",
 			"lastPlayed": "Dernière lecture",
 			"dateModified": "Date de modification",
+			"listensTotal": "Écoutes totales",
+			"listens7d": "Écoutes (7 jours)",
+			"listens30d": "Écoutes (30 jours)",
+			"listens365d": "Écoutes (365 jours)",
+			"setPlays": "Lectures en set",
+			"minutesListened": "Minutes écoutées",
+			"lastListened": "Dernière écoute",
+			"lastSetPlay": "Dernière lecture en set",
 			"color": "Couleur",
 			"format": "Format",
 			"sourceType": "Source",
 			"releaseDate": "Date de sortie",
 			"notes": "Notes",
 			"tags": "Tags"
+		},
+		"fieldsHelp": {
+			"dateAdded": "Date d'entrée du morceau dans la bibliothèque. Utilisez « dans les N derniers jours » pour, par exemple, les morceaux découverts ce mois-ci.",
+			"listensTotal": "Toutes les écoutes enregistrées depuis Crate, les sets Rekordbox, l'historique Spotify et Mixed In Key.",
+			"listens7d": "Écoutes des 7 derniers jours, toutes sources confondues.",
+			"listens30d": "Écoutes des 30 derniers jours, toutes sources confondues.",
+			"listens365d": "Écoutes des 365 derniers jours, toutes sources confondues.",
+			"setPlays": "Comptées uniquement à partir des sets joués dans Rekordbox, pas des écoutes simples.",
+			"minutesListened": "Minutes totales écoutées, cumulées sur toutes les écoutes.",
+			"lastListened": "L'écoute la plus récente, toutes sources confondues.",
+			"lastSetPlay": "La dernière fois que ce morceau a été joué dans un set Rekordbox."
 		},
 		"operators": {
 			"contains": "contient",
@@ -1079,6 +1133,14 @@
 			"bpm": "BPM",
 			"title": "Titre",
 			"artist": "Artiste",
+			"listensTotal": "Écoutes totales",
+			"listens7d": "Écoutes (7 jours)",
+			"listens30d": "Écoutes (30 jours)",
+			"listens365d": "Écoutes (365 jours)",
+			"setPlays": "Lectures en set",
+			"minutesListened": "Minutes écoutées",
+			"lastListened": "Dernière écoute",
+			"lastSetPlay": "Dernière lecture en set",
 			"random": "Aléatoire",
 			"releaseDate": "Date de sortie"
 		},
@@ -1349,6 +1411,7 @@
 			"harmonic": "Transitions harmoniques",
 			"clashing": "Conflits de tonalité",
 			"unknown": "Tonalités inconnues",
+			"energyJumps": "Sauts d'énergie",
 			"columns": {
 				"position": "#",
 				"time": "Heure",
@@ -1367,6 +1430,7 @@
 			},
 			"opening": "Morceau d'ouverture",
 			"tempo": "Tempo {delta}",
+			"energyChange": "Énergie {delta}",
 			"notInLibrary": "Absent de la bibliothèque",
 			"empty": "Ce set ne contient aucun morceau.",
 			"loadFailed": "Impossible de charger ce set."
@@ -1651,6 +1715,171 @@
 			"ignoreFailed": "Impossible d'ignorer le groupe",
 			"deleted": "{count, plural, one {# doublon supprimé (mis à la corbeille)} other {# doublons supprimés (mis à la corbeille)}}",
 			"deleteFailed": "Erreur lors de la suppression des doublons"
+		}
+	},
+	"organisation": {
+		"title": "Organiser les fichiers sur le disque",
+		"subtitle": "Renommez et déplacez vos fichiers audio selon une règle de dossiers et de nommage de votre choix. Rien ne bouge avant que vous ayez vérifié et confirmé l'aperçu.",
+		"rule": {
+			"heading": "Règle de nommage",
+			"destination": "Dossier de destination",
+			"destinationPlaceholder": "Choisissez un dossier",
+			"browse": "Parcourir…",
+			"browseTitle": "Choisissez le dossier de destination",
+			"template": "Dossiers et nom de fichier",
+			"templateHelp": "Jetons : {artist}, {album}, {title}, {year}, {genre}, {label}, {bpm}, {key}, {energy}. Doit contenir {title}.",
+			"presets": {
+				"heading": "Règles courantes",
+				"artistAlbumTrack": "Artiste / Album / Artiste - Titre",
+				"artistAlbumTitle": "Artiste / Album / Titre",
+				"genreArtistTitle": "Genre / Artiste / Titre"
+			},
+			"runDryRun": "Lancer l'aperçu",
+			"computing": "Calcul de l'aperçu…"
+		},
+		"planError": "L'aperçu n'a pas pu être calculé",
+		"summary": {
+			"toMove": "À déplacer",
+			"alreadyInPlace": "Déjà en place",
+			"blocked": "Bloqués"
+		},
+		"empty": {
+			"title": "La bibliothèque est déjà organisée",
+			"body": "Tous les fichiers correspondent déjà à cette règle. Il n'y a rien à déplacer."
+		},
+		"warning": {
+			"blocked": "{count, plural, one {# fichier ne peut pas être déplacé — voir son statut ci-dessous.} other {# fichiers ne peuvent pas être déplacés — voir leur statut ci-dessous.}}",
+			"externalTools": "Déplacer des fichiers fait perdre à Rekordbox et aux autres outils qui mémorisent les chemins leur trace."
+		},
+		"status": {
+			"move": "Sera déplacé",
+			"alreadyInPlace": "Déjà en place",
+			"sourceMissing": "Fichier introuvable",
+			"targetExists": "Destination occupée",
+			"crossVolume": "Volume différent"
+		},
+		"table": {
+			"heading": "Déplacements prévus",
+			"track": "Morceau",
+			"from": "Emplacement actuel",
+			"to": "Nouvel emplacement",
+			"status": "Statut"
+		},
+		"apply": {
+			"button": "{count, plural, one {Déplacer # fichier} other {Déplacer # fichiers}}",
+			"applying": "Déplacement des fichiers…"
+		},
+		"result": {
+			"success": "{count, plural, one {# fichier déplacé.} other {# fichiers déplacés.}}",
+			"partialFailureTitle": "{count, plural, one {# fichier n'a pas pu être déplacé :} other {# fichiers n'ont pas pu être déplacés :}}"
+		},
+		"batches": {
+			"heading": "Runs précédents",
+			"empty": "Aucun run d'organisation n'a encore été appliqué.",
+			"summary": "{files, plural, one {# fichier déplacé} other {# fichiers déplacés}}",
+			"undoneCount": "{count, plural, one {# déjà annulé} other {# déjà annulés}}",
+			"undo": "Annuler",
+			"undoing": "Annulation…",
+			"fullyUndone": "Annulé",
+			"undoResultPartial": "{count, plural, one {# fichier n'a pas pu être remis en place :} other {# fichiers n'ont pas pu être remis en place :}}"
+		},
+		"toast": {
+			"planFailed": "L'aperçu n'a pas pu être calculé",
+			"applied": "{count, plural, one {# fichier déplacé} other {# fichiers déplacés}}",
+			"applyPartialFailure": "{count, plural, one {# fichier n'a pas pu être déplacé} other {# fichiers n'ont pas pu être déplacés}}",
+			"applyFailed": "Impossible de déplacer les fichiers",
+			"mustAcknowledge": "Cochez la case pour confirmer que vous comprenez avant de déplacer des fichiers.",
+			"undone": "{count, plural, one {# fichier remis en place} other {# fichiers remis en place}}",
+			"undoPartialFailure": "{count, plural, one {# fichier n'a pas pu être remis en place} other {# fichiers n'ont pas pu être remis en place}}",
+			"undoFailed": "Impossible d'annuler ce run"
+		}
+	},
+	"discrepancy": {
+		"title": "Rapport d'écarts",
+		"subtitle": "{count, plural, one {# morceau dans Crate} other {# morceaux dans Crate}}",
+		"actions": {
+			"refresh": "Actualiser",
+			"refreshTitle": "Relancer la comparaison"
+		},
+		"loading": "Comparaison de Crate, Mixed In Key et Rekordbox…",
+		"loadFailed": "Impossible de générer le rapport",
+		"allClear": {
+			"title": "Rien à signaler",
+			"body": "Aucun fichier manquant et aucune différence de métadonnées n'a été trouvée."
+		},
+		"missingFiles": {
+			"title": "Fichiers manquants",
+			"count": "{count, plural, one {# fichier} other {# fichiers}}",
+			"empty": "Chaque fichier est là où Crate l'attend.",
+			"truncated": "Affichage de 500 sur {total}.",
+			"reason": {
+				"missing": "Manquant",
+				"volume_unmounted": "Disque non connecté"
+			},
+			"reasonHint": {
+				"missing": "Le fichier a disparu de l'emplacement attendu par Crate.",
+				"volume_unmounted": "Le disque qui contient ce fichier semble simplement débranché, pas forcément manquant."
+			}
+		},
+		"mixedInKey": {
+			"title": "Mixed In Key",
+			"unavailable": "Mixed In Key n'est pas installé, ou sa base de données n'a pas pu être lue."
+		},
+		"rekordbox": {
+			"title": "Rekordbox",
+			"noXml": "Comparer avec Rekordbox en choisissant une collection exportée (Fichier → Exporter la collection au format xml, dans Rekordbox).",
+			"chooseXml": "Choisir un export Rekordbox XML…",
+			"changeXml": "Utiliser un autre export",
+			"xmlDialogTitle": "Choisir un export Rekordbox XML",
+			"xmlFilter": "Rekordbox XML"
+		},
+		"comparison": {
+			"matched": "{count, plural, one {# morceau correspond} other {# morceaux correspondent}}",
+			"differencesTitle": "Différences",
+			"differencesEmpty": "Aucune différence de métadonnées.",
+			"truncated": "Affichage de 500 sur {total}.",
+			"missingFromOther": "Dans Crate, pas dans {tool}",
+			"missingFromOtherEmpty": "Chaque morceau de Crate a été trouvé dans {tool}.",
+			"missingFromCrate": "Dans {tool}, pas dans Crate",
+			"missingFromCrateEmpty": "{tool} n'a rien que Crate n'ait déjà.",
+			"missingFromCrateHint": "Import possible : seul {tool} a ce morceau."
+		},
+		"field": {
+			"key": "Clé",
+			"bpm": "Tempo",
+			"energy": "Énergie",
+			"cues": "Cues",
+			"note": {
+				"half_or_double_time": "Tempo demi/double"
+			}
+		}
+	},
+	"setMode": {
+		"title": "Créer un set",
+		"nameLabel": "Nom du set",
+		"defaultName": "Nouveau set",
+		"empty": "Sélectionnez des morceaux dans la Bibliothèque puis choisissez « Créer un set... » pour commencer.",
+		"loadFailed": "Impossible de vérifier ce set.",
+		"stats": {
+			"tracks": "Morceaux",
+			"harmonic": "Transitions harmoniques",
+			"clashing": "Clashs de tonalité",
+			"energyJumps": "Sauts d'énergie"
+		},
+		"duration": "{duration} au total",
+		"autoOrder": "Ordre automatique",
+		"autoOrderHint": "Réorganiser ces morceaux pour l'enchaînement harmonique et énergétique le plus fluide.",
+		"moveUp": "Monter « {title} »",
+		"moveDown": "Descendre « {title} »",
+		"removeTrack": "Retirer « {title} » du set",
+		"opening": "Morceau d'ouverture",
+		"tempo": "{delta} de tempo",
+		"exportXml": "Exporter en XML Rekordbox",
+		"toast": {
+			"analyzeFailed": "Impossible de vérifier ce set",
+			"suggestFailed": "Impossible de suggérer un ordre pour ce set",
+			"exportSuccess": "Set exporté en XML Rekordbox : {count, plural, one {# morceau} other {# morceaux}}",
+			"exportFailed": "Échec de l'export du set : {error}"
 		}
 	}
 }

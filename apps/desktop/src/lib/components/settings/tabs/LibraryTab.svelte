@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { KeyNotationFormat, ExportFormat, UsbDevice } from '$shared/types'
-	import { Text, Checkbox } from '$lib/components/common'
+	import { Button, Text, Checkbox } from '$lib/components/common'
 	import DeviceItem from '$lib/components/devices/DeviceItem.svelte'
+	import LibraryOrganiserModal from '$lib/components/library/LibraryOrganiserModal.svelte'
 	import {
 		settingsStore,
 		keyNotationFormat,
@@ -12,7 +13,16 @@
 		ignoredDeviceIds,
 	} from '$shared/stores/settings'
 	import { devices } from '$lib/stores/devices'
+	import { pageActions } from '$lib/stores'
 	import { translate } from '$shared/i18n'
+
+	let showOrganiserModal = $state(false)
+
+	// Opens the discrepancy report in place of Settings (both live in the same single-modal orchestrator,
+	// so this simply swaps which one is shown).
+	function handleOpenDiscrepancyReport() {
+		$pageActions?.getModalOrchestrator()?.openDiscrepancyReportModal()
+	}
 
 	function handleKeyNotationFormatChange(format: KeyNotationFormat) {
 		settingsStore.setKeyNotationFormat(format)
@@ -194,4 +204,24 @@
 			</div>
 		{/if}
 	</section>
+
+	<!-- Physical Organisation Section -->
+	<section>
+		<Text variant="header-3" class="mb-2">{$translate('settings.library.organisation')}</Text>
+		<Text variant="caption" as="p" class="mb-3">{$translate('settings.library.organisationDescription')}</Text>
+		<Button variant="secondary" onclick={() => (showOrganiserModal = true)}>
+			{$translate('settings.library.organisationOpen')}
+		</Button>
+	</section>
+
+	<!-- Maintenance Section -->
+	<section>
+		<Text variant="header-3" class="mb-2">{$translate('settings.library.maintenance')}</Text>
+		<Text variant="caption" as="p" class="mb-4">{$translate('settings.library.maintenanceDescription')}</Text>
+		<Button variant="secondary" size="sm" onclick={handleOpenDiscrepancyReport}>
+			{$translate('settings.library.openDiscrepancyReport')}
+		</Button>
+	</section>
 </div>
+
+<LibraryOrganiserModal open={showOrganiserModal} onClose={() => (showOrganiserModal = false)} />

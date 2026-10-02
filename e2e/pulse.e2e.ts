@@ -78,6 +78,10 @@ test.describe('Pulse history screens', () => {
 		// Every track shows its Mixed In Key energy, or a dash when Crate does not know the file.
 		await expect(dialog.getByRole('columnheader', { name: 'Energy' })).toBeVisible()
 		await expect(dialog.getByTitle(/^Energy \d+\/10/).first()).toBeVisible()
+		// The energy change from the previous track is shown per row, and a jump of 3 levels or
+		// more (the set planner's threshold) is flagged in the transition column and counted.
+		await expect(dialog.getByText('Energy jumps')).toBeVisible()
+		await expect(dialog.getByText('-6 energy').first()).toBeVisible()
 		await settle(page)
 
 		const report = await runAudit(page)
@@ -118,6 +122,8 @@ test.describe('Pulse history screens, empty and in French', () => {
 		const dialog = page.locator('dialog[open]')
 		await expect(dialog.getByText('Transitions harmoniques')).toBeVisible()
 		await expect(dialog.getByRole('columnheader', { name: 'Énergie' })).toBeVisible()
+		await expect(dialog.getByText("Sauts d'énergie")).toBeVisible()
+		await expect(dialog.getByText('Énergie -6').first()).toBeVisible()
 		await settle(page)
 		expect((await runAudit(page)).outOfWindow).toEqual([])
 		expect(errors).toEqual([])

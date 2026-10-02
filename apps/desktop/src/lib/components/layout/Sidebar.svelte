@@ -181,8 +181,8 @@
 		</button>
 	</div>
 
-	<!-- Content -->
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<!-- Content. A click on its empty space, or Escape from a playlist or tag inside it, goes back to the whole library:
+	     the handlers only catch what happens around the tree's own controls, hence a presentation role. -->
 	<div
 		bind:this={scrollContainer}
 		class="flex-1 overflow-auto p-2"
@@ -199,7 +199,7 @@
 		}}
 		ondragenter={(e) =>
 			console.log('[Sidebar] dragenter', { types: e.dataTransfer?.types ? Array.from(e.dataTransfer.types) : [] })}
-		role="region"
+		role="presentation"
 		tabindex="-1"
 	>
 		{#if activeSection === 'playlists'}

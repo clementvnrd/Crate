@@ -16,47 +16,38 @@
 		icon: string
 		minutes: number
 		percentage: number
-		color: string
 		bgClass: string
 		textClass: string
 		glowClass: string
 	}
 
-	const SOURCE_CONFIG: Record<
-		string,
-		{ label: string; color: string; bgClass: string; textClass: string; glowClass: string }
-	> = {
+	const SOURCE_CONFIG: Record<string, { label: string; bgClass: string; textClass: string; glowClass: string }> = {
 		spotify: {
 			label: 'Spotify',
-			color: '#1DB954',
 			bgClass: 'bg-source-spotify',
 			textClass: 'text-source-spotify-text',
 			glowClass: 'shadow-source-spotify/20',
 		},
 		crate_local: {
 			label: 'Crate Local',
-			color: '#8B5CF6',
 			bgClass: 'bg-source-crate',
 			textClass: 'text-source-crate-text',
 			glowClass: 'shadow-source-crate/20',
 		},
 		crate_beatport: {
 			label: 'Beatport',
-			color: '#00FF96',
 			bgClass: 'bg-beatport',
 			textClass: 'text-beatport-text-strong',
 			glowClass: 'shadow-beatport/20',
 		},
 		rekordbox: {
 			label: 'Rekordbox DJ',
-			color: '#EF4444',
 			bgClass: 'bg-source-rekordbox',
 			textClass: 'text-source-rekordbox-text',
 			glowClass: 'shadow-source-rekordbox/20',
 		},
 		mixed_in_key: {
 			label: 'Mixed In Key',
-			color: '#00D2FF',
 			bgClass: 'bg-source-mik',
 			textClass: 'text-source-mik-text',
 			glowClass: 'shadow-source-mik/20',
@@ -72,10 +63,9 @@
 			if (minutes <= 0) continue
 			const config = SOURCE_CONFIG[key] ?? {
 				label: key.replace(/_/g, ' '),
-				color: '#3B82F6',
-				bgClass: 'bg-blue-500',
-				textClass: 'text-blue-400',
-				glowClass: 'shadow-blue-500/20',
+				bgClass: 'bg-info',
+				textClass: 'text-info',
+				glowClass: 'shadow-info/20',
 			}
 			const percentage = Math.round((minutes / total) * 1000) / 10
 			items.push({
@@ -84,7 +74,6 @@
 				icon: key,
 				minutes,
 				percentage,
-				color: config.color,
 				bgClass: config.bgClass,
 				textClass: config.textClass,
 				glowClass: config.glowClass,
@@ -139,7 +128,7 @@
 		<div class="relative flex h-3.5 w-full overflow-hidden rounded-full bg-surface-3 p-0.5 shadow-inner">
 			{#each sourceBreakdown as item (item.id)}
 				<div
-					class="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full {item.bgClass} cursor-pointer hover:opacity-90"
+					class="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full {item.bgClass} hover:opacity-90"
 					style="width: {item.percentage}%"
 					role="img"
 					aria-label={segmentLabel(item)}
@@ -152,7 +141,7 @@
 		<div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
 			{#each sourceBreakdown as item (item.id)}
 				<div class="flex items-center gap-2 text-xs">
-					<span class="h-2.5 w-2.5 rounded-full shadow-sm" style="background-color: {item.color}"></span>
+					<span class="h-2.5 w-2.5 rounded-full shadow-sm {item.bgClass}"></span>
 					<span class="font-medium text-text-primary">{item.label}</span>
 					<span class="font-mono text-[11px] text-text-tertiary">
 						{$translate('stats.percent', { values: { percent: formatNumber(item.percentage, $language) } })}

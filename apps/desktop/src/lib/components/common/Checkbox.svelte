@@ -79,7 +79,7 @@
 			class="flex h-4 w-4 items-center justify-center rounded border transition-colors focus:ring-1 focus:ring-brand-primary focus:ring-offset-1 focus:ring-offset-surface-1 focus:outline-none
 			{checked ? 'border-brand-primary bg-brand-primary' : 'border-stroke bg-surface-2 hover:border-text-tertiary'}"
 		>
-			<svg class="h-3 w-3 text-white {checked ? 'opacity-100' : 'opacity-0'}" viewBox="0 0 12 12" fill="none">
+			<svg class="h-3 w-3 text-brand-on {checked ? 'opacity-100' : 'opacity-0'}" viewBox="0 0 12 12" fill="none">
 				<path d="M2 6L5 9L10 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
 			</svg>
 		</button>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte'
 	import { ResizeHandle } from '$lib/components/common'
+	import { RIGHT_SIDEBAR_MAX_WIDTH, RIGHT_SIDEBAR_MIN_WIDTH } from '$lib/stores/uiLayout'
 
 	type Props = {
 		hasContent: boolean
@@ -44,6 +45,9 @@
 		onResize={(delta) => onResize(-delta)}
 		onResizeStart={() => (isResizing = true)}
 		onResizeEnd={() => (isResizing = false)}
+		value={width}
+		min={RIGHT_SIDEBAR_MIN_WIDTH}
+		max={RIGHT_SIDEBAR_MAX_WIDTH}
 	/>
 	<div style="width: {width}px">
 		{#if showContent}

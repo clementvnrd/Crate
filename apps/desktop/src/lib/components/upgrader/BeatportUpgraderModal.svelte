@@ -195,7 +195,7 @@
 			<div class="flex items-center gap-3">
 				<!-- Sparkles Upgrader Icon -->
 				<div
-					class="flex h-9 w-9 items-center justify-center rounded-xl border border-beatport-tint/30 bg-gradient-to-br from-beatport-tint/20 via-teal-500/15 to-beatport-deep/10 text-beatport-text shadow-sm"
+					class="flex h-9 w-9 items-center justify-center rounded-xl border border-beatport-tint/30 bg-gradient-to-br from-beatport-tint/20 via-tool-partial/15 to-beatport-deep/10 text-beatport-text shadow-sm"
 				>
 					<Icon name="sparkles" class="h-5 w-5 stroke-[2.2]" />
 				</div>
@@ -360,7 +360,7 @@
 									class="inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 font-mono text-[11px] font-bold
 									{match.confidence_score >= 90
 										? 'border-beatport-tint/30 bg-beatport-tint/15 text-beatport-text'
-										: 'border-teal-500/30 bg-teal-500/15 text-teal-300'}"
+										: 'border-tool-partial/30 bg-tool-partial/15 text-tool-partial-text'}"
 									title={$translate('upgrader.card.scoreTitle', {
 										values: {
 											score: match.confidence_score,
@@ -393,9 +393,9 @@
 							<div class="space-y-2.5 rounded-xl border border-stroke/60 bg-surface-1/80 p-3.5 lg:col-span-5">
 								<div class="flex items-center justify-between">
 									<span
-										class="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-amber-400/90 uppercase"
+										class="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-tool-local-text/90 uppercase"
 									>
-										<span class="inline-block h-2 w-2 rounded-full bg-amber-400"></span>
+										<span class="inline-block h-2 w-2 rounded-full bg-tool-local-dot"></span>
 										{$translate('upgrader.card.current')}
 									</span>
 									<span class="font-mono text-xs text-text-secondary tabular-nums">
@@ -469,7 +469,7 @@
 								<!-- Badges row -->
 								<div class="flex flex-wrap items-center gap-1.5">
 									<span
-										class="inline-flex h-[20px] items-center rounded border border-amber-500/30 bg-amber-500/15 px-1.5 font-mono text-[10px] font-bold tracking-wider text-amber-300 uppercase"
+										class="inline-flex h-[20px] items-center rounded border border-tool-local/30 bg-tool-local/15 px-1.5 font-mono text-[10px] font-bold tracking-wider text-tool-local-text-strong uppercase"
 									>
 										{match.current_format.toUpperCase()}
 										{match.current_bitrate ? `${match.current_bitrate} kbps` : ''}
@@ -489,7 +489,7 @@
 
 									{#if match.current_energy}
 										<span
-											class="inline-flex h-[20px] items-center rounded border border-amber-500/30 bg-amber-500/10 px-1.5 font-mono text-[10px] font-bold text-amber-400"
+											class="inline-flex h-[20px] items-center rounded border border-tool-energy/30 bg-tool-energy/10 px-1.5 font-mono text-[10px] font-bold text-tool-energy-text"
 										>
 											⚡ {match.current_energy}
 										</span>
@@ -509,7 +509,7 @@
 							<!-- Center Column: Transformation Arrow & Quality Benefit -->
 							<div class="flex flex-col items-center justify-center gap-2 py-2 text-center lg:col-span-2">
 								<div
-									class="flex h-10 w-10 items-center justify-center rounded-full border border-beatport-tint/40 bg-gradient-to-r from-amber-500/20 via-beatport-tint/20 to-emerald-400/30 text-beatport-text shadow-md"
+									class="flex h-10 w-10 items-center justify-center rounded-full border border-beatport-tint/40 bg-gradient-to-r from-tool-local/20 via-beatport-tint/20 to-beatport-bright/30 text-beatport-text shadow-md"
 								>
 									<Icon name="arrow-right" class="h-5 w-5 stroke-[2.5]" />
 								</div>

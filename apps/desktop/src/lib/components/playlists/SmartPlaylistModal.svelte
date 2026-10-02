@@ -4,6 +4,8 @@
 	import Input from '$lib/components/common/Input.svelte'
 	import Select from '$lib/components/common/Select.svelte'
 	import Icon from '$lib/components/common/Icon.svelte'
+	import IconButton from '$lib/components/common/IconButton.svelte'
+	import Tooltip from '$lib/components/common/Tooltip.svelte'
 	import Text from '$lib/components/common/Text.svelte'
 	import Checkbox from '$lib/components/common/Checkbox.svelte'
 	import { slide } from 'svelte/transition'
@@ -290,6 +292,7 @@
 				{@const fieldType = getConditionFieldType(condition)}
 				{@const conditionField = getConditionField(condition)}
 				{@const conditionOperator = getConditionOperator(condition)}
+				{@const fieldHelpKey = getFieldDefinition(conditionField, context)?.helpKey}
 				<div class="flex items-start gap-2 rounded-md border border-stroke bg-surface-2 p-2">
 					<!-- Field select -->
 					<Select
@@ -298,6 +301,13 @@
 						class="w-36 shrink-0"
 						onchange={(val) => updateConditionField(index, val)}
 					/>
+
+					<!-- What this listening statistic counts -->
+					{#if fieldHelpKey}
+						<Tooltip text={$translate(fieldHelpKey)} position="top" delay={200}>
+							<IconButton icon="info" size="sm" ariaLabel={$translate(fieldHelpKey)} />
+						</Tooltip>
+					{/if}
 
 					<!-- Operator select -->
 					<Select

@@ -39,8 +39,9 @@
 	}
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
+<!-- An item of the followed-sources list (FollowingModal); a list item, so its right-click menu is not a control.
+     Its one entry, "Relink", has no keyboard path yet (it would need a visible button: see D10 in tracking/). -->
+<li
 	class="group flex items-center rounded px-2 py-2 hover:bg-surface-2/50"
 	oncontextmenu={(e) => {
 		e.preventDefault()
@@ -151,4 +152,4 @@
 			</Tooltip>
 		</div>
 	</div>
-</div>
+</li>

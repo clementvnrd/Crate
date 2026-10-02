@@ -17,6 +17,10 @@
 		content?: Snippet
 		/** Fade in and out (default). `false`: appear and disappear at once. */
 		fade?: boolean
+		/** Show the bubble whatever the pointer does, e.g. for the cell a keyboard user moved to in a grid. */
+		open?: boolean
+		/** ARIA role of the wrapper (default `group`); `presentation` inside a grid row, whose cells it wraps. */
+		wrapperRole?: 'group' | 'presentation'
 		children: Snippet
 	}
 
@@ -32,11 +36,15 @@
 		bubbleClass,
 		content,
 		fade: fades = true,
+		open = false,
+		wrapperRole = 'group',
 		children,
 	}: Props = $props()
 
 	let visible = $state(false)
 	let message = $state('')
+	// Hovered (or shown through the programmatic API), or held open by the parent
+	let shown = $derived(visible || open)
 	let timeoutId: ReturnType<typeof setTimeout> | undefined
 	let hoverTimeoutId: ReturnType<typeof setTimeout> | undefined
 
@@ -98,7 +106,7 @@
 	}
 
 	$effect(() => {
-		if (visible && tooltipEl && wrapperEl) {
+		if (shown && tooltipEl && wrapperEl) {
 			if (rafId) cancelAnimationFrame(rafId)
 			fixedStyle = HIDDEN_STYLE
 			rafId = requestAnimationFrame(() => {
@@ -139,7 +147,7 @@
 
 	// Keep message in sync when text prop changes while tooltip is visible
 	$effect(() => {
-		if (visible && text) {
+		if (shown && text) {
 			message = text
 		}
 	})
@@ -192,7 +200,7 @@
 <div
 	bind:this={wrapperEl}
 	class={wrapperClass}
-	role="group"
+	role={wrapperRole}
 	onmouseenter={handleMouseEnter}
 	onmouseleave={handleMouseLeave}
 	onpointerleave={handleMouseLeave}
@@ -200,7 +208,7 @@
 >
 	{@render children()}
 
-	{#if visible}
+	{#if shown}
 		<div
 			bind:this={tooltipEl}
 			use:portal

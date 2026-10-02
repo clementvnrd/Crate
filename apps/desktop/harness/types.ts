@@ -23,6 +23,8 @@ export interface HarnessParams {
 	latencyMs: number
 	/** `?playing=trk-03` restores that library track in the player bar, paused. */
 	playingTrackId: string | null
+	/** `?discrepancyReport=fail` makes `get_discrepancy_report` reject (the report's error state). */
+	discrepancyReportFails: boolean
 }
 
 /** One recorded `invoke` call, kept in `window.__harness.calls` (most recent 300). */

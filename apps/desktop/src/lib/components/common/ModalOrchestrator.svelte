@@ -49,6 +49,8 @@
 		| { type: 'settings'; initialTab?: SettingsPage }
 		| { type: 'duplicateManager' }
 		| { type: 'beatportUpgrader' }
+		| { type: 'discrepancyReport' }
+		| { type: 'buildSet'; trackIds: string[] }
 		| {
 				type: 'duplicateTrack'
 				duplicates: DuplicateTrack[]
@@ -91,9 +93,10 @@
 	import { TagInputModal } from '$lib/components/tags'
 	import { DeviceInfoModal, ReformatDeviceModal } from '$lib/components/devices'
 	import { SettingsModal } from '$lib/components/settings'
-	import { RelocateTrackModal } from '$lib/components/library'
+	import { RelocateTrackModal, DiscrepancyReportModal } from '$lib/components/library'
 	import { DuplicateManagerModal } from '$lib/components/duplicates'
 	import { BeatportUpgraderModal } from '$lib/components/upgrader'
+	import { SetModeModal } from '$lib/components/djprep'
 	import { SmartPlaylistModal } from '$lib/components/playlists'
 	import { ExportModal, ExportFailureModal, QuickExportModal } from '$lib/components/export'
 	import { toastStore } from '$shared/stores/toast'
@@ -329,6 +332,14 @@
 
 	export function openBeatportUpgraderModal() {
 		activeModal = { type: 'beatportUpgrader' }
+	}
+
+	export function openDiscrepancyReportModal() {
+		activeModal = { type: 'discrepancyReport' }
+	}
+
+	export function openBuildSetModal(trackIds: string[]) {
+		activeModal = { type: 'buildSet', trackIds }
 	}
 
 	export function openDuplicateTrackModal(
@@ -1043,6 +1054,16 @@
 <!-- Beatport Quality Upgrader Modal -->
 {#if activeModal.type === 'beatportUpgrader'}
 	<BeatportUpgraderModal open={true} onClose={closeAll} />
+{/if}
+
+<!-- Discrepancy Report Modal (Crate / Mixed In Key / Rekordbox) -->
+{#if activeModal.type === 'discrepancyReport'}
+	<DiscrepancyReportModal open={true} onClose={closeAll} />
+{/if}
+
+<!-- Set Mode Modal -->
+{#if activeModal.type === 'buildSet'}
+	<SetModeModal open={true} trackIds={activeModal.trackIds} onClose={closeAll} />
 {/if}
 
 <!-- Duplicate Track Modal -->

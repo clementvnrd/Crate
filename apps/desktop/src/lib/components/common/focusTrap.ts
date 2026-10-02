@@ -54,6 +54,8 @@ export function focusTrap(node: HTMLElement, options: FocusTrapOptions = {}) {
 		const focusable = [...node.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].filter(isVisible)
 		const index = nextFocusIndex(focusable.length, focusable.indexOf(document.activeElement as HTMLElement), e.shiftKey)
 		e.preventDefault()
+		// Inside the overlay Shift+Tab only moves focus back: the global Shift+Tab view switch must not also run
+		e.stopPropagation()
 		if (index >= 0) focusable[index].focus()
 	}
 

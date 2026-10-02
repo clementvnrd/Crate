@@ -1,3 +1,3 @@
-- [Owner visual preferences](owner-visual-preferences.md) — CRA-141: five approved changes only, dark look otherwise kept; families stay; vocabulary
+- [Owner visual preferences](owner-visual-preferences.md) — CRA-141: five approved changes only, dark look otherwise kept; families; CRA-100 a11y choices (click focus ring stays)
 - [Charter contrast method](charter-contrast-method.md) — how contrast was computed without a harness; glass composite and accent-fill pitfalls
-- [Tooling pitfalls](tooling-pitfalls.md) — design:scan and audit blind spots (oklch); @theme inline; CSS class order; dialog in space-y; e2e flakes
+- [Tooling pitfalls](tooling-pitfalls.md) — design:scan and audit blind spots (oklch); @theme inline; CSS class order; dialog in space-y; e2e flakes, port 1430 clash; slow pre-commit

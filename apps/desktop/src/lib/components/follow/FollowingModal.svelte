@@ -134,20 +134,22 @@
 				</div>
 			</div>
 		{:else}
-			{#each $sortedFollowedSources as source (source.id)}
-				<FollowingRow
-					{source}
-					selectMode={$followStore.selectMode}
-					selected={$followStore.selectedIds.has(source.id)}
-					checking={$followStore.checkingIds.has(source.id) || $followStore.checkingAll}
-					onToggleSelect={() => followStore.toggleSelected(source.id)}
-					onCheck={() => followStore.check(source.id)}
-					onUnfollow={() => followStore.unfollow(source.id)}
-					onOpen={() => openUrl(source.url).catch(() => {})}
-					onSetType={(type) => followStore.setType(source.id, type)}
-					onContextMenu={(e) => openMenu(e, source)}
-				/>
-			{/each}
+			<ul>
+				{#each $sortedFollowedSources as source (source.id)}
+					<FollowingRow
+						{source}
+						selectMode={$followStore.selectMode}
+						selected={$followStore.selectedIds.has(source.id)}
+						checking={$followStore.checkingIds.has(source.id) || $followStore.checkingAll}
+						onToggleSelect={() => followStore.toggleSelected(source.id)}
+						onCheck={() => followStore.check(source.id)}
+						onUnfollow={() => followStore.unfollow(source.id)}
+						onOpen={() => openUrl(source.url).catch(() => {})}
+						onSetType={(type) => followStore.setType(source.id, type)}
+						onContextMenu={(e) => openMenu(e, source)}
+					/>
+				{/each}
+			</ul>
 		{/if}
 	</div>
 

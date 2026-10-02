@@ -159,11 +159,10 @@
 					(($playbackSource === 'standalone' && $standaloneTrack?.file_path === track.file_path) ||
 						($playbackSource === 'library' && $currentTrack?.file_path === track.file_path))}
 
-				<!-- Track Row -->
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<!-- svelte-ignore a11y_click_events_have_key_events -->
-				<div
-					class="group grid cursor-pointer grid-cols-[36px_minmax(200px,2fr)_120px_120px_70px] items-center gap-3 rounded-xl px-3 py-2.5 text-xs transition-colors {isPlayingThis
+				<!-- Track Row: a button, so the track can be played from the keyboard too -->
+				<button
+					type="button"
+					class="group grid w-full cursor-pointer grid-cols-[36px_minmax(200px,2fr)_120px_120px_70px] items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs transition-colors {isPlayingThis
 						? 'bg-deck-live-tint/10 text-deck-live-text-strong'
 						: 'text-text-primary hover:bg-surface-1'}"
 					onclick={() => handlePlayTrack(track)}
@@ -219,7 +218,7 @@
 					<div class="pr-2 text-right font-mono text-[11px] text-text-secondary tabular-nums">
 						{formatDuration(track.duration_ms)}
 					</div>
-				</div>
+				</button>
 			{/each}
 		</div>
 	</div>

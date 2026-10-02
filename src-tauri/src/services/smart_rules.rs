@@ -796,6 +796,51 @@ mod listening_stats_tests {
     }
 
     #[test]
+    fn last_set_play_only_counts_rekordbox_sets_unlike_last_listened() {
+        let conn = library();
+        // A was heard on Spotify only, never in a set.
+        listen(
+            &conn,
+            1,
+            "spotify",
+            "Artist A",
+            "Song One",
+            &days_ago(1),
+            1000,
+        );
+        // B was played in a set 5 days ago, and also on Spotify yesterday.
+        listen(
+            &conn,
+            2,
+            "rekordbox",
+            "Artist B",
+            "Song Two",
+            &days_ago(5),
+            1000,
+        );
+        listen(
+            &conn,
+            3,
+            "spotify",
+            "Artist B",
+            "Song Two",
+            &days_ago(1),
+            1000,
+        );
+
+        let played_in_a_set_this_week = rules(
+            vec![SmartCondition::Date {
+                field: "last_set_play".to_string(),
+                operator: DateOperator::InLastDays,
+                value: Some("7".to_string()),
+            }],
+            None,
+        );
+        // Only B has ever been played in a set, even though A was listened to more recently.
+        assert_eq!(ids(&conn, &played_in_a_set_this_week), ["B"]);
+    }
+
+    #[test]
     fn minutes_listened_adds_up_the_played_time() {
         let conn = library();
         listen(

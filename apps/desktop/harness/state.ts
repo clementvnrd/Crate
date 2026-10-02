@@ -3,6 +3,21 @@ import type { HarnessParams } from './types'
 import { createSettings } from './fixtures/system'
 import { PLAYLISTS, PLAYLIST_TRACK_IDS, TAG_CATEGORIES, TRACKS } from './fixtures/library'
 
+/** One file moved by an applied organisation run (see `handlers/maintenance.ts`). */
+export interface OrganisationJournalEntry {
+	track_id: string
+	from: string
+	to: string
+	undone: boolean
+}
+
+/** An applied organisation run: every move it made, so it can be undone, in part or fully. */
+export interface OrganisationBatchRecord {
+	batch_id: string
+	moved_at: string
+	entries: OrganisationJournalEntry[]
+}
+
 /** The fake backend's in-memory "database": a mutable copy of the fixtures, reset on every page load. */
 export interface HarnessState {
 	params: HarnessParams
@@ -15,6 +30,9 @@ export interface HarnessState {
 	/** `Date.now()` when the current playback (re)started, or null while paused/stopped. */
 	playbackStartedAt: number | null
 	beatportPersistedAuth: boolean
+	/** Applied assisted-organisation runs (CRA-130), latest first. */
+	organisationBatches: OrganisationBatchRecord[]
+	organisationBatchCounter: number
 }
 
 export function createState(params: HarnessParams): HarnessState {
@@ -44,5 +62,7 @@ export function createState(params: HarnessParams): HarnessState {
 		},
 		playbackStartedAt: null,
 		beatportPersistedAuth: params.beatportLoggedIn,
+		organisationBatches: [],
+		organisationBatchCounter: 0,
 	}
 }

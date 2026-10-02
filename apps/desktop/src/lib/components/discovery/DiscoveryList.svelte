@@ -179,10 +179,11 @@
 </script>
 
 <div class="flex h-full flex-col bg-surface-0">
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- Pointer shortcuts on the empty space below the rows (clear the selection, open the "Add release" menu); from
+	     the keyboard, Escape clears the selection and Cmd+D adds a release. Hence a presentation role, not a control. -->
 	<div
 		bind:this={scrollContainerEl}
+		role="presentation"
 		class="relative flex-1 overflow-auto bg-surface-1/50"
 		data-drop-target="releaselist-main"
 		onclick={handleContainerClick}

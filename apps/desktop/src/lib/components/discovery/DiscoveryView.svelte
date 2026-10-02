@@ -143,8 +143,10 @@
 	}
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- Drop target for links dragged from a browser (a pointer gesture by nature; from the keyboard, Cmd+D adds a release
+     by URL). The handlers only catch drags over the view, hence a presentation role, not a control. -->
 <div
+	role="presentation"
 	class="relative flex h-full flex-col overflow-hidden bg-surface-0"
 	ondragover={handleDragOver}
 	ondragleave={handleDragLeave}

@@ -224,6 +224,7 @@
 	onTrackSetColor={trackController.setColorFromContextMenu}
 	onTrackAnalyze={handleTrackAnalyze}
 	onTrackResyncMik={handleTrackResyncMik}
+	onTrackBuildSet={(tracks) => modalOrchestrator.openBuildSetModal(tracks.map((t) => t.id))}
 	onPlaylistCreatePlaylist={(p) => modalOrchestrator.openCreatePlaylistModal(p.id)}
 	onPlaylistCreateSmartPlaylist={(p) => modalOrchestrator.openCreateSmartPlaylistModal(p.id, p.context)}
 	onPlaylistCreateFolder={(p) => modalOrchestrator.openCreateFolderModal(p.id)}
