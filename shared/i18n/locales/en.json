@@ -43,9 +43,7 @@
 			"stats": "Statistics",
 			"statsTooltip": "Crate Pulse & statistics",
 			"rekordboxXml": "Export to Rekordbox XML",
-			"rekordboxXmlTooltip": "Export the collection as Rekordbox XML (ready for CDJ / Rekordbox)",
-			"discrepancyReport": "Discrepancy report",
-			"discrepancyReportTooltip": "Compare Crate, Mixed In Key and Rekordbox for differences"
+			"rekordboxXmlTooltip": "Export the collection as Rekordbox XML (ready for CDJ / Rekordbox)"
 		}
 	},
 	"settings": {
@@ -157,7 +155,10 @@
 			"exportFormatPdb": "Rekordbox PDB",
 			"exportFormatPdbDescription": "Legacy format for older CDJs",
 			"exportFormatDeviceLibraryPlus": "Device Library Plus",
-			"exportFormatDeviceLibraryPlusDescription": "For OPUS-QUAD, OMNIS-DUO, XDJ-AZ"
+			"exportFormatDeviceLibraryPlusDescription": "For OPUS-QUAD, OMNIS-DUO, XDJ-AZ",
+			"maintenance": "Maintenance",
+			"maintenanceDescription": "A read-only report of where Crate, Mixed In Key and (with a Rekordbox export) Rekordbox disagree: key, tempo, energy, cues, missing files, tracks only on one side. Nothing is changed or deleted.",
+			"openDiscrepancyReport": "Open the discrepancy report"
 		},
 		"discovery": {
 			"metadata": "Metadata",

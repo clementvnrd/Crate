@@ -26,7 +26,6 @@
 		onDevTools?: () => void
 		onOpenDuplicates?: () => void
 		onOpenUpgrader?: () => void
-		onOpenDiscrepancyReport?: () => void
 	}
 
 	let {
@@ -39,7 +38,6 @@
 		onDevTools,
 		onOpenDuplicates,
 		onOpenUpgrader,
-		onOpenDiscrepancyReport,
 	}: Props = $props()
 	let syncingMik = $state(false)
 
@@ -239,18 +237,6 @@
 			{:else}
 				<Icon name="download" class="h-4 w-4 text-text-secondary" />
 			{/if}
-		</button>
-	</Tooltip>
-
-	<!-- Discrepancy Report Button -->
-	<Tooltip text={$translate('nav.toolbar.discrepancyReportTooltip')} position="bottom" delay={250}>
-		<button
-			type="button"
-			class="relative flex h-8 w-8 items-center justify-center rounded-lg border border-stroke bg-surface-2/80 text-text-secondary shadow-sm transition-colors hover:cursor-pointer hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary active:scale-95"
-			onclick={onOpenDiscrepancyReport}
-			aria-label={$translate('nav.toolbar.discrepancyReport')}
-		>
-			<Icon name="clipboard" class="h-4 w-4 text-text-secondary" />
 		</button>
 	</Tooltip>
 

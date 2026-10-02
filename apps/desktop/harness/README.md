@@ -48,7 +48,7 @@ Example: `http://localhost:1430/?theme=light&lang=fr&accent=amber&playing=trk-03
 | Settings | The gear button of the toolbar (named `Settings` / `Paramètres`), or `Cmd+,` / `Ctrl+,`. Every tab opens. |
 | Duplicate Killer | Overlapping-squares button with the red badge. |
 | Beatport Quality Upgrader | Sparkles button with the green badge. |
-| Discrepancy report | Clipboard button of the toolbar. |
+| Discrepancy report | Settings → Library tab → "Open the discrepancy report". |
 
 ## How the fake backend answers
 
