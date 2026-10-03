@@ -24,7 +24,9 @@
 		"viewArtwork": "Afficher la pochette",
 		"albumArtwork": "Pochette de l'album",
 		"unknownError": "Erreur inconnue",
-		"resizePanel": "Redimensionner le panneau"
+		"resizePanel": "Redimensionner le panneau",
+		"scrollBackward": "Afficher les options précédentes",
+		"scrollForward": "Afficher les options suivantes"
 	},
 	"nav": {
 		"library": "Bibliothèque",

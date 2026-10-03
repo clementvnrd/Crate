@@ -24,7 +24,9 @@
 		"viewArtwork": "View artwork",
 		"albumArtwork": "Album artwork",
 		"unknownError": "Unknown error",
-		"resizePanel": "Resize panel"
+		"resizePanel": "Resize panel",
+		"scrollBackward": "Show previous options",
+		"scrollForward": "Show more options"
 	},
 	"nav": {
 		"library": "Library",

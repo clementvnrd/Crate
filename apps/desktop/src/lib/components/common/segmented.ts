@@ -34,3 +34,49 @@ export function indexForKey(key: string, current: number, count: number): number
 			return null
 	}
 }
+
+// Horizontal scrolling of a `scrollable` control (DESIGN.md "Scroll affordance"): the options stay on one line,
+// arrows and edge fades show where more options are hidden, the selected option is always in view.
+
+/** Which ends of a horizontal scroller hide content. A 1 px tolerance absorbs sub-pixel layouts. */
+export function scrollEdges(
+	scrollLeft: number,
+	scrollWidth: number,
+	clientWidth: number
+): { start: boolean; end: boolean } {
+	const max = scrollWidth - clientWidth
+	if (max <= 1) return { start: false, end: false }
+	return { start: scrollLeft > 1, end: scrollLeft < max - 1 }
+}
+
+function clamp(value: number, min: number, max: number): number {
+	return Math.min(Math.max(value, min), max)
+}
+
+type ScrollView = { scrollLeft: number; clientWidth: number; scrollWidth: number }
+
+/**
+ * The scroll position that shows the whole item, keeping `inset` px clear at both ends (where the arrows and the
+ * fades sit), or the current position when the item is already fully visible. `item.start` is measured from the
+ * scroller's padding edge (`offsetLeft`, with the scroller as offset parent).
+ */
+export function revealScrollLeft(item: { start: number; width: number }, view: ScrollView, inset: number): number {
+	const max = Math.max(0, view.scrollWidth - view.clientWidth)
+	// An item wider than the clear area is centred rather than pushed against one arrow.
+	const clear = Math.max(0, Math.min(inset, (view.clientWidth - item.width) / 2))
+	const end = item.start + item.width
+	let target = view.scrollLeft
+	if (item.start - clear < view.scrollLeft) target = item.start - clear
+	else if (end + clear > view.scrollLeft + view.clientWidth) target = end + clear - view.clientWidth
+	return clamp(target, 0, max)
+}
+
+/**
+ * The scroll position after an arrow press: one view width minus the two insets, so the option that was partly
+ * hidden under the arrow comes into full view; never less than half a view.
+ */
+export function stepScrollLeft(direction: -1 | 1, view: ScrollView, inset: number): number {
+	const max = Math.max(0, view.scrollWidth - view.clientWidth)
+	const step = Math.max(view.clientWidth - 2 * inset, view.clientWidth / 2)
+	return clamp(view.scrollLeft + direction * step, 0, max)
+}

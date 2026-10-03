@@ -275,3 +275,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-01 | Energy-jump detection added to the Rekordbox set timeline (CRA-127), closing the gap left by the energy column: same threshold as the set planner, now shared from one place | — |
 | 2026-10-01 | "Set" mode screen: select from the Library, reorder, harmonic/energy check, export to Rekordbox XML (CRA-132, partial: USB export and bridge-track display left for a follow-up) | — |
 | 2026-10-02 | CRA-96 follow-up: black text on accent badges and the check mark, lighter accent hover for five accents, the last listed palette classes on tokens (D3, partial) | 11 |
+| 2026-10-03 | Pulse period bar made scrollable for the coming presets: one line, arrows and edge fades only where options are hidden, selection kept in view; "Scroll affordance" rule in DESIGN.md (CRA-173) | — |
