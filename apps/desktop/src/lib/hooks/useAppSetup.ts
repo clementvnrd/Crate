@@ -49,6 +49,17 @@ import { syncStore } from '$lib/stores/sync'
 import { cloudSyncStore } from '$shared/stores/cloudSync'
 import { toastStore } from '$shared/stores/toast'
 import { exportStore } from '$lib/stores/export'
+import {
+	buildDiscoveryCandidates,
+	createShuffleSession,
+	discoveryTrackKey,
+	findPlayableTrackIndex,
+	nextPreviewTarget,
+	previewTargetKey,
+	previousPreviewTarget,
+	sequentialNextIndex,
+	sequentialPreviousIndex,
+} from '$shared/utils/playbackQueue'
 import { dismissSplash } from '$lib/stores/splash'
 import { discoveryPlaylistStore } from '$shared/stores/discoveryPlaylist'
 import {
@@ -276,50 +287,18 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 	let discoveryQueueContextPlaylistId: string | null = null
 	let discoveryQueueReleases: DiscoveryRelease[] = []
 
-	// Shuffle playback bookkeeping. The played-set gives no-repeat-until-exhausted
-	// ordering; the history enables a stable "previous". Both library and discovery
-	// shuffle operate at the individual track level.
-	let shuffleHistory: string[] = []
-	let shufflePos = -1
-	let shufflePlayed = new Set<string>()
-
-	let discoveryShuffleHistory: Array<{ releaseId: string; trackIndex: number }> = []
-	let discoveryShufflePos = -1
-	let discoveryShufflePlayed = new Set<string>()
+	// Shuffle playback bookkeeping (no repeat until exhausted, history for "previous"),
+	// kept in the pure `playbackQueue` module. Both library and discovery shuffle
+	// operate at the individual track level.
+	const libraryShuffle = createShuffleSession<Track>((t) => t.id)
+	const discoveryShuffle = createShuffleSession<{ release: DiscoveryRelease; trackIndex: number }>(previewTargetKey)
 
 	function resetShuffleSession(id: string | null) {
-		shuffleHistory = id ? [id] : []
-		shufflePos = id ? 0 : -1
-		shufflePlayed = new Set(id ? [id] : [])
-	}
-
-	function discoveryTrackKey(releaseId: string, trackIndex: number): string {
-		return `${releaseId}:${trackIndex}`
+		libraryShuffle.reset(id)
 	}
 
 	function resetDiscoveryShuffleSession(releaseId: string | null, trackIndex: number = 0) {
-		if (releaseId) {
-			discoveryShuffleHistory = [{ releaseId, trackIndex }]
-			discoveryShufflePos = 0
-			discoveryShufflePlayed = new Set([discoveryTrackKey(releaseId, trackIndex)])
-		} else {
-			discoveryShuffleHistory = []
-			discoveryShufflePos = -1
-			discoveryShufflePlayed = new Set()
-		}
-	}
-
-	function buildDiscoveryTrackPool(releases: DiscoveryRelease[], exclude: Set<string>) {
-		const pool: Array<{ release: DiscoveryRelease; trackIndex: number; key: string }> = []
-		for (const release of releases) {
-			for (let i = 0; i < release.tracks.length; i++) {
-				const key = discoveryTrackKey(release.id, i)
-				if (!exclude.has(key) && trackCanPlay(release, i)) {
-					pool.push({ release, trackIndex: i, key })
-				}
-			}
-		}
-		return pool
+		discoveryShuffle.reset(releaseId ? discoveryTrackKey(releaseId, trackIndex) : null)
 	}
 
 	// Re-anchor the shuffle session on the current track whenever shuffle is switched on.
@@ -396,13 +375,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 	}
 
 	function findPreviewableTrackIndex(release: DiscoveryRelease, direction: 'first' | 'last'): number {
-		if (direction === 'first') {
-			return release.tracks.findIndex((_, i) => trackCanPlay(release, i))
-		}
-		for (let i = release.tracks.length - 1; i >= 0; i--) {
-			if (trackCanPlay(release, i)) return i
-		}
-		return -1
+		return findPlayableTrackIndex(release, direction, trackCanPlay)
 	}
 
 	function playNextTrack() {
@@ -413,55 +386,16 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			const preview = get(previewInfo)
 			if (preview) {
 				if (get(shuffleEnabled)) {
-					const releases = getDiscoveryQueue()
+					const candidates = buildDiscoveryCandidates(getDiscoveryQueue(), trackCanPlay)
 					const currentKey = discoveryTrackKey(preview.releaseId, preview.trackIndex)
-
-					if (discoveryShufflePos < discoveryShuffleHistory.length - 1) {
-						const fwd = discoveryShuffleHistory[discoveryShufflePos + 1]
-						const fwdRelease = releases.find((r) => r.id === fwd.releaseId)
-						if (fwdRelease && trackCanPlay(fwdRelease, fwd.trackIndex)) {
-							discoveryShufflePos++
-							playerStore.playPreview(fwdRelease, fwd.trackIndex)
-							return
-						}
-					}
-
-					let pool = buildDiscoveryTrackPool(releases, discoveryShufflePlayed)
-					if (pool.length === 0) {
-						discoveryShufflePlayed = new Set([currentKey])
-						pool = buildDiscoveryTrackPool(releases, discoveryShufflePlayed)
-					}
-					if (pool.length === 0) return
-					const pick = pool[Math.floor(Math.random() * pool.length)]
-					discoveryShufflePlayed.add(pick.key)
-					discoveryShuffleHistory.push({ releaseId: pick.release.id, trackIndex: pick.trackIndex })
-					discoveryShufflePos = discoveryShuffleHistory.length - 1
-					playerStore.playPreview(pick.release, pick.trackIndex)
+					const pick = discoveryShuffle.next(candidates, currentKey)
+					if (pick) playerStore.playPreview(pick.release, pick.trackIndex)
 					return
 				}
 
 				// Non-shuffle: next track in release, then next release
-				let nextIndex = preview.trackIndex + 1
-				while (nextIndex < preview.release.tracks.length && !trackCanPlay(preview.release, nextIndex)) {
-					nextIndex++
-				}
-				if (nextIndex < preview.release.tracks.length) {
-					playerStore.playPreview(preview.release, nextIndex)
-					return
-				}
-
-				const releases = getDiscoveryQueue()
-				const releaseIdx = releases.findIndex((r) => r.id === preview.releaseId)
-				if (releaseIdx === -1 || releases.length === 0) return
-
-				for (let i = 1; i <= releases.length; i++) {
-					const nextRelease = releases[(releaseIdx + i) % releases.length]
-					const trackIdx = findPreviewableTrackIndex(nextRelease, 'first')
-					if (trackIdx !== -1) {
-						playerStore.playPreview(nextRelease, trackIdx)
-						return
-					}
-				}
+				const target = nextPreviewTarget(preview, getDiscoveryQueue(), trackCanPlay)
+				if (target) playerStore.playPreview(target.release, target.trackIndex)
 				return
 			}
 		}
@@ -473,7 +407,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			if (tracks.length > 0) {
 				const current = get(beatportTrack)
 				const idx = tracks.findIndex((t) => String(t.id) === String(current?.id))
-				const nextIdx = idx >= 0 ? (idx + 1) % tracks.length : 0
+				const nextIdx = sequentialNextIndex(idx, tracks.length)
 				playerStore.playBeatport(tracks[nextIdx])
 				return
 			}
@@ -491,7 +425,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			if (recents.length > 0) {
 				const current = get(standaloneTrack)
 				const idx = recents.findIndex((t) => t.file_path === current?.file_path || t.id === current?.id)
-				const nextIdx = idx >= 0 ? (idx + 1) % recents.length : 0
+				const nextIdx = sequentialNextIndex(idx, recents.length)
 				playerStore.playStandalone(recents[nextIdx], recents[nextIdx].is_in_library)
 				return
 			}
@@ -506,33 +440,13 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 		if (tracks.length === 0) return
 
 		if (get(shuffleEnabled) && id) {
-			// Replay forward through history if the user previously went back.
-			if (shufflePos < shuffleHistory.length - 1) {
-				const fwd = tracks.find((t) => t.id === shuffleHistory[shufflePos + 1])
-				if (fwd) {
-					shufflePos++
-					playerStore.play(fwd)
-					return
-				}
-			}
-			// Fresh pick from the current bag (never the current track).
-			let pool = tracks.filter((t) => t.id !== id && !shufflePlayed.has(t.id))
-			if (pool.length === 0) {
-				// Bag exhausted — reshuffle, excluding only the current track.
-				shufflePlayed = new Set([id])
-				pool = tracks.filter((t) => t.id !== id)
-			}
-			if (pool.length === 0) return
-			const pick = pool[Math.floor(Math.random() * pool.length)]
-			shufflePlayed.add(pick.id)
-			shuffleHistory.push(pick.id)
-			shufflePos = shuffleHistory.length - 1
-			playerStore.play(pick)
+			const pick = libraryShuffle.next(tracks, id, { excludeCurrent: true })
+			if (pick) playerStore.play(pick)
 			return
 		}
 
 		const idx = id ? tracks.findIndex((t) => t.id === id) : -1
-		const nextIdx = idx >= 0 ? (idx + 1) % tracks.length : 0
+		const nextIdx = sequentialNextIndex(idx, tracks.length)
 		playerStore.play(tracks[nextIdx])
 	}
 
@@ -544,41 +458,14 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			const preview = get(previewInfo)
 			if (preview) {
 				if (get(shuffleEnabled)) {
-					if (discoveryShufflePos > 0) {
-						const prev = discoveryShuffleHistory[discoveryShufflePos - 1]
-						const releases = getDiscoveryQueue()
-						const prevRelease = releases.find((r) => r.id === prev.releaseId)
-						if (prevRelease && trackCanPlay(prevRelease, prev.trackIndex)) {
-							discoveryShufflePos--
-							playerStore.playPreview(prevRelease, prev.trackIndex)
-							return
-						}
-					}
+					const prev = discoveryShuffle.previous(buildDiscoveryCandidates(getDiscoveryQueue(), trackCanPlay))
+					if (prev) playerStore.playPreview(prev.release, prev.trackIndex)
 					return
 				}
 
 				// Non-shuffle: previous track in release, then previous release
-				let prevIndex = preview.trackIndex - 1
-				while (prevIndex >= 0 && !trackCanPlay(preview.release, prevIndex)) {
-					prevIndex--
-				}
-				if (prevIndex >= 0) {
-					playerStore.playPreview(preview.release, prevIndex)
-					return
-				}
-
-				const releases = getDiscoveryQueue()
-				const releaseIdx = releases.findIndex((r) => r.id === preview.releaseId)
-				if (releaseIdx === -1 || releases.length === 0) return
-
-				for (let i = 1; i <= releases.length; i++) {
-					const prevRelease = releases[(releaseIdx - i + releases.length) % releases.length]
-					const trackIdx = findPreviewableTrackIndex(prevRelease, 'last')
-					if (trackIdx !== -1) {
-						playerStore.playPreview(prevRelease, trackIdx)
-						return
-					}
-				}
+				const target = previousPreviewTarget(preview, getDiscoveryQueue(), trackCanPlay)
+				if (target) playerStore.playPreview(target.release, target.trackIndex)
 				return
 			}
 		}
@@ -590,7 +477,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			if (tracks.length > 0) {
 				const current = get(beatportTrack)
 				const idx = tracks.findIndex((t) => String(t.id) === String(current?.id))
-				const prevIdx = idx >= 0 ? (idx - 1 + tracks.length) % tracks.length : tracks.length - 1
+				const prevIdx = sequentialPreviousIndex(idx, tracks.length)
 				playerStore.playBeatport(tracks[prevIdx])
 				return
 			}
@@ -608,7 +495,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			if (recents.length > 0) {
 				const current = get(standaloneTrack)
 				const idx = recents.findIndex((t) => t.file_path === current?.file_path || t.id === current?.id)
-				const prevIdx = idx >= 0 ? (idx - 1 + recents.length) % recents.length : recents.length - 1
+				const prevIdx = sequentialPreviousIndex(idx, recents.length)
 				playerStore.playStandalone(recents[prevIdx], recents[prevIdx].is_in_library)
 				return
 			}
@@ -624,19 +511,13 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 
 		if (get(shuffleEnabled)) {
 			// Walk back through the actual play history.
-			if (shufflePos > 0) {
-				const prev = tracks.find((t) => t.id === shuffleHistory[shufflePos - 1])
-				if (prev) {
-					shufflePos--
-					playerStore.play(prev)
-					return
-				}
-			}
+			const prev = libraryShuffle.previous(tracks)
+			if (prev) playerStore.play(prev)
 			return
 		}
 
 		const idx = id ? tracks.findIndex((t) => t.id === id) : -1
-		const prevIdx = idx >= 0 ? (idx - 1 + tracks.length) % tracks.length : tracks.length - 1
+		const prevIdx = sequentialPreviousIndex(idx, tracks.length)
 		playerStore.play(tracks[prevIdx])
 	}
 
