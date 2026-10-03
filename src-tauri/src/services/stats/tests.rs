@@ -2018,3 +2018,120 @@ mod spotify_reset_tests {
         assert_eq!(recorder.count_spotify_listens().unwrap(), 0);
     }
 }
+
+fn insert_session(conn: &Arc<Mutex<Connection>>, id: &str, started_at: String, played_ms: i64) {
+    conn.lock()
+        .unwrap()
+        .execute(
+            "INSERT INTO rekordbox_sessions (id, session_name, started_at, ended_at, total_tracks, total_played_ms)
+             VALUES (?1, 'Set', ?2, NULL, 5, ?3)",
+            rusqlite::params![id, started_at, played_ms],
+        )
+        .unwrap();
+}
+
+#[test]
+fn test_summary_dj_sessions_follow_the_selected_range() {
+    let (conn, recorder) = setup_test_db();
+    let now = Utc::now();
+    insert_session(
+        &conn,
+        "recent",
+        (now - Duration::days(2)).to_rfc3339(),
+        3_600_000,
+    );
+    insert_session(
+        &conn,
+        "month",
+        (now - Duration::days(20)).to_rfc3339(),
+        7_200_000,
+    );
+    insert_session(
+        &conn,
+        "old",
+        (now - Duration::days(400)).to_rfc3339(),
+        1_800_000,
+    );
+
+    let week = recorder.get_stats_summary("7d").unwrap();
+    assert_eq!(week.dj_sessions, 1);
+    assert_eq!(week.dj_sessions_played_ms, 3_600_000);
+
+    let month = recorder.get_stats_summary("30d").unwrap();
+    assert_eq!(month.dj_sessions, 2);
+    assert_eq!(month.dj_sessions_played_ms, 10_800_000);
+
+    let all = recorder.get_stats_summary("all").unwrap();
+    assert_eq!(all.dj_sessions, 3);
+    assert_eq!(all.dj_sessions_played_ms, 12_600_000);
+}
+
+#[test]
+fn test_summary_dj_sessions_honour_an_exact_window() {
+    let (conn, recorder) = setup_test_db();
+    insert_session(&conn, "in", "2026-03-10T20:00:00Z".to_string(), 1_000);
+    insert_session(&conn, "before", "2026-02-28T23:59:59Z".to_string(), 1_000);
+    insert_session(
+        &conn,
+        "end-excluded",
+        "2026-04-01T00:00:00Z".to_string(),
+        1_000,
+    );
+
+    let march = recorder
+        .get_stats_summary("between:2026-03-01 00:00:00,2026-04-01 00:00:00")
+        .unwrap();
+    assert_eq!(march.dj_sessions, 1);
+
+    let malformed = recorder.get_stats_summary("between:nonsense").unwrap();
+    assert_eq!(
+        malformed.dj_sessions, 0,
+        "a malformed window matches nothing"
+    );
+}
+
+#[test]
+fn test_summary_unique_artists_is_not_capped_by_the_top_list_limit() {
+    let (_, recorder) = setup_test_db();
+    let now = Utc::now();
+    for i in 0..60 {
+        let mut event = listen(
+            &format!("e{i}"),
+            &format!("Track {i}"),
+            (now - Duration::minutes(i)).to_rfc3339(),
+        );
+        event.artist = format!("Artist {i}");
+        recorder.record_listen_event(&event).unwrap();
+    }
+    // A listen below the 30 s stream threshold does not make its artist count.
+    let mut skipped = listen("skip", "Skipped", now.to_rfc3339());
+    skipped.artist = "Barely Heard".to_string();
+    skipped.played_ms = 5_000;
+    recorder.record_listen_event(&skipped).unwrap();
+
+    assert_eq!(recorder.get_top_artists("all", 50).unwrap().len(), 50);
+    let summary = recorder.get_stats_summary("all").unwrap();
+    assert_eq!(summary.unique_artists, 60);
+}
+
+#[test]
+fn test_summary_unique_artists_merge_credits_and_follow_the_range() {
+    let (_, recorder) = setup_test_db();
+    let now = Utc::now();
+    let mut collab = listen(
+        "c",
+        "Song (feat. Rihanna)",
+        (now - Duration::days(1)).to_rfc3339(),
+    );
+    collab.artist = "Calvin Harris".to_string();
+    recorder.record_listen_event(&collab).unwrap();
+    let mut solo = listen("s", "Other", (now - Duration::days(2)).to_rfc3339());
+    solo.artist = "Rihanna".to_string();
+    recorder.record_listen_event(&solo).unwrap();
+    let mut old = listen("o", "Ancient", (now - Duration::days(100)).to_rfc3339());
+    old.artist = "Old Timer".to_string();
+    recorder.record_listen_event(&old).unwrap();
+
+    assert_eq!(recorder.get_stats_summary("7d").unwrap().unique_artists, 2);
+    assert_eq!(recorder.get_stats_summary("all").unwrap().unique_artists, 3);
+}

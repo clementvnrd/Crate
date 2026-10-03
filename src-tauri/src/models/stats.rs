@@ -54,6 +54,12 @@ pub struct StatsSummary {
     pub month_minutes: u64,
     pub total_plays: usize,
     pub source_breakdown: HashMap<String, u64>,
+    /// Distinct artists with at least one stream in the range (not capped by the top-artists limit).
+    pub unique_artists: usize,
+    /// Rekordbox sets that started in the range.
+    pub dj_sessions: usize,
+    /// Total played time of those sets, in milliseconds.
+    pub dj_sessions_played_ms: u64,
 }
 
 /// Top listened track aggregation item
