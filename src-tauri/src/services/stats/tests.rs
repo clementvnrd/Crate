@@ -1251,7 +1251,7 @@ mod window_tests {
     }
 
     #[test]
-    fn a_malformed_window_matches_nothing_instead_of_everything() {
+    fn a_malformed_window_is_an_error_instead_of_widening_to_everything() {
         let (conn, recorder) = setup_test_db();
         raw(&conn, "a", "2026-09-21T10:00:00Z", 60_000);
         for bad in [
@@ -1261,11 +1261,7 @@ mod window_tests {
             "between:yesterday,today",
             "between:2026-09-21 00:00:00,",
         ] {
-            assert_eq!(
-                recorder.get_stats_summary(bad).unwrap().total_plays,
-                0,
-                "{bad}"
-            );
+            assert!(recorder.get_stats_summary(bad).is_err(), "{bad}");
         }
     }
 
@@ -1275,7 +1271,7 @@ mod window_tests {
         raw(&conn, "a", "2026-09-21T10:00:00Z", 60_000);
         let hostile =
             "between:2026-09-21 00:00:00'); DROP TABLE listen_events; --,2026-09-28 00:00:00";
-        assert_eq!(recorder.get_stats_summary(hostile).unwrap().total_plays, 0);
+        assert!(recorder.get_stats_summary(hostile).is_err());
         let still_there: i64 = conn
             .lock()
             .unwrap()
@@ -1291,6 +1287,335 @@ mod window_tests {
 
         assert_eq!(recorder.get_stats_summary("all").unwrap().total_plays, 1);
         assert_eq!(recorder.get_stats_summary("30d").unwrap().total_plays, 0);
+    }
+}
+
+// ==========================================
+// Typed ranges (`3m`, `6m`, `year:<YYYY>`, `custom:<from>,<to>`), end to end
+// ==========================================
+
+mod range_tests {
+    use super::*;
+    use crate::services::stats::range::test_zone::{EUROPE, MIDNIGHT_GAP};
+    use crate::services::stats::range::StatsRange;
+    use chrono::{DateTime, Local, Months, NaiveDate, TimeZone};
+
+    fn raw(conn: &Arc<Mutex<Connection>>, id: &str, played_at: &str) {
+        conn.lock()
+            .unwrap()
+            .execute(
+                "INSERT INTO listen_events (id, source, title, artist, duration_ms, played_ms, played_at)
+                 VALUES (?1, 'spotify', ?1, 'Artist', 200000, 60000, ?2)",
+                rusqlite::params![id, played_at],
+            )
+            .unwrap();
+    }
+
+    /// Local wall-clock time in the machine's zone, written as RFC 3339 (so the test holds in any
+    /// zone, including one with a clock change on these days).
+    fn local_at(y: i32, m: u32, d: u32, h: u32, min: u32, s: u32) -> DateTime<Local> {
+        Local
+            .with_ymd_and_hms(y, m, d, h, min, s)
+            .earliest()
+            .unwrap()
+    }
+
+    fn ids(recorder: &StatsRecorderService, range: &str) -> Vec<String> {
+        let mut ids: Vec<String> = recorder
+            .get_top_tracks(range, 100)
+            .unwrap()
+            .into_iter()
+            .map(|t| t.title)
+            .collect();
+        ids.sort();
+        ids
+    }
+
+    #[test]
+    fn a_custom_range_covers_both_boundary_days_entirely() {
+        let (conn, recorder) = setup_test_db();
+        raw(
+            &conn,
+            "before",
+            &local_at(2026, 3, 9, 23, 59, 59).to_rfc3339(),
+        );
+        raw(
+            &conn,
+            "first-midnight",
+            &local_at(2026, 3, 10, 0, 0, 0).to_rfc3339(),
+        );
+        raw(
+            &conn,
+            "middle",
+            &local_at(2026, 3, 11, 12, 0, 0).to_rfc3339(),
+        );
+        raw(
+            &conn,
+            "last-evening",
+            &local_at(2026, 3, 12, 23, 59, 59).to_rfc3339(),
+        );
+        raw(&conn, "after", &local_at(2026, 3, 13, 0, 0, 0).to_rfc3339());
+
+        // Rows are 60 s long: `total_plays` only counts 30 s and more, which they are.
+        let range = "custom:2026-03-10,2026-03-12";
+        assert_eq!(recorder.get_stats_summary(range).unwrap().total_plays, 3);
+        assert_eq!(
+            ids(&recorder, range),
+            ["first-midnight", "last-evening", "middle"]
+        );
+        // The same events seen through the other five commands.
+        assert_eq!(recorder.get_top_artists(range, 10).unwrap()[0].plays, 3);
+        assert!(recorder.get_harmonic_stats(range).is_ok());
+        assert!(recorder.get_bpm_stats(range).is_ok());
+        assert!(recorder.get_listening_heatmap(range).is_ok());
+    }
+
+    #[test]
+    fn a_single_day_custom_range_is_one_local_day() {
+        let (conn, recorder) = setup_test_db();
+        raw(
+            &conn,
+            "day-before",
+            &local_at(2026, 3, 9, 23, 59, 59).to_rfc3339(),
+        );
+        raw(&conn, "start", &local_at(2026, 3, 10, 0, 0, 0).to_rfc3339());
+        raw(
+            &conn,
+            "end",
+            &local_at(2026, 3, 10, 23, 59, 59).to_rfc3339(),
+        );
+        raw(
+            &conn,
+            "day-after",
+            &local_at(2026, 3, 11, 0, 0, 0).to_rfc3339(),
+        );
+        assert_eq!(
+            ids(&recorder, "custom:2026-03-10,2026-03-10"),
+            ["end", "start"]
+        );
+    }
+
+    #[test]
+    fn a_calendar_year_excludes_the_neighbouring_years() {
+        let (conn, recorder) = setup_test_db();
+        raw(
+            &conn,
+            "dec-2027",
+            &local_at(2027, 12, 31, 23, 59, 59).to_rfc3339(),
+        );
+        raw(
+            &conn,
+            "new-year-2028",
+            &local_at(2028, 1, 1, 0, 0, 0).to_rfc3339(),
+        );
+        raw(
+            &conn,
+            "leap-day",
+            &local_at(2028, 2, 29, 12, 0, 0).to_rfc3339(),
+        );
+        raw(
+            &conn,
+            "last-second-2028",
+            &local_at(2028, 12, 31, 23, 59, 59).to_rfc3339(),
+        );
+        raw(
+            &conn,
+            "new-year-2029",
+            &local_at(2029, 1, 1, 0, 0, 0).to_rfc3339(),
+        );
+
+        assert_eq!(
+            ids(&recorder, "year:2028"),
+            ["last-second-2028", "leap-day", "new-year-2028"]
+        );
+        assert_eq!(ids(&recorder, "year:2027"), ["dec-2027"]);
+        assert_eq!(
+            recorder.get_stats_summary("year:2029").unwrap().total_plays,
+            1
+        );
+        assert_eq!(
+            recorder.get_stats_summary("year:2030").unwrap().total_plays,
+            0
+        );
+    }
+
+    #[test]
+    fn rolling_months_keep_recent_listens_and_drop_older_ones() {
+        let (conn, recorder) = setup_test_db();
+        let now = Local::now();
+        let ago = |months: u32, days: i64| {
+            (now.checked_sub_months(Months::new(months)).unwrap() + chrono::Duration::days(days))
+                .to_rfc3339()
+        };
+        raw(&conn, "today", &now.to_rfc3339());
+        raw(&conn, "inside-3m", &ago(3, 2));
+        raw(&conn, "outside-3m", &ago(3, -2));
+        raw(&conn, "inside-6m", &ago(6, 2));
+        raw(&conn, "outside-6m", &ago(6, -2));
+
+        assert_eq!(ids(&recorder, "3m"), ["inside-3m", "today"]);
+        assert_eq!(
+            ids(&recorder, "6m"),
+            ["inside-3m", "inside-6m", "outside-3m", "today"]
+        );
+        assert_eq!(recorder.get_stats_summary("all").unwrap().total_plays, 5);
+    }
+
+    #[test]
+    fn unknown_ranges_are_errors_in_all_six_commands() {
+        let (conn, recorder) = setup_test_db();
+        raw(&conn, "a", "2026-09-21T10:00:00Z");
+        for bad in [
+            "",
+            "forever",
+            "7days",
+            "year:26",
+            "custom:2026-03-12,2026-03-10",
+            "custom:2026-03-10",
+            "year:2026'; DROP TABLE listen_events; --",
+        ] {
+            assert!(recorder.get_stats_summary(bad).is_err(), "summary {bad}");
+            assert!(recorder.get_top_tracks(bad, 5).is_err(), "tracks {bad}");
+            assert!(recorder.get_top_artists(bad, 5).is_err(), "artists {bad}");
+            assert!(recorder.get_harmonic_stats(bad).is_err(), "harmonic {bad}");
+            assert!(recorder.get_bpm_stats(bad).is_err(), "bpm {bad}");
+            assert!(
+                recorder.get_listening_heatmap(bad).is_err(),
+                "heatmap {bad}"
+            );
+        }
+        let still_there: i64 = conn
+            .lock()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM listen_events", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(still_there, 1, "the table is intact");
+        let message = recorder
+            .get_stats_summary("forever")
+            .unwrap_err()
+            .to_string();
+        assert!(message.contains("invalid statistics range"), "{message}");
+    }
+
+    /// Runs the condition a range produces against the table and returns the matching ids.
+    fn matching<Tz: TimeZone>(
+        conn: &Arc<Mutex<Connection>>,
+        range: &str,
+        now: &DateTime<Tz>,
+    ) -> Vec<String> {
+        let condition = range
+            .parse::<StatsRange>()
+            .unwrap()
+            .sql_condition_at("played_at", now)
+            .unwrap()
+            .unwrap();
+        let conn = conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare(&format!(
+                "SELECT id FROM listen_events WHERE {condition} ORDER BY id"
+            ))
+            .unwrap();
+        let rows = stmt.query_map([], |r| r.get::<_, String>(0)).unwrap();
+        rows.map(|r| r.unwrap()).collect()
+    }
+
+    #[test]
+    fn a_clock_change_day_selects_exactly_its_own_events() {
+        let (conn, _) = setup_test_db();
+        let now = EUROPE
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2026, 6, 1)
+                    .unwrap()
+                    .and_hms_opt(12, 0, 0)
+                    .unwrap(),
+            )
+            .unwrap();
+        // Spring forward 2026-03-29: the day is [28th 23:00Z, 29th 22:00Z), 23 hours.
+        raw(&conn, "a-before", "2026-03-28T22:59:59Z");
+        raw(&conn, "b-start", "2026-03-28T23:00:00Z");
+        raw(&conn, "c-offset-form", "2026-03-29T23:30:00+02:00"); // 21:30Z
+        raw(&conn, "d-last-second", "2026-03-29T21:59:59Z");
+        raw(&conn, "e-end", "2026-03-29T22:00:00Z");
+        raw(&conn, "f-offset-after", "2026-03-30T00:30:00+02:00"); // 22:30Z
+        assert_eq!(
+            matching(&conn, "custom:2026-03-29,2026-03-29", &now),
+            ["b-start", "c-offset-form", "d-last-second"]
+        );
+    }
+
+    #[test]
+    fn a_fall_back_day_and_a_missing_midnight_select_the_right_events() {
+        let (conn, _) = setup_test_db();
+        let now = EUROPE
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2026, 11, 15)
+                    .unwrap()
+                    .and_hms_opt(12, 0, 0)
+                    .unwrap(),
+            )
+            .unwrap();
+        // Fall back 2026-10-25: the day is [24th 22:00Z, 25th 23:00Z), 25 hours.
+        raw(&conn, "a-before", "2026-10-24T21:59:59Z");
+        raw(&conn, "b-start", "2026-10-24T22:00:00Z");
+        raw(&conn, "c-repeated-hour", "2026-10-25T01:30:00Z");
+        raw(&conn, "d-last-second", "2026-10-25T22:59:59Z");
+        raw(&conn, "e-end", "2026-10-25T23:00:00Z");
+        assert_eq!(
+            matching(&conn, "custom:2026-10-25,2026-10-25", &now),
+            ["b-start", "c-repeated-hour", "d-last-second"]
+        );
+
+        // A zone where local midnight of 2026-03-29 does not exist: the day starts at 03:00Z.
+        let (conn, _) = setup_test_db();
+        let now = MIDNIGHT_GAP
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2026, 6, 1)
+                    .unwrap()
+                    .and_hms_opt(12, 0, 0)
+                    .unwrap(),
+            )
+            .unwrap();
+        raw(&conn, "a-before", "2026-03-29T02:59:59Z");
+        raw(&conn, "b-start", "2026-03-29T03:00:00Z");
+        raw(&conn, "c-end", "2026-03-30T02:00:00Z");
+        assert_eq!(
+            matching(&conn, "custom:2026-03-29,2026-03-29", &now),
+            ["b-start"]
+        );
+    }
+
+    #[test]
+    fn rolling_months_cut_at_the_local_wall_clock_across_a_clock_change() {
+        let (conn, _) = setup_test_db();
+        let now = EUROPE
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2026, 6, 15)
+                    .unwrap()
+                    .and_hms_opt(12, 0, 0)
+                    .unwrap(),
+            )
+            .unwrap();
+        // 3 months before 15 June 12:00 local is 15 March 12:00 local (UTC+1) = 11:00Z.
+        raw(&conn, "a-before", "2026-03-15T10:59:59Z");
+        raw(&conn, "b-start", "2026-03-15T11:00:00Z");
+        raw(&conn, "c-recent", "2026-06-01T08:00:00Z");
+        assert_eq!(matching(&conn, "3m", &now), ["b-start", "c-recent"]);
+    }
+
+    #[test]
+    fn rolling_months_use_29_february_in_a_leap_year() {
+        let (conn, _) = setup_test_db();
+        let now = EUROPE
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2028, 5, 31)
+                    .unwrap()
+                    .and_hms_opt(12, 0, 0)
+                    .unwrap(),
+            )
+            .unwrap();
+        raw(&conn, "a-before", "2028-02-29T10:59:59Z");
+        raw(&conn, "b-start", "2028-02-29T11:00:00Z");
+        assert_eq!(matching(&conn, "3m", &now), ["b-start"]);
     }
 }
 
@@ -1729,7 +2054,15 @@ mod timeline_tests {
         session(&conn, "s1");
         library(&conn, "t1", "A", "One", "8A", 120.0, 4);
         library(&conn, "t2", "A", "Two", "8A", 120.0, 4 + ENERGY_JUMP - 1); // below the threshold
-        library(&conn, "t3", "A", "Three", "8A", 120.0, 4 + ENERGY_JUMP - 1 + ENERGY_JUMP); // crosses it
+        library(
+            &conn,
+            "t3",
+            "A",
+            "Three",
+            "8A",
+            120.0,
+            4 + ENERGY_JUMP - 1 + ENERGY_JUMP,
+        ); // crosses it
         played(
             &conn,
             "e1",

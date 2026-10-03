@@ -87,7 +87,7 @@ impl PeriodBounds {
 
 /// Local midnight of `day` as a UTC instant. A day whose midnight does not exist (a clock change
 /// at midnight) starts at the first hour that does.
-fn local_midnight_utc<Tz: TimeZone>(tz: &Tz, day: NaiveDate) -> NaiveDateTime {
+pub(super) fn local_midnight_utc<Tz: TimeZone>(tz: &Tz, day: NaiveDate) -> NaiveDateTime {
     for hour in 0..4 {
         let local = day.and_hms_opt(hour, 0, 0).expect("valid hour");
         if let Some(instant) = tz.from_local_datetime(&local).earliest() {
@@ -183,7 +183,7 @@ impl StatsRecorderService {
     }
 
     fn count_unique_tracks(&self, window: &str) -> Result<usize> {
-        let condition = Self::time_range_condition(window, "played_at").unwrap_or_default();
+        let condition = Self::time_range_condition(window, "played_at")?.unwrap_or_default();
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
         let count: i64 = conn
             .query_row(
@@ -225,7 +225,7 @@ impl StatsRecorderService {
 
     /// The local calendar day with the most listening minutes.
     fn busiest_day(&self, window: &str) -> Result<Option<RecapDay>> {
-        let condition = Self::time_range_condition(window, "played_at").unwrap_or_default();
+        let condition = Self::time_range_condition(window, "played_at")?.unwrap_or_default();
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
         let mut stmt = conn
             .prepare(&format!(

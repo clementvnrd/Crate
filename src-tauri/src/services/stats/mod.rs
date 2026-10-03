@@ -1,6 +1,7 @@
 pub mod history_export;
 pub mod mik;
 pub mod recap;
+pub mod range;
 pub mod recorder;
 pub mod rekordbox;
 pub mod session_timeline;
