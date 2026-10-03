@@ -14,6 +14,12 @@ export interface StatsSummary {
 	month_minutes: number
 	total_plays: number
 	source_breakdown: Record<string, number>
+	/** Distinct artists with at least one stream in the range (not capped by the top-artists limit). */
+	unique_artists: number
+	/** Rekordbox sets that started in the range. */
+	dj_sessions: number
+	/** Total played time of those sets, in milliseconds. */
+	dj_sessions_played_ms: number
 }
 
 /** Top listened track aggregation item */

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { StatsSummary, TopArtistItem, RekordboxSession } from '$shared/types'
+	import type { StatsSummary } from '$shared/types'
 	import Icon from '$lib/components/common/Icon.svelte'
 	import { language } from '$lib/stores'
 	import { formatNumber } from '$shared/utils/format'
@@ -7,12 +7,10 @@
 
 	type Props = {
 		summary: StatsSummary | null
-		topArtists: TopArtistItem[]
-		rekordboxSessions: RekordboxSession[]
 		isLoading: boolean
 	}
 
-	let { summary, topArtists, rekordboxSessions, isLoading }: Props = $props()
+	let { summary, isLoading }: Props = $props()
 
 	function formatTotalTime(minutes: number, locale: string): { primary: string; secondary: string } {
 		if (!minutes || minutes <= 0) {
@@ -42,9 +40,10 @@
 
 	let timeDisplay = $derived(formatTotalTime(summary?.total_minutes ?? 0, $language))
 	let totalPlays = $derived(formatNumber(summary?.total_plays ?? 0, $language))
-	let uniqueArtistsCount = $derived(formatNumber(topArtists.length, $language))
-	let totalRekordboxMs = $derived(rekordboxSessions.reduce((acc, s) => acc + (s.total_played_ms || 0), 0))
-	let rekordboxHours = $derived(Math.round(totalRekordboxMs / 3_600_000))
+	// Both come from the summary, so they follow the selected period like the two cards above.
+	let uniqueArtistsCount = $derived(formatNumber(summary?.unique_artists ?? 0, $language))
+	let djSessionsCount = $derived(formatNumber(summary?.dj_sessions ?? 0, $language))
+	let rekordboxHours = $derived(Math.round((summary?.dj_sessions_played_ms ?? 0) / 3_600_000))
 </script>
 
 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -153,7 +152,7 @@
 					{#if isLoading && !summary}
 						<span class="inline-block h-7 w-16 animate-pulse rounded bg-surface-3 motion-reduce:animate-none"></span>
 					{:else}
-						{formatNumber(rekordboxSessions.length, $language)}
+						{djSessionsCount}
 					{/if}
 				</div>
 				<p class="text-[11px] text-text-secondary">
