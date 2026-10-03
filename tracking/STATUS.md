@@ -5,7 +5,7 @@ This file is **the** source of truth for tracking: every defect in the [register
 Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification or remaining work. The progress table is recomputed with `yarn status` (from the repository root).
 
 <!-- progress:start -->
-**Overall progress: 104 / 106 defects fixed (98%)**
+**Overall progress: 105 / 107 defects fixed (98%)**
 
 | Step | Fixed | Progress |
 | --- | --- | --- |
@@ -15,7 +15,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 4 — Safe Upgrader | 9 / 9 | ██████████ |
 | Step 5 — Clean Mixed In Key | 8 / 8 | ██████████ |
 | Step 6 — Accurate statistics | 10 / 10 | ██████████ |
-| Step 7 — Exact DJ features | 18 / 18 | ██████████ |
+| Step 7 — Exact DJ features | 19 / 19 | ██████████ |
 | Step 8 — Robust frontend | 17 / 17 | ██████████ |
 | Step 9 — Hygiene and tooling | 13 / 14 | █████████░ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
@@ -132,6 +132,7 @@ _Exit criterion: Key 3 = cue 3, search for "You'll", valid XML._
 - [x] **B33** — Blocking I/O, subprocesses (`beatportdl`, `lsof`, `osascript`) and rusqlite under `std::sync::Mutex`… — _every heavy command and poller now runs on the blocking pool (`run_blocking`); the lock no longer spans file reads in `resync_mixed_in_key_tracks` and the XML export; the Mixed In Key startup, watcher and context-menu sync release the lock every 50 ms instead of holding it for the whole pass (CRA-142); the cloud-sync manifest is built once in SQL; ghost-track pruning and the bulk playlist and tag writes are transactions; the Keychain, diagnostics, `get_tracks`, Beatport post-download and Mixed In Key probing work runs on the blocking pool; also fixed: audio replies paired with the wrong request, unbounded analysis. Left: a shorter library lock for `get_tracks`, which needs a separate read connection (CRA-143)_
 - [x] **B34** — Services instantiated twice: the state managed by Tauri is not the one used by the background tasks
 - [x] **B35** — `get_duplicate_count` runs a full duplicate scan on every `duplicates-updated` event
+- [x] **B36** — Playback silently stops at the end of a library track (the end callback only fired from the client interpolation, never when the backend sync saw the engine finished) — _frontend only: the sync tick now treats `is_playing: false` at the duration as the end of the track, once per track end; found after the audit (CRA-148)_
 - [x] **F1** — Keys 1 to 8 captured everywhere, with no view or modifier condition
 - [x] **F2** — Space in the Player view starts a recent track instead of pausing the preview; duplicated logic
 - [x] **F3** — Space or Enter on a focused row triggers playback and the global shortcut
@@ -275,3 +276,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-01 | Energy-jump detection added to the Rekordbox set timeline (CRA-127), closing the gap left by the energy column: same threshold as the set planner, now shared from one place | — |
 | 2026-10-01 | "Set" mode screen: select from the Library, reorder, harmonic/energy check, export to Rekordbox XML (CRA-132, partial: USB export and bridge-track display left for a follow-up) | — |
 | 2026-10-02 | CRA-96 follow-up: black text on accent badges and the check mark, lighter accent hover for five accents, the last listed palette classes on tokens (D3, partial) | 11 |
+| 2026-10-03 | Playback no longer stops at the end of a library track: the backend sync tick now signals the end of the track, once per track end, like the client interpolation (B36, CRA-148) | 7 |
