@@ -4,7 +4,20 @@
 
 export type ListenSource = 'spotify' | 'crate_local' | 'crate_beatport' | 'rekordbox' | 'mixed_in_key'
 
-export type TimeRange = 'today' | '7d' | '30d' | 'year' | 'all'
+/** Named periods: today, the last 7 / 30 days, rolling 3 / 6 months, the year to date, everything. */
+export type PresetTimeRange = 'today' | '7d' | '30d' | '3m' | '6m' | 'year' | 'all'
+
+/** A whole local calendar year, `year:2025`. Build it with `yearRange()` (shared/utils/statsRange). */
+export type YearTimeRange = `year:${number}`
+
+/** Local days, both included, `custom:2026-03-01,2026-03-31`. Build it with `customRange()`. */
+export type CustomTimeRange = `custom:${string},${string}`
+
+/**
+ * The period of a Pulse query. The backend (`StatsRange` in `src-tauri/src/services/stats/range.rs`) is the
+ * single place that understands it, and rejects anything outside this grammar with an error string.
+ */
+export type TimeRange = PresetTimeRange | YearTimeRange | CustomTimeRange
 
 /** High-level listening statistics summary */
 export interface StatsSummary {
@@ -14,6 +27,12 @@ export interface StatsSummary {
 	month_minutes: number
 	total_plays: number
 	source_breakdown: Record<string, number>
+	/** Distinct artists with at least one stream in the range (not capped by the top-artists limit). */
+	unique_artists: number
+	/** Rekordbox sets that started in the range. */
+	dj_sessions: number
+	/** Total played time of those sets, in milliseconds. */
+	dj_sessions_played_ms: number
 }
 
 /** Top listened track aggregation item */

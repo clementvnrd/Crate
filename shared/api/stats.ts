@@ -23,30 +23,31 @@ import type {
 // Stats Recorder API
 // ==========================================
 
-export async function getStatsSummary(timeRange: TimeRange | string = '7d'): Promise<StatsSummary> {
+// `timeRange` follows the grammar of `TimeRange` (shared/types/stats.ts). The backend rejects an
+// unknown or malformed range with an error string instead of answering for all time; build the
+// calendar-year and custom forms with `yearRange()` / `customRange()` (shared/utils/statsRange).
+
+export async function getStatsSummary(timeRange: TimeRange = '7d'): Promise<StatsSummary> {
 	return invoke<StatsSummary>('get_stats_summary', { timeRange })
 }
 
-export async function getTopTracks(timeRange: TimeRange | string = '7d', limit: number = 20): Promise<TopTrackItem[]> {
+export async function getTopTracks(timeRange: TimeRange = '7d', limit: number = 20): Promise<TopTrackItem[]> {
 	return invoke<TopTrackItem[]>('get_top_tracks', { timeRange, limit })
 }
 
-export async function getTopArtists(
-	timeRange: TimeRange | string = '7d',
-	limit: number = 20
-): Promise<TopArtistItem[]> {
+export async function getTopArtists(timeRange: TimeRange = '7d', limit: number = 20): Promise<TopArtistItem[]> {
 	return invoke<TopArtistItem[]>('get_top_artists', { timeRange, limit })
 }
 
-export async function getHarmonicStats(timeRange: TimeRange | string = '7d'): Promise<HarmonicStatsItem[]> {
+export async function getHarmonicStats(timeRange: TimeRange = '7d'): Promise<HarmonicStatsItem[]> {
 	return invoke<HarmonicStatsItem[]>('get_harmonic_stats', { timeRange })
 }
 
-export async function getBpmStats(timeRange: TimeRange | string = '7d'): Promise<BpmBucketItem[]> {
+export async function getBpmStats(timeRange: TimeRange = '7d'): Promise<BpmBucketItem[]> {
 	return invoke<BpmBucketItem[]>('get_bpm_stats', { timeRange })
 }
 
-export async function getListeningHeatmap(timeRange: TimeRange | string = '7d'): Promise<HeatmapCell[]> {
+export async function getListeningHeatmap(timeRange: TimeRange = '7d'): Promise<HeatmapCell[]> {
 	return invoke<HeatmapCell[]>('get_listening_heatmap', { timeRange })
 }
 

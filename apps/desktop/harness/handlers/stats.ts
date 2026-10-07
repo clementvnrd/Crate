@@ -1,4 +1,5 @@
 import type { RecapPeriod } from '$shared/types'
+import { isTimeRange } from '$shared/utils/statsRange'
 import type { HandlerMap } from '../types'
 import type { HarnessState } from '../state'
 import {
@@ -15,8 +16,10 @@ import {
 	topTracks,
 } from '../fixtures/stats'
 
+/** Like the backend: a range outside the grammar of `TimeRange` is rejected with a string, never read as all time. */
 function range(value: unknown): string {
-	return typeof value === 'string' ? value : '7d'
+	if (isTimeRange(value)) return value
+	throw `Invalid operation: invalid statistics range ${JSON.stringify(String(value).slice(0, 60))}`
 }
 
 function limit(value: unknown, fallback: number): number {

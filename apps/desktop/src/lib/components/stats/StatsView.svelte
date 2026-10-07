@@ -190,12 +190,7 @@
 	<!-- Main Content Body -->
 	<div class="mx-auto w-full max-w-7xl space-y-6 p-6">
 		<!-- 1. Hero KPI Cards -->
-		<StatsKpiCards
-			summary={$statsSummary}
-			topArtists={$topArtists}
-			rekordboxSessions={$rekordboxSessions}
-			isLoading={$isStatsLoading}
-		/>
+		<StatsKpiCards summary={$statsSummary} isLoading={$isStatsLoading} />
 
 		<!-- 2. Multi-Sources Breakdown Bar -->
 		<StatsSourceBar summary={$statsSummary} />

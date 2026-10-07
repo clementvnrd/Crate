@@ -66,85 +66,122 @@ const initialState: StatsState = {
 function createStatsStore() {
 	const { subscribe, set, update } = writable<StatsState>(initialState)
 
+	// Every load takes the next number; a response only lands if its number is still the latest, so a
+	// slow answer for an earlier period can never overwrite the one the owner is looking at now.
+	let loadSeq = 0
+	let isSyncingSpotify = false
+
+	/**
+	 * Loads every statistic for the selected period from the local database. Makes no network call:
+	 * this is what a period change runs.
+	 */
+	async function reload(): Promise<void> {
+		const token = ++loadSeq
+		const currentRange = get({ subscribe }).selectedRange
+		update((s) => ({ ...s, isLoading: true, error: null }))
+
+		const [
+			summaryRes,
+			topTracksRes,
+			topArtistsRes,
+			harmonicRes,
+			bpmRes,
+			heatmapRes,
+			recentRes,
+			spotifyAuthRes,
+			spotifyNowRes,
+			rekordboxDetectedRes,
+			rekordboxSessionsRes,
+			mikDetectedRes,
+		] = await Promise.allSettled([
+			statsApi.getStatsSummary(currentRange),
+			statsApi.getTopTracks(currentRange, 50),
+			statsApi.getTopArtists(currentRange, 50),
+			statsApi.getHarmonicStats(currentRange),
+			statsApi.getBpmStats(currentRange),
+			statsApi.getListeningHeatmap(currentRange),
+			statsApi.getRecentListens(50),
+			statsApi.getSpotifyAuthState(),
+			statsApi.getSpotifyNowPlaying(),
+			statsApi.getRekordboxDetectStatus(),
+			statsApi.getRekordboxSessions(),
+			statsApi.getMikDetectStatus(),
+		])
+
+		// A newer load (or a reset) started while this one was waiting: drop this answer, and leave
+		// the spinner to the load that is still running.
+		if (token !== loadSeq) return
+
+		// The period-scoped answers describe the period just asked for. When one fails, keeping the
+		// previous period's numbers under the new label would be wrong, so they are emptied instead
+		// and the failure is reported.
+		const scoped = [summaryRes, topTracksRes, topArtistsRes, harmonicRes, bpmRes, heatmapRes]
+		const failed = scoped.find((r): r is PromiseRejectedResult => r.status === 'rejected')
+		const errorMsg = failed ? toErrorMessage(failed.reason, get(translate)('stats.toast.loadFailed')) : null
+
+		update((s) => ({
+			...s,
+			isLoading: false,
+			error: errorMsg,
+			summary: summaryRes.status === 'fulfilled' ? summaryRes.value : null,
+			topTracks: topTracksRes.status === 'fulfilled' ? topTracksRes.value : [],
+			topArtists: topArtistsRes.status === 'fulfilled' ? topArtistsRes.value : [],
+			harmonicStats: harmonicRes.status === 'fulfilled' ? harmonicRes.value : [],
+			bpmStats: bpmRes.status === 'fulfilled' ? bpmRes.value : [],
+			heatmap: heatmapRes.status === 'fulfilled' ? heatmapRes.value : [],
+			// Not tied to the period: a failure keeps what was already shown.
+			recentListens: recentRes.status === 'fulfilled' ? recentRes.value : s.recentListens,
+			spotifyAuth: spotifyAuthRes.status === 'fulfilled' ? spotifyAuthRes.value : s.spotifyAuth,
+			spotifyNowPlaying: spotifyNowRes.status === 'fulfilled' ? spotifyNowRes.value : s.spotifyNowPlaying,
+			rekordboxDetected: rekordboxDetectedRes.status === 'fulfilled' ? rekordboxDetectedRes.value : s.rekordboxDetected,
+			rekordboxSessions: rekordboxSessionsRes.status === 'fulfilled' ? rekordboxSessionsRes.value : s.rekordboxSessions,
+			mikDetected: mikDetectedRes.status === 'fulfilled' ? mikDetectedRes.value : s.mikDetected,
+		}))
+		if (errorMsg) toastStore.error(errorMsg)
+	}
+
+	/**
+	 * Pulls the recently played tracks from Spotify (a network call) when it is connected. Resolves to
+	 * how many listens were added. Never throws: a Spotify hiccup must not break the local numbers.
+	 */
+	async function syncSpotify(): Promise<number> {
+		if (isSyncingSpotify || !get({ subscribe }).spotifyAuth?.is_connected) return 0
+		isSyncingSpotify = true
+		try {
+			return await statsApi.syncSpotifyRecentlyPlayed()
+		} catch (e) {
+			console.debug('Spotify recently played sync error:', e)
+			return 0
+		} finally {
+			isSyncingSpotify = false
+		}
+	}
+
 	return {
 		subscribe,
 
 		/**
-		 * Set active time range and refresh all analytics
+		 * Set active time range and reload the analytics. A pure period change reads the local
+		 * database only: it makes no Spotify call (that belongs to `refreshAll`).
 		 */
 		async setRange(range: TimeRange) {
 			update((s) => ({ ...s, selectedRange: range }))
-			await this.refreshAll()
+			await reload()
 		},
 
 		/**
-		 * Refresh all statistics and data from the backend
+		 * Reload the statistics for the current period without any network call. Used after a local
+		 * change (import, set sync, history reset) that only needs the numbers redrawn.
+		 */
+		reload,
+
+		/**
+		 * Full refresh (first load, refresh button, new Spotify connection): load the local numbers
+		 * at once, then pull Spotify's recently played tracks and reload if that added any listens.
 		 */
 		async refreshAll() {
-			const currentRange = get(statsStore).selectedRange
-			update((s) => ({ ...s, isLoading: true, error: null }))
-
-			// Sync any offline/recent Spotify plays if connected
-			if (get(statsStore).spotifyAuth?.is_connected) {
-				try {
-					await statsApi.syncSpotifyRecentlyPlayed()
-				} catch (e) {
-					console.debug('Spotify recently played sync error:', e)
-				}
-			}
-
-			try {
-				const [
-					summaryRes,
-					topTracksRes,
-					topArtistsRes,
-					harmonicRes,
-					bpmRes,
-					heatmapRes,
-					recentRes,
-					spotifyAuthRes,
-					spotifyNowRes,
-					rekordboxDetectedRes,
-					rekordboxSessionsRes,
-					mikDetectedRes,
-				] = await Promise.allSettled([
-					statsApi.getStatsSummary(currentRange),
-					statsApi.getTopTracks(currentRange, 50),
-					statsApi.getTopArtists(currentRange, 50),
-					statsApi.getHarmonicStats(currentRange),
-					statsApi.getBpmStats(currentRange),
-					statsApi.getListeningHeatmap(currentRange),
-					statsApi.getRecentListens(50),
-					statsApi.getSpotifyAuthState(),
-					statsApi.getSpotifyNowPlaying(),
-					statsApi.getRekordboxDetectStatus(),
-					statsApi.getRekordboxSessions(),
-					statsApi.getMikDetectStatus(),
-				])
-
-				update((s) => ({
-					...s,
-					isLoading: false,
-					summary: summaryRes.status === 'fulfilled' ? summaryRes.value : s.summary,
-					topTracks: topTracksRes.status === 'fulfilled' ? topTracksRes.value : s.topTracks,
-					topArtists: topArtistsRes.status === 'fulfilled' ? topArtistsRes.value : s.topArtists,
-					harmonicStats: harmonicRes.status === 'fulfilled' ? harmonicRes.value : s.harmonicStats,
-					bpmStats: bpmRes.status === 'fulfilled' ? bpmRes.value : s.bpmStats,
-					heatmap: heatmapRes.status === 'fulfilled' ? heatmapRes.value : s.heatmap,
-					recentListens: recentRes.status === 'fulfilled' ? recentRes.value : s.recentListens,
-					spotifyAuth: spotifyAuthRes.status === 'fulfilled' ? spotifyAuthRes.value : s.spotifyAuth,
-					spotifyNowPlaying: spotifyNowRes.status === 'fulfilled' ? spotifyNowRes.value : s.spotifyNowPlaying,
-					rekordboxDetected:
-						rekordboxDetectedRes.status === 'fulfilled' ? rekordboxDetectedRes.value : s.rekordboxDetected,
-					rekordboxSessions:
-						rekordboxSessionsRes.status === 'fulfilled' ? rekordboxSessionsRes.value : s.rekordboxSessions,
-					mikDetected: mikDetectedRes.status === 'fulfilled' ? mikDetectedRes.value : s.mikDetected,
-				}))
-			} catch (err) {
-				const errorMsg = toErrorMessage(err, get(translate)('stats.toast.loadFailed'))
-				update((s) => ({ ...s, isLoading: false, error: errorMsg }))
-				toastStore.error(errorMsg)
-			}
+			await reload()
+			if ((await syncSpotify()) > 0) await reload()
 		},
 
 		/**
@@ -234,7 +271,7 @@ function createStatsStore() {
 						},
 					})
 				)
-				await this.refreshAll()
+				await reload()
 				return result
 			} catch (err) {
 				const errorMsg = toErrorMessage(err, get(translate)('stats.toast.importFailed'))
@@ -253,7 +290,7 @@ function createStatsStore() {
 				const count = await statsApi.syncRekordboxHistory()
 				update((s) => ({ ...s, isSyncingRekordbox: false }))
 				toastStore.success(get(translate)('stats.toast.rekordboxSynced', { values: { count } }))
-				await this.refreshAll()
+				await reload()
 				return count
 			} catch (err) {
 				const errorMsg = toErrorMessage(err, get(translate)('stats.toast.rekordboxFailed'))
@@ -266,7 +303,8 @@ function createStatsStore() {
 		/**
 		 * Deletes every Spotify-sourced listen, after a safety backup of the whole history. The
 		 * caller is responsible for confirming with the owner first; this only runs the deletion
-		 * and reports the result.
+		 * and reports the result. The reload that follows makes no Spotify call, so the listens
+		 * just deleted are not pulled straight back by a "recently played" sync.
 		 */
 		async resetSpotifyHistory(): Promise<SpotifyResetResult | null> {
 			update((s) => ({ ...s, isResettingSpotifyHistory: true }))
@@ -276,7 +314,7 @@ function createStatsStore() {
 				toastStore.success(
 					get(translate)('stats.toast.spotifyHistoryReset', { values: { count: result.deleted_count } })
 				)
-				await this.refreshAll()
+				await reload()
 				return result
 			} catch (err) {
 				const errorMsg = toErrorMessage(err, get(translate)('stats.toast.spotifyHistoryResetFailed'))
@@ -287,9 +325,10 @@ function createStatsStore() {
 		},
 
 		/**
-		 * Reset store
+		 * Reset store. Answers still in flight are discarded.
 		 */
 		reset() {
+			loadSeq += 1
 			set(initialState)
 		},
 	}
