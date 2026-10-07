@@ -614,6 +614,68 @@
 	background: var(--text-tertiary);
 }
 
+/* =============================================================================
+   Scroll affordance (DESIGN.md "Scroll affordance")
+   A horizontal scroller that hides options at an edge fades its content out there,
+   under the arrow button that sits on that edge: fully transparent under the arrow,
+   then a short ramp. The mask only uses alpha, so it needs no colour and reads the
+   same in both themes. Its bar is hidden: the arrows and the fades replace it.
+   `SegmentedControl` (scrollable) keeps the same widths in its EDGE_INSET.
+   ============================================================================= */
+
+.scroll-affordance {
+	--scroll-arrow: 1.5rem;
+	--scroll-fade: 1.25rem;
+	scrollbar-width: none;
+}
+
+.scroll-affordance::-webkit-scrollbar {
+	display: none;
+}
+
+.scroll-affordance[data-fade-start] {
+	-webkit-mask-image: linear-gradient(
+		to right,
+		transparent var(--scroll-arrow),
+		black calc(var(--scroll-arrow) + var(--scroll-fade))
+	);
+	mask-image: linear-gradient(
+		to right,
+		transparent var(--scroll-arrow),
+		black calc(var(--scroll-arrow) + var(--scroll-fade))
+	);
+}
+
+.scroll-affordance[data-fade-end] {
+	-webkit-mask-image: linear-gradient(
+		to left,
+		transparent var(--scroll-arrow),
+		black calc(var(--scroll-arrow) + var(--scroll-fade))
+	);
+	mask-image: linear-gradient(
+		to left,
+		transparent var(--scroll-arrow),
+		black calc(var(--scroll-arrow) + var(--scroll-fade))
+	);
+}
+
+.scroll-affordance[data-fade-start][data-fade-end] {
+	-webkit-mask-image: linear-gradient(
+		to right,
+		transparent var(--scroll-arrow),
+		black calc(var(--scroll-arrow) + var(--scroll-fade)),
+		black calc(100% - var(--scroll-arrow) - var(--scroll-fade)),
+		transparent calc(100% - var(--scroll-arrow))
+	);
+	mask-image: linear-gradient(
+		to right,
+		transparent var(--scroll-arrow),
+		black calc(var(--scroll-arrow) + var(--scroll-fade)),
+		black calc(100% - var(--scroll-arrow) - var(--scroll-fade)),
+		transparent calc(100% - var(--scroll-arrow))
+	);
+}
+
 /* Hide native search input clear button (we use a custom one) */
 input[type='search']::-webkit-search-cancel-button {
 	-webkit-appearance: none;
