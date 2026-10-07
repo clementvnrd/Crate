@@ -3,12 +3,18 @@ import type { HandlerMap } from '../types'
 import type { HarnessState } from '../state'
 import { ALBUMS, RECENT_STANDALONE_TRACKS, albumTracksFor } from '../fixtures/player'
 
-/** The position of the fake audio engine: it advances in real time while playing. */
+/**
+ * The position of the fake audio engine: it advances in real time while playing. Like the real engine
+ * (`AudioPlayer::get_current_position_ms` and `is_playing` in `services/audio/mod.rs`), it reports
+ * `is_playing: false` with the position clamped at the duration once the track has run out.
+ */
 function currentPlayback(state: HarnessState): PlaybackState {
 	const { playback, playbackStartedAt } = state
 	if (!playback.is_playing || playbackStartedAt === null) return { ...playback }
 	const elapsed = (Date.now() - playbackStartedAt) * playback.speed
-	return { ...playback, position_ms: Math.min(playback.duration_ms, Math.round(playback.position_ms + elapsed)) }
+	const position = Math.min(playback.duration_ms, Math.round(playback.position_ms + elapsed))
+	const finished = playback.duration_ms > 0 && position >= playback.duration_ms
+	return { ...playback, position_ms: position, is_playing: !finished }
 }
 
 function freeze(state: HarnessState): PlaybackState {

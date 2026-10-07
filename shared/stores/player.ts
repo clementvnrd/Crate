@@ -23,6 +23,13 @@ import { toErrorMessage } from '../utils/errors'
 // State
 // =============================================================================
 
+/**
+ * How close to the duration a backend position must be for "the engine stopped playing" to mean "the
+ * track ended". When the engine's sink drains it reports the duration exactly; this only absorbs
+ * rounding. Kept small so a pause right before the end is still a pause.
+ */
+const END_OF_TRACK_TOLERANCE_MS = 250
+
 type PlaybackSource = 'library' | 'preview' | 'beatport' | 'standalone'
 
 interface PlayerState {
@@ -122,10 +129,30 @@ function createPlayerStore() {
 	// Bumped on every seek / start / stop: a backend position that was requested before such an
 	// action is stale and must not move the playhead back.
 	let positionEpoch = 0
+	// True once the end of the current track has been signalled. Several paths can see the same end
+	// (client interpolation, backend sync, the preview element's timeupdate and ended events): this
+	// flag makes sure the end callback fires exactly once per track end. It is re-armed whenever
+	// playback (re)starts or is moved by the user.
+	let trackEndHandled = false
+
+	/**
+	 * Signals the end of the current track, once. The callback is deferred so it never runs inside a
+	 * store update; `stop` ends whatever drives the position (interval or preview element) first.
+	 */
+	function signalTrackEnd(stop: () => void) {
+		if (trackEndHandled) return
+		trackEndHandled = true
+		setTimeout(() => {
+			stop()
+			onTrackEndCallback?.()
+		}, 0)
+	}
+
 	function startPositionTracking() {
 		stopPositionTracking()
 		positionEpoch++
 		trackingTicks = 0
+		trackEndHandled = false
 		positionInterval = setInterval(async () => {
 			trackingTicks++
 			// Every ~1 second, sync with true backend audio hardware position
@@ -141,14 +168,31 @@ function createPlayerStore() {
 							(expectedTrackId != null && backendState?.current_track_id !== expectedTrackId)
 						if (stale) return
 						if (backendState && typeof backendState.position_ms === 'number') {
-							update((prev) => ({
-								...prev,
-								playbackState: {
-									...prev.playbackState,
-									position_ms: backendState.position_ms,
-									is_playing: backendState.is_playing,
-								},
-							}))
+							update((prev) => {
+								// The engine finished the track between two interpolated ticks: it reports
+								// is_playing false with the position clamped at the duration. Treat that as the
+								// end of the track (the interpolation below would never see it, as it only runs
+								// while is_playing is true). A pause or a stop leaves the position well before
+								// the end, so it never matches.
+								const duration =
+									backendState.duration_ms > 0 ? backendState.duration_ms : prev.playbackState.duration_ms
+								const engineEnded =
+									prev.playbackState.is_playing &&
+									!backendState.is_playing &&
+									duration > 0 &&
+									backendState.position_ms >= duration - END_OF_TRACK_TOLERANCE_MS
+								if (engineEnded) {
+									signalTrackEnd(stopPositionTracking)
+								}
+								return {
+									...prev,
+									playbackState: {
+										...prev.playbackState,
+										position_ms: engineEnded ? duration : backendState.position_ms,
+										is_playing: backendState.is_playing,
+									},
+								}
+							})
 							persistPosition(backendState.position_ms)
 							return
 						}
@@ -166,11 +210,8 @@ function createPlayerStore() {
 						state.playbackState.duration_ms
 					)
 					if (newPosition >= state.playbackState.duration_ms && state.playbackState.duration_ms > 0) {
-						// Track ended — defer callback to avoid store update conflicts
-						setTimeout(() => {
-							stopPositionTracking()
-							onTrackEndCallback?.()
-						}, 0)
+						// Track ended — the callback is deferred to avoid store update conflicts
+						signalTrackEnd(stopPositionTracking)
 						return {
 							...state,
 							playbackState: {
@@ -272,10 +313,7 @@ function createPlayerStore() {
 				// the stream container is longer than the actual audio (e.g. proxied
 				// YouTube/Discogs ~2x duration). Stop playback and trigger track end.
 				if (duration_ms > 0 && positionMs >= duration_ms) {
-					setTimeout(() => {
-						stopPreviewInternal()
-						onTrackEndCallback?.()
-					}, 0)
+					signalTrackEnd(stopPreviewInternal)
 					return {
 						...state,
 						playbackState: { ...state.playbackState, position_ms: duration_ms, is_playing: false },
@@ -319,7 +357,8 @@ function createPlayerStore() {
 				...state,
 				playbackState: { ...state.playbackState, is_playing: false },
 			}))
-			onTrackEndCallback?.()
+			// 'ended' usually follows a timeupdate that already signalled the end: fire only once.
+			signalTrackEnd(() => {})
 		})
 		previewPlayer.setOnWaiting(() => {
 			const state = getState()
@@ -509,6 +548,7 @@ function createPlayerStore() {
 
 			// Clear stale preview events before the async gap
 			clearPreviewEvents()
+			trackEndHandled = false
 
 			// Never two sounds at once: stop the native engine (library or standalone)
 			await stopNativeEngine(state)
@@ -577,6 +617,7 @@ function createPlayerStore() {
 
 			// Clear stale preview events
 			clearPreviewEvents()
+			trackEndHandled = false
 
 			// Never two sounds at once: stop the native engine (library or standalone)
 			await stopNativeEngine(state)
@@ -660,6 +701,7 @@ function createPlayerStore() {
 		 */
 		async resume() {
 			const state = getState()
+			trackEndHandled = false
 
 			if (state.playbackSource === 'beatport') {
 				previewPlayer.setPlaybackRate(state.playbackState.speed)
@@ -833,6 +875,7 @@ function createPlayerStore() {
 		async seek(positionMs: number) {
 			const state = getState()
 			positionEpoch++
+			trackEndHandled = false
 
 			if (state.playbackSource === 'preview' || state.playbackSource === 'beatport') {
 				previewPlayer.seek(positionMs)

@@ -129,3 +129,79 @@ test.describe('Pulse history screens, empty and in French', () => {
 		expect(errors).toEqual([])
 	})
 })
+
+// The period bar scrolls instead of wrapping (CRA-173): arrows and edge fades show hidden presets, the selected one
+// is always in view. With today's five presets it fits at 1000 px, so the scrolling is checked in a narrowed box.
+test.describe('Pulse period bar', () => {
+	test.use({ viewport: { width: 1000, height: 600 } })
+
+	const periodBar = (page: Page) => page.getByRole('radiogroup', { name: /^(Period|Période)$/ })
+	const previousArrow = (page: Page) => page.getByRole('button', { name: 'Show previous options' })
+	const nextArrow = (page: Page) => page.getByRole('button', { name: 'Show more options' })
+
+	for (const lang of ['en', 'fr']) {
+		test(`stays on one line beside the title at 1000×600, without arrows (${lang})`, async ({ page }) => {
+			const errors = await openPulse(page, { lang })
+			const bar = await periodBar(page).boundingBox()
+			const title = await page.getByRole('heading', { name: 'Crate Pulse & Stats' }).boundingBox()
+			expect(bar && title).toBeTruthy()
+			// Same header row: the title's middle sits within the bar's height.
+			const titleMiddle = title!.y + title!.height / 2
+			expect(titleMiddle).toBeGreaterThan(bar!.y)
+			expect(titleMiddle).toBeLessThan(bar!.y + bar!.height)
+			// One line of presets: every option shares the same vertical middle (the selected one has a border).
+			const middles = await periodBar(page)
+				.getByRole('radio')
+				.evaluateAll((radios) =>
+					radios.map((radio) => {
+						const box = radio.getBoundingClientRect()
+						return Math.round(box.top + box.height / 2)
+					})
+				)
+			expect(new Set(middles).size).toBe(1)
+			await expect(page.getByRole('button', { name: /^(Show|Afficher)/ })).toHaveCount(0)
+			expect((await runAudit(page)).pageOverflowX).toBe(false)
+			expect(errors).toEqual([])
+		})
+	}
+
+	test('in a narrow box, arrows reveal the hidden presets and the selection stays in view', async ({ page }) => {
+		const errors = await openPulse(page)
+		const bar = periodBar(page)
+		await bar.evaluate((scroller) => {
+			;(scroller.parentElement as HTMLElement).style.width = '180px'
+		})
+		await page.getByRole('radio', { name: 'Today' }).click()
+		await expect(nextArrow(page)).toBeVisible()
+		await expect(previousArrow(page)).toHaveCount(0)
+		await expect(bar).toHaveAttribute('data-fade-end', 'true')
+
+		// End selects the last preset, which scrolls into view clear of the arrow; the arrows swap sides.
+		await page.getByRole('radio', { name: 'Today' }).press('End')
+		const last = page.getByRole('radio', { name: 'All time' })
+		await expect(last).toHaveAttribute('aria-checked', 'true')
+		await expect(last).toBeFocused()
+		await expect(previousArrow(page)).toBeVisible()
+		await expect(nextArrow(page)).toHaveCount(0)
+		await expect(bar).toHaveAttribute('data-fade-start', 'true')
+		const inside = async () => {
+			const [box, item] = [await bar.boundingBox(), await last.boundingBox()]
+			return item!.x >= box!.x && item!.x + item!.width <= box!.x + box!.width
+		}
+		expect(await inside()).toBe(true)
+
+		// The arrows only scroll: the selection does not change and returning to the start hides the left arrow.
+		for (let press = 0; press < 6 && (await previousArrow(page).count()) > 0; press++) {
+			await previousArrow(page).click()
+			await settle(page)
+		}
+		await expect(previousArrow(page)).toHaveCount(0)
+		await expect(nextArrow(page)).toBeVisible()
+		await expect(last).toHaveAttribute('aria-checked', 'true')
+
+		// The arrows stay out of the tab order and the page never scrolls sideways.
+		await expect(nextArrow(page)).toHaveAttribute('tabindex', '-1')
+		expect((await runAudit(page)).pageOverflowX).toBe(false)
+		expect(errors).toEqual([])
+	})
+})

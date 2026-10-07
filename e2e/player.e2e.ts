@@ -71,3 +71,30 @@ test.describe('Player — suggested next', () => {
 		await expect(page.getByRole('heading', { level: 1 })).toHaveText('Undertow')
 	})
 })
+
+// Continuous playback (CRA-148): when the library track ends, the next one starts by itself. The harness's fake
+// engine now ends like the real one — `is_playing: false` with the position clamped at the duration — which is
+// what the app's backend sync sees when the track runs out between two interpolated ticks.
+test.describe('Player — end of track', () => {
+	test.use({ viewport: { width: 1400, height: 900 } })
+
+	test('starts the next library track when the current one ends (shuffle off)', async ({ page }) => {
+		const errors = await openPlayer(page, { params: { playing: 'trk-01' } })
+		await expect(page.getByRole('heading', { level: 1 })).toHaveText('Afterglow Protocol')
+
+		const playTrackIds = async () => (await calls(page)).filter((c) => c.command === 'play_track').map((c) => c.args.id)
+
+		// Start the restored track, then jump to its very end with the waveform slider's End key.
+		await page.keyboard.press('Space')
+		await expect.poll(playTrackIds).toEqual(['trk-01'])
+		await page.getByRole('slider', { name: 'Playback position' }).first().focus()
+		await page.keyboard.press('End')
+
+		await expect.poll(async () => (await playTrackIds()).length, { timeout: 10_000 }).toBe(2)
+		expect((await playTrackIds())[1]).not.toBe('trk-01')
+		await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('Afterglow Protocol')
+
+		expect(errors).toEqual([])
+		expect(await unmockedCommands(page)).toEqual([])
+	})
+})

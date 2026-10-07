@@ -17,6 +17,8 @@
 		fill?: boolean
 		/** The icon turns (the common `Spinner`) while an action runs; `icon` must be `refresh`, `refresh-cw` or `loader`. */
 		busy?: boolean
+		/** `-1` keeps a pointer-only helper out of the tab order (the scroll arrows of a scrollable `SegmentedControl`). */
+		tabindex?: number
 		onclick?: (e: MouseEvent) => void
 	}
 
@@ -32,6 +34,7 @@
 		iconClass = '',
 		fill = false,
 		busy = false,
+		tabindex,
 		onclick,
 	}: Props = $props()
 
@@ -47,6 +50,7 @@
 	title={title || undefined}
 	aria-label={ariaLabel || undefined}
 	aria-pressed={pressed}
+	{tabindex}
 	{disabled}
 	class="inline-flex items-center justify-center rounded-md transition-colors focus:ring-2 focus:ring-brand-primary focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 {active
 		? 'bg-brand-muted text-brand-primary hover:cursor-pointer'

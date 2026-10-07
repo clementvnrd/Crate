@@ -53,6 +53,9 @@ export function statsSummary(range: TimeRange | string): StatsSummary {
 			crate_beatport: Math.round(64 * factor),
 			mixed_in_key: Math.round(35 * factor),
 		},
+		unique_artists: Math.max(1, Math.round(24 * Math.sqrt(factor))),
+		dj_sessions: Math.max(1, Math.round(3 * factor)),
+		dj_sessions_played_ms: Math.round(9_840_000 * factor),
 	}
 }
 

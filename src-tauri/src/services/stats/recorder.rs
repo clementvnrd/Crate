@@ -273,7 +273,30 @@ impl StatsRecorderService {
             source_breakdown.insert(src, mins);
         }
 
+        // Distinct artists with at least one stream in the range (the same credit-splitting as the
+        // top-artists list, but never capped by that list's limit).
+        let unique_artists = Self::artist_totals(&conn, time_range)?.len();
+
+        // Rekordbox sets that started in the range. Same range seam as the listens, applied to
+        // the set's start, so a period change moves this number too.
+        let session_where = match Self::time_range_condition(time_range, "started_at")? {
+            Some(cond) => format!("WHERE {cond}"),
+            None => String::new(),
+        };
+        let (dj_sessions, dj_sessions_played_ms): (i64, i64) = conn
+            .query_row(
+                &format!(
+                    "SELECT COUNT(*), COALESCE(SUM(total_played_ms), 0) FROM rekordbox_sessions {session_where}"
+                ),
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .map_err(CrateError::Database)?;
+
         Ok(StatsSummary {
+            unique_artists,
+            dj_sessions: dj_sessions.max(0) as usize,
+            dj_sessions_played_ms: dj_sessions_played_ms.max(0) as u64,
             total_minutes: total_minutes.max(0) as u64,
             today_minutes: today_minutes.max(0) as u64,
             week_minutes: week_minutes.max(0) as u64,
@@ -497,8 +520,15 @@ impl StatsRecorderService {
     /// Only artists with at least 1 stream (played_ms >= 30s) are returned.
     pub fn get_top_artists(&self, time_range: &str, limit: usize) -> Result<Vec<TopArtistItem>> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-        let limit_val = limit.max(1);
+        let mut top_artists = Self::artist_totals(&conn, time_range)?;
+        top_artists.truncate(limit.max(1));
+        Ok(top_artists)
+    }
 
+    /// Every artist with at least one stream in the range, most played first, without any limit.
+    /// Shared by [`Self::get_top_artists`] (which truncates) and the summary's unique-artist count
+    /// (which must not be capped by that list's limit).
+    fn artist_totals(conn: &Connection, time_range: &str) -> Result<Vec<TopArtistItem>> {
         let time_cond = Self::time_range_condition(time_range, "played_at")?;
         let where_clause = match &time_cond {
             Some(cond) => format!("WHERE {cond}"),
@@ -588,7 +618,6 @@ impl StatsRecorderService {
             other => other,
         });
 
-        top_artists.truncate(limit_val);
         Ok(top_artists)
     }
 

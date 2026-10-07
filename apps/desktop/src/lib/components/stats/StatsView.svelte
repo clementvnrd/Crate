@@ -123,12 +123,13 @@
 			</div>
 		</div>
 
-		<!-- Time Range Segmented Control & Refresh -->
-		<div class="flex items-center gap-3">
+		<!-- Time Range Segmented Control & Refresh. A zero basis (`flex-1 min-w-0`) keeps the header on one line: the
+		     period bar shrinks and scrolls instead of the group wrapping under the title (CRA-173). -->
+		<div class="flex min-w-0 flex-1 items-center justify-end gap-3">
 			<!-- Now Playing Spotify Live Pill (if active) -->
 			{#if $spotifyNowPlaying?.is_playing}
 				<div
-					class="hidden animate-pulse items-center gap-2 rounded-full border border-source-spotify/40 bg-source-spotify/10 px-3 py-1 text-xs font-medium text-source-spotify-text shadow-sm motion-reduce:animate-none md:flex"
+					class="hidden shrink-0 animate-pulse items-center gap-2 rounded-full border border-source-spotify/40 bg-source-spotify/10 px-3 py-1 text-xs font-medium text-source-spotify-text shadow-sm motion-reduce:animate-none md:flex"
 				>
 					<span class="h-2 w-2 rounded-full bg-source-spotify"></span>
 					<span class="font-bold">{$translate('stats.header.liveSpotify')}</span>
@@ -138,9 +139,11 @@
 				</div>
 			{/if}
 
-			<!-- Period (Crate control: stays on the neutral look, DESIGN.md Pulse family) -->
+			<!-- Period (Crate control: stays on the neutral look, DESIGN.md Pulse family). Scrollable: when the presets do
+			     not fit, arrows and edge fades reveal the rest (DESIGN.md "Scroll affordance"). -->
 			<SegmentedControl
 				variant="boxed"
+				scrollable
 				ariaLabel={$translate('stats.range.label')}
 				options={rangeOptions}
 				value={$statsSelectedRange}
@@ -149,7 +152,7 @@
 
 			<!-- Export the whole listening history (CSV or JSON). Icon only below 1280 px, so the header keeps one line at
 			     1000 px as it did before the button existed. -->
-			<Tooltip text={$translate('stats.export.hint')} position="bottom">
+			<Tooltip text={$translate('stats.export.hint')} position="bottom" wrapperClass="inline-flex shrink-0">
 				<Button
 					variant="secondary"
 					size="sm"
@@ -170,7 +173,7 @@
 			<!-- Refresh Button -->
 			<button
 				type="button"
-				class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-stroke bg-surface-2 text-text-secondary shadow-sm transition-all hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary active:scale-95"
+				class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-stroke bg-surface-2 text-text-secondary shadow-sm transition-all hover:border-stroke-strong hover:bg-surface-3 hover:text-text-primary active:scale-95"
 				onclick={handleRefresh}
 				title={$translate('stats.header.refresh')}
 				disabled={$isStatsLoading}
@@ -187,12 +190,7 @@
 	<!-- Main Content Body -->
 	<div class="mx-auto w-full max-w-7xl space-y-6 p-6">
 		<!-- 1. Hero KPI Cards -->
-		<StatsKpiCards
-			summary={$statsSummary}
-			topArtists={$topArtists}
-			rekordboxSessions={$rekordboxSessions}
-			isLoading={$isStatsLoading}
-		/>
+		<StatsKpiCards summary={$statsSummary} isLoading={$isStatsLoading} />
 
 		<!-- 2. Multi-Sources Breakdown Bar -->
 		<StatsSourceBar summary={$statsSummary} />

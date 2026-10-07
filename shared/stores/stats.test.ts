@@ -67,6 +67,9 @@ const mockSummary: StatsSummary = {
 		crate_beatport: 150,
 		rekordbox: 100,
 	},
+	unique_artists: 64,
+	dj_sessions: 3,
+	dj_sessions_played_ms: 10_800_000,
 }
 
 const mockTopTracks: TopTrackItem[] = [
@@ -334,5 +337,180 @@ describe('statsStore', () => {
 		expect(res?.is_connected).toBe(true)
 		expect(statsApi.handleSpotifyCallback).toHaveBeenCalledWith('auth_code_123', 'my-client-id', undefined, 'state_abc')
 		expect(get(spotifyAuth)?.user_name).toBe('Alex Crate')
+	})
+})
+
+/** Resolves every statistics call with fixtures; individual tests override what they need. */
+function mockEveryCall(auth: SpotifyAuthState = mockSpotifyAuth) {
+	vi.mocked(statsApi.getStatsSummary).mockResolvedValue(mockSummary)
+	vi.mocked(statsApi.getTopTracks).mockResolvedValue(mockTopTracks)
+	vi.mocked(statsApi.getTopArtists).mockResolvedValue(mockTopArtists)
+	vi.mocked(statsApi.getHarmonicStats).mockResolvedValue(mockHarmonicStats)
+	vi.mocked(statsApi.getBpmStats).mockResolvedValue(mockBpmStats)
+	vi.mocked(statsApi.getListeningHeatmap).mockResolvedValue(mockHeatmap)
+	vi.mocked(statsApi.getRecentListens).mockResolvedValue([])
+	vi.mocked(statsApi.getSpotifyAuthState).mockResolvedValue(auth)
+	vi.mocked(statsApi.getSpotifyNowPlaying).mockResolvedValue(null)
+	vi.mocked(statsApi.getRekordboxDetectStatus).mockResolvedValue(true)
+	vi.mocked(statsApi.getRekordboxSessions).mockResolvedValue([])
+	vi.mocked(statsApi.getMikDetectStatus).mockResolvedValue(true)
+	vi.mocked(statsApi.syncSpotifyRecentlyPlayed).mockResolvedValue(0)
+}
+
+function summaryOf(totalMinutes: number): StatsSummary {
+	return { ...mockSummary, total_minutes: totalMinutes }
+}
+
+describe('statsStore request ordering and network use', () => {
+	beforeEach(() => {
+		vi.resetAllMocks()
+		statsStore.reset()
+	})
+
+	it('ignores a slow answer for an earlier period that resolves after the newer one', async () => {
+		mockEveryCall()
+		let resolveSlow!: (value: StatsSummary) => void
+		const slow = new Promise<StatsSummary>((resolve) => {
+			resolveSlow = resolve
+		})
+		vi.mocked(statsApi.getStatsSummary).mockImplementation((range) =>
+			range === '7d' ? slow : Promise.resolve(summaryOf(30))
+		)
+
+		const first = statsStore.setRange('7d')
+		const second = statsStore.setRange('30d')
+		await second
+		expect(get(statsSummary)?.total_minutes).toBe(30)
+
+		// The 7d answer finally arrives, after the 30d one is already on screen.
+		resolveSlow(summaryOf(7))
+		await first
+
+		expect(get(statsSummary)?.total_minutes).toBe(30)
+		expect(get(statsSelectedRange)).toBe('30d')
+		expect(get(statsStore).isLoading).toBe(false)
+	})
+
+	it('keeps the spinner on while only a superseded load has finished', async () => {
+		mockEveryCall()
+		let resolveNewer!: (value: StatsSummary) => void
+		const newer = new Promise<StatsSummary>((resolve) => {
+			resolveNewer = resolve
+		})
+		vi.mocked(statsApi.getStatsSummary).mockImplementation((range) =>
+			range === '30d' ? newer : Promise.resolve(summaryOf(7))
+		)
+
+		const older = statsStore.setRange('7d')
+		const latest = statsStore.setRange('30d')
+		await older
+		expect(get(statsStore).isLoading).toBe(true)
+
+		resolveNewer(summaryOf(30))
+		await latest
+		expect(get(statsStore).isLoading).toBe(false)
+		expect(get(statsSummary)?.total_minutes).toBe(30)
+	})
+
+	it('discards an answer that lands after the store was reset', async () => {
+		mockEveryCall()
+		let resolveLate!: (value: StatsSummary) => void
+		vi.mocked(statsApi.getStatsSummary).mockReturnValue(
+			new Promise<StatsSummary>((resolve) => {
+				resolveLate = resolve
+			})
+		)
+
+		const pending = statsStore.refreshAll()
+		statsStore.reset()
+		resolveLate(summaryOf(99))
+		await pending
+
+		expect(get(statsSummary)).toBeNull()
+	})
+
+	it('makes no Spotify network call when only the period changes', async () => {
+		mockEveryCall()
+		await statsStore.refreshAll() // learns that Spotify is connected
+		vi.mocked(statsApi.syncSpotifyRecentlyPlayed).mockClear()
+
+		await statsStore.setRange('30d')
+		await statsStore.setRange('year')
+		await statsStore.setRange('all')
+
+		expect(statsApi.syncSpotifyRecentlyPlayed).not.toHaveBeenCalled()
+		expect(statsApi.getStatsSummary).toHaveBeenLastCalledWith('all')
+	})
+
+	it('syncs Spotify on an explicit refresh, and also on the first load', async () => {
+		mockEveryCall()
+
+		await statsStore.refreshAll()
+
+		expect(statsApi.syncSpotifyRecentlyPlayed).toHaveBeenCalledTimes(1)
+	})
+
+	it('reloads once more when the Spotify sync added listens', async () => {
+		mockEveryCall()
+		vi.mocked(statsApi.syncSpotifyRecentlyPlayed).mockResolvedValue(4)
+
+		await statsStore.refreshAll()
+
+		expect(statsApi.getStatsSummary).toHaveBeenCalledTimes(2)
+	})
+
+	it('does not sync when Spotify is disconnected', async () => {
+		mockEveryCall({ is_connected: false, user_id: null, user_name: null, expires_at: null })
+
+		await statsStore.refreshAll()
+
+		expect(statsApi.syncSpotifyRecentlyPlayed).not.toHaveBeenCalled()
+	})
+
+	it('survives a failing Spotify sync and keeps the local numbers', async () => {
+		mockEveryCall()
+		vi.mocked(statsApi.syncSpotifyRecentlyPlayed).mockRejectedValue('network down')
+
+		await statsStore.refreshAll()
+
+		expect(get(statsSummary)).toEqual(mockSummary)
+		expect(get(statsStore).isLoading).toBe(false)
+	})
+
+	it('does not pull Spotify back in right after a history reset', async () => {
+		mockEveryCall()
+		await statsStore.refreshAll()
+		vi.mocked(statsApi.syncSpotifyRecentlyPlayed).mockClear()
+		vi.mocked(statsApi.resetSpotifyListeningHistory).mockResolvedValue({ deleted_count: 5, backup_path: '/tmp/b.json' })
+
+		await statsStore.resetSpotifyHistory()
+
+		expect(statsApi.syncSpotifyRecentlyPlayed).not.toHaveBeenCalled()
+	})
+
+	it('empties the period numbers and reports a failed request instead of showing the previous period', async () => {
+		mockEveryCall()
+		await statsStore.setRange('7d')
+		expect(get(statsSummary)).toEqual(mockSummary)
+
+		vi.mocked(statsApi.getStatsSummary).mockRejectedValue('database is locked')
+		await statsStore.setRange('30d')
+
+		const state = get(statsStore)
+		expect(state.isLoading).toBe(false)
+		expect(state.error).toBe('database is locked')
+		expect(state.summary).toBeNull()
+		expect(get(topTracks)).toHaveLength(1) // the other period-scoped answers did succeed
+	})
+
+	it('keeps period-independent data when only that request fails', async () => {
+		mockEveryCall()
+		await statsStore.setRange('7d')
+		vi.mocked(statsApi.getSpotifyAuthState).mockRejectedValue('offline')
+
+		await statsStore.setRange('30d')
+
+		expect(get(spotifyAuth)?.is_connected).toBe(true)
+		expect(get(statsStore).error).toBeNull()
 	})
 })
