@@ -30,6 +30,7 @@ These actions cannot be done on the owner's behalf (personal accounts, decisions
 - [ ] **Change the Beatport account password**: it was in plain text in the code (C2). The code is clean, but the old password must be considered compromised.
 - [x] **Confirm that Mixed In Key stays read-only** (CRA-110, confirmed 2026-09-30). The step 2 fixes are built on that principle.
 - [ ] **Answer the open questions** in the [report](AUDIT-REPORT.md#decisions-to-make): other machines than this Mac (answered: macOS only, CRA-122) · Crate as the default player (answered: yes, CRA-124) · _the skewed Spotify history: owner wants it emptied (CRA-123); the in-app "Reset Spotify history" button is now ready in Crate Pulse (CRA-144), waiting for the owner to press it_
+| 2026-10-03 | Playback no longer stops at the end of a library track: the backend sync tick now signals the end of the track, once per track end, like the client interpolation (B36, CRA-148) | 7 |
 
 ## Outside the register
 
@@ -276,4 +277,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-01 | Energy-jump detection added to the Rekordbox set timeline (CRA-127), closing the gap left by the energy column: same threshold as the set planner, now shared from one place | — |
 | 2026-10-01 | "Set" mode screen: select from the Library, reorder, harmonic/energy check, export to Rekordbox XML (CRA-132, partial: USB export and bridge-track display left for a follow-up) | — |
 | 2026-10-02 | CRA-96 follow-up: black text on accent badges and the check mark, lighter accent hover for five accents, the last listed palette classes on tokens (D3, partial) | 11 |
-| 2026-10-03 | Playback no longer stops at the end of a library track: the backend sync tick now signals the end of the track, once per track end, like the client interpolation (B36, CRA-148) | 7 |
+| 2026-10-03 | Next / previous / shuffle logic extracted from `createAppSetup` into the pure, unit-tested `shared/utils/playbackQueue.ts` (CRA-167, refactor, no behaviour change) | — |
