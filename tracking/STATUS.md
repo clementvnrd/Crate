@@ -267,6 +267,7 @@ _Exit criterion: App in English: no French string._
 | 2026-10-01 | "Reset Spotify history" button in Crate Pulse: backup then delete, confirmation dialog (CRA-144) | — |
 | 2026-10-01 | Discovery funnel renamed "Crate to booth" / "Du bac à la cabine", per the owner's answer in CRA-126 | — |
 | 2026-10-01 | CRA-141 rollout: family colour tokens, black text on accent fills, Beatport follows the theme, the four touches (D3, partial); Spotify modal, Rekordbox and add-to-library buttons, native checkboxes and spinners on the shared components (D11) | 11 |
+| 2026-10-03 | Typed Pulse period at the single range seam: `3m`, `6m`, `year:<YYYY>`, `custom:<from>,<to>`; an unknown range is now an error instead of all time (CRA-172, backend and IPC contract; period bar UI is CRA-173) | — |
 | 2026-10-01 | Next-track suggestions screen in the Player: ranked history-then-compatible list, one-click play (CRA-133) | — |
 | 2026-10-01 | Assisted physical organisation screen, Settings → Library: dry run with every planned move shown, apply gated behind a fresh acknowledgement each time, undo from "Past runs" (CRA-130) | — |
 | 2026-10-02 | D10 closed: Enter/Space on keyboard-focused controls (owner choice 1a), no hand cursor on the Pulse source bar, keyboard heatmap, 15 of 17 `svelte-ignore a11y` resolved (CRA-100) | 11 |
@@ -275,4 +276,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-01 | Energy-jump detection added to the Rekordbox set timeline (CRA-127), closing the gap left by the energy column: same threshold as the set planner, now shared from one place | — |
 | 2026-10-01 | "Set" mode screen: select from the Library, reorder, harmonic/energy check, export to Rekordbox XML (CRA-132, partial: USB export and bridge-track display left for a follow-up) | — |
 | 2026-10-02 | CRA-96 follow-up: black text on accent badges and the check mark, lighter accent hover for five accents, the last listed palette classes on tokens (D3, partial) | 11 |
-| 2026-10-03 | Typed Pulse period at the single range seam: `3m`, `6m`, `year:<YYYY>`, `custom:<from>,<to>`; an unknown range is now an error instead of all time (CRA-172, backend and IPC contract; period bar UI is CRA-173) | — |
+| 2026-10-03 | Next / previous / shuffle logic extracted from `createAppSetup` into the pure, unit-tested `shared/utils/playbackQueue.ts` (CRA-167, refactor, no behaviour change) | — |
