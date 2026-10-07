@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
+use super::range::StatsRange;
 use crate::error::{CrateError, Result};
 use crate::models::stats::{
     BpmBucketItem, HarmonicStatsItem, HeatmapCell, ListenEvent, StatsSummary, TopArtistItem,
@@ -22,44 +23,20 @@ impl StatsRecorderService {
         Self { conn }
     }
 
-    /// SQL condition for an exact window, written `between:<start>,<end>` with both bounds in UTC
-    /// as `YYYY-MM-DD HH:MM:SS` (start included, end excluded). The bounds are parsed and written
-    /// back, so nothing the caller sent reaches the SQL text; a malformed window matches nothing
-    /// rather than silently widening to "all time".
-    pub(super) fn window_condition(bounds: &str, field_name: &str) -> String {
-        const FORMAT: &str = "%Y-%m-%d %H:%M:%S";
-        let parsed = bounds.split_once(',').and_then(|(start, end)| {
-            let start = chrono::NaiveDateTime::parse_from_str(start.trim(), FORMAT).ok()?;
-            let end = chrono::NaiveDateTime::parse_from_str(end.trim(), FORMAT).ok()?;
-            Some((start, end))
-        });
-        match parsed {
-            Some((start, end)) => format!(
-                "datetime({field_name}) >= datetime('{}') AND datetime({field_name}) < datetime('{}')",
-                start.format(FORMAT),
-                end.format(FORMAT)
-            ),
-            None => "0 = 1".to_string(),
-        }
-    }
-
-    /// Helper to convert a time_range string into a SQL WHERE clause fragment.
-    /// Supported values: "today", "7d", "30d", "year", "all", and an exact window
-    /// `between:<start>,<end>` (see [`Self::window_condition`]).
-    pub(super) fn time_range_condition(time_range: &str, field_name: &str) -> Option<String> {
-        if let Some(bounds) = time_range.strip_prefix("between:") {
-            return Some(Self::window_condition(bounds, field_name));
-        }
-        match time_range.to_lowercase().as_str() {
-            "today" => Some(format!("datetime({field_name}, 'localtime') >= datetime('now', 'localtime', 'start of day')")),
-            // datetime() normalises RFC 3339 values (with a `T`, a `Z` or an offset) to UTC before
-            // comparing; comparing the raw strings mixed formats and time zones.
-            "7d" => Some(format!("datetime({field_name}) >= datetime('now', '-7 days')")),
-            "30d" => Some(format!("datetime({field_name}) >= datetime('now', '-30 days')")),
-            "year" => Some(format!("datetime({field_name}, 'localtime') >= datetime('now', 'localtime', 'start of year')")),
-            "all" | "" => None,
-            _ => None,
-        }
+    /// Converts a time_range string into a SQL WHERE clause fragment (`None` = no limit).
+    ///
+    /// The string is parsed into a [`StatsRange`] (grammar in `range.rs`: the presets `today`,
+    /// `7d`, `30d`, `3m`, `6m`, `year`, `all`, a calendar year `year:<YYYY>`, a custom local-day
+    /// window `custom:<YYYY-MM-DD>,<YYYY-MM-DD>` and the recap's exact UTC window
+    /// `between:<start>,<end>`). An unknown, malformed or reversed range is an error: it is never
+    /// silently widened to "all time".
+    pub(super) fn time_range_condition(
+        time_range: &str,
+        field_name: &str,
+    ) -> Result<Option<String>> {
+        time_range
+            .parse::<StatsRange>()?
+            .sql_condition_at(field_name, &chrono::Local::now())
     }
 
     /// Records a listen event into the database with validation and anti-duplicate deduplication.
@@ -238,7 +215,7 @@ impl StatsRecorderService {
     pub fn get_stats_summary(&self, time_range: &str) -> Result<StatsSummary> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
-        let time_cond = Self::time_range_condition(time_range, "played_at");
+        let time_cond = Self::time_range_condition(time_range, "played_at")?;
         let where_clause = match &time_cond {
             Some(cond) => format!("WHERE {cond}"),
             None => String::new(),
@@ -302,7 +279,7 @@ impl StatsRecorderService {
 
         // Rekordbox sets that started in the range. Same range seam as the listens, applied to
         // the set's start, so a period change moves this number too.
-        let session_where = match Self::time_range_condition(time_range, "started_at") {
+        let session_where = match Self::time_range_condition(time_range, "started_at")? {
             Some(cond) => format!("WHERE {cond}"),
             None => String::new(),
         };
@@ -335,7 +312,7 @@ impl StatsRecorderService {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
         let limit_val = limit.max(1) as i64;
 
-        let time_cond = Self::time_range_condition(time_range, "played_at");
+        let time_cond = Self::time_range_condition(time_range, "played_at")?;
         let where_clause = match &time_cond {
             Some(cond) => format!("WHERE {cond}"),
             None => String::new(),
@@ -552,7 +529,7 @@ impl StatsRecorderService {
     /// Shared by [`Self::get_top_artists`] (which truncates) and the summary's unique-artist count
     /// (which must not be capped by that list's limit).
     fn artist_totals(conn: &Connection, time_range: &str) -> Result<Vec<TopArtistItem>> {
-        let time_cond = Self::time_range_condition(time_range, "played_at");
+        let time_cond = Self::time_range_condition(time_range, "played_at")?;
         let where_clause = match &time_cond {
             Some(cond) => format!("WHERE {cond}"),
             None => String::new(),
@@ -648,7 +625,7 @@ impl StatsRecorderService {
     pub fn get_harmonic_stats(&self, time_range: &str) -> Result<Vec<HarmonicStatsItem>> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
-        let time_cond = Self::time_range_condition(time_range, "played_at");
+        let time_cond = Self::time_range_condition(time_range, "played_at")?;
         let base_where = "WHERE key IS NOT NULL AND key != ''";
         let where_clause = match &time_cond {
             Some(cond) => format!("{base_where} AND {cond}"),
@@ -712,7 +689,7 @@ impl StatsRecorderService {
     pub fn get_bpm_stats(&self, time_range: &str) -> Result<Vec<BpmBucketItem>> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
-        let time_cond = Self::time_range_condition(time_range, "played_at");
+        let time_cond = Self::time_range_condition(time_range, "played_at")?;
         let base_where = "WHERE bpm IS NOT NULL AND bpm > 0";
         let where_clause = match &time_cond {
             Some(cond) => format!("{base_where} AND {cond}"),
@@ -792,7 +769,7 @@ impl StatsRecorderService {
         // Plays without a real time of day (Rekordbox XML sets) would pile up at midnight.
         let exact_time =
             "(metadata_json IS NULL OR metadata_json NOT LIKE '%\"approximate_time\":true%')";
-        let time_cond = Self::time_range_condition(time_range, "played_at");
+        let time_cond = Self::time_range_condition(time_range, "played_at")?;
         let where_clause = match &time_cond {
             Some(cond) => format!("WHERE {cond} AND {exact_time}"),
             None => format!("WHERE {exact_time}"),

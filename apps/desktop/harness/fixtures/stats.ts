@@ -14,15 +14,27 @@ import type {
 	TopArtistItem,
 	TopTrackItem,
 } from '$shared/types'
+import { rangeDays } from '$shared/utils/statsRange'
 import { artworkDataUrl } from './artwork'
 import { REFERENCE_NOW, isoAgo } from './reference'
 import { TRACKS } from './library'
 
 // Crate Pulse: one listening history, scaled by the selected time range (deterministic, no randomness).
 
-const RANGE_SCALE: Record<string, number> = { today: 0.12, '7d': 1, '30d': 4.2, year: 38, all: 52 }
+const RANGE_SCALE: Record<string, number> = {
+	today: 0.12,
+	'7d': 1,
+	'30d': 4.2,
+	'3m': 12.6,
+	'6m': 25,
+	year: 38,
+	all: 52,
+}
 
+/** Calendar years and custom windows scale with their length (a week is 1), capped below "all". */
 function scale(range: TimeRange | string): number {
+	const days = rangeDays(range)
+	if (days !== undefined) return Math.min(Math.max(days / 7, 0.12), 52)
 	return RANGE_SCALE[range] ?? 1
 }
 
