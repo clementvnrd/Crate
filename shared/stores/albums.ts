@@ -2,10 +2,11 @@ import { writable, derived, get } from 'svelte/store'
 import { translate } from '../i18n'
 import type { PlayerAlbum, PlayerAlbumTrack, StandaloneTrack } from '../types'
 import * as albumApi from '../api/album'
-import { playerStore } from './player'
+import { playerStore, reportSkippedTracks } from './player'
 import { toastStore } from './toast'
 import { open } from '@tauri-apps/plugin-dialog'
 import { toErrorMessage } from '../utils/errors'
+import { createShuffleSession, navigateQueue, type QueueDirection } from '../utils/playbackQueue'
 
 interface AlbumsState {
 	albums: PlayerAlbum[]
@@ -151,33 +152,55 @@ function createAlbumsStore() {
 		}
 	}
 
-	async function playTrackByIndex(index: number, tracks: PlayerAlbumTrack[], album: PlayerAlbum) {
-		if (index < 0 || index >= tracks.length) return
+	// Album shuffle (CRA-181): the same session as the library's, so an album never repeats a track before every
+	// track was heard, and "previous" walks back through what was actually played.
+	const albumShuffle = createShuffleSession<PlayerAlbumTrack>((t) => t.id)
+	// Bumped by each navigation, so a chain of skipped tracks stops when the user presses next / previous again.
+	let navigation = 0
+
+	/** Plays the album track at `index`; resolves `false` when its file could not be loaded (nothing else changes). */
+	async function playTrackByIndex(index: number, tracks: PlayerAlbumTrack[], album: PlayerAlbum): Promise<boolean> {
+		if (index < 0 || index >= tracks.length) return false
 		const track = tracks[index]
 		const standalone = convertToStandaloneTrack(track, album)
 
+		const started = await playerStore.playStandalone(standalone, true)
+		if (!started) return false
 		update((s) => ({
 			...s,
 			isPlayingAlbum: true,
 			currentTrackIndex: index,
 		}))
+		// Every album start, from a row, "play album" or the queue, keeps the shuffle session in step.
+		albumShuffle.sync(track.id)
+		return true
+	}
 
-		await playerStore.playStandalone(standalone, true)
+	async function navigate(direction: QueueDirection) {
+		const state = get(albumsStore)
+		const album = state.selectedAlbum
+		const tracks = state.selectedAlbumTracks
+		if (!album || tracks.length === 0) return
+		const generation = ++navigation
+		const outcome = await navigateQueue(direction, {
+			items: tracks,
+			currentKey: tracks[state.currentTrackIndex]?.id ?? null,
+			keyOf: (t) => t.id,
+			shuffle: get(playerStore).shuffleEnabled ? albumShuffle : null,
+			excludeCurrent: true,
+			start: (t) => playTrackByIndex(tracks.indexOf(t), tracks, album),
+			restartCurrent: () => playerStore.restartTrack(),
+			isCancelled: () => generation !== navigation,
+		})
+		reportSkippedTracks(outcome, (t) => t.title)
 	}
 
 	async function playNextAlbumTrack() {
-		const state = get(albumsStore)
-		if (!state.selectedAlbum || state.selectedAlbumTracks.length === 0) return
-		const nextIndex = (state.currentTrackIndex + 1) % state.selectedAlbumTracks.length
-		await playTrackByIndex(nextIndex, state.selectedAlbumTracks, state.selectedAlbum)
+		await navigate('next')
 	}
 
 	async function playPreviousAlbumTrack() {
-		const state = get(albumsStore)
-		if (!state.selectedAlbum || state.selectedAlbumTracks.length === 0) return
-		const prevIndex =
-			(state.currentTrackIndex - 1 + state.selectedAlbumTracks.length) % state.selectedAlbumTracks.length
-		await playTrackByIndex(prevIndex, state.selectedAlbumTracks, state.selectedAlbum)
+		await navigate('previous')
 	}
 
 	async function playAlbumTrack(track: PlayerAlbumTrack, albumTracks?: PlayerAlbumTrack[], album?: PlayerAlbum | null) {
@@ -210,8 +233,20 @@ function createAlbumsStore() {
 			return
 		}
 
+		// Start at the first track (or a random one), moving on past tracks whose file cannot be loaded (CRA-180).
 		const startIndex = shuffle ? Math.floor(Math.random() * tracks.length) : 0
-		await playTrackByIndex(startIndex, tracks, album)
+		const ordered = [...tracks.slice(startIndex), ...tracks.slice(0, startIndex)]
+		const generation = ++navigation
+		const outcome = await navigateQueue('next', {
+			items: ordered,
+			currentKey: null,
+			keyOf: (t) => t.id,
+			shuffle: null,
+			start: (t) => playTrackByIndex(tracks.indexOf(t), tracks, album),
+			restartCurrent: () => {},
+			isCancelled: () => generation !== navigation,
+		})
+		reportSkippedTracks(outcome, (t) => t.title)
 	}
 
 	return {

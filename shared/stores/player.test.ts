@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest'
 import { get } from 'svelte/store'
-import { playerStore } from './player'
+import { playerStore, reportSkippedTracks } from './player'
+import { toastStore, toasts } from './toast'
 import type { PlaybackState, Track, DiscoveryRelease } from '../types'
+import type { NavigationOutcome } from '../utils/playbackQueue'
 import * as playerApi from '../api/player'
 import * as discoveryApi from '../api/discovery'
 import * as previewPlayer from '../services/previewPlayer'
@@ -242,5 +244,98 @@ describe('playerStore end of track', () => {
 			await vi.advanceTimersByTimeAsync(10)
 			expect(onEnd).toHaveBeenCalledTimes(2)
 		})
+	})
+})
+
+// A next track that fails to load (CRA-180): `play` tells the queue whether the track started, a failure leaves the
+// playing track alone, and the skipped tracks are reported with one toast per navigation.
+describe('playerStore.play result and skipped-track notices', () => {
+	beforeEach(() => {
+		vi.useFakeTimers()
+		vi.clearAllMocks()
+		playerStore.reset()
+		toastStore.clear()
+	})
+
+	afterEach(() => {
+		playerStore.reset()
+		toastStore.clear()
+		vi.useRealTimers()
+	})
+
+	it('resolves true when the track starts', async () => {
+		vi.mocked(playerApi.playTrack).mockResolvedValue(engineState())
+		expect(await playerStore.play(libraryTrack())).toBe(true)
+		expect(get(playerStore).currentTrack?.id).toBe('trk-1')
+	})
+
+	it('resolves false on a missing file, flags it, and keeps the track that was playing', async () => {
+		const onMissing = vi.fn()
+		playerStore.setTrackMissingHandler(onMissing)
+		await startLibraryTrack()
+		vi.mocked(playerApi.playTrack).mockRejectedValue('File not found: /music/trk-2.flac')
+
+		expect(await playerStore.play(libraryTrack('trk-2'))).toBe(false)
+
+		const state = get(playerStore)
+		expect(state.currentTrack?.id).toBe('trk-1')
+		expect(state.playbackState.is_playing).toBe(true)
+		expect(state.error).toBe('File not found: /music/trk-2.flac')
+		expect(onMissing).toHaveBeenCalledWith('trk-2')
+		playerStore.setTrackMissingHandler(null)
+	})
+
+	it('restartTrack seeks a loaded track back to its start', async () => {
+		await startLibraryTrack()
+		vi.mocked(playerApi.seek).mockResolvedValue(engineState({ position_ms: 0 }))
+		await playerStore.restartTrack()
+		expect(playerApi.seek).toHaveBeenCalledWith(0)
+	})
+
+	const outcome = (overrides: Partial<NavigationOutcome<Track>>): NavigationOutcome<Track> => ({
+		started: null,
+		skipped: [],
+		gaveUp: false,
+		restarted: false,
+		cancelled: false,
+		...overrides,
+	})
+	const titled = (id: string, title: string | null) => ({ ...libraryTrack(id), title }) as Track
+	const messages = () => get(toasts).map((t) => ({ type: t.type, message: t.message }))
+
+	it('shows nothing when no track was skipped', () => {
+		reportSkippedTracks(outcome({ started: libraryTrack() }), (t) => t.title)
+		expect(messages()).toEqual([])
+	})
+
+	it('names the skipped track in one warning when playback moved on', () => {
+		reportSkippedTracks(outcome({ started: libraryTrack('c'), skipped: [titled('b', 'Glasshouse')] }), (t) => t.title)
+		expect(messages()).toEqual([{ type: 'warning', message: 'Skipped "Glasshouse": its file could not be loaded' }])
+	})
+
+	it('names the first one and counts the others', () => {
+		reportSkippedTracks(
+			outcome({ started: libraryTrack('d'), skipped: [titled('b', null), titled('c', 'Undertow')] }),
+			(t) => t.title
+		)
+		expect(messages()).toEqual([
+			{
+				type: 'warning',
+				message: 'Skipped "Track" and 1 other track: their files could not be loaded',
+			},
+		])
+	})
+
+	it('shows a single error when nothing could start', () => {
+		reportSkippedTracks(
+			outcome({ skipped: Array.from({ length: 10 }, (_, i) => titled(`t${i}`, `T${i}`)), gaveUp: true }),
+			(t) => t.title
+		)
+		expect(messages()).toEqual([
+			{
+				type: 'error',
+				message: 'Playback stopped: 10 tracks in a row could not be loaded. Is the drive holding your music connected?',
+			},
+		])
 	})
 })

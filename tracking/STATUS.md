@@ -15,7 +15,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 4 — Safe Upgrader | 9 / 9 | ██████████ |
 | Step 5 — Clean Mixed In Key | 8 / 8 | ██████████ |
 | Step 6 — Accurate statistics | 10 / 10 | ██████████ |
-| Step 7 — Exact DJ features | 20 / 20 | ██████████ |
+| Step 7 — Exact DJ features | 22 / 22 | ██████████ |
 | Step 8 — Robust frontend | 17 / 17 | ██████████ |
 | Step 9 — Hygiene and tooling | 14 / 14 | ██████████ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
@@ -135,11 +135,13 @@ _Exit criterion: Key 3 = cue 3, search for "You'll", valid XML._
 - [x] **B34** — Services instantiated twice: the state managed by Tauri is not the one used by the background tasks
 - [x] **B35** — `get_duplicate_count` runs a full duplicate scan on every `duplicates-updated` event
 - [x] **B36** — Playback silently stops at the end of a library track (the end callback only fired from the client interpolation, never when the backend sync saw the engine finished) — _frontend only: the sync tick now treats `is_playing: false` at the duration as the end of the track, once per track end; found after the audit (CRA-148)_
+- [x] **B37** — Continuous playback stops in silence when the next track cannot be loaded (file moved or deleted) — _the queue skips it and plays the following one, one toast names it; 10 failures in a row (or the whole queue) stop with a single error; a failed track is never counted as played (shuffle pool, and the backend now opens a listening session only once the file really plays); the playing audio is never cut by a missing file; library and album mode; found after the audit (CRA-180)_
 - [x] **F1** — Keys 1 to 8 captured everywhere, with no view or modifier condition
 - [x] **F2** — Space in the Player view starts a recent track instead of pausing the preview; duplicated logic
 - [x] **F3** — Space or Enter on a focused row triggers playback and the global shortcut
 - [x] **F11** — Cues and waveform never loaded for an external file: a UUID is sent to `get_track_cues`
 - [x] **F16** — Arrow keys, Home and End on a focused segmented control (or an open select) also trigger the global seek and volume shortcuts — _the control stops the keys it handles, modified arrows (Shift / Cmd) stay global shortcuts; the global arrows also ignore a key a focused widget already used; checked the other roving-focus widgets (waveform, recents list, heatmap, resize handle already stopped theirs; the select did not); found after the audit (CRA-196)_
+- [x] **F17** — Shuffle inconsistencies: stale history after a start from the Suggested panel or a modal, empty history after a launch with shuffle on, albums ignore shuffle, "previous" with no history does nothing, one-track lists — _the session follows every playback start through one `sync` in the queue module; albums use the same session; "previous" with nothing to go back to restarts the track; a one-track list replays its track in both modes; the queue being the list as displayed (a filter change mid-play changes what comes next) is kept, tested and documented; found after the audit (CRA-181)_
 
 ### Step 8 — Robust frontend
 
@@ -290,3 +292,5 @@ _Exit criterion: App in English: no French string._
 | 2026-10-08 | Discovery titles readable at 1000 px in French: the track count shows only when the title column has room (L1 follow-up, CRA-103; e2e crushed columns 10 to 5) | 12 |
 | 2026-10-08 | D3 finished: energy badge light text, toolbar count badges, Mixed In Key label and icon, upstream red danger and like classes on `--danger-*` tokens; dark theme unchanged (CRA-96) | 11 |
 | 2026-10-08 | Arrow keys on a focused segmented control or open select no longer also seek or change the volume (F16, CRA-196) | 7 |
+| 2026-10-08 | A next track that fails to load is skipped with one toast, ten failures in a row stop with one error, a failed load never counts as a listen (B37, CRA-180) | 7 |
+| 2026-10-08 | Shuffle follows every playback start, albums honour shuffle, "previous" restarts the track when there is nothing to go back to, one-track lists loop in both modes (F17, CRA-181) | 7 |

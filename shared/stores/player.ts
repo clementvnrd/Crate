@@ -18,6 +18,7 @@ import {
 	setStoredBoolean,
 } from '../utils/storage'
 import { toErrorMessage } from '../utils/errors'
+import { skipNotice, type NavigationOutcome } from '../utils/playbackQueue'
 
 // =============================================================================
 // State
@@ -430,8 +431,11 @@ function createPlayerStore() {
 
 		/**
 		 * Play a library track. If preview or beatport is active, stop it first.
+		 *
+		 * Resolves `true` once the track plays, `false` when it could not be loaded (the error is stored, a missing
+		 * file is flagged, and whatever was playing keeps playing): the queue uses it to skip the track (CRA-180).
 		 */
-		async play(track: Track) {
+		async play(track: Track): Promise<boolean> {
 			const state = getState()
 
 			// Stop preview / beatport if active
@@ -468,19 +472,23 @@ function createPlayerStore() {
 				}))
 				startPositionTracking()
 				loadTrackCuesAndWaveform(track.id)
+				return true
 			} catch (error) {
 				const errorMsg = toErrorMessage(error, 'Failed to play track')
 				if (errorMsg.toLowerCase().includes('file not found') || errorMsg.toLowerCase().includes('filenotfound')) {
 					onTrackMissing?.(track.id)
 				}
 				update((s) => ({ ...s, error: errorMsg }))
+				return false
 			}
 		},
 
 		/**
 		 * Play a standalone track (or library track routed through standalone player).
+		 *
+		 * Resolves `true` once the file plays, `false` when it could not be loaded (see `play`).
 		 */
-		async playStandalone(track: StandaloneTrack, isLibraryTrack?: boolean) {
+		async playStandalone(track: StandaloneTrack, isLibraryTrack?: boolean): Promise<boolean> {
 			const state = getState()
 
 			// Stop preview / beatport if active
@@ -531,9 +539,11 @@ function createPlayerStore() {
 						console.error('Failed to add to recent standalone history', e)
 					}
 				}
+				return true
 			} catch (error) {
 				const errorMsg = toErrorMessage(error, 'Failed to play track')
 				update((s) => ({ ...s, error: errorMsg }))
+				return false
 			}
 		},
 
@@ -1008,6 +1018,20 @@ function createPlayerStore() {
 		},
 
 		/**
+		 * Bring the current track back to its start, playing or paused as it was: what "previous" does when the queue
+		 * has nothing to go back to (CRA-181). A track restored at launch is not loaded in the engine yet, so only its
+		 * stored position moves; it starts from there on the next play.
+		 */
+		async restartTrack() {
+			if (isRestoredFromStorage) {
+				persistPositionImmediate(0)
+				update((s) => ({ ...s, playbackState: { ...s.playbackState, position_ms: 0 } }))
+				return
+			}
+			await this.seek(0)
+		},
+
+		/**
 		 * Seek relative to current position
 		 */
 		async seekRelative(offsetMs: number) {
@@ -1202,6 +1226,27 @@ function createPlayerStore() {
 }
 
 export const playerStore = createPlayerStore()
+
+/**
+ * Tell the user, with one toast per navigation, about tracks a queue skipped because they could not be loaded
+ * (CRA-180): a warning naming the first one when playback moved on, a single error when nothing could start. Toasts
+ * never take the focus, so this never interrupts what the user is doing.
+ */
+export function reportSkippedTracks<T>(outcome: NavigationOutcome<T>, titleOf: (item: T) => string | null | undefined) {
+	const notice = skipNotice(outcome)
+	if (notice === null) return
+	const t = get(translate)
+	if (notice.kind === 'stopped') {
+		toastStore.error(t('player.toast.playbackStopped', { values: { count: notice.count } }))
+		return
+	}
+	const title = titleOf(notice.first) || t('player.trackFallback')
+	toastStore.warning(
+		notice.others === 0
+			? t('player.toast.trackSkipped', { values: { title } })
+			: t('player.toast.tracksSkipped', { values: { title, count: notice.others } })
+	)
+}
 
 // =============================================================================
 // Derived Stores

@@ -51,6 +51,23 @@ To jump to a different position in the track:
 
 Adjust playback volume with the volume slider in the player.
 
+## Next Track, Shuffle and Missing Files
+
+### What plays next
+
+Next and previous (and continuous playback at the end of a track) walk the list you started playback from, **as it is displayed**: while you stay on that view and playlist, a search, a filter or a new sort order changes what comes next. Once you go to another view or playlist, Crate keeps walking the list as you left it.
+
+With shuffle on, every track of the list plays once before any track repeats, and **Previous** goes back through the tracks you actually heard, wherever you started them from (a row, the suggestions, Duplicate Killer, the Upgrader, or the track restored at launch). Album mode follows the same shuffle toggle.
+
+- **Previous with nothing to go back to** (shuffle, first track of the session) restarts the current track.
+- **A one-track list** replays its track, with shuffle on or off.
+
+### A file that cannot be loaded
+
+When the next track's file was moved, deleted or is on a drive that is not connected, Crate skips it, plays the following one and shows one message naming the skipped track. The track is flagged as missing in the library and is never counted as played. The track that is playing is never interrupted by a file that fails to load.
+
+If 10 tracks in a row cannot be loaded (or every other track of a shorter list), Crate stops trying and shows a single error: check that the drive holding your music is connected.
+
 ## Now Playing Display
 
 When a track is playing, the player shows:

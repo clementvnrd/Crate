@@ -1,7 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { get } from 'svelte/store'
 import { albumsStore, playerAlbums, selectedAlbum, selectedAlbumTracks } from './albums'
+import { playerStore } from './player'
+import { toastStore, toasts } from './toast'
 import * as albumApi from '../api/album'
+import * as playerApi from '../api/player'
+import * as standaloneApi from '../api/standalone'
 import type { PlayerAlbum, PlayerAlbumTrack, AddAlbumResult } from '../types'
 
 vi.mock('../api/album', () => ({
@@ -13,6 +17,27 @@ vi.mock('../api/album', () => ({
 
 vi.mock('@tauri-apps/plugin-dialog', () => ({
 	open: vi.fn(),
+}))
+
+vi.mock('../api/standalone', () => ({
+	playStandaloneTrack: vi.fn(),
+	addRecentStandaloneTrack: vi.fn(),
+}))
+
+vi.mock('../api/player', () => ({
+	playTrack: vi.fn(),
+	pause: vi.fn(),
+	resume: vi.fn(),
+	stop: vi.fn(),
+	seek: vi.fn(),
+	setVolume: vi.fn(),
+	setSpeed: vi.fn(),
+	getPlaybackState: vi.fn(),
+}))
+
+vi.mock('../api/library', () => ({
+	getTrackCues: vi.fn().mockResolvedValue([]),
+	getTrackWaveform: vi.fn().mockResolvedValue(null),
 }))
 
 const mockAlbum: PlayerAlbum = {
@@ -115,5 +140,104 @@ describe('albumsStore', () => {
 		expect(albumApi.removePlayerAlbum).toHaveBeenCalledWith('album-1')
 		expect(get(playerAlbums)).toHaveLength(0)
 		expect(get(selectedAlbum)).toBeNull()
+	})
+})
+
+// Album next / previous (CRA-180, CRA-181): albums honour the shuffle toggle with the same no-repeat session as the
+// library, and skip a track whose file cannot be loaded.
+describe('albumsStore navigation', () => {
+	const sixTracks: PlayerAlbumTrack[] = Array.from({ length: 6 }, (_, i) => ({
+		...mockTracks[0],
+		id: `a-${i + 1}`,
+		track_number: i + 1,
+		title: `Track ${i + 1}`,
+		file_path: `/Users/test/Music/Album/0${i + 1}.flac`,
+	}))
+	let missing = new Set<string>()
+
+	const playing = () => get(playerStore).standaloneTrack?.id
+
+	beforeEach(() => {
+		vi.useFakeTimers()
+		vi.clearAllMocks()
+		playerStore.reset()
+		toastStore.clear()
+		missing = new Set()
+		vi.mocked(standaloneApi.playStandaloneTrack).mockImplementation(async (path, id, durationMs) => {
+			if (missing.has(String(id))) throw `File not found: ${path}`
+			return {
+				is_playing: true,
+				position_ms: 0,
+				duration_ms: durationMs ?? 0,
+				volume: 1,
+				speed: 1,
+				current_track_id: String(id),
+				current_track_path: path,
+			}
+		})
+		vi.mocked(albumApi.getPlayerAlbumTracks).mockResolvedValue(sixTracks)
+	})
+
+	afterEach(() => {
+		if (get(playerStore).shuffleEnabled) playerStore.toggleShuffle()
+		playerStore.reset()
+		toastStore.clear()
+		vi.useRealTimers()
+	})
+
+	async function startAlbum() {
+		await albumsStore.selectAlbum(null)
+		await albumsStore.playAlbum(mockAlbum)
+		expect(playing()).toBe('a-1')
+	}
+
+	it('plays the album in order with shuffle off', async () => {
+		await startAlbum()
+		await albumsStore.playNextAlbumTrack()
+		expect(playing()).toBe('a-2')
+		await albumsStore.playPreviousAlbumTrack()
+		expect(playing()).toBe('a-1')
+	})
+
+	it('honours shuffle: every track once before any repeats', async () => {
+		await startAlbum()
+		playerStore.toggleShuffle()
+		const heard = [playing()]
+		for (let i = 0; i < sixTracks.length - 1; i++) {
+			await albumsStore.playNextAlbumTrack()
+			heard.push(playing())
+		}
+		expect(new Set(heard).size).toBe(sixTracks.length)
+	})
+
+	it('shuffle "previous" walks back through what was heard, then restarts the first track', async () => {
+		await startAlbum()
+		playerStore.toggleShuffle()
+		await albumsStore.playNextAlbumTrack()
+		const second = playing()
+		await albumsStore.playNextAlbumTrack()
+		await albumsStore.playPreviousAlbumTrack()
+		expect(playing()).toBe(second)
+		await albumsStore.playPreviousAlbumTrack()
+		expect(playing()).toBe('a-1')
+		vi.mocked(playerApi.seek).mockResolvedValue(get(playerStore).playbackState)
+		await albumsStore.playPreviousAlbumTrack()
+		expect(playing()).toBe('a-1')
+		expect(playerApi.seek).toHaveBeenCalledWith(0)
+	})
+
+	it('skips a track whose file is missing and says so once', async () => {
+		await startAlbum()
+		missing.add('a-2')
+		await albumsStore.playNextAlbumTrack()
+		expect(playing()).toBe('a-3')
+		expect(get(toasts).map((t) => t.message)).toEqual(['Skipped "Track 2": its file could not be loaded'])
+	})
+
+	it('"play album" starts at the first track that loads', async () => {
+		missing.add('a-1')
+		await albumsStore.selectAlbum(null)
+		await albumsStore.playAlbum(mockAlbum)
+		expect(playing()).toBe('a-2')
 	})
 })

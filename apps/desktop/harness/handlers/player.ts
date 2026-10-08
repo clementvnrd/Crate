@@ -42,6 +42,8 @@ export function playerHandlers(state: HarnessState): HandlerMap {
 		get_playback_state: () => currentPlayback(state),
 		play_track: ({ id }) => {
 			const track = state.tracks.find((entry) => entry.id === id)
+			// A missing file fails before the engine is touched, like `AudioService::play_track`: what plays keeps playing.
+			if (track && state.params.missingTrackIds.includes(track.id)) throw `File not found: ${track.file_path}`
 			if (!track) {
 				// Album and Beatport tracks are not in the library: play them as a generic 5-minute track.
 				return start(state, String(id), '', 300_000)

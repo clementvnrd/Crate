@@ -14,6 +14,10 @@ export function readParams(search: string = window.location.search): HarnessPara
 		latencyMs: Number.isFinite(latency) && latency > 0 ? Math.min(latency, 10_000) : 0,
 		playingTrackId: query.get('playing') || null,
 		discrepancyReportFails: query.get('discrepancyReport') === 'fail',
+		missingTrackIds: (query.get('missing') ?? '')
+			.split(',')
+			.map((id) => id.trim())
+			.filter((id) => id.length > 0),
 		update: UPDATE_VALUES.find((value) => value === query.get('update')) ?? 'none',
 	}
 }
