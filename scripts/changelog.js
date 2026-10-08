@@ -3,301 +3,229 @@
  * Changelog management script for Crate
  *
  * Usage:
- *   node scripts/changelog.js prepare <version>   # Move Unreleased to version section
+ *   node scripts/changelog.js prepare <version>   # Turn [Unreleased] into a version section
  *   node scripts/changelog.js graduate <version>  # Consolidate prereleases to stable
+ *   node scripts/changelog.js notes <version>     # Print the release notes of a version
+ *
+ * Every operation is text-preserving: section bodies are moved verbatim, never re-parsed. The
+ * fork keeps its change log as free-form `###`/`####` headings and paragraphs (see the
+ * "Personal fork — change log" section), which a Keep-a-Changelog category parser would drop.
  */
 
 import { readFileSync, writeFileSync } from 'fs'
 import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
+import { fileURLToPath, pathToFileURL } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 const CHANGELOG_PATH = join(ROOT, 'CHANGELOG.md')
 
-const CATEGORIES = ['Added', 'Changed', 'Deprecated', 'Removed', 'Fixed', 'Security']
+/** Links in the footer point to the fork, not to upstream. */
+export const REPO_URL = 'https://github.com/clementvnrd/Crate'
+
+const VERSION_HEADER = /^## \[([^\]]+)\](?:\s*-\s*(\d{4}-\d{2}-\d{2}))?\s*$/
+const FOOTER_LINK = /^\[[^\]]+\]:\s*\S+/
 
 function getToday() {
-	const now = new Date()
-	return now.toISOString().split('T')[0]
+	return new Date().toISOString().split('T')[0]
 }
 
-function getBaseVersion(version) {
+export function getBaseVersion(version) {
 	return version.replace(/-.*$/, '')
 }
 
-function parseChangelog(content) {
-	const lines = content.split('\n')
+/**
+ * Split the changelog into a header, version sections and a footer of reference links.
+ * Each section keeps its raw lines; `body` is everything after the `## [x]` line.
+ */
+export function splitChangelog(text) {
+	const lines = text.replace(/\r\n/g, '\n').split('\n')
+
+	// The footer is the trailing block of `[x]: url` reference links (and blank lines).
+	let footerStart = lines.length
+	for (let i = lines.length - 1; i >= 0; i--) {
+		if (lines[i].trim() === '' || FOOTER_LINK.test(lines[i])) {
+			if (FOOTER_LINK.test(lines[i])) footerStart = i
+			continue
+		}
+		break
+	}
+
+	const header = []
 	const sections = []
 	let current = null
-	let currentCategory = null
-	let headerLines = []
-	let inHeader = true
-
-	for (const line of lines) {
-		// Match version headers like ## [0.1.0] or ## [Unreleased]
-		const versionMatch = line.match(/^## \[([^\]]+)\](?:\s*-\s*(\d{4}-\d{2}-\d{2}))?/)
-		if (versionMatch) {
-			inHeader = false
-			if (current) sections.push(current)
-			current = {
-				version: versionMatch[1],
-				date: versionMatch[2] || null,
-				categories: {},
-				rawHeader: line,
-			}
-			currentCategory = null
-			continue
-		}
-
-		if (inHeader) {
-			headerLines.push(line)
-			continue
-		}
-
-		if (current) {
-			// Match category headers like ### Added
-			const categoryMatch = line.match(/^### (Added|Changed|Deprecated|Removed|Fixed|Security)/)
-			if (categoryMatch) {
-				currentCategory = categoryMatch[1]
-				if (!current.categories[currentCategory]) {
-					current.categories[currentCategory] = []
-				}
-				continue
-			}
-
-			// Match list items
-			if (line.startsWith('- ') && currentCategory) {
-				current.categories[currentCategory].push(line)
-			}
+	for (let i = 0; i < footerStart; i++) {
+		const match = lines[i].match(VERSION_HEADER)
+		if (match) {
+			current = { version: match[1], date: match[2] ?? null, headerLine: lines[i], body: [] }
+			sections.push(current)
+		} else if (current) {
+			current.body.push(lines[i])
+		} else {
+			header.push(lines[i])
 		}
 	}
 
-	if (current) sections.push(current)
-
-	return { headerLines, sections }
+	const footer = lines.slice(footerStart).filter((line) => line.trim() !== '')
+	return { header, sections, footer }
 }
 
-function formatSection(section) {
-	const lines = [section.rawHeader || `## [${section.version}]${section.date ? ` - ${section.date}` : ''}`]
-	lines.push('')
-
-	for (const category of CATEGORIES) {
-		if (section.categories[category] && section.categories[category].length > 0) {
-			lines.push(`### ${category}`)
-			lines.push('')
-			for (const item of section.categories[category]) {
-				lines.push(item)
-			}
-			lines.push('')
-		}
-	}
-
-	return lines.join('\n')
+function trimBlankEdges(lines) {
+	let start = 0
+	let end = lines.length
+	while (start < end && lines[start].trim() === '') start++
+	while (end > start && lines[end - 1].trim() === '') end--
+	return lines.slice(start, end)
 }
 
-function formatChangelog(headerLines, sections, footerLinks) {
-	const parts = []
+/** True when a section body holds more than headings and blank lines. */
+export function hasContent(body) {
+	return body.some((line) => line.trim() !== '' && !/^#{3,6}\s/.test(line))
+}
 
-	// Header
-	parts.push(headerLines.join('\n'))
-
-	// Sections
+export function joinChangelog({ header, sections, footer }) {
+	const parts = [trimBlankEdges(header).join('\n')]
 	for (const section of sections) {
-		parts.push(formatSection(section))
+		const body = trimBlankEdges(section.body)
+		parts.push(body.length > 0 ? `${section.headerLine}\n\n${body.join('\n')}` : section.headerLine)
 	}
-
-	// Footer links
-	if (footerLinks) {
-		parts.push(footerLinks)
-	}
-
-	return (
-		parts
-			.join('\n')
-			.replace(/\n{3,}/g, '\n\n')
-			.trim() + '\n'
-	)
+	if (footer.length > 0) parts.push(footer.join('\n'))
+	return parts.join('\n\n') + '\n'
 }
 
-function extractFooterLinks(content) {
-	const match = content.match(/(\n\[Unreleased\]:[\s\S]*$)/)
-	return match ? match[1].trim() : null
+function updateFooterLinks(footer, version, removePattern = null, previousVersion = undefined) {
+	let links = removePattern
+		? footer.filter((line) => !removePattern.test(line.match(/^\[([^\]]+)\]/)?.[1] ?? ''))
+		: [...footer]
+
+	const unreleasedIndex = links.findIndex((line) => line.startsWith('[Unreleased]:'))
+	// `graduate` passes the previous stable version: the [Unreleased] link still names the last prerelease.
+	const fromUnreleased =
+		unreleasedIndex >= 0 ? (links[unreleasedIndex].match(/compare\/v(.+?)\.\.\.HEAD/)?.[1] ?? null) : null
+	const previous = previousVersion !== undefined ? previousVersion : fromUnreleased
+
+	const unreleased = `[Unreleased]: ${REPO_URL}/compare/v${version}...HEAD`
+	const versionLink = previous
+		? `[${version}]: ${REPO_URL}/compare/v${previous}...v${version}`
+		: `[${version}]: ${REPO_URL}/releases/tag/v${version}`
+
+	if (unreleasedIndex >= 0) {
+		links.splice(unreleasedIndex, 1, unreleased, versionLink)
+	} else {
+		links = [unreleased, versionLink, ...links]
+	}
+	return links
 }
 
-function updateFooterLinks(footerLinks, version, repoUrl) {
-	if (!footerLinks) {
-		return `[Unreleased]: ${repoUrl}/compare/v${version}...HEAD\n[${version}]: ${repoUrl}/releases/tag/v${version}`
+/** Move the whole [Unreleased] body, verbatim, under a new `## [version] - date` heading. */
+export function prepare(text, version, today = getToday()) {
+	const doc = splitChangelog(text)
+	const unreleased = doc.sections.find((s) => s.version === 'Unreleased')
+	if (!unreleased) throw new Error('No [Unreleased] section found in CHANGELOG.md')
+	if (doc.sections.some((s) => s.version === version)) {
+		throw new Error(`CHANGELOG.md already has a [${version}] section`)
 	}
+	if (!hasContent(unreleased.body)) throw new Error('No changes in [Unreleased] section to release')
 
-	let lines = footerLinks.split('\n')
-
-	// Find the previous version from the Unreleased link
-	const unreleasedMatch = lines[0].match(/compare\/v([^.]+\.[^.]+\.[^.]+(?:-[^.]+\.\d+)?)\.\.\.HEAD/)
-	const prevVersion = unreleasedMatch ? unreleasedMatch[1] : null
-
-	// Update Unreleased link to compare against new version
-	lines[0] = `[Unreleased]: ${repoUrl}/compare/v${version}...HEAD`
-
-	// Add new version link
-	const newLink = prevVersion
-		? `[${version}]: ${repoUrl}/compare/v${prevVersion}...v${version}`
-		: `[${version}]: ${repoUrl}/releases/tag/v${version}`
-
-	lines.splice(1, 0, newLink)
-
-	return lines.join('\n')
+	const released = { version, date: today, headerLine: `## [${version}] - ${today}`, body: unreleased.body }
+	unreleased.body = []
+	doc.sections.splice(doc.sections.indexOf(unreleased) + 1, 0, released)
+	doc.footer = updateFooterLinks(doc.footer, version)
+	return joinChangelog(doc)
 }
 
-function prepareRelease(version) {
-	const content = readFileSync(CHANGELOG_PATH, 'utf-8')
-	const { headerLines, sections } = parseChangelog(content)
-	let footerLinks = extractFooterLinks(content)
-
-	// Find Unreleased section
-	const unreleasedIndex = sections.findIndex((s) => s.version === 'Unreleased')
-	if (unreleasedIndex === -1) {
-		throw new Error('No [Unreleased] section found in CHANGELOG.md')
+/** Replace every `<base>-*` prerelease section by one stable section holding their bodies, newest first. */
+export function graduate(text, stableVersion, today = getToday()) {
+	const doc = splitChangelog(text)
+	const base = getBaseVersion(stableVersion)
+	const prefix = new RegExp(`^${base.replace(/\./g, '\\.')}-`)
+	const prereleases = doc.sections.filter((s) => prefix.test(s.version))
+	if (prereleases.length === 0) throw new Error(`No prerelease sections found for ${base}`)
+	if (doc.sections.some((s) => s.version === stableVersion)) {
+		throw new Error(`CHANGELOG.md already has a [${stableVersion}] section`)
 	}
 
-	const unreleased = sections[unreleasedIndex]
-
-	// Check if there's content to release
-	const hasContent = Object.values(unreleased.categories).some((items) => items.length > 0)
-	if (!hasContent) {
-		throw new Error('No changes in [Unreleased] section to release')
+	const body = []
+	for (const section of prereleases) {
+		const content = trimBlankEdges(section.body)
+		if (content.length === 0) continue
+		if (body.length > 0) body.push('')
+		body.push(...content)
 	}
 
-	// Create new version section
-	const newSection = {
-		version,
-		date: getToday(),
-		categories: { ...unreleased.categories },
-		rawHeader: `## [${version}] - ${getToday()}`,
-	}
-
-	// Clear Unreleased section
-	unreleased.categories = {}
-	unreleased.rawHeader = '## [Unreleased]'
-
-	// Insert new section after Unreleased
-	sections.splice(unreleasedIndex + 1, 0, newSection)
-
-	// Update footer links
-	const repoUrl = 'https://github.com/blackboxaudio/crate'
-	footerLinks = updateFooterLinks(footerLinks, version, repoUrl)
-
-	// Write updated changelog
-	const newContent = formatChangelog(headerLines, sections, footerLinks)
-	writeFileSync(CHANGELOG_PATH, newContent)
-
-	console.log(`Prepared changelog for version ${version}`)
-}
-
-function graduateRelease(stableVersion) {
-	const content = readFileSync(CHANGELOG_PATH, 'utf-8')
-	const { headerLines, sections } = parseChangelog(content)
-	let footerLinks = extractFooterLinks(content)
-
-	const baseVersion = getBaseVersion(stableVersion)
-
-	// Find all prerelease sections for this base version
-	const prereleasePattern = new RegExp(`^${baseVersion.replace(/\./g, '\\.')}-`)
-	const prereleaseIndices = []
-	const consolidatedCategories = {}
-
-	for (let i = 0; i < sections.length; i++) {
-		if (prereleasePattern.test(sections[i].version)) {
-			prereleaseIndices.push(i)
-
-			// Merge categories (oldest first, so items appear in chronological order)
-			for (const [category, items] of Object.entries(sections[i].categories)) {
-				if (!consolidatedCategories[category]) {
-					consolidatedCategories[category] = []
-				}
-				// Add items that aren't already present (dedupe)
-				for (const item of items) {
-					if (!consolidatedCategories[category].includes(item)) {
-						consolidatedCategories[category].push(item)
-					}
-				}
-			}
-		}
-	}
-
-	if (prereleaseIndices.length === 0) {
-		throw new Error(`No prerelease sections found for ${baseVersion}`)
-	}
-
-	// Create stable version section
-	const stableSection = {
+	doc.sections = doc.sections.filter((s) => !prefix.test(s.version))
+	const unreleasedIndex = doc.sections.findIndex((s) => s.version === 'Unreleased')
+	const previousStable = doc.sections.find((s) => s.version !== 'Unreleased')?.version ?? null
+	doc.sections.splice(unreleasedIndex + 1, 0, {
 		version: stableVersion,
-		date: getToday(),
-		categories: consolidatedCategories,
-		rawHeader: `## [${stableVersion}] - ${getToday()}`,
+		date: today,
+		headerLine: `## [${stableVersion}] - ${today}`,
+		body,
+	})
+	doc.footer = updateFooterLinks(doc.footer, stableVersion, prefix, previousStable)
+	return joinChangelog(doc)
+}
+
+/**
+ * Release notes of a version: its own section, or — for a `-staging.N` rebuild that has no section
+ * of its own — the most recent staging section of the same base version.
+ */
+export function notesFor(text, version) {
+	const { sections } = splitChangelog(text)
+	let section = sections.find((s) => s.version === version)
+	if (!section && /-staging\.\d+$/.test(version)) {
+		const prefix = `${getBaseVersion(version)}-staging.`
+		section = sections.find((s) => s.version.startsWith(prefix))
 	}
-
-	// Remove prerelease sections (in reverse order to maintain indices)
-	for (let i = prereleaseIndices.length - 1; i >= 0; i--) {
-		sections.splice(prereleaseIndices[i], 1)
-	}
-
-	// Find Unreleased section and insert after it
-	const unreleasedIndex = sections.findIndex((s) => s.version === 'Unreleased')
-	sections.splice(unreleasedIndex + 1, 0, stableSection)
-
-	// Update footer links - remove prerelease links, add stable link
-	if (footerLinks) {
-		const lines = footerLinks
-			.split('\n')
-			.filter((line) => !prereleasePattern.test(line.match(/^\[([^\]]+)\]/)?.[1] || ''))
-		footerLinks = lines.join('\n')
-	}
-
-	const repoUrl = 'https://github.com/blackboxaudio/crate'
-	footerLinks = updateFooterLinks(footerLinks, stableVersion, repoUrl)
-
-	// Write updated changelog
-	const newContent = formatChangelog(headerLines, sections, footerLinks)
-	writeFileSync(CHANGELOG_PATH, newContent)
-
-	console.log(`Graduated ${prereleaseIndices.length} prerelease(s) to ${stableVersion}`)
+	if (!section) throw new Error(`Version ${version} not found in CHANGELOG.md`)
+	return trimBlankEdges(section.body).join('\n')
 }
 
 function printUsage() {
 	console.error(`
 Usage:
-  yarn changelog:prepare <version>   # Move Unreleased content to version section
+  yarn changelog:prepare <version>   # Move the [Unreleased] content under a version heading
   yarn changelog:graduate <version>  # Consolidate prereleases to stable version
+  node scripts/changelog.js notes <version>  # Print the release notes of a version
 
 Examples:
-  yarn changelog:prepare 0.2.0-staging.1   # Create staging release entry
-  yarn changelog:graduate 0.2.0            # Consolidate all 0.2.0-staging.* entries to 0.2.0
+  yarn changelog:prepare 0.3.0-staging.1   # Create staging release entry
+  yarn changelog:graduate 0.3.0            # Consolidate all 0.3.0-staging.* entries to 0.3.0
 `)
 }
 
-const command = process.argv[2]
-const version = process.argv[3]
+function main(argv) {
+	const [command, version] = argv
+	if (!command || !version) {
+		printUsage()
+		process.exit(1)
+	}
 
-if (!command || !version) {
-	printUsage()
-	process.exit(1)
-}
-
-try {
+	const text = readFileSync(CHANGELOG_PATH, 'utf-8')
 	switch (command) {
 		case 'prepare':
-			prepareRelease(version)
+			writeFileSync(CHANGELOG_PATH, prepare(text, version))
+			console.log(`Prepared changelog for version ${version}`)
 			break
 		case 'graduate':
-			graduateRelease(version)
+			writeFileSync(CHANGELOG_PATH, graduate(text, version))
+			console.log(`Graduated prereleases of ${getBaseVersion(version)} to ${version}`)
+			break
+		case 'notes':
+			process.stdout.write(notesFor(text, version) + '\n')
 			break
 		default:
 			console.error(`Unknown command: ${command}`)
 			printUsage()
 			process.exit(1)
 	}
-} catch (error) {
-	console.error(`Error: ${error.message}`)
-	process.exit(1)
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+	try {
+		main(process.argv.slice(2))
+	} catch (error) {
+		console.error(`Error: ${error.message}`)
+		process.exit(1)
+	}
 }
