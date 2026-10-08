@@ -213,14 +213,15 @@
 		/>
 	</div>
 
-	<!-- Artist / Title -->
-	<div class="flex flex-col justify-center truncate">
+	<!-- Artist / Title. The track count is secondary: it shows only when the column is wide enough to leave the
+	     title readable (container query), so a narrow window or a longer translation never crushes the title. -->
+	<div class="@container flex flex-col justify-center truncate">
 		<div class="flex items-center gap-2">
 			<Text as="span" weight="medium" truncate>
 				{release.title || $translate('common.untitled')}
 			</Text>
 			{#if release.tracks.length > 0}
-				<Text as="span" size="xs" color="tertiary" class="shrink-0">
+				<Text as="span" size="xs" color="tertiary" class="hidden shrink-0 @[12rem]:inline">
 					{$translate('discovery.trackCount', { values: { count: release.tracks.length } })}
 				</Text>
 			{/if}

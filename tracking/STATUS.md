@@ -285,3 +285,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-08 | The updater stops trusting upstream (own key and manifests, refusal of a database from a newer build), macOS-only release pipeline with a local release command, text-preserving changelog script, release and rollback runbook (CRA-199) | — |
 | 2026-10-08 | In-app update experience: one-line banner under the toolbar instead of a modal, never relaunching during playback or a job, release notes on request, Settings → About status, last check and channel (CRA-200) | — |
 | 2026-10-08 | Rust dependencies audited for the first time: `cargo audit` installed, 7 vulnerabilities and 2 unsound crates fixed by semver-compatible updates, none left in the macOS build (Q14) | 9 |
+| 2026-10-08 | Discovery titles readable at 1000 px in French: the track count shows only when the title column has room (L1 follow-up, CRA-103; e2e crushed columns 10 to 5) | 12 |
