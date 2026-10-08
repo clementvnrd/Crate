@@ -21,7 +21,7 @@
 	"plugins": {
 		"updater": {
 			"endpoints": [
-				"https://storage.googleapis.com/crate-releases/staging/latest.json"
+				"https://raw.githubusercontent.com/clementvnrd/crate-releases/main/channels/staging/latest.json"
 			]
 		}
 	}

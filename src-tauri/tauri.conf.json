@@ -68,12 +68,13 @@
     ],
     "macOS": {
       "entitlements": "./Entitlements.plist",
-      "minimumSystemVersion": "10.13"
+      "minimumSystemVersion": "10.13",
+      "signingIdentity": "-"
     }
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVFMzJFNEM1OTQ3MEI5N0QKUldSOXVYQ1V4ZVF5WGh2NXpGc04rTmRWQW1RcVliM2MxazJzUzczOHpCcGZsNlE2TEpyN0dzZ1YK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI4NEI0QzdGNTJFRTBCMkUKUldRdUMrNVNmMHhMdUVhN09XZ0t6VDNKV1VwQUsxSktVc0lSSE5Ub1NHMU96LzlJN3hlMkNWK0wK",
       "dialog": false
     }
   }

@@ -52,7 +52,8 @@ impl CloudConfig {
     /// Compile-time fallback for release builds, which don't ship a config file. The five
     /// values are public client identifiers (security rests on PKCE + Firebase Auth +
     /// Security Rules), so baking them into the binary is expected. Injected via
-    /// `GCLOUD_*` env vars at build time (see `.github/workflows/cd.release.yml`).
+    /// `GCLOUD_*` env vars at build time. The fork's release builds set none of them
+    /// (`.github/workflows/cd.release.yml`, `yarn release:local`), so cloud sync is off there.
     /// Returns `None` unless all five are present and non-blank.
     fn from_compiled_env() -> Option<Self> {
         let config = CloudConfig {

@@ -125,7 +125,19 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
         )
         .unwrap_or(0);
 
-    for (idx, sql) in schema::get_migrations().iter().enumerate() {
+    // A database migrated by a newer build (e.g. after rolling back to an older release) must not
+    // be opened by this one: its queries would run against tables it does not know.
+    let migrations = schema::get_migrations();
+    if current_version > migrations.len() as i32 {
+        return Err(CrateError::InvalidOperation(format!(
+            "This library was last opened by a newer version of Crate (database schema {current_version}, \
+             this version knows up to {}). Install the newer version again, or restore the backup taken \
+             before the update.",
+            migrations.len()
+        )));
+    }
+
+    for (idx, sql) in migrations.iter().enumerate() {
         let version = idx as i32 + 1;
         if version > current_version {
             log::info!("Running migration {version}");
@@ -257,5 +269,23 @@ mod tests {
         run_migrations(&conn).unwrap();
         assert_sync_schema(&conn);
         assert_eq!(version(&conn), schema::get_migrations().len() as i32);
+    }
+
+    #[test]
+    fn database_from_a_newer_build_is_refused_untouched() {
+        let conn = open_mem();
+        run_migrations(&conn).unwrap();
+        let latest = schema::get_migrations().len() as i32;
+
+        // A newer release applied one more migration, then the user went back to this build.
+        conn.execute(
+            "INSERT INTO schema_version (version) VALUES (?1)",
+            [latest + 1],
+        )
+        .unwrap();
+
+        let err = run_migrations(&conn).unwrap_err().to_string();
+        assert!(err.contains("newer version of Crate"), "{err}");
+        assert_eq!(version(&conn), latest + 1);
     }
 }

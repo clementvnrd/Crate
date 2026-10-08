@@ -41,6 +41,7 @@ These actions cannot be done on the owner's behalf (personal accounts, decisions
 - [x] Tracking documents: this file, [report](AUDIT-REPORT.md), [register](DEFECTS.md), [history](history/DISCUSSION-SUMMARY.md), `CLAUDE.md`
 - [x] New way of working (2026-09-30): everything written in the repository is in English, `suivi/` became `tracking/`, `yarn suivi` became `yarn status`, standing rules in `CLAUDE.md`
 - [x] Linear adopted as the live board (2026-09-30): team Crate App (`CRA`), 3 projects, 17 milestones, the 107 register defects as issues, decisions and scenario B ideas, rules in `CLAUDE.md` §1 — _optional GitHub integration left to the owner (CRA-136)_
+- [ ] Releases and auto-update for the fork (2026-10-08, project *Release 0.3 & auto-update*): own updater signing key and manifests, ad-hoc signed Apple Silicon builds, `yarn release:local`, runbook `docs/RELEASING.md` (CRA-199) — _public releases repository pending the owner's choice (CRA-198); first pre-release and end-to-end update proof still to do (CRA-201)_
 
 ## Register defects, by repair step
 
@@ -281,3 +282,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-01 | "Set" mode screen: select from the Library, reorder, harmonic/energy check, export to Rekordbox XML (CRA-132, partial: USB export and bridge-track display left for a follow-up) | — |
 | 2026-10-02 | CRA-96 follow-up: black text on accent badges and the check mark, lighter accent hover for five accents, the last listed palette classes on tokens (D3, partial) | 11 |
 | 2026-10-03 | Next / previous / shuffle logic extracted from `createAppSetup` into the pure, unit-tested `shared/utils/playbackQueue.ts` (CRA-167, refactor, no behaviour change) | — |
+| 2026-10-08 | The updater stops trusting upstream (own key and manifests, refusal of a database from a newer build), macOS-only release pipeline with a local release command, text-preserving changelog script, release and rollback runbook (CRA-199) | — |

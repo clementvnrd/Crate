@@ -48,7 +48,9 @@
 		"design:scan": "node scripts/design-scan.mjs",
 		"bump": "node scripts/version.js",
 		"changelog:prepare": "node scripts/changelog.js prepare",
-		"changelog:graduate": "node scripts/changelog.js graduate"
+		"changelog:graduate": "node scripts/changelog.js graduate",
+		"release:local": "node scripts/release/build-local.mjs",
+		"release:publish": "node scripts/release/publish.mjs"
 	},
 	"license": "SEE LICENSE IN LICENSE",
 	"devDependencies": {

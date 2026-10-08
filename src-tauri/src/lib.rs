@@ -1036,6 +1036,8 @@ pub fn run() {
         .build(tauri::generate_context!())
         .unwrap_or_else(|e| {
             log::error!("Fatal: failed to build Tauri application: {e}");
+            #[cfg(target_os = "macos")]
+            show_fatal_alert(&e.to_string());
             std::process::exit(1);
         });
 
@@ -1063,4 +1065,36 @@ pub fn run() {
             let _ = app_handle;
         }
     });
+}
+
+/// Tell the user why Crate cannot start. An app opened from the Finder has no visible stderr,
+/// so without this a failed start-up (e.g. a library migrated by a newer version) is a silent quit.
+#[cfg(target_os = "macos")]
+fn show_fatal_alert(message: &str) {
+    let script = format!(
+        "display alert \"Crate could not start\" message \"{}\" as critical",
+        applescript_escape(message)
+    );
+    let _ = std::process::Command::new("osascript")
+        .args(["-e", &script])
+        .status();
+}
+
+/// Escape text for an AppleScript string literal.
+#[cfg(any(target_os = "macos", test))]
+fn applescript_escape(text: &str) -> String {
+    text.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::applescript_escape;
+
+    #[test]
+    fn fatal_alert_text_cannot_break_out_of_the_applescript_string() {
+        assert_eq!(
+            applescript_escape(r#"a "quoted" path\ end"#),
+            r#"a \"quoted\" path\\ end"#
+        );
+    }
 }
