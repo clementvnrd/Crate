@@ -1,8 +1,8 @@
 name: Release
 
-# Backup release path for the personal fork (the default is `yarn release:local` on the Mac, see
-# docs/RELEASING.md). On a `v*` tag it builds Crate for Apple Silicon, signs the updater bundle,
-# attaches it to a release of this private repository and, when the `RELEASES_REPO_TOKEN` secret
+# Default release path for the personal fork (CRA-198 Q4; the backup is `yarn release:local` on the
+# Mac, see docs/RELEASING.md). On a `v*` tag it builds Crate for Apple Silicon, signs the updater
+# bundle, attaches it to a release of this repository and, when the `RELEASES_REPO_TOKEN` secret
 # exists, publishes it to the public releases repository the in-app updater reads.
 # macOS runners are billed 10x on a private repository: this workflow runs on tags only.
 
@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (must match package.json, e.g. 0.3.0-staging.1)'
+        description: 'Version to release (must match package.json, e.g. 1.0.0-staging.1)'
         required: true
         type: string
       publish:

@@ -41,7 +41,7 @@ These actions cannot be done on the owner's behalf (personal accounts, decisions
 - [x] Tracking documents: this file, [report](AUDIT-REPORT.md), [register](DEFECTS.md), [history](history/DISCUSSION-SUMMARY.md), `CLAUDE.md`
 - [x] New way of working (2026-09-30): everything written in the repository is in English, `suivi/` became `tracking/`, `yarn suivi` became `yarn status`, standing rules in `CLAUDE.md`
 - [x] Linear adopted as the live board (2026-09-30): team Crate App (`CRA`), 3 projects, 17 milestones, the 107 register defects as issues, decisions and scenario B ideas, rules in `CLAUDE.md` §1 — _optional GitHub integration left to the owner (CRA-136)_
-- [ ] Releases and auto-update for the fork (2026-10-08, project *Release 0.3 & auto-update*): own updater signing key and manifests, ad-hoc signed Apple Silicon builds, `yarn release:local`, runbook `docs/RELEASING.md` (CRA-199), non-blocking in-app update banner that never relaunches during playback or a job (CRA-200) — _public releases repository pending the owner's choice (CRA-198); first pre-release and end-to-end update proof still to do (CRA-201)_
+- [ ] Releases and auto-update for the fork (2026-10-08, project *Release 1.0 & auto-update*): own updater signing key and manifests, ad-hoc signed Apple Silicon builds, `yarn release:local`, runbook `docs/RELEASING.md` (CRA-199), non-blocking in-app update banner that never relaunches during playback or a job (CRA-200) — _first version 1.0.0 and builds on GitHub Actions decided (CRA-198 Q2, Q4); where releases are published awaits the owner's confirmation (CRA-198 Q1); first pre-release and end-to-end update proof still to do (CRA-201)_
 
 ## Register defects, by repair step
 
@@ -176,7 +176,7 @@ _Exit criterion: Green CI, clean fmt/lint, cross-platform builds._
 - [x] **Q7** — No tests on the risky paths: file replacement, purge, pollers, OAuth; 3 tests read… — _tests added for file replacement, sync/purge, listen trackers, import, export; tests on the real MIK database removed_
 - [x] **Q8** — Vitest runs on Vite 8.2 while the app uses Vite 7.3; `test:coverage` with no coverage provider…
 - [x] **Q9** — Dev, staging and prod icons have become byte-for-byte identical; `.ico`, Windows, iOS and Android icons… — _upstream already shipped the three identical; the dev and staging icons now carry a blue `DEV` / purple `STG` band (all formats regenerated with `tauri icon`), prod untouched_
-- [x] **Q10** — CHANGELOG, version, README and documentation site not updated; the shortcuts doc contradicts the… — _CHANGELOG, README and shortcuts page up to date; version 0.3.0 to be set at the first personal build_
+- [x] **Q10** — CHANGELOG, version, README and documentation site not updated; the shortcuts doc contradicts the… — _CHANGELOG, README and shortcuts page up to date; version 1.0.0 to be set at the first personal build (CRA-198)_
 - [x] **Q11** — Files that must not be committed: `SYNTHESE_DISCUSSION.md` (personal paths),… — _Swift script deleted; the summary is archived in `tracking/history/` (private repository); fonts handled with D8_
 - [x] **Q12** — No `CLAUDE.md`: every assistant rediscovers the rules (`desktop` feature, CI clippy flags,…
 - [x] **Q13** — `yarn dev` compiles Rust in `--release`: every change costs several minutes (upstream)
@@ -296,3 +296,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-08 | Shuffle follows every playback start, albums honour shuffle, "previous" restarts the track when there is nothing to go back to, one-track lists loop in both modes (F17, CRA-181) | 7 |
 | 2026-10-09 | Review follow-up: a calm notice instead of "Playback stopped" while music still plays, one notice per key repeat, album retry chains stop on another start, a stopped preview stays resumable after a failed start, listening time capped when a track's end was not seen (B37, CRA-180) | 7 |
 | 2026-10-09 | Review follow-up: modified arrows (Shift / Cmd) pass through a focused dropdown to the global shortcuts, like the segmented control (F16, CRA-196) | 7 |
+| 2026-10-08 | Release decisions recorded: first version 1.0.0, releases built by GitHub Actions on the release's tag with the Mac as backup, upstream tags to be deleted locally and no longer fetched (owner's command in CRA-198); where releases are published awaits the owner's confirmation (CRA-198 Q2, Q4, Q5) | — |

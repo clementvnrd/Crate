@@ -189,8 +189,8 @@ Usage:
   node scripts/changelog.js notes <version>  # Print the release notes of a version
 
 Examples:
-  yarn changelog:prepare 0.3.0-staging.1   # Create staging release entry
-  yarn changelog:graduate 0.3.0            # Consolidate all 0.3.0-staging.* entries to 0.3.0
+  yarn changelog:prepare 1.0.0-staging.1   # Create staging release entry
+  yarn changelog:graduate 1.0.0            # Consolidate all 1.0.0-staging.* entries to 1.0.0
 `)
 }
 

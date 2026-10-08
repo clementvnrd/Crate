@@ -1,10 +1,13 @@
 # Releasing Crate
 
 How a version of Crate reaches the Mac, how the app updates itself, and how to undo a bad release.
-Behind it: CRA-199 (own signing key, macOS-only pipeline) and CRA-198 (where releases live:
-the public `clementvnrd/crate-releases` repository is the recommended option, **pending the owner's
-answer**; if another option is chosen, only `RELEASES_REPO` in `scripts/release/manifest.mjs` and the two
-`endpoints` in the Tauri configs change).
+Behind it: CRA-199 (own signing key, macOS-only pipeline) and CRA-198. Decided on CRA-198: the
+fork's first version is **1.0.0** (Q2), releases are built by **GitHub Actions** on a `v*` tag with the
+Mac as the backup (Q4), and upstream's tags are to be deleted locally and no longer fetched (Q5, the
+owner's command in CRA-198). Where releases are published
+(Q1) **awaits the owner's confirmation**: this page describes the public `clementvnrd/crate-releases`
+repository; if another location is chosen, `RELEASES_REPO` in `scripts/release/manifest.mjs`, the two
+`endpoints` in the Tauri configs and the publish step of the workflow change.
 
 ## In one minute
 
@@ -30,7 +33,7 @@ and **refuses it unless its signature matches the public key built into the app*
 | Its password | login Keychain, item `crate-updater-signing` |
 | Public key | `src-tauri/tauri.conf.json`, key ID `B84B4C7F52EE0B2E` |
 | Offline backup | password manager entry "Crate updater signing key" (key file attached + password), CRA-202 |
-| GitHub Actions (backup path only) | secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` of `clementvnrd/Crate` |
+| GitHub Actions (default build) | secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` of `clementvnrd/Crate`, set by the owner with `gh secret set` (commands in CRA-202, step 8). A secret can be used, never read back: it is not a backup. |
 
 Never commit the key, never paste it into an issue, a chat or a log. The release scripts read it
 without printing it.
@@ -42,41 +45,50 @@ without printing it.
   signed with the *old* key, published with `yarn release:publish --version <N+1> --allow-key <old key ID>`;
   from N+2 on, sign with the new key only. Installed copies follow the rotation by themselves.
 
-## Release a version (default: on this Mac)
+## Release a version (default: GitHub Actions)
 
-Releases are built on the Mac with one command: it is free (no runner minutes), takes about
-8 minutes, and the key never leaves the Mac. All commands run **from the repository root**
-(`~/Coding Projects/crate`), on an up-to-date `develop`.
+All commands run **from the repository root** (`~/Coding Projects/crate`), on an up-to-date `develop`.
 
 1. Bump the version (it updates `package.json`, `src-tauri/Cargo.toml` and the Tauri configs):
-   - first pre-release of a version: `yarn bump minor staging` (0.2.9 → 0.3.0-staging.1);
-   - next pre-release: `yarn bump prerelease` (→ 0.3.0-staging.2);
-   - stable: `yarn bump stage` (→ 0.3.0), then `yarn changelog:graduate 0.3.0`.
+   - the fork's first pre-release: `yarn bump major staging` (0.2.9 → 1.0.0-staging.1);
+   - first pre-release of a later version: `yarn bump minor staging` (1.0.0 → 1.1.0-staging.1);
+   - next pre-release: `yarn bump prerelease` (→ 1.0.0-staging.2);
+   - stable: `yarn bump stage` (→ 1.0.0), then `yarn changelog:graduate 1.0.0`.
 2. For a pre-release, move the `[Unreleased]` notes under the new version:
-   `yarn changelog:prepare 0.3.0-staging.1`. The script moves the text verbatim (the "Personal fork —
+   `yarn changelog:prepare 1.0.0-staging.1`. The script moves the text verbatim (the "Personal fork —
    change log" section included); `node scripts/changelog.js notes <version>` prints what users will read.
-3. Commit (`chore(release): 0.3.0-staging.1`), open the pull request, and wait for the owner's merge.
-4. After the merge, on `develop`: `yarn release:local --dry-run` (checks), then
-   `yarn release:local --publish`. Nothing is uploaded unless the tree is clean, the changelog has the
-   version's section, the archive really contains that version (read from its `Info.plist`), and its
-   signature verifies against the public key the installed apps trust.
-5. Check the channel: `curl -s https://raw.githubusercontent.com/clementvnrd/crate-releases/main/channels/staging/latest.json`
+3. Commit (`chore(release): 1.0.0-staging.1`), open the pull request, and wait for the owner's merge.
+4. After the merge, tag the merged `develop` and push **that one tag**:
+   `git fetch origin && git tag v1.0.0-staging.1 origin/develop && git push origin v1.0.0-staging.1`.
+   Never `git push --tags`: it pushes every local tag to `origin`, and any `v*` tag GitHub receives can
+   start a release build.
+5. `.github/workflows/cd.release.yml` checks that `package.json` matches the tag, builds Crate for
+   Apple Silicon on a macOS runner, signs the updater bundle with the secrets above, archives the build
+   as a release of `clementvnrd/Crate` and publishes it with `scripts/release/publish.mjs` when the
+   secret `RELEASES_REPO_TOKEN` exists (a fine-grained token with *Contents: read and write* on
+   `clementvnrd/crate-releases` only). Follow the run with `gh run watch --repo clementvnrd/Crate`.
+6. Check the channel: `curl -s https://raw.githubusercontent.com/clementvnrd/crate-releases/main/channels/staging/latest.json`
    (GitHub may serve the previous file for up to 5 minutes).
 
-`yarn release:publish --version <v> --bundle-dir <dir>` publishes an existing build (for example the
-artifacts of a GitHub Actions run). A published version is **never replaced**: if something is wrong,
-bump and release again.
+*Actions → Release → Run workflow* starts the same build by hand, for a version that already has its tag:
+choose that tag (`v<version>`) under *Use workflow from*, because the run builds whatever is picked
+there, and the default, `develop`, may already be ahead of the release.
 
-## Release from GitHub Actions (backup path)
+Cost: about 25 to 30 minutes of macOS runner. On a private repository they are billed ×10, so roughly
+250 to 300 of the 2,000 monthly free minutes per release; on a public repository they are free.
 
-`.github/workflows/cd.release.yml` builds the same thing on a macOS runner when a `v*` tag is pushed
-or when *Actions → Release → Run workflow* is used. It archives the build as a release of the private
-repository and, if the secret `RELEASES_REPO_TOKEN` exists (a fine-grained token with *Contents: read
-and write* on `clementvnrd/crate-releases` only), publishes it with `scripts/release/publish.mjs`.
+A published version is **never replaced**: if something is wrong, bump and release again.
 
-Cost: about 25 to 30 minutes of macOS runner, billed ×10 on a private repository, so roughly 250 to
-300 of the 2,000 monthly free minutes per release. **Do not push `v*` tags unless this is wanted**
-(`git push --tags` would push every local tag).
+## Release from this Mac (backup path)
+
+When Actions is unavailable or out of minutes, the same release is built on the Mac with one command:
+free, about 8 minutes, and the key never leaves the Mac. After step 3 above, on the merged `develop`:
+`yarn release:local --dry-run` (checks), then `yarn release:local --publish`. Nothing is uploaded unless
+the tree is clean, the changelog has the version's section, the archive really contains that version
+(read from its `Info.plist`), and its signature verifies against the public key the installed apps trust.
+
+`yarn release:publish --version <v> --bundle-dir <dir>` publishes an existing build, for example the
+artifacts of a GitHub Actions run that built but did not publish.
 
 ## First install on a Mac without an Apple Developer certificate
 

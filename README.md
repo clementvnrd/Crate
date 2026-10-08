@@ -148,14 +148,17 @@ Platform target: **macOS** (`.dmg`, `.app`). The fork is used on one Mac only (C
 
 ### Releases and updates
 
-The fork is released for Apple Silicon Macs only, as signed builds published in the public repository [`clementvnrd/crate-releases`](https://github.com/clementvnrd/crate-releases) (the code stays private; this location is the recommended option of CRA-198, pending the owner's answer). The app checks that repository for updates and installs only builds signed with the fork's own key. From the repository root:
+The fork is released for Apple Silicon Macs only, as signed builds published in the public repository [`clementvnrd/crate-releases`](https://github.com/clementvnrd/crate-releases) (the code stays private; where releases live awaits the owner's confirmation on CRA-198). The app checks that repository for updates and installs only builds signed with the fork's own key. The fork's first version is 1.0.0, and releases are built by GitHub Actions when the release's tag is pushed. From the repository root:
 
 ```bash
-yarn bump minor staging                   # 0.2.9 -> 0.3.0-staging.1
-yarn changelog:prepare 0.3.0-staging.1    # moves the [Unreleased] notes under the version
-# commit, open the pull request, and once it is merged, on develop:
-yarn release:local --publish              # build, sign and publish from this Mac
+yarn bump major staging                   # 0.2.9 -> 1.0.0-staging.1 (the fork's first release)
+yarn changelog:prepare 1.0.0-staging.1    # moves the [Unreleased] notes under the version
+# commit, open the pull request, and once it is merged:
+git fetch origin && git tag v1.0.0-staging.1 origin/develop
+git push origin v1.0.0-staging.1          # this one tag only: GitHub Actions builds, signs and publishes
 ```
+
+Backup when Actions is unavailable: `yarn release:local --publish` builds, signs and publishes from this Mac.
 
 **First install:** the app is not notarised (no Apple Developer certificate), so the first launch goes through **System Settings → Privacy & Security → Open Anyway**. Later updates install by themselves.
 
