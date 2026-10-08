@@ -452,7 +452,11 @@
 			"albumRemoveFailed": "Could not remove the album",
 			"albumEmpty": "This album has no playable audio track",
 			"noPreviewStream": "No preview audio stream available for this track.",
-			"beatportPlaybackFailed": "Beatport playback failed"
+			"beatportPlaybackFailed": "Beatport playback failed",
+			"trackSkipped": "Skipped \"{title}\": its file could not be loaded",
+			"tracksSkipped": "Skipped \"{title}\" and {count, plural, one {# other track} other {# other tracks}}: their files could not be loaded",
+			"skipFailedStillPlaying": "Could not load {count, plural, one {# track} other {# tracks in a row}}: \"{title}\" keeps playing",
+			"playbackStopped": "Playback stopped: {count, plural, one {# track} other {# tracks in a row}} could not be loaded. Is the drive holding your music connected?"
 		}
 	},
 	"library": {

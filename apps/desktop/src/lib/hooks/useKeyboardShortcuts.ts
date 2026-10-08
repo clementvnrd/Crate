@@ -123,7 +123,8 @@ export function controlOwnsActivationKey(element: Element | null, handledByEleme
  *
  * Enter and Space are left to a button, link, switch, checkbox, tab, menu item or list row that has keyboard focus
  * (see `controlOwnsActivationKey`), so a control reached with Tab can be activated; everywhere else they keep their
- * shortcut.
+ * shortcut. The arrow keys are left to a focused widget that handles them itself (segmented control, select,
+ * waveform, recent files list, heatmap).
  *
  * @returns Cleanup function to remove the event listener
  */
@@ -314,8 +315,10 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): () => 
 			}
 		}
 
-		// Arrow keys (when not typing)
-		if (!inputFocused) {
+		// Arrow keys (when not typing). A focused widget that already used the arrow (a segmented control, a select,
+		// the waveform, a keyboard grid: it called `preventDefault`) owns it, so it never also seeks or changes the
+		// volume (CRA-196). Those widgets also stop the event; this guard covers one that forgets to.
+		if (!inputFocused && !e.defaultPrevented) {
 			// Cmd/Ctrl+Up: select previous track
 			if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowUp') {
 				e.preventDefault()

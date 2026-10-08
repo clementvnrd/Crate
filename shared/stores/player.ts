@@ -18,6 +18,7 @@ import {
 	setStoredBoolean,
 } from '../utils/storage'
 import { toErrorMessage } from '../utils/errors'
+import { createNoticeGate, skipNotice, type NavigationOutcome } from '../utils/playbackQueue'
 
 // =============================================================================
 // State
@@ -416,6 +417,18 @@ function createPlayerStore() {
 		})
 	}
 
+	/**
+	 * A library or standalone start failed after the preview that was playing had been stopped (never two sounds at
+	 * once). The preview cannot carry on where it was, so it is shown paused at its position and the next play reloads
+	 * its stream from there, like a preview restored at launch. Otherwise the player would show "playing" with nothing
+	 * playing and no end of track to ever move the queue on.
+	 */
+	function suspendStoppedPreview() {
+		isRestoredFromStorage = true
+		persistPositionImmediate(getState().playbackState.position_ms)
+		update((s) => ({ ...s, playbackState: { ...s.playbackState, is_playing: false } }))
+	}
+
 	function clearPreviewEvents() {
 		previewPlayer.setOnTimeUpdate(null)
 		previewPlayer.setOnDurationChange(null)
@@ -430,12 +443,16 @@ function createPlayerStore() {
 
 		/**
 		 * Play a library track. If preview or beatport is active, stop it first.
+		 *
+		 * Resolves `true` once the track plays, `false` when it could not be loaded (the error is stored, a missing
+		 * file is flagged, and whatever was playing keeps playing): the queue uses it to skip the track (CRA-180).
 		 */
-		async play(track: Track) {
+		async play(track: Track): Promise<boolean> {
 			const state = getState()
+			const stopsPreview = state.playbackSource === 'preview' || state.playbackSource === 'beatport'
 
 			// Stop preview / beatport if active
-			if (state.playbackSource === 'preview' || state.playbackSource === 'beatport') {
+			if (stopsPreview) {
 				stopPreviewInternal()
 				clearPreviewEvents()
 				// Sync speed to backend since preview speed changes are frontend-only
@@ -468,23 +485,29 @@ function createPlayerStore() {
 				}))
 				startPositionTracking()
 				loadTrackCuesAndWaveform(track.id)
+				return true
 			} catch (error) {
 				const errorMsg = toErrorMessage(error, 'Failed to play track')
 				if (errorMsg.toLowerCase().includes('file not found') || errorMsg.toLowerCase().includes('filenotfound')) {
 					onTrackMissing?.(track.id)
 				}
+				if (stopsPreview) suspendStoppedPreview()
 				update((s) => ({ ...s, error: errorMsg }))
+				return false
 			}
 		},
 
 		/**
 		 * Play a standalone track (or library track routed through standalone player).
+		 *
+		 * Resolves `true` once the file plays, `false` when it could not be loaded (see `play`).
 		 */
-		async playStandalone(track: StandaloneTrack, isLibraryTrack?: boolean) {
+		async playStandalone(track: StandaloneTrack, isLibraryTrack?: boolean): Promise<boolean> {
 			const state = getState()
+			const stopsPreview = state.playbackSource === 'preview' || state.playbackSource === 'beatport'
 
 			// Stop preview / beatport if active
-			if (state.playbackSource === 'preview' || state.playbackSource === 'beatport') {
+			if (stopsPreview) {
 				stopPreviewInternal()
 				clearPreviewEvents()
 				try {
@@ -531,9 +554,12 @@ function createPlayerStore() {
 						console.error('Failed to add to recent standalone history', e)
 					}
 				}
+				return true
 			} catch (error) {
 				const errorMsg = toErrorMessage(error, 'Failed to play track')
+				if (stopsPreview) suspendStoppedPreview()
 				update((s) => ({ ...s, error: errorMsg }))
+				return false
 			}
 		},
 
@@ -704,6 +730,18 @@ function createPlayerStore() {
 			trackEndHandled = false
 
 			if (state.playbackSource === 'beatport') {
+				// Stopped by a failed start (see `suspendStoppedPreview`): the audio element has no source — reload it
+				const previewUrl = state.beatportTrack?.preview_url
+				if (isRestoredFromStorage && previewUrl) {
+					isRestoredFromStorage = false
+					wirePreviewEvents()
+					previewPlayer.play(previewUrl)
+					previewPlayer.setVolume(state.isMuted ? 0 : state.playbackState.volume)
+					previewPlayer.setPlaybackRate(state.playbackState.speed)
+					if (state.playbackState.position_ms > 0) previewPlayer.seek(state.playbackState.position_ms)
+					update((s) => ({ ...s, playbackState: { ...s.playbackState, is_playing: true }, error: null }))
+					return
+				}
 				previewPlayer.setPlaybackRate(state.playbackState.speed)
 				previewPlayer.resume()
 				update((s) => ({
@@ -1008,6 +1046,20 @@ function createPlayerStore() {
 		},
 
 		/**
+		 * Bring the current track back to its start, playing or paused as it was: what "previous" does when the queue
+		 * has nothing to go back to (CRA-181). A track restored at launch is not loaded in the engine yet, so only its
+		 * stored position moves; it starts from there on the next play.
+		 */
+		async restartTrack() {
+			if (isRestoredFromStorage) {
+				persistPositionImmediate(0)
+				update((s) => ({ ...s, playbackState: { ...s.playbackState, position_ms: 0 } }))
+				return
+			}
+			await this.seek(0)
+		},
+
+		/**
 		 * Seek relative to current position
 		 */
 		async seekRelative(offsetMs: number) {
@@ -1202,6 +1254,64 @@ function createPlayerStore() {
 }
 
 export const playerStore = createPlayerStore()
+
+/**
+ * What is loaded in the player, as one string. A queue's chain of retries compares it before each retry: any other
+ * start (a row, a suggestion, an album, a preview) changes it, and the chain stops instead of replacing that start.
+ */
+export function playbackIdentity(): string {
+	const s = get(playerStore)
+	const preview = s.previewInfo ? `${s.previewInfo.releaseId}:${s.previewInfo.trackIndex}` : ''
+	return [s.playbackSource, s.currentTrack?.id, s.standaloneTrack?.id, preview, s.beatportTrack?.id].join('|')
+}
+
+/** The same notice is shown once while the previous one would still be on screen (default toast duration). */
+const skipNoticeGate = createNoticeGate(5_000)
+
+/**
+ * Tell the user, with at most one toast per navigation, about tracks a queue skipped because they could not be loaded
+ * (CRA-180): a warning naming the first one when playback moved on; a warning saying what still plays when nothing
+ * else could start during a manual next / previous; a single error only when playback really stopped (the end of a
+ * track). A navigation a newer one took over says nothing, and the same notice is not repeated within a few seconds
+ * (key repeat over missing files). Toasts never take the focus, so this never interrupts what the user is doing.
+ *
+ * "Kept" and "stopped" are deduplicated on what they say (the track still playing, or nothing), not on the first
+ * failed track: under shuffle each press draws a different one, and the gate would let every repeat through.
+ */
+export function reportSkippedTracks<T>(
+	outcome: NavigationOutcome<T>,
+	titleOf: (item: T) => string | null | undefined,
+	keyOf: (item: T) => string
+) {
+	const state = get(playerStore)
+	const loaded = state.currentTrack ?? state.standaloneTrack
+	const notice = skipNotice(outcome, state.playbackState.is_playing && loaded !== null)
+	if (notice === null) return
+	const gateKey =
+		notice.kind === 'skipped'
+			? `skipped:${keyOf(notice.first)}`
+			: notice.kind === 'kept'
+				? `kept:${loaded?.id}`
+				: 'stopped'
+	if (!skipNoticeGate(gateKey)) return
+	const t = get(translate)
+	const fallback = t('player.trackFallback')
+	if (notice.kind === 'stopped') {
+		toastStore.error(t('player.toast.playbackStopped', { values: { count: notice.count } }))
+		return
+	}
+	if (notice.kind === 'kept') {
+		const current = loaded?.title || fallback
+		toastStore.warning(t('player.toast.skipFailedStillPlaying', { values: { count: notice.count, title: current } }))
+		return
+	}
+	const title = titleOf(notice.first) || fallback
+	toastStore.warning(
+		notice.others === 0
+			? t('player.toast.trackSkipped', { values: { title } })
+			: t('player.toast.tracksSkipped', { values: { title, count: notice.others } })
+	)
+}
 
 // =============================================================================
 // Derived Stores

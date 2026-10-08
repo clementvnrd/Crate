@@ -8,6 +8,11 @@ use crate::services::stats::recorder::StatsRecorderService;
 /// A play counts as a listen after 30 seconds of actual playback.
 const LISTEN_THRESHOLD_MS: u64 = 30_000;
 
+/// How long a track of `duration_ms` lasts at the slowest tempo of the player's control (−10 %: 10/9 of its length).
+fn longest_play_ms(duration_ms: u64) -> u64 {
+    duration_ms.saturating_mul(10) / 9
+}
+
 #[derive(Debug, Clone)]
 pub struct TrackPlayingContext {
     pub track_id: Option<String>,
@@ -34,11 +39,19 @@ struct PlaySession {
 }
 
 impl PlaySession {
+    /// Time spent playing, measured on the wall clock between start / resume and pause. The tracker only learns
+    /// that a track ran out by itself when a state poll sees the engine stopped; when none comes (continuous
+    /// playback off, or the queue gave up on files that fail to load), the clock would keep running until the next
+    /// start or stop. So a play never counts more than the track lasts at the slowest tempo the player offers.
     fn total_ms(&self, now: Instant) -> u64 {
-        self.listened_ms
+        let total = self.listened_ms
             + self.playing_since.map_or(0, |since| {
                 now.saturating_duration_since(since).as_millis() as u64
-            })
+            });
+        match self.ctx.duration_ms {
+            0 => total,
+            duration => total.min(longest_play_ms(duration)),
+        }
     }
 
     fn pause(&mut self, now: Instant) {
@@ -274,5 +287,37 @@ mod tests {
         tracker.check_at(false, t0 + Duration::from_secs(60));
         tracker.stopped_at(t0 + Duration::from_secs(3600));
         assert_eq!(listens(&conn), vec![("Ended".to_string(), 60_000)]);
+    }
+
+    #[test]
+    fn test_track_that_ran_out_unseen_counts_at_most_its_length() {
+        // No state poll saw the end (the queue gave up on missing files after it): the session stays open until
+        // the next start, an hour later. The play is capped at the track's length at the slowest tempo.
+        let (tracker, conn) = tracker();
+        let t0 = Instant::now();
+        tracker.track_started_at(ctx("Unseen end", t0), t0);
+        tracker.track_started_at(
+            ctx("Hour later", t0 + Duration::from_secs(3600)),
+            t0 + Duration::from_secs(3600),
+        );
+        tracker.stopped_at(t0 + Duration::from_secs(3601));
+        assert_eq!(
+            listens(&conn),
+            vec![
+                ("Hour later".to_string(), 1_000),
+                ("Unseen end".to_string(), 333_333)
+            ]
+        );
+    }
+
+    #[test]
+    fn test_slowed_down_play_is_not_cut_short() {
+        // 300 s track played to the end at −10 %: 333 s of real listening, all counted.
+        let (tracker, conn) = tracker();
+        let t0 = Instant::now();
+        tracker.track_started_at(ctx("Slow", t0), t0);
+        tracker.check_at(false, t0 + Duration::from_millis(333_000));
+        tracker.stopped_at(t0 + Duration::from_secs(400));
+        assert_eq!(listens(&conn), vec![("Slow".to_string(), 333_000)]);
     }
 }

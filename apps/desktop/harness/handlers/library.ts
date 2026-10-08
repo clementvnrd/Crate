@@ -245,7 +245,7 @@ export function libraryHandlers(state: HarnessState): HandlerMap {
 		get_analyzed_tracks: ({ trackIds }) => state.tracks.filter((track) => (trackIds as string[]).includes(track.id)),
 		get_track_waveform: ({ trackId }) => waveformFor(requireTrack(state, trackId)),
 		get_track_cues: ({ trackId }) => cuesFor(requireTrack(state, trackId)),
-		check_file_exists: () => true,
+		check_file_exists: ({ trackId }) => !state.params.missingTrackIds.includes(String(trackId)),
 
 		update_track: ({ id, update }) => Object.assign(requireTrack(state, id), update as TrackUpdate),
 		update_tracks: ({ ids, update }) =>

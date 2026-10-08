@@ -452,7 +452,11 @@
 			"albumRemoveFailed": "Erreur lors de la suppression de l'album",
 			"albumEmpty": "Cet album ne contient aucun morceau audio lisible",
 			"noPreviewStream": "Aucun flux audio de préécoute disponible pour ce titre.",
-			"beatportPlaybackFailed": "Erreur de lecture Beatport"
+			"beatportPlaybackFailed": "Erreur de lecture Beatport",
+			"trackSkipped": "\"{title}\" passé : son fichier n'a pas pu être chargé",
+			"tracksSkipped": "\"{title}\" et {count, plural, one {# autre morceau passés} other {# autres morceaux passés}} : leurs fichiers n'ont pas pu être chargés",
+			"skipFailedStillPlaying": "Impossible de charger {count, plural, one {# morceau} other {# morceaux d'affilée}} : \"{title}\" continue de jouer",
+			"playbackStopped": "Lecture arrêtée : {count, plural, one {# morceau n'a pas pu être chargé} other {# morceaux d'affilée n'ont pas pu être chargés}}. Le disque qui contient votre musique est-il branché ?"
 		}
 	},
 	"library": {

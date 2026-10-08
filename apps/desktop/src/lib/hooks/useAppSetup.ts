@@ -1,5 +1,5 @@
 import { tick } from 'svelte'
-import { get } from 'svelte/store'
+import { derived, get } from 'svelte/store'
 import type {
 	ActiveView,
 	DiscoveryRelease,
@@ -54,12 +54,20 @@ import {
 	createShuffleSession,
 	discoveryTrackKey,
 	findPlayableTrackIndex,
+	navigateQueue,
 	nextPreviewTarget,
 	previewTargetKey,
 	previousPreviewTarget,
+	refreshQueueSnapshot,
+	resolveQueue,
 	sequentialNextIndex,
 	sequentialPreviousIndex,
+	soleCurrentItem,
+	type QueueContext,
+	type QueueDirection,
+	type QueueLocation,
 } from '$shared/utils/playbackQueue'
+import { reportSkippedTracks } from '$shared/stores/player'
 import { dismissSplash } from '$lib/stores/splash'
 import { discoveryPlaylistStore } from '$shared/stores/discoveryPlaylist'
 import {
@@ -195,15 +203,13 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 	)
 
 	// Wrap trackController.play to capture the playback queue context when
-	// the user initiates library playback (double-click, Enter, etc.)
+	// the user initiates library playback (double-click, Enter, etc.). The shuffle
+	// session follows the start by itself (see the `sync` subscriptions below).
 	const trackController = {
 		...rawTrackController,
 		play(track: Track) {
-			hasLibraryQueueContext = true
-			libraryQueueContextActiveView = get(activeView)
-			libraryQueueContextPlaylistId = get(libraryStore).selectedPlaylistId
-			libraryQueueTracks = get(displayedTracks)
-			if (get(shuffleEnabled)) resetShuffleSession(track.id)
+			navigation++
+			libraryQueue = { location: libraryLocation(), snapshot: get(displayedTracks) }
 			rawTrackController.play(track)
 		},
 	}
@@ -272,20 +278,27 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 	// =========================================================================
 	// Tracks the playback context so continuous playback, next/previous use the
 	// correct track list even when the user navigates to a different view.
-	// When the current view matches the playback context, live data is used
-	// (so sort changes, track adds/removes are reflected immediately).
-	// When navigated away, a frozen snapshot is used instead.
+	// While the user is still where playback started, the live list is used
+	// (so a filter, a sort change, track adds/removes are reflected immediately,
+	// on purpose); once they navigate away, the list as they left it. The rule
+	// is `resolveQueue` in the pure `playbackQueue` module.
 
-	// Library track queue
-	let hasLibraryQueueContext = false
-	let libraryQueueContextActiveView: ActiveView = 'library'
-	let libraryQueueContextPlaylistId: string | null = null
-	let libraryQueueTracks: Track[] = []
+	// Library track queue and discovery release queue (`null` until playback starts from a list)
+	let libraryQueue: QueueContext<Track> | null = null
+	let discoveryQueue: QueueContext<DiscoveryRelease> | null = null
 
-	// Discovery release queue
-	let hasDiscoveryQueueContext = false
-	let discoveryQueueContextPlaylistId: string | null = null
-	let discoveryQueueReleases: DiscoveryRelease[] = []
+	// Bumped by every navigation and every change of what is loaded in the player: a skip chain (a next track that
+	// fails to load, CRA-180) stops retrying as soon as the user has moved on or something else started.
+	let navigation = 0
+
+	function libraryLocation(): QueueLocation {
+		return { view: get(activeView), playlistId: get(libraryStore).selectedPlaylistId }
+	}
+
+	function discoveryLocation(): QueueLocation {
+		const ui = get(uiStore)
+		return { view: ui.activeView, playlistId: ui.selectedPlaylistId ?? null }
+	}
 
 	// Shuffle playback bookkeeping (no repeat until exhausted, history for "previous"),
 	// kept in the pure `playbackQueue` module. Both library and discovery shuffle
@@ -293,59 +306,47 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 	const libraryShuffle = createShuffleSession<Track>((t) => t.id)
 	const discoveryShuffle = createShuffleSession<{ release: DiscoveryRelease; trackIndex: number }>(previewTargetKey)
 
-	function resetShuffleSession(id: string | null) {
-		libraryShuffle.reset(id)
-	}
-
-	function resetDiscoveryShuffleSession(releaseId: string | null, trackIndex: number = 0) {
-		discoveryShuffle.reset(releaseId ? discoveryTrackKey(releaseId, trackIndex) : null)
-	}
-
 	// Re-anchor the shuffle session on the current track whenever shuffle is switched on.
 	shuffleEnabled.subscribe((on) => {
 		if (!on) return
-		resetShuffleSession(get(currentTrack)?.id ?? null)
+		libraryShuffle.reset(get(currentTrack)?.id ?? null)
 		const preview = get(previewInfo)
-		resetDiscoveryShuffleSession(preview?.releaseId ?? null, preview?.trackIndex ?? 0)
+		discoveryShuffle.reset(preview ? discoveryTrackKey(preview.releaseId, preview.trackIndex) : null)
+	})
+
+	// Every playback start, whatever started it — a row, the Suggested panel, Duplicate Killer, the Upgrader, the
+	// track restored at launch, or the queue itself — is reported to the shuffle session, which keeps its history
+	// for its own picks and starts afresh on any other track (CRA-181). Derived on the key so the 100 ms position
+	// ticks, which emit a new track object, do not reach the session.
+	derived(currentTrack, (track) => track?.id ?? null).subscribe((id) => {
+		navigation++
+		libraryShuffle.sync(id)
+	})
+	derived(previewInfo, (preview) =>
+		preview ? discoveryTrackKey(preview.releaseId, preview.trackIndex) : null
+	).subscribe((key) => {
+		navigation++
+		discoveryShuffle.sync(key)
 	})
 
 	// Keep the frozen queue snapshot up-to-date while the context view is active.
 	// When the user navigates away, the snapshot freezes at the last known state.
 	displayedTracks.subscribe((tracks) => {
-		if (!hasLibraryQueueContext) return
-		if (get(activeView) !== libraryQueueContextActiveView) return
-		if (get(libraryStore).selectedPlaylistId === libraryQueueContextPlaylistId) {
-			libraryQueueTracks = tracks
-		}
+		libraryQueue = refreshQueueSnapshot(libraryQueue, libraryLocation(), tracks)
 	})
 
 	displayedReleases.subscribe((releases) => {
-		if (!hasDiscoveryQueueContext) return
-		const ui = get(uiStore)
-		if (ui.activeView !== 'discovery') return
-		if ((ui.selectedPlaylistId ?? null) === discoveryQueueContextPlaylistId) {
-			discoveryQueueReleases = releases
-		}
+		discoveryQueue = refreshQueueSnapshot(discoveryQueue, discoveryLocation(), releases)
 	})
 
 	/** Get the current library track queue, using live data when the view matches. */
-	function getLibraryQueue(): Track[] {
-		if (!hasLibraryQueueContext) return get(displayedTracks)
-		const currentPlaylistId = get(libraryStore).selectedPlaylistId
-		if (get(activeView) === libraryQueueContextActiveView && currentPlaylistId === libraryQueueContextPlaylistId) {
-			return get(displayedTracks)
-		}
-		return libraryQueueTracks
+	function getLibraryQueue(): readonly Track[] {
+		return resolveQueue(libraryQueue, libraryLocation(), get(displayedTracks))
 	}
 
 	/** Get the current discovery release queue, using live data when the view matches. */
-	function getDiscoveryQueue(): DiscoveryRelease[] {
-		if (!hasDiscoveryQueueContext) return get(displayedReleases)
-		const ui = get(uiStore)
-		if (ui.activeView === 'discovery' && (ui.selectedPlaylistId ?? null) === discoveryQueueContextPlaylistId) {
-			return get(displayedReleases)
-		}
-		return discoveryQueueReleases
+	function getDiscoveryQueue(): readonly DiscoveryRelease[] {
+		return resolveQueue(discoveryQueue, discoveryLocation(), get(displayedReleases))
 	}
 
 	/**
@@ -353,11 +354,11 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 	 * Use this instead of playerStore.playPreview() for user-initiated preview playback.
 	 */
 	function playPreview(release: DiscoveryRelease, trackIndex: number) {
-		hasDiscoveryQueueContext = true
+		navigation++
 		const ui = get(uiStore)
-		discoveryQueueContextPlaylistId = ui.activeView === 'discovery' ? (ui.selectedPlaylistId ?? null) : null
-		discoveryQueueReleases = get(displayedReleases)
-		if (get(shuffleEnabled)) resetDiscoveryShuffleSession(release.id, trackIndex)
+		// A preview started from outside the Discovery view walks the whole Discovery list.
+		const playlistId = ui.activeView === 'discovery' ? (ui.selectedPlaylistId ?? null) : null
+		discoveryQueue = { location: { view: 'discovery', playlistId }, snapshot: get(displayedReleases) }
 		playerStore.playPreview(release, trackIndex)
 	}
 
@@ -378,7 +379,37 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 		return findPlayableTrackIndex(release, direction, trackCanPlay)
 	}
 
+	/**
+	 * Next / previous in the library queue: shuffle or sequential, skipping tracks whose file cannot be loaded and
+	 * telling the user once (CRA-180), restarting the current track when "previous" has nowhere to go (CRA-181).
+	 */
+	async function navigateLibrary(direction: QueueDirection) {
+		const generation = navigation
+		let tracks = getLibraryQueue()
+		if (tracks.length === 0) {
+			tracks = get(sortedTracks)
+		}
+		if (tracks.length === 0) return
+
+		const outcome = await navigateQueue(direction, {
+			items: tracks,
+			currentKey: get(currentTrack)?.id ?? null,
+			keyOf: (track) => track.id,
+			shuffle: get(shuffleEnabled) ? libraryShuffle : null,
+			excludeCurrent: true,
+			start: (track) => playerStore.play(track),
+			restartCurrent: () => playerStore.restartTrack(),
+			isCancelled: () => generation !== navigation,
+		})
+		reportSkippedTracks(
+			outcome,
+			(track) => track.title,
+			(track) => track.id
+		)
+	}
+
 	function playNextTrack() {
+		navigation++
 		const source = get(playbackSource)
 
 		// 1. Discovery / Preview playback
@@ -388,7 +419,9 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 				if (get(shuffleEnabled)) {
 					const candidates = buildDiscoveryCandidates(getDiscoveryQueue(), trackCanPlay)
 					const currentKey = discoveryTrackKey(preview.releaseId, preview.trackIndex)
-					const pick = discoveryShuffle.next(candidates, currentKey)
+					// A one-track queue loops on its track, as it does with shuffle off (CRA-181).
+					const pick =
+						discoveryShuffle.next(candidates, currentKey) ?? soleCurrentItem(candidates, currentKey, previewTargetKey)
 					if (pick) playerStore.playPreview(pick.release, pick.trackIndex)
 					return
 				}
@@ -417,7 +450,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 		if (source === 'standalone' || (!get(currentTrack) && get(standaloneTrack))) {
 			const albState = get(albumsStore)
 			if (albState.isPlayingAlbum && albState.selectedAlbum && albState.selectedAlbumTracks.length > 0) {
-				albumsStore.playNextAlbumTrack()
+				albumsStore.playNextAlbumTrack().catch((err) => console.warn('Next album track failed:', err))
 				return
 			}
 
@@ -432,25 +465,11 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 		}
 
 		// 4. Library playback
-		const id = get(currentTrack)?.id
-		let tracks = getLibraryQueue()
-		if (tracks.length === 0) {
-			tracks = get(sortedTracks)
-		}
-		if (tracks.length === 0) return
-
-		if (get(shuffleEnabled) && id) {
-			const pick = libraryShuffle.next(tracks, id, { excludeCurrent: true })
-			if (pick) playerStore.play(pick)
-			return
-		}
-
-		const idx = id ? tracks.findIndex((t) => t.id === id) : -1
-		const nextIdx = sequentialNextIndex(idx, tracks.length)
-		playerStore.play(tracks[nextIdx])
+		navigateLibrary('next').catch((err) => console.warn('Next track failed:', err))
 	}
 
 	function playPreviousTrack() {
+		navigation++
 		const source = get(playbackSource)
 
 		// 1. Discovery / Preview playback
@@ -458,8 +477,16 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			const preview = get(previewInfo)
 			if (preview) {
 				if (get(shuffleEnabled)) {
-					const prev = discoveryShuffle.previous(buildDiscoveryCandidates(getDiscoveryQueue(), trackCanPlay))
-					if (prev) playerStore.playPreview(prev.release, prev.trackIndex)
+					const candidates = buildDiscoveryCandidates(getDiscoveryQueue(), trackCanPlay)
+					const currentKey = discoveryTrackKey(preview.releaseId, preview.trackIndex)
+					const prev =
+						discoveryShuffle.previous(candidates) ?? soleCurrentItem(candidates, currentKey, previewTargetKey)
+					if (prev) {
+						playerStore.playPreview(prev.release, prev.trackIndex)
+					} else {
+						// Nothing to go back to: restart the current preview (CRA-181).
+						playerStore.restartTrack()
+					}
 					return
 				}
 
@@ -487,7 +514,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 		if (source === 'standalone' || (!get(currentTrack) && get(standaloneTrack))) {
 			const albState = get(albumsStore)
 			if (albState.isPlayingAlbum && albState.selectedAlbum && albState.selectedAlbumTracks.length > 0) {
-				albumsStore.playPreviousAlbumTrack()
+				albumsStore.playPreviousAlbumTrack().catch((err) => console.warn('Previous album track failed:', err))
 				return
 			}
 
@@ -501,24 +528,8 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			}
 		}
 
-		// 4. Library playback
-		const id = get(currentTrack)?.id
-		let tracks = getLibraryQueue()
-		if (tracks.length === 0) {
-			tracks = get(sortedTracks)
-		}
-		if (tracks.length === 0) return
-
-		if (get(shuffleEnabled)) {
-			// Walk back through the actual play history.
-			const prev = libraryShuffle.previous(tracks)
-			if (prev) playerStore.play(prev)
-			return
-		}
-
-		const idx = id ? tracks.findIndex((t) => t.id === id) : -1
-		const prevIdx = sequentialPreviousIndex(idx, tracks.length)
-		playerStore.play(tracks[prevIdx])
+		// 4. Library playback (shuffle walks back through the actual play history)
+		navigateLibrary('previous').catch((err) => console.warn('Previous track failed:', err))
 	}
 
 	// =========================================================================

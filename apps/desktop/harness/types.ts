@@ -26,6 +26,11 @@ export interface HarnessParams {
 	/** `?discrepancyReport=fail` makes `get_discrepancy_report` reject (the report's error state). */
 	discrepancyReportFails: boolean
 	/**
+	 * `?missing=trk-02,trk-05` makes those library tracks' files missing: `play_track` rejects with "File not found"
+	 * like the real backend, and `check_file_exists` answers `false` (a next track that fails to load, CRA-180).
+	 */
+	missingTrackIds: string[]
+	/**
 	 * `?update=available` makes the update check find Crate 0.4.0 (download and install succeed); `download-fails`
 	 * and `install-fails` make that step reject, `check-fails` makes the check itself reject (offline). Default
 	 * `none`: never an update.

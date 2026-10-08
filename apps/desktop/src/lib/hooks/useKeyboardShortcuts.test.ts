@@ -318,6 +318,30 @@ describe('useKeyboardShortcuts - Enter and Space on a focused control', () => {
 		expect(handlers.onPlayPause).toHaveBeenCalled()
 		expect(handlers.onPlaySelected).toHaveBeenCalled()
 	})
+
+	// CRA-196: a focused widget that used an arrow (it called preventDefault) owns it, even if it let the event bubble.
+	it('leaves an arrow a focused widget already used: no seek, no volume change', () => {
+		const group = make('<div role="radiogroup"><button type="button" role="radio">Week</button></div>')
+		const radio = group.querySelector('button') as HTMLElement
+		radio.addEventListener('keydown', (e) => e.preventDefault())
+		focusFromKeyboard(radio)
+		for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) press(radio, { key })
+		expect(handlers.onSeekBackward).not.toHaveBeenCalled()
+		expect(handlers.onSeekForward).not.toHaveBeenCalled()
+		expect(handlers.onVolumeUp).not.toHaveBeenCalled()
+		expect(handlers.onVolumeDown).not.toHaveBeenCalled()
+	})
+
+	it('keeps the arrow shortcuts everywhere else', () => {
+		;(document.activeElement as HTMLElement | null)?.blur()
+		for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) press(document.body, { key })
+		press(document.body, { key: 'ArrowRight', shiftKey: true })
+		expect(handlers.onSeekBackward).toHaveBeenCalledOnce()
+		expect(handlers.onSeekForward).toHaveBeenCalledOnce()
+		expect(handlers.onVolumeUp).toHaveBeenCalledOnce()
+		expect(handlers.onVolumeDown).toHaveBeenCalledOnce()
+		expect(handlers.onNextTrack).toHaveBeenCalledOnce()
+	})
 })
 
 describe('controlOwnsActivationKey', () => {

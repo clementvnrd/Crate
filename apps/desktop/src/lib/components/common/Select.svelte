@@ -142,6 +142,11 @@
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
+		const isArrow = e.key === 'ArrowDown' || e.key === 'ArrowUp'
+		// A modified arrow is a global shortcut (Cmd+↓ selects the next track), not a move in the list.
+		if (isArrow && (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey)) return
+		// The arrows move through the options: the global arrow shortcuts (seek, volume) must not also run.
+		if (e.key === 'ArrowDown' || (open && e.key === 'ArrowUp')) e.stopPropagation()
 		if (!open) {
 			if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
 				e.preventDefault()

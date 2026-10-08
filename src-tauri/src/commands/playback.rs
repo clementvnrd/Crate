@@ -37,9 +37,13 @@ pub async fn play_track(
         artwork_url: track.artwork_path.clone(),
         started_at: chrono::Utc::now().to_rfc3339(),
     };
-    tracker.on_track_started(ctx);
     let duration_ms = track.duration_ms.max(0) as u64;
-    audio.play_track(id, path, Some(duration_ms))
+    let state = audio.play_track(id, path, Some(duration_ms))?;
+    // Only a track that really started opens a listening session: a file that fails to load (moved,
+    // deleted, unreadable) must neither close the session of the track still playing nor be counted
+    // as played itself (B37).
+    tracker.on_track_started(ctx);
+    Ok(state)
 }
 
 #[tauri::command]

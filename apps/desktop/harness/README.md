@@ -31,6 +31,7 @@ The app starts on the library with 16 tracks, in the dark theme, in English, log
 | `dev` | `1` | Report a development build (DEV badge, developer tools button). |
 | `latency` | milliseconds, e.g. `400` | Delay every command: loading states. |
 | `discrepancyReport` | `fail` | Make `get_discrepancy_report` reject (the discrepancy report's error state). |
+| `missing` | track ids, comma-separated, e.g. `trk-02,trk-05` | Those tracks' files are missing: `play_track` rejects with "File not found" before touching the fake engine (what plays keeps playing), `check_file_exists` answers `false`. For the queue skipping a track that fails to load. |
 | `update` | `available`, `download-fails`, `install-fails`, `check-fails` | The update check finds Crate 0.4.0 with release notes. `available`: the download reports progress for about three seconds, then installs; `download-fails` and `install-fails` make that step reject (the update banner's error states); `check-fails` makes the check itself reject (offline, Settings → About). Relaunching does nothing. Default: never an update. |
 
 Example: `http://localhost:1430/?theme=light&lang=fr&accent=amber&playing=trk-03`.

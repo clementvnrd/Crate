@@ -99,6 +99,10 @@ When your cursor is in a text field (like search):
 - `Escape` clears focus from the field
 - Arrow keys navigate within the text (don't control playback)
 
+### Focused Controls
+
+When a control that answers the arrow keys has keyboard focus (the view switcher and the other segmented controls, a dropdown, the waveform, the recent files list, the listening heatmap), the arrow keys, `Home` and `End` act on that control only: they never also seek or change the volume. Arrows with a modifier (`Shift`, `Cmd` / `Ctrl`) keep their global shortcut on a segmented control and on a dropdown.
+
 ### Discovering Shortcuts
 
 Many shortcuts are shown in context menus and tooltips throughout the application.
