@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import {
 	MAX_CONSECUTIVE_LOAD_FAILURES,
 	buildDiscoveryCandidates,
+	createNoticeGate,
 	createShuffleSession,
 	discoveryTrackKey,
 	findPlayableTrackIndex,
@@ -703,30 +704,66 @@ describe('skipNotice', () => {
 	const base: NavigationOutcome<T> = { started: null, skipped: [], gaveUp: false, restarted: false, cancelled: false }
 
 	it('says nothing when nothing was skipped', () => {
-		expect(skipNotice({ ...base, started: { id: 'b' } })).toBeNull()
-		expect(skipNotice(base)).toBeNull()
+		expect(skipNotice({ ...base, started: { id: 'b' } }, true)).toBeNull()
+		expect(skipNotice(base, false)).toBeNull()
 	})
 
 	it('names the first skipped track and counts the others when playback moved on', () => {
-		expect(skipNotice({ ...base, started: { id: 'd' }, skipped: tr('b') })).toEqual({
+		expect(skipNotice({ ...base, started: { id: 'd' }, skipped: tr('b') }, true)).toEqual({
 			kind: 'skipped',
 			first: { id: 'b' },
 			others: 0,
 		})
-		expect(skipNotice({ ...base, started: { id: 'd' }, skipped: tr('b', 'c') })).toEqual({
+		expect(skipNotice({ ...base, started: { id: 'd' }, skipped: tr('b', 'c') }, false)).toEqual({
 			kind: 'skipped',
 			first: { id: 'b' },
 			others: 1,
 		})
 	})
 
-	it('reports one stop when nothing could start, at the bound or not', () => {
-		expect(skipNotice({ ...base, skipped: tr('b', 'c'), gaveUp: true })).toEqual({ kind: 'stopped', count: 2 })
-		expect(skipNotice({ ...base, skipped: tr('b') })).toEqual({ kind: 'stopped', count: 1 })
+	it('says the current track keeps playing when nothing else could start during playback (manual next)', () => {
+		expect(skipNotice({ ...base, skipped: tr('b', 'c'), gaveUp: true }, true)).toEqual({
+			kind: 'kept',
+			first: { id: 'b' },
+			count: 2,
+		})
 	})
 
-	it('still names the skipped track when a newer navigation took over', () => {
-		expect(skipNotice({ ...base, skipped: tr('b'), cancelled: true })?.kind).toBe('skipped')
+	it('reports a stop only when nothing plays any more (end of a track), at the bound or not', () => {
+		expect(skipNotice({ ...base, skipped: tr('b', 'c'), gaveUp: true }, false)).toEqual({
+			kind: 'stopped',
+			first: { id: 'b' },
+			count: 2,
+		})
+		expect(skipNotice({ ...base, skipped: tr('b') }, false)?.kind).toBe('stopped')
+	})
+
+	it('says nothing for a navigation a newer one took over (that one reports)', () => {
+		expect(skipNotice({ ...base, skipped: tr('b'), cancelled: true }, true)).toBeNull()
+		expect(skipNotice({ ...base, skipped: tr('b'), cancelled: true }, false)).toBeNull()
+	})
+})
+
+describe('createNoticeGate', () => {
+	it('lets a notice through once while the same one keeps coming, then again after a quiet window', () => {
+		let now = 0
+		const gate = createNoticeGate(5_000, () => now)
+		expect(gate('kept:b')).toBe(true)
+		now = 100
+		expect(gate('kept:b')).toBe(false) // key repeat
+		now = 4_000
+		expect(gate('kept:b')).toBe(false) // still repeating: the window restarts
+		now = 9_100
+		expect(gate('kept:b')).toBe(true) // quiet for 5 s
+	})
+
+	it('always lets a different notice through', () => {
+		let now = 0
+		const gate = createNoticeGate(5_000, () => now)
+		expect(gate('skipped:b')).toBe(true)
+		now = 10
+		expect(gate('skipped:c')).toBe(true)
+		expect(gate('kept:c')).toBe(true)
 	})
 })
 

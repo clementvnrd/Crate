@@ -1,11 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
-import { preparePage, harnessUrl, settle, unmockedCommands, waitForApp, watchErrors } from './app'
+import { VIEWS, preparePage, harnessUrl, settle, unmockedCommands, waitForApp, watchErrors } from './app'
 
 // A next track that fails to load (CRA-180): the queue skips it, says so once, and never cuts what is playing. The
 // harness's `?missing=` parameter makes `play_track` reject with "File not found" for those tracks, before its fake
 // engine is touched, like the real `AudioService::play_track`.
 
 const MAX_CONSECUTIVE_LOAD_FAILURES = 10
+const player = VIEWS.find((view) => view.id === 'player')!
 
 async function openLibrary(page: Page, missing: string[]): Promise<string[]> {
 	const errors = watchErrors(page)
@@ -64,7 +65,7 @@ test.describe('Queue — a track that fails to load', () => {
 		expect(await unmockedCommands(page)).toEqual([])
 	})
 
-	test('a queue of missing files stops after the bound with a single error, the playing track untouched', async ({
+	test('a queue of missing files stops after the bound with one calm notice, the playing track untouched', async ({
 		page,
 	}) => {
 		const playing = 'trk-01'
@@ -76,8 +77,9 @@ test.describe('Queue — a track that fails to load', () => {
 
 		await expect.poll(async () => (await playTrackCalls(page)).length).toBe(1 + MAX_CONSECUTIVE_LOAD_FAILURES)
 		await expect(toasts(page)).toHaveCount(1)
+		// The music never stopped, so the notice says what keeps playing instead of "Playback stopped".
 		await expect(toasts(page)).toContainText(
-			`Playback stopped: ${MAX_CONSECUTIVE_LOAD_FAILURES} tracks in a row could not be loaded`
+			`Could not load ${MAX_CONSECUTIVE_LOAD_FAILURES} tracks in a row: "Afterglow Protocol" keeps playing`
 		)
 		// Nothing else is tried, and the track that was playing still plays.
 		await page.waitForTimeout(500)
@@ -91,6 +93,35 @@ test.describe('Queue — a track that fails to load', () => {
 			return internals.invoke('get_playback_state')
 		})
 		expect(state).toMatchObject({ is_playing: true, current_track_id: playing })
+
+		expect(errors).toEqual([])
+		expect(await unmockedCommands(page)).toEqual([])
+	})
+
+	test('when the playing track ends and nothing after it loads, one error says playback stopped', async ({ page }) => {
+		const others = Array.from({ length: 15 }, (_, i) => `trk-${String(i + 2).padStart(2, '0')}`)
+		const errors = watchErrors(page)
+		await preparePage(page)
+		await page.goto(harnessUrl({ params: { playing: 'trk-01', missing: others.join(',') } }))
+		await waitForApp(page)
+		await player.open(page)
+		await settle(page)
+
+		// Start the restored track, then jump to its very end with the waveform slider's End key.
+		await page.keyboard.press('Space')
+		await expect.poll(() => playTrackCalls(page)).toEqual(['trk-01'])
+		await page.getByRole('slider', { name: 'Playback position' }).first().focus()
+		await page.keyboard.press('End')
+
+		await expect
+			.poll(async () => (await playTrackCalls(page)).length, { timeout: 10_000 })
+			.toBe(1 + MAX_CONSECUTIVE_LOAD_FAILURES)
+		await expect(toasts(page)).toHaveCount(1)
+		await expect(toasts(page)).toContainText(
+			`Playback stopped: ${MAX_CONSECUTIVE_LOAD_FAILURES} tracks in a row could not be loaded`
+		)
+		await page.waitForTimeout(500)
+		expect(await playTrackCalls(page)).toHaveLength(1 + MAX_CONSECUTIVE_LOAD_FAILURES)
 
 		expect(errors).toEqual([])
 		expect(await unmockedCommands(page)).toEqual([])

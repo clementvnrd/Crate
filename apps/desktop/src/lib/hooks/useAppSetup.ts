@@ -401,7 +401,11 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			restartCurrent: () => playerStore.restartTrack(),
 			isCancelled: () => generation !== navigation,
 		})
-		reportSkippedTracks(outcome, (track) => track.title)
+		reportSkippedTracks(
+			outcome,
+			(track) => track.title,
+			(track) => track.id
+		)
 	}
 
 	function playNextTrack() {
@@ -446,7 +450,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 		if (source === 'standalone' || (!get(currentTrack) && get(standaloneTrack))) {
 			const albState = get(albumsStore)
 			if (albState.isPlayingAlbum && albState.selectedAlbum && albState.selectedAlbumTracks.length > 0) {
-				albumsStore.playNextAlbumTrack()
+				albumsStore.playNextAlbumTrack().catch((err) => console.warn('Next album track failed:', err))
 				return
 			}
 
@@ -510,7 +514,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 		if (source === 'standalone' || (!get(currentTrack) && get(standaloneTrack))) {
 			const albState = get(albumsStore)
 			if (albState.isPlayingAlbum && albState.selectedAlbum && albState.selectedAlbumTracks.length > 0) {
-				albumsStore.playPreviousAlbumTrack()
+				albumsStore.playPreviousAlbumTrack().catch((err) => console.warn('Previous album track failed:', err))
 				return
 			}
 

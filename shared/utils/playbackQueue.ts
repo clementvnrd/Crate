@@ -396,19 +396,42 @@ function queuePicker<T>(direction: QueueDirection, nav: QueueNavigation<T>): Que
 	}
 }
 
-/** What to tell the user after a navigation that skipped tracks; `null` when nothing was skipped. */
+/** What to tell the user after a navigation that skipped tracks. `first` is the first track that failed. */
 export type SkipNotice<T> =
-	/** Playback moved on (or a newer navigation took over): `first` was skipped, plus `others` more. */
+	/** Playback moved on to another track: `first` was skipped, plus `others` more. */
 	| { kind: 'skipped'; first: T; others: number }
-	/** Nothing could be started: `count` tracks in a row failed. */
-	| { kind: 'stopped'; count: number }
+	/** Nothing could be started, but the track that was playing still plays (a manual next / previous). */
+	| { kind: 'kept'; first: T; count: number }
+	/** Nothing could be started and nothing plays (the end of a track): `count` tracks in a row failed. */
+	| { kind: 'stopped'; first: T; count: number }
 
-export function skipNotice<T>(outcome: NavigationOutcome<T>): SkipNotice<T> | null {
-	if (outcome.skipped.length === 0) return null
-	if (outcome.started !== null || outcome.cancelled) {
-		return { kind: 'skipped', first: outcome.skipped[0], others: outcome.skipped.length - 1 }
+/**
+ * The notice for a navigation, `null` when nothing was skipped or when a newer navigation took over (that one
+ * reports for both: holding the "next" key over missing files must not stack one toast per key repeat).
+ * `stillPlaying` is whether the player is still playing the track it had before the navigation.
+ */
+export function skipNotice<T>(outcome: NavigationOutcome<T>, stillPlaying: boolean): SkipNotice<T> | null {
+	if (outcome.skipped.length === 0 || outcome.cancelled) return null
+	const first = outcome.skipped[0]
+	if (outcome.started !== null) return { kind: 'skipped', first, others: outcome.skipped.length - 1 }
+	return { kind: stillPlaying ? 'kept' : 'stopped', first, count: outcome.skipped.length }
+}
+
+/**
+ * Lets a notice through unless the same one (same `key`) was let through or held back less than `windowMs` ago.
+ * Every repeat restarts the window, so a burst of identical notices — key repeat over the same missing track — shows
+ * once.
+ */
+export function createNoticeGate(windowMs: number, now: () => number = () => Date.now()): (key: string) => boolean {
+	let lastKey: string | null = null
+	let lastAt = Number.NEGATIVE_INFINITY
+	return (key) => {
+		const at = now()
+		const repeat = key === lastKey && at - lastAt < windowMs
+		lastKey = key
+		lastAt = at
+		return !repeat
 	}
-	return { kind: 'stopped', count: outcome.skipped.length }
 }
 
 // ---------------------------------------------------------------------------

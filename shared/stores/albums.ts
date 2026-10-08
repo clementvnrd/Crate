@@ -2,7 +2,7 @@ import { writable, derived, get } from 'svelte/store'
 import { translate } from '../i18n'
 import type { PlayerAlbum, PlayerAlbumTrack, StandaloneTrack } from '../types'
 import * as albumApi from '../api/album'
-import { playerStore, reportSkippedTracks } from './player'
+import { playbackIdentity, playerStore, reportSkippedTracks } from './player'
 import { toastStore } from './toast'
 import { open } from '@tauri-apps/plugin-dialog'
 import { toErrorMessage } from '../utils/errors'
@@ -158,6 +158,16 @@ function createAlbumsStore() {
 	// Bumped by each navigation, so a chain of skipped tracks stops when the user presses next / previous again.
 	let navigation = 0
 
+	/**
+	 * Stops a chain of retries when the user moved on: a newer album navigation, or anything else started in the player
+	 * (a library row, a suggestion, a preview), which a retry that succeeds would otherwise replace.
+	 */
+	function cancelledOnceMovedOn(): () => boolean {
+		const generation = ++navigation
+		const loaded = playbackIdentity()
+		return () => generation !== navigation || playbackIdentity() !== loaded
+	}
+
 	/** Plays the album track at `index`; resolves `false` when its file could not be loaded (nothing else changes). */
 	async function playTrackByIndex(index: number, tracks: PlayerAlbumTrack[], album: PlayerAlbum): Promise<boolean> {
 		if (index < 0 || index >= tracks.length) return false
@@ -181,7 +191,7 @@ function createAlbumsStore() {
 		const album = state.selectedAlbum
 		const tracks = state.selectedAlbumTracks
 		if (!album || tracks.length === 0) return
-		const generation = ++navigation
+		const isCancelled = cancelledOnceMovedOn()
 		const outcome = await navigateQueue(direction, {
 			items: tracks,
 			currentKey: tracks[state.currentTrackIndex]?.id ?? null,
@@ -190,9 +200,13 @@ function createAlbumsStore() {
 			excludeCurrent: true,
 			start: (t) => playTrackByIndex(tracks.indexOf(t), tracks, album),
 			restartCurrent: () => playerStore.restartTrack(),
-			isCancelled: () => generation !== navigation,
+			isCancelled,
 		})
-		reportSkippedTracks(outcome, (t) => t.title)
+		reportSkippedTracks(
+			outcome,
+			(t) => t.title,
+			(t) => t.id
+		)
 	}
 
 	async function playNextAlbumTrack() {
@@ -236,7 +250,7 @@ function createAlbumsStore() {
 		// Start at the first track (or a random one), moving on past tracks whose file cannot be loaded (CRA-180).
 		const startIndex = shuffle ? Math.floor(Math.random() * tracks.length) : 0
 		const ordered = [...tracks.slice(startIndex), ...tracks.slice(0, startIndex)]
-		const generation = ++navigation
+		const isCancelled = cancelledOnceMovedOn()
 		const outcome = await navigateQueue('next', {
 			items: ordered,
 			currentKey: null,
@@ -244,9 +258,13 @@ function createAlbumsStore() {
 			shuffle: null,
 			start: (t) => playTrackByIndex(tracks.indexOf(t), tracks, album),
 			restartCurrent: () => {},
-			isCancelled: () => generation !== navigation,
+			isCancelled,
 		})
-		reportSkippedTracks(outcome, (t) => t.title)
+		reportSkippedTracks(
+			outcome,
+			(t) => t.title,
+			(t) => t.id
+		)
 	}
 
 	return {

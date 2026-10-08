@@ -6,7 +6,7 @@ import { toastStore, toasts } from './toast'
 import * as albumApi from '../api/album'
 import * as playerApi from '../api/player'
 import * as standaloneApi from '../api/standalone'
-import type { PlayerAlbum, PlayerAlbumTrack, AddAlbumResult } from '../types'
+import type { PlayerAlbum, PlayerAlbumTrack, AddAlbumResult, Track } from '../types'
 
 vi.mock('../api/album', () => ({
 	addPlayerAlbum: vi.fn(),
@@ -232,6 +232,41 @@ describe('albumsStore navigation', () => {
 		await albumsStore.playNextAlbumTrack()
 		expect(playing()).toBe('a-3')
 		expect(get(toasts).map((t) => t.message)).toEqual(['Skipped "Track 2": its file could not be loaded'])
+	})
+
+	it('stops skipping as soon as something else starts playing', async () => {
+		await startAlbum()
+		missing.add('a-2')
+		missing.add('a-3')
+		const libraryPick = {
+			id: 'lib-1',
+			file_path: '/music/lib-1.flac',
+			title: 'Library pick',
+			duration_ms: 200_000,
+		} as unknown as Track
+		vi.mocked(playerApi.playTrack).mockResolvedValue({
+			is_playing: true,
+			position_ms: 0,
+			duration_ms: 200_000,
+			volume: 1,
+			speed: 1,
+			current_track_id: 'lib-1',
+			current_track_path: '/music/lib-1.flac',
+		})
+		const loadAlbumTrack = vi.mocked(standaloneApi.playStandaloneTrack).getMockImplementation()!
+		vi.mocked(standaloneApi.playStandaloneTrack).mockImplementation(async (path, id, durationMs) => {
+			// The DJ starts a library track while the album's next track is still failing to load.
+			if (id === 'a-2') await playerStore.play(libraryPick)
+			return loadAlbumTrack(path, id, durationMs)
+		})
+
+		await albumsStore.playNextAlbumTrack()
+
+		const state = get(playerStore)
+		expect(state.playbackSource).toBe('library')
+		expect(state.currentTrack?.id).toBe('lib-1')
+		expect(vi.mocked(standaloneApi.playStandaloneTrack).mock.calls.map((call) => call[1])).not.toContain('a-3')
+		expect(get(toasts)).toEqual([])
 	})
 
 	it('"play album" starts at the first track that loads', async () => {

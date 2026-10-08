@@ -66,7 +66,7 @@ With shuffle on, every track of the list plays once before any track repeats, an
 
 When the next track's file was moved, deleted or is on a drive that is not connected, Crate skips it, plays the following one and shows one message naming the skipped track. The track is flagged as missing in the library and is never counted as played. The track that is playing is never interrupted by a file that fails to load.
 
-If 10 tracks in a row cannot be loaded (or every other track of a shorter list), Crate stops trying and shows a single error: check that the drive holding your music is connected.
+If 10 tracks in a row cannot be loaded (or every other track of a shorter list), Crate stops trying. When a track is still playing, it keeps playing and one message says so. When playback had reached the end of a track, a single error says playback stopped: check that the drive holding your music is connected. Holding the next-track key over the same missing files shows one message, not one per press.
 
 ## Now Playing Display
 

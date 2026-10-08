@@ -3,7 +3,7 @@ import { get } from 'svelte/store'
 import { playerStore, reportSkippedTracks } from './player'
 import { toastStore, toasts } from './toast'
 import type { PlaybackState, Track, DiscoveryRelease } from '../types'
-import type { NavigationOutcome } from '../utils/playbackQueue'
+import { navigateQueue, type NavigationOutcome } from '../utils/playbackQueue'
 import * as playerApi from '../api/player'
 import * as discoveryApi from '../api/discovery'
 import * as previewPlayer from '../services/previewPlayer'
@@ -292,6 +292,43 @@ describe('playerStore.play result and skipped-track notices', () => {
 		expect(playerApi.seek).toHaveBeenCalledWith(0)
 	})
 
+	// Point 4 of the review: a failed start must leave the end-of-track detection of the track still playing intact,
+	// or continuous playback would silently stop after a navigation where every track failed (B36 again).
+	it('still detects the end of the playing track after a failed start', async () => {
+		const onEnd = vi.fn()
+		playerStore.onTrackEnd(onEnd)
+		await startLibraryTrack()
+		vi.mocked(playerApi.playTrack).mockRejectedValue('File not found: /music/trk-2.flac')
+		expect(await playerStore.play(libraryTrack('trk-2'))).toBe(false)
+
+		vi.mocked(playerApi.getPlaybackState).mockResolvedValue(engineFinished())
+		await vi.advanceTimersByTimeAsync(1050)
+		expect(onEnd).toHaveBeenCalledTimes(1)
+		playerStore.onTrackEnd(null)
+	})
+
+	it('a failed start after stopping a preview shows it paused, and play reloads it where it was', async () => {
+		const release = {
+			id: 'rel-1',
+			tracks: [{ id: 'pt-1', position: 1, duration_ms: 30_000 }],
+		} as unknown as DiscoveryRelease
+		vi.mocked(discoveryApi.fetchPreviewStream).mockResolvedValue('https://example.test/stream.mp3')
+		await playerStore.playPreview(release, 0)
+		expect(get(playerStore).playbackState.is_playing).toBe(true)
+
+		vi.mocked(playerApi.playTrack).mockRejectedValue('File not found: /music/trk-2.flac')
+		expect(await playerStore.play(libraryTrack('trk-2'))).toBe(false)
+		expect(previewPlayer.stop).toHaveBeenCalled()
+		const state = get(playerStore)
+		expect(state.playbackSource).toBe('preview')
+		expect(state.playbackState.is_playing).toBe(false)
+
+		vi.mocked(previewPlayer.play).mockClear()
+		await playerStore.resume()
+		expect(previewPlayer.play).toHaveBeenCalledWith('https://example.test/stream.mp3')
+		expect(get(playerStore).playbackState.is_playing).toBe(true)
+	})
+
 	const outcome = (overrides: Partial<NavigationOutcome<Track>>): NavigationOutcome<Track> => ({
 		started: null,
 		skipped: [],
@@ -302,40 +339,93 @@ describe('playerStore.play result and skipped-track notices', () => {
 	})
 	const titled = (id: string, title: string | null) => ({ ...libraryTrack(id), title }) as Track
 	const messages = () => get(toasts).map((t) => ({ type: t.type, message: t.message }))
-
-	it('shows nothing when no track was skipped', () => {
-		reportSkippedTracks(outcome({ started: libraryTrack() }), (t) => t.title)
-		expect(messages()).toEqual([])
-	})
-
-	it('names the skipped track in one warning when playback moved on', () => {
-		reportSkippedTracks(outcome({ started: libraryTrack('c'), skipped: [titled('b', 'Glasshouse')] }), (t) => t.title)
-		expect(messages()).toEqual([{ type: 'warning', message: 'Skipped "Glasshouse": its file could not be loaded' }])
-	})
-
-	it('names the first one and counts the others', () => {
+	const report = (o: NavigationOutcome<Track>) =>
 		reportSkippedTracks(
-			outcome({ started: libraryTrack('d'), skipped: [titled('b', null), titled('c', 'Undertow')] }),
-			(t) => t.title
+			o,
+			(t) => t.title,
+			(t) => t.id
 		)
-		expect(messages()).toEqual([
-			{
-				type: 'warning',
-				message: 'Skipped "Track" and 1 other track: their files could not be loaded',
-			},
-		])
-	})
 
-	it('shows a single error when nothing could start', () => {
-		reportSkippedTracks(
-			outcome({ skipped: Array.from({ length: 10 }, (_, i) => titled(`t${i}`, `T${i}`)), gaveUp: true }),
-			(t) => t.title
-		)
-		expect(messages()).toEqual([
-			{
-				type: 'error',
-				message: 'Playback stopped: 10 tracks in a row could not be loaded. Is the drive holding your music connected?',
-			},
-		])
+	describe('notices', () => {
+		// The notice gate remembers the last notice for a few seconds: every test starts well after the previous one.
+		let clock = new Date('2030-01-01T00:00:00Z').getTime()
+		beforeEach(() => {
+			clock += 60_000
+			vi.setSystemTime(clock)
+		})
+
+		it('shows nothing when no track was skipped', () => {
+			report(outcome({ started: libraryTrack() }))
+			expect(messages()).toEqual([])
+		})
+
+		it('names the skipped track in one warning when playback moved on', () => {
+			report(outcome({ started: libraryTrack('c'), skipped: [titled('b', 'Glasshouse')] }))
+			expect(messages()).toEqual([{ type: 'warning', message: 'Skipped "Glasshouse": its file could not be loaded' }])
+		})
+
+		it('names the first one and counts the others', () => {
+			report(outcome({ started: libraryTrack('d'), skipped: [titled('b', null), titled('c', 'Undertow')] }))
+			expect(messages()).toEqual([
+				{ type: 'warning', message: 'Skipped "Track" and 1 other track: their files could not be loaded' },
+			])
+		})
+
+		const tenMissing = () => Array.from({ length: 10 }, (_, i) => titled(`t${i}`, `T${i}`))
+
+		it('says what keeps playing, without alarm, when nothing else could start during playback', async () => {
+			await startLibraryTrack()
+			report(outcome({ skipped: tenMissing(), gaveUp: true }))
+			expect(messages()).toEqual([
+				{ type: 'warning', message: 'Could not load 10 tracks in a row: "trk-1" keeps playing' },
+			])
+		})
+
+		it('shows a single error only when playback really stopped (end of a track)', () => {
+			report(outcome({ skipped: tenMissing(), gaveUp: true }))
+			expect(messages()).toEqual([
+				{
+					type: 'error',
+					message:
+						'Playback stopped: 10 tracks in a row could not be loaded. Is the drive holding your music connected?',
+				},
+			])
+		})
+
+		it('two quick navigations over the same missing track show one toast', async () => {
+			await startLibraryTrack()
+			const tracks = [libraryTrack('a'), titled('b', 'Missing'), libraryTrack('c')]
+			let generation = 0
+			// Like the app: each press bumps the generation, the older chain stops at its next retry.
+			const press = async () => {
+				const mine = ++generation
+				const result = await navigateQueue('next', {
+					items: tracks,
+					currentKey: 'a',
+					keyOf: (t) => t.id,
+					shuffle: null,
+					start: async (t) => {
+						await Promise.resolve()
+						return t.id !== 'b'
+					},
+					restartCurrent: () => {},
+					isCancelled: () => mine !== generation,
+				})
+				report(result)
+			}
+			await Promise.all([press(), press()])
+			expect(messages()).toEqual([{ type: 'warning', message: 'Skipped "Missing": its file could not be loaded' }])
+		})
+
+		it('key repeat over the same missing tracks during playback stacks no toasts', async () => {
+			await startLibraryTrack()
+			const all = outcome({ skipped: tenMissing(), gaveUp: true })
+			report(all)
+			await vi.advanceTimersByTimeAsync(300)
+			report(all)
+			await vi.advanceTimersByTimeAsync(300)
+			report(all)
+			expect(messages()).toHaveLength(1)
+		})
 	})
 })
