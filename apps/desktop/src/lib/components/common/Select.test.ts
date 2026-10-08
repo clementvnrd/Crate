@@ -47,6 +47,20 @@ describe('Select, keys stay in the control', () => {
 		expect(reachedWindow.filter((key) => key.startsWith('Arrow'))).toEqual([])
 	})
 
+	it('leaves modified arrows to the global shortcuts (Cmd+↓ selects the next track)', async () => {
+		const onchange = vi.fn()
+		render(Select, { props: { value: 'dark', options, onchange } })
+		const trigger = screen.getByRole('button')
+		trigger.focus()
+		await fireEvent.keyDown(trigger, { key: 'ArrowDown', metaKey: true })
+		expect(trigger.getAttribute('aria-expanded')).toBe('false')
+		await fireEvent.keyDown(trigger, { key: 'ArrowDown' }) // opens
+		await fireEvent.keyDown(trigger, { key: 'ArrowUp', ctrlKey: true })
+		await fireEvent.keyDown(trigger, { key: 'ArrowDown', shiftKey: true })
+		expect(reachedWindow).toEqual(['ArrowDown', 'ArrowUp', 'ArrowDown'])
+		expect(onchange).not.toHaveBeenCalled()
+	})
+
 	it('leaves ArrowUp to the global shortcuts while closed', async () => {
 		render(Select, { props: { value: 'dark', options } })
 		const trigger = screen.getByRole('button')

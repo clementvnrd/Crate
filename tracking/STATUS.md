@@ -5,7 +5,7 @@ This file is **the** source of truth for tracking: every defect in the [register
 Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification or remaining work. The progress table is recomputed with `yarn status` (from the repository root).
 
 <!-- progress:start -->
-**Overall progress: 107 / 108 defects fixed (99%)**
+**Overall progress: 110 / 111 defects fixed (99%)**
 
 | Step | Fixed | Progress |
 | --- | --- | --- |
@@ -140,7 +140,7 @@ _Exit criterion: Key 3 = cue 3, search for "You'll", valid XML._
 - [x] **F2** — Space in the Player view starts a recent track instead of pausing the preview; duplicated logic
 - [x] **F3** — Space or Enter on a focused row triggers playback and the global shortcut
 - [x] **F11** — Cues and waveform never loaded for an external file: a UUID is sent to `get_track_cues`
-- [x] **F16** — Arrow keys, Home and End on a focused segmented control (or an open select) also trigger the global seek and volume shortcuts — _the control stops the keys it handles, modified arrows (Shift / Cmd) stay global shortcuts; the global arrows also ignore a key a focused widget already used; checked the other roving-focus widgets (waveform, recents list, heatmap, resize handle already stopped theirs; the select did not); found after the audit (CRA-196)_
+- [x] **F16** — Arrow keys, Home and End on a focused segmented control (or an open select) also trigger the global seek and volume shortcuts — _the control stops the keys it handles, modified arrows (Shift / Cmd) stay global shortcuts on both controls; the global arrows also ignore a key a focused widget already used; checked the other roving-focus widgets (waveform, recents list, heatmap, resize handle already stopped theirs; the select did not); found after the audit (CRA-196)_
 - [x] **F17** — Shuffle inconsistencies: stale history after a start from the Suggested panel or a modal, empty history after a launch with shuffle on, albums ignore shuffle, "previous" with no history does nothing, one-track lists — _the session follows every playback start through one `sync` in the queue module; albums use the same session; "previous" with nothing to go back to restarts the track; a one-track list replays its track in both modes; the queue being the list as displayed (a filter change mid-play changes what comes next) is kept, tested and documented; found after the audit (CRA-181)_
 
 ### Step 8 — Robust frontend
@@ -295,3 +295,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-08 | A next track that fails to load is skipped with one toast, ten failures in a row stop with one error, a failed load never counts as a listen (B37, CRA-180) | 7 |
 | 2026-10-08 | Shuffle follows every playback start, albums honour shuffle, "previous" restarts the track when there is nothing to go back to, one-track lists loop in both modes (F17, CRA-181) | 7 |
 | 2026-10-09 | Review follow-up: a calm notice instead of "Playback stopped" while music still plays, one notice per key repeat, album retry chains stop on another start, a stopped preview stays resumable after a failed start, listening time capped when a track's end was not seen (B37, CRA-180) | 7 |
+| 2026-10-09 | Review follow-up: modified arrows (Shift / Cmd) pass through a focused dropdown to the global shortcuts, like the segmented control (F16, CRA-196) | 7 |
