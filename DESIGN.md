@@ -201,7 +201,7 @@ The Camelot key colours (Mixed In Key 11 wheel) and energy colours encode inform
 
 1. They live **only** in `shared/utils/camelot.ts` and `shared/utils/energy.ts`; a component obtains them through `getCamelotColor()` / `getEnergyInfo()` and applies them with `style=`.
 2. They colour the **badge**, not its surroundings (no fully tinted row, no glow).
-3. The badge text keeps a contrast of at least 4.5:1 against its background, in both themes. The energy palette gives each level a dark text colour (`color`) and a light one (`lightColor`, the `-800` or `-900` shade of the same hue), and `EnergyBadge` picks between them with `light-dark()`, which follows the `color-scheme` each `[data-theme]` block sets (so a badge inside a panel that stays dark keeps its dark shade). Light theme, worst case over `surface-0` to `surface-3` and a selected row with any accent: 4.64 to 5.85:1.
+3. The badge text keeps a contrast of at least 4.5:1 against its background, in both themes. The energy palette gives each level a dark text colour (`color`) and a light one (`lightColor`, the `-800` or `-900` shade of the same hue), and `EnergyBadge` picks between them with `light-dark()`, which follows the `color-scheme` each `[data-theme]` block sets (so a badge inside a panel that stays dark keeps its dark shade). Light theme: 5.74 to 7.34:1 on the usual surfaces; the worst case of each level, over `surface-0` to `surface-3` and a selected row with any accent, goes from 4.64 to 5.85:1. `light-dark()` needs WebKit 17.5 or later, which every supported macOS has (Crate runs on this Mac only, CRA-122).
 
 ### Source colours
 
@@ -526,6 +526,6 @@ Where the code breaks the charter today; each one is tracked in the register and
 | --- | --- | --- |
 | `text-white` and `bg-black/40–70` inside the Spotify connection modal (a panel that is dark in both themes) and on the Upgrader's artwork overlay; the harmonic wheel's `#3b82f6` fallback for a key without a colour (legible in both themes: token debt, not a contrast defect) | Pulse, Upgrader | D11 |
 | Glass, glow, halos, gradients and `rounded-2xl`/`3xl` beyond the recipe (glow on Beatport buttons, `rounded-2xl`/`3xl` on Beatport and Spotify panels, glass tooltip inside a glass card) | Pulse, Beatport, Upgrader, Duplicate Killer | D11 |
-| Family colours outside their scope: sky switch in `ToggleSwitch` (also 2.5 to 2.7:1 as a fill on the light surfaces), purple harmonic-match chip in the Player | common, Player | D11 |
+| Family colours outside their scope: sky switch in `ToggleSwitch` (also 2.5 to 2.7:1 as a fill on the light surfaces, below 3:1), purple harmonic-match chip in the Player | common, Player | D11, D13 |
 | Family borders replacing the accent focus outline; infinite animations without reduced motion | Beatport, Player, Pulse | D10 |
 | Beatport table columns without `minmax(0, …)` | Beatport | D7 |

@@ -5,7 +5,7 @@ This file is **the** source of truth for tracking: every defect in the [register
 Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification or remaining work. The progress table is recomputed with `yarn status` (from the repository root).
 
 <!-- progress:start -->
-**Overall progress: 106 / 107 defects fixed (99%)**
+**Overall progress: 107 / 108 defects fixed (99%)**
 
 | Step | Fixed | Progress |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 8 — Robust frontend | 17 / 17 | ██████████ |
 | Step 9 — Hygiene and tooling | 14 / 14 | ██████████ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
-| Step 11 — View-by-view compliance | 7 / 7 | ██████████ |
+| Step 11 — View-by-view compliance | 7 / 8 | █████████░ |
 | Step 12 — Translation | 6 / 6 | ██████████ |
 <!-- progress:end -->
 
@@ -202,6 +202,7 @@ _Exit criterion: Strict design rules respected._
 - [x] **D10** — Accessibility: about 25 icon buttons without a name (transport, segments, MIK badge, recents actions);… — _names, waveform slider, recents grid, switches, focus traps, reduced motion, focus outline; Enter and Space reach a keyboard-focused control (owner choice 1a, CRA-100), no hand cursor on the Pulse source bar (2i), the heatmap is a keyboard grid, 15 of 17 `svelte-ignore a11y` resolved (the 2 left on the resize handle are a Svelte false positive, commented). Found on the way, outside D10: right-click menus have no keyboard trigger (e.g. "Relink" a followed source, "Stop analysis"), and the Player recents list is ~30 px tall at 1000×600_
 - [x] **D11** — Components reinvented instead of the shared ones: 4 segmented controls, checkbox, select, spinner, tooltip and… — _shared SegmentedControl, KeyBadge, EnergyBadge, Button tones, `Modal` for the Spotify panel, `Checkbox appearance="native"` and `Spinner` everywhere, dark look unchanged; the Beatport search scope stays a native `<select>`_
 - [x] **D12** — Permanent "Build 57" badge next to the logo and "PRO" labels on third-party brands
+- [ ] **D13** — Light theme after D3: state colours as text keep one value for both themes; `ToggleSwitch` sky fill at 2.5 to 2.7:1; cloud-sync amber at about 2:1 — _found while finishing D3 (2026-10-08); no Linear issue yet (workspace issue budget)_
 
 ### Step 12 — Translation
 
