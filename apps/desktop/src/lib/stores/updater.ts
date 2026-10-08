@@ -109,8 +109,39 @@ function createUpdaterStore() {
 	const { subscribe, set, update } = writable<UpdaterState>(initialState())
 	const read = () => get({ subscribe })
 
+	/** Versions hidden with the banner's close button, until Crate quits. */
+	const hiddenForSession = new Set<string>()
+	let checkInFlight = false
+
 	function fail(phase: UpdaterErrorPhase, error: unknown) {
 		update((s) => ({ ...s, status: 'error', errorPhase: phase, error: toErrorMessage(error, 'Unknown error') }))
+	}
+
+	/** "Later" (24 h), "Skip this version" or the close button still apply to this version. */
+	function isHidden(version: string, now: number): boolean {
+		return (
+			(storedNumber(STORAGE_KEYS.snoozedUntil) ?? 0) > now ||
+			readStored(STORAGE_KEYS.skippedVersion) === version ||
+			hiddenForSession.has(version)
+		)
+	}
+
+	/** Free the native resource behind an offer that is replaced or withdrawn. */
+	function release(offer: Update | null) {
+		if (!offer) return
+		void Promise.resolve()
+			.then(() => offer.close?.())
+			.catch(() => {})
+	}
+
+	/** Relaunch into the installed version; if that fails, keep "Restart now" on offer. */
+	async function relaunchOrSchedule() {
+		try {
+			await relaunch()
+		} catch (error) {
+			console.warn('Relaunch after update failed:', error)
+			update((s) => ({ ...s, status: 'scheduled', dismissed: false }))
+		}
 	}
 
 	/**
@@ -165,16 +196,22 @@ function createUpdaterStore() {
 
 		/**
 		 * Look for a newer version. A silent (automatic) check never runs in development builds,
-		 * never interrupts an update in progress, respects "Later" and "Skip this version", and
-		 * never shows a toast: being offline at a gig is not an error worth reporting.
+		 * never interrupts an update in progress or a failed one waiting for "Retry", respects
+		 * "Later", "Skip this version" and the close button, and never shows a toast: being offline
+		 * at a gig is not an error worth reporting. It keeps running while an update is offered, so
+		 * the banner comes back when "Later" expires and a newer version replaces a skipped one.
+		 * A failed check never drops an update already offered.
 		 */
 		async check(silent = false) {
 			if (silent && get(isDev)) return
-			const current = read()
-			if (IN_FLIGHT.includes(current.status)) return
-			if (silent && current.status === 'available') return
+			const previous = read()
+			if (checkInFlight || IN_FLIGHT.includes(previous.status)) return
+			if (silent && previous.status === 'error' && previous.errorPhase !== 'check') return
 
-			update((s) => ({ ...s, status: 'checking', error: null, errorPhase: null }))
+			const holdsOffer = previous.update !== null && (previous.status === 'available' || previous.status === 'error')
+			checkInFlight = true
+			// While an update is offered the banner stays as it is during the check.
+			if (!holdsOffer) update((s) => ({ ...s, status: 'checking', error: null, errorPhase: null }))
 
 			try {
 				const result = await checkForUpdate()
@@ -182,25 +219,32 @@ function createUpdaterStore() {
 				writeStored(STORAGE_KEYS.lastChecked, String(now))
 
 				if (!result || result.version === get(appVersion)) {
-					update((s) => ({ ...s, status: 'upToDate', update: null, lastChecked: now }))
+					release(previous.update)
+					release(result)
+					update((s) => ({ ...s, status: 'upToDate', update: null, error: null, errorPhase: null, lastChecked: now }))
 					return
 				}
 
-				const snoozed = (storedNumber(STORAGE_KEYS.snoozedUntil) ?? 0) > now
-				const skipped = readStored(STORAGE_KEYS.skippedVersion) === result.version
+				// The same version again: keep the offer already held (and its download state).
+				const offer = previous.update?.version === result.version ? previous.update : result
+				release(offer === result ? previous.update : result)
 				update((s) => ({
 					...s,
 					status: 'available',
-					update: result,
-					version: result.version,
-					body: result.body ?? null,
+					update: offer,
+					version: offer.version,
+					body: offer.body ?? null,
 					progress: 0,
+					error: null,
+					errorPhase: null,
 					lastChecked: now,
-					dismissed: silent ? snoozed || skipped : false,
+					dismissed: silent ? isHidden(offer.version, now) : false,
 				}))
 			} catch (error) {
-				fail('check', error)
+				if (!holdsOffer) fail('check', error)
 				if (!silent) toastStore.error(get(translate)('errors.updateCheckFailed'))
+			} finally {
+				checkInFlight = false
 			}
 		},
 
@@ -223,7 +267,7 @@ function createUpdaterStore() {
 				update((s) => ({ ...s, status: 'scheduled' }))
 				return
 			}
-			await relaunch()
+			await relaunchOrSchedule()
 		},
 
 		/** "Install when I quit": download and install now, never relaunch; the new version opens next time. */
@@ -239,7 +283,7 @@ function createUpdaterStore() {
 		/** Relaunch into an update installed for the next launch. */
 		async restartNow() {
 			if (read().status !== 'scheduled') return
-			await relaunch()
+			await relaunchOrSchedule()
 		},
 
 		/** Resume from the step that failed. */
@@ -267,8 +311,10 @@ function createUpdaterStore() {
 			update((s) => ({ ...s, dismissed: true }))
 		},
 
-		/** Hide the banner for this session only. */
+		/** Hide the banner for this session only (automatic checks keep it hidden until Crate quits). */
 		dismiss() {
+			const version = read().version
+			if (version) hiddenForSession.add(version)
 			update((s) => ({ ...s, dismissed: true }))
 		},
 
@@ -280,8 +326,11 @@ function createUpdaterStore() {
 			return source.subscribe((busy) => update((s) => (s.busy === busy ? s : { ...s, busy })))
 		},
 
+		/** Back to the initial state; whether Crate is busy is kept (its source does not emit again). */
 		reset() {
-			set(initialState())
+			hiddenForSession.clear()
+			checkInFlight = false
+			set({ ...initialState(), busy: read().busy })
 		},
 	}
 

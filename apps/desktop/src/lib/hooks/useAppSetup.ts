@@ -689,7 +689,9 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 		let cleanupKeyboard: () => void = () => {}
 		let cleanupMenu: () => void = () => {}
 		let cleanupMediaKeys: () => void = () => {}
-		let stopUpdaterSchedule: () => void = () => {}
+		// First, outside the try below: the updater must know when Crate is busy (gig safety) even if a
+		// later start-up step fails. The first automatic check still waits 30 seconds.
+		const stopUpdaterSchedule = startUpdaterSchedule()
 
 		try {
 			await withTimeout(exportStore.startListening(), 1500, undefined)
@@ -946,8 +948,6 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			if (get(activeView) === 'discovery') {
 				discoveryStore.loadReleases().catch(() => {})
 			}
-
-			stopUpdaterSchedule = startUpdaterSchedule()
 
 			cloudSyncStore.load().catch(() => {})
 			cloudSyncStore.startPolling()
