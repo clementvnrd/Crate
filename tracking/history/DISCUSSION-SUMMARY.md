@@ -69,7 +69,7 @@ This feature scans the local library, detects tracks encoded as MP3 and automati
 1. **Migration 11 & Rust Models**:
    - `ignored_upgrade_matches` table to remember the user's choices.
    - `UpgradeMatch`, `UpgradeScanResult`, `UpgradeReplacementResult` types.
-2. **Cleaned-up Multi-Pass Search** ([`upgrader.rs`](file:///Users/testuser/Coding%20Projects/crate/src-tauri/src/services/beatport/upgrader.rs)):
+2. **Cleaned-up Multi-Pass Search** ([`upgrader.rs`](../../src-tauri/src/services/beatport/upgrader.rs)):
    - Splitting and extraction of the main artist (removal of featurings `feat.`, `ft.`, `vs.`, `with`).
    - Title clean-up (removal of stray mix tags and dashes).
    - Query cascade: (Pass 1) Cleaned artist + Cleaned title $\rightarrow$ (Pass 2) Cleaned title alone $\rightarrow$ (Pass 3) Raw query.
@@ -179,7 +179,7 @@ Build 57 delivers all the recommendations of the architectural and ergonomic aud
 - **`Shift + Right Arrow` / `Shift + Left Arrow`**: Quick 15s jump (32-beat / 8-bar musical phrase).
 
 ### G. Pioneer Rekordbox XML Export
-- [`rekordbox_xml.rs`](file:///Users/testuser/Coding%20Projects/crate/src-tauri/src/services/export/rekordbox_xml.rs) module generating a standard-compliant `<DJ_PLAYLISTS Version="1.0.0">` XML file.
+- [`rekordbox_xml.rs`](../../src-tauri/src/services/export/rekordbox_xml.rs) module generating a standard-compliant `<DJ_PLAYLISTS Version="1.0.0">` XML file.
 - Export of the collection, BPM tempo grids, Camelot keys and all Mixed In Key cue points as `<POSITION_MARK>` tags readable natively on CDJ decks and in Rekordbox.
 - Dedicated export button added to the toolbar (`Toolbar.svelte`).
 
@@ -190,15 +190,15 @@ Build 57 delivers all the recommendations of the architectural and ergonomic aud
 The project folder was moved in its entirety:
 
 📁 **Main path:**
-[`/Users/testuser/Coding Projects/crate`](file:///Users/testuser/Coding%20Projects/crate)
+[`~/Coding Projects/crate`](../..)
 
 🔗 **Backward-compatibility link:**
-A symbolic link was set up from the old location (`/Users/testuser/.gemini/antigravity/scratch/crate` $\rightarrow$ `/Users/testuser/Coding Projects/crate`) so that no existing script or command is broken.
+A symbolic link was set up from the old location (`~/.gemini/antigravity/scratch/crate` $\rightarrow$ `~/Coding Projects/crate`) so that no existing script or command is broken.
 
 ### Key Project Tree
 
 ```text
-/Users/testuser/Coding Projects/crate/
+~/Coding Projects/crate/
 ├── apps/
 │   └── desktop/                  # Desktop application (SvelteKit + Svelte 5 runes)
 │       └── src/

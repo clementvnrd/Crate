@@ -2,9 +2,9 @@ name: Release
 
 # Default release path for the personal fork (CRA-198 Q4; the backup is `yarn release:local` on the
 # Mac, see docs/RELEASING.md). On a `v*` tag it builds Crate for Apple Silicon, signs the updater
-# bundle, attaches it to a release of this repository and, when the `RELEASES_REPO_TOKEN` secret
-# exists, publishes it to the public releases repository the in-app updater reads.
-# macOS runners are billed 10x on a private repository: this workflow runs on tags only.
+# bundle, publishes it as a GitHub release of this public repository and points the channel's
+# `latest.json` (branch `update-channels`) at it, all with the workflow's own token (CRA-198 Q1).
+# It runs on tags only: a release is always the build of its tag.
 
 on:
   push:
@@ -17,7 +17,7 @@ on:
         required: true
         type: string
       publish:
-        description: 'Publish to the public releases repository (otherwise build and archive only)'
+        description: 'Publish the release and update its channel (otherwise build only: the files stay downloadable from the run)'
         required: false
         type: boolean
         default: true
@@ -44,12 +44,26 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
           INPUT_VERSION: ${{ github.event.inputs.version }}
+          REPO_PRIVATE: ${{ github.event.repository.private }}
         run: |
+          # The app downloads releases without credentials: from a private repository it gets 404, and
+          # macOS runners are billed 10x there. Stop before the build.
+          if [[ "$REPO_PRIVATE" == "true" ]]; then
+            echo "::error::The repository is still private: make it public before releasing (CRA-198)"
+            exit 1
+          fi
+
           if [[ "$EVENT_NAME" == "push" ]]; then
             VERSION="${REF_NAME#v}"
           else
             VERSION="$INPUT_VERSION"
+            # A release is the build of its tag: a manual run must be started from that tag.
+            if [[ "$REF_TYPE" != "tag" || "$REF_NAME" != "v$VERSION" ]]; then
+              echo "::error::Start the run from the tag v$VERSION ('Use workflow from'), not from $REF_TYPE $REF_NAME"
+              exit 1
+            fi
           fi
 
           if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -74,16 +88,11 @@ jobs:
             echo "prerelease=$PRERELEASE"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Extract release notes from CHANGELOG
+      # Fails here, before half an hour of macOS build, when CHANGELOG.md has no section for the version.
+      - name: Check the release notes exist in CHANGELOG
         env:
           VERSION: ${{ steps.validate.outputs.version }}
-        run: node scripts/release/notes.mjs "$VERSION" "$GITHUB_SHA" > release_notes.md
-
-      - name: Upload release notes
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-notes
-          path: release_notes.md
+        run: node scripts/release/notes.mjs "$VERSION" "$GITHUB_SHA" > /dev/null
 
   build:
     name: Build macOS (Apple Silicon)
@@ -142,8 +151,9 @@ jobs:
             src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz.sig
 
   release:
-    name: Archive and publish
+    name: Publish
     needs: [validate, build]
+    if: ${{ github.event_name == 'push' || github.event.inputs.publish == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -154,29 +164,13 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          name: release-macos
+          path: artifacts/release-macos
 
-      - name: Archive in this private repository
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.validate.outputs.tag }}
-          target_commitish: ${{ github.sha }}
-          name: Crate ${{ needs.validate.outputs.version }}
-          body_path: artifacts/release-notes/release_notes.md
-          prerelease: ${{ needs.validate.outputs.prerelease }}
-          files: |
-            artifacts/release-macos/**/*.dmg
-            artifacts/release-macos/**/*.app.tar.gz
-            artifacts/release-macos/**/*.app.tar.gz.sig
-
-      - name: Publish to the public releases repository
-        if: ${{ github.event_name == 'push' || github.event.inputs.publish == 'true' }}
+      # publish.mjs refuses unless the tag names this commit, the archive holds this version and its
+      # signature verifies against the key the installed apps trust; it never replaces a release.
+      - name: Publish the release and update its channel
         env:
-          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.validate.outputs.version }}
-        run: |
-          if [[ -z "$GH_TOKEN" ]]; then
-            echo "::warning::RELEASES_REPO_TOKEN is not set: the build is archived here but not published. Publish from the Mac with 'yarn release:publish --version $VERSION --bundle-dir <downloaded artifacts>'."
-            exit 0
-          fi
-          node scripts/release/publish.mjs --version "$VERSION" --bundle-dir artifacts/release-macos
+        run: node scripts/release/publish.mjs --version "$VERSION" --bundle-dir artifacts/release-macos

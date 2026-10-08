@@ -21,7 +21,7 @@
 	"plugins": {
 		"updater": {
 			"endpoints": [
-				"https://raw.githubusercontent.com/clementvnrd/crate-releases/main/channels/staging/latest.json"
+				"https://raw.githubusercontent.com/clementvnrd/Crate/update-channels/channels/staging/latest.json"
 			]
 		}
 	}

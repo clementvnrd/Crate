@@ -12,7 +12,7 @@
 
 ## 🧰 Personal fork
 
-This repository is a **personal, private fork** of [blackboxaudio/crate](https://github.com/blackboxaudio/crate) (remote `upstream`), used on a single Mac with Mixed In Key 11, Rekordbox 7 and Spotify. It adds to the upstream base:
+This repository is a **personal fork** (public since CRA-198) of [blackboxaudio/crate](https://github.com/blackboxaudio/crate) (remote `upstream`), used on a single Mac with Mixed In Key 11, Rekordbox 7 and Spotify. It adds to the upstream base:
 
 - **Player**: standalone player, recent files, macOS audio file association, hot cues 1 to 8, harmonic mix, DJ shortcuts
 - **Mixed In Key 11**: reading the `Collection11.mikdb` database (cues, energy, keys)
@@ -32,7 +32,7 @@ This repository is a **personal, private fork** of [blackboxaudio/crate](https:/
 | [DESIGN.md](DESIGN.md) | Design system: tokens, components, visual rules |
 | [CLAUDE.md](CLAUDE.md) | Working rules for coding assistants (`design` agent in `.claude/`) |
 
-Beatport downloading goes through `beatportdl`, which does not comply with Beatport's terms of use: this part must never be published in a public repository.
+Beatport downloading goes through the third-party tool `beatportdl`, which does not comply with Beatport's terms of use. It is kept for the owner's personal use only (CRA-113, confirmed when the repository became public, CRA-198); use it at your own risk and responsibility.
 
 ---
 
@@ -148,7 +148,7 @@ Platform target: **macOS** (`.dmg`, `.app`). The fork is used on one Mac only (C
 
 ### Releases and updates
 
-The fork is released for Apple Silicon Macs only, as signed builds published in the public repository [`clementvnrd/crate-releases`](https://github.com/clementvnrd/crate-releases) (the code stays private; where releases live awaits the owner's confirmation on CRA-198). The app checks that repository for updates and installs only builds signed with the fork's own key. The fork's first version is 1.0.0, and releases are built by GitHub Actions when the release's tag is pushed. From the repository root:
+The fork is released for Apple Silicon Macs only, as signed builds published on [this repository's releases page](https://github.com/clementvnrd/Crate/releases). The app reads its channel's update manifest on the `update-channels` branch and installs only builds signed with the fork's own key. The fork's first version is 1.0.0, and releases are built by GitHub Actions when the release's tag is pushed. From the repository root:
 
 ```bash
 yarn bump major staging                   # 0.2.9 -> 1.0.0-staging.1 (the fork's first release)

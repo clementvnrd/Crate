@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
  * Build a signed Crate release on this Mac (Apple Silicon), then optionally publish it.
- * This is the recommended way to release (CRA-198): free, about 8 minutes, and the updater
- * signing key never leaves the Mac. The release workflow on GitHub Actions is the backup.
+ * This is the backup path (CRA-198 Q4): releases are normally built by the GitHub Actions release
+ * workflow when their tag is pushed. About 8 minutes, and the signing key never leaves the Mac.
  *
  * Usage (from the repository root):
  *   yarn release:local              # build the version in package.json
- *   yarn release:local --publish    # build, then run scripts/release/publish.mjs
+ *   yarn release:local --publish    # build, then run scripts/release/publish.mjs (tag pushed first)
  *   yarn release:local --dry-run    # print what would run, build nothing
  *
  * The signing key is read from ~/.tauri/crate-updater.key and its password from the login Keychain
@@ -20,7 +20,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { notesFor } from '../changelog.js'
-import { RUST_TARGET, channelOf, productNameOf } from './manifest.mjs'
+import { RUST_TARGET, channelOf, productNameOf, tagOf } from './manifest.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const KEY_PATH = join(homedir(), '.tauri', 'crate-updater.key')
@@ -49,6 +49,39 @@ const features = channel === 'staging' ? 'desktop,devtools' : 'desktop'
 
 const dirty = execFileSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf-8' }).trim()
 if (dirty && !values['allow-dirty']) fail('The working tree has uncommitted changes: a release is built from a commit.')
+if (values.publish && values['allow-dirty']) {
+	fail('--publish cannot be combined with --allow-dirty: a published release is the build of its tag.')
+}
+
+/** Commit the release tag names on `origin` (peeled for an annotated tag), or null when it is not pushed. */
+function remoteTagCommit(tag) {
+	const lines = execFileSync('git', ['ls-remote', 'origin', `refs/tags/${tag}`, `refs/tags/${tag}^{}`], {
+		cwd: ROOT,
+		encoding: 'utf-8',
+	})
+		.trim()
+		.split('\n')
+		.filter(Boolean)
+		.map((line) => line.split('\t'))
+	const peeled = lines.find(([, ref]) => ref.endsWith('^{}'))
+	return (peeled ?? lines[0])?.[0] ?? null
+}
+
+// Checked before the build, so a release cannot be built from a commit its tag does not name.
+if (values.publish) {
+	const tag = tagOf(version)
+	const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf-8' }).trim()
+	const tagged = remoteTagCommit(tag)
+	const problem =
+		tagged === null
+			? `Tag ${tag} is not on origin: push it first (\`git push origin ${tag}\`, see docs/RELEASING.md).`
+			: tagged !== head
+				? `Tag ${tag} names ${tagged.slice(0, 12)}, but HEAD is ${head.slice(0, 12)}: check out the tag's commit.`
+				: null
+	if (problem && values['dry-run']) console.log(`⚠ ${problem}`)
+	else if (problem) fail(problem)
+	else console.log(`Tag ${tag} on ${head.slice(0, 12)} ✓`)
+}
 
 try {
 	notesFor(readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf-8'), version)

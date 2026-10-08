@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
+	MANIFEST_BRANCH,
 	MAX_MANIFEST_NOTES,
 	RELEASES_REPO,
 	UPSTREAM_KEY_ID,
@@ -96,7 +97,7 @@ describe('buildManifest', () => {
 		notes: 'First pre-release',
 		pubDate: '2026-10-08T21:00:00.123Z',
 		signature: FORK_SIGNATURE,
-		url: 'https://github.com/clementvnrd/crate-releases/releases/download/v0.3.0-staging.1/x.app.tar.gz',
+		url: 'https://github.com/clementvnrd/Crate/releases/download/v0.3.0-staging.1/x.app.tar.gz',
 	}
 
 	it('produces the Tauri static JSON format for Apple Silicon only', () => {
@@ -118,9 +119,7 @@ describe('buildManifest', () => {
 		const long = Array.from({ length: 400 }, (_, i) => `- change number ${i}`).join('\n')
 		const trimmed = trimNotes(long, '0.3.0')
 		expect(trimmed.length).toBeLessThanOrEqual(MAX_MANIFEST_NOTES)
-		expect(trimmed).toMatch(
-			/Full release notes: https:\/\/github\.com\/clementvnrd\/crate-releases\/releases\/tag\/v0\.3\.0$/
-		)
+		expect(trimmed).toMatch(/Full release notes: https:\/\/github\.com\/clementvnrd\/Crate\/releases\/tag\/v0\.3\.0$/)
 		expect(trimNotes('short', '0.3.0')).toBe('short')
 	})
 })
@@ -138,5 +137,14 @@ describe('updater configuration of the fork (guards CRA-199)', () => {
 		const endpoints: string[] = readConf(file).plugins.updater.endpoints
 		expect(endpoints).toEqual([manifestUrl(channel)])
 		expect(endpoints.join(' ')).not.toMatch(/storage\.googleapis\.com|blackboxaudio|bbx-audio\.com/)
+	})
+
+	// CRA-198 Q1: the public Crate repository serves the manifests from a branch that holds no code.
+	// Changing this URL strands every installed copy, so it is pinned here on purpose.
+	it('reads the manifests from the update-channels branch of the public Crate repository', () => {
+		expect(manifestUrl('staging')).toBe(
+			'https://raw.githubusercontent.com/clementvnrd/Crate/update-channels/channels/staging/latest.json'
+		)
+		expect(MANIFEST_BRANCH).not.toMatch(/^(develop|main|master)$/)
 	})
 })
