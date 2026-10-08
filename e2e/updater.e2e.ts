@@ -41,8 +41,10 @@ test.describe('in-app update', () => {
 		await page.keyboard.press('Escape')
 		await expect(page.locator('dialog[open]')).toHaveCount(0)
 
-		await expect(banner).toHaveAttribute('role', 'status')
-		await expect(banner).toHaveAttribute('aria-live', 'polite')
+		// Announced as a status: the message only, not the button labels.
+		const status = banner.getByRole('status')
+		await expect(status).toHaveAttribute('aria-live', 'polite')
+		await expect(status).toHaveText('Crate 0.4.0 is available')
 		await expect(banner).toContainText('Crate 0.4.0 is available')
 		await expect(banner.getByRole('button', { name: 'Update now' })).toBeVisible()
 		await expect(banner.getByRole('button', { name: 'Hide this message' })).toBeVisible()
@@ -68,9 +70,37 @@ test.describe('in-app update', () => {
 		const banner = page.locator('#update-banner')
 		await banner.getByRole('button', { name: 'Update now' }).click()
 		await expect(banner).toContainText('Downloading Crate 0.4.0…')
-		await expect(banner.getByRole('progressbar', { name: 'Download progress' })).toBeVisible()
+		const progress = banner.getByRole('progressbar', { name: 'Download progress' })
+		await expect(progress).toBeVisible()
+		// Progress events really flow through the updater's channel (not just a bar on screen).
+		await expect(progress).toHaveAttribute('aria-valuenow', /^([1-9]\d?|100)$/)
 		await expect(banner).toContainText('Installing Crate 0.4.0…', { timeout: 10_000 })
 		await expect(page.locator('dialog[open]')).toHaveCount(0)
+
+		expect(errors).toEqual([])
+	})
+
+	test('while music plays, the update installs for the next launch and never relaunches', async ({ page }) => {
+		const errors = await openApp(page, { update: 'available', playing: 'trk-03' })
+		// The player bar comes last in the page; its Play button starts the harness's fake engine.
+		await page.getByRole('button', { name: 'Play', exact: true }).last().click()
+		await expect(page.getByRole('button', { name: 'Pause', exact: true }).last()).toBeVisible()
+
+		await checkFromAbout(page)
+		await page.keyboard.press('Escape')
+
+		const banner = page.locator('#update-banner')
+		await expect(banner.getByRole('button', { name: 'Update now' })).toHaveCount(0)
+		await banner.getByRole('button', { name: 'Install when I quit' }).click()
+		await expect(banner).toContainText('Crate 0.4.0 will open next time you launch Crate.', { timeout: 10_000 })
+		// Nothing asked the app to relaunch, and the music is still playing.
+		const restarts = await page.evaluate(() =>
+			(window as unknown as { __harness: { calls: { command: string }[] } }).__harness.calls
+				.map((call) => call.command)
+				.filter((command) => command === 'plugin:process|restart')
+		)
+		expect(restarts).toEqual([])
+		await expect(page.getByRole('button', { name: 'Pause', exact: true }).last()).toBeVisible()
 
 		expect(errors).toEqual([])
 	})

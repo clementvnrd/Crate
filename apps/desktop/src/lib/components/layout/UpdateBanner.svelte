@@ -78,9 +78,12 @@
 	}
 </script>
 
-<!-- The live region stays in the page (empty and zero-height while hidden) so screen readers announce the strip
-     when it appears and when its message changes. -->
-<div id="update-banner" role="status" aria-live="polite" class="flex-shrink-0">
+<div id="update-banner" class="flex-shrink-0">
+	<!-- The live region stays in the page (empty while hidden) so screen readers announce the strip when it appears
+	     and when its message changes. It holds the message only, not the button labels. -->
+	<p id="update-banner-status" class="sr-only" role="status" aria-live="polite">
+		{$updateBannerVisible ? message : ''}
+	</p>
 	{#if $updateBannerVisible}
 		<div class="bg-surface-1" data-state={status} transition:fade={{ duration: reduceMotion ? 0 : 150 }}>
 			<div class="flex min-h-9 min-w-0 items-center gap-3 px-4 py-1 {isError ? 'bg-danger/10' : 'bg-brand-primary/10'}">

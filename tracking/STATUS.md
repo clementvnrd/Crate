@@ -41,7 +41,7 @@ These actions cannot be done on the owner's behalf (personal accounts, decisions
 - [x] Tracking documents: this file, [report](AUDIT-REPORT.md), [register](DEFECTS.md), [history](history/DISCUSSION-SUMMARY.md), `CLAUDE.md`
 - [x] New way of working (2026-09-30): everything written in the repository is in English, `suivi/` became `tracking/`, `yarn suivi` became `yarn status`, standing rules in `CLAUDE.md`
 - [x] Linear adopted as the live board (2026-09-30): team Crate App (`CRA`), 3 projects, 17 milestones, the 107 register defects as issues, decisions and scenario B ideas, rules in `CLAUDE.md` §1 — _optional GitHub integration left to the owner (CRA-136)_
-- [ ] Releases and auto-update for the fork (2026-10-08, project *Release 0.3 & auto-update*): own updater signing key and manifests, ad-hoc signed Apple Silicon builds, `yarn release:local`, runbook `docs/RELEASING.md` (CRA-199) — _public releases repository pending the owner's choice (CRA-198); first pre-release and end-to-end update proof still to do (CRA-201)_
+- [ ] Releases and auto-update for the fork (2026-10-08, project *Release 0.3 & auto-update*): own updater signing key and manifests, ad-hoc signed Apple Silicon builds, `yarn release:local`, runbook `docs/RELEASING.md` (CRA-199), non-blocking in-app update banner that never relaunches during playback or a job (CRA-200) — _public releases repository pending the owner's choice (CRA-198); first pre-release and end-to-end update proof still to do (CRA-201)_
 
 ## Register defects, by repair step
 
