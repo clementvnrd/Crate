@@ -5,7 +5,7 @@ This file is **the** source of truth for tracking: every defect in the [register
 Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification or remaining work. The progress table is recomputed with `yarn status` (from the repository root).
 
 <!-- progress:start -->
-**Overall progress: 105 / 107 defects fixed (98%)**
+**Overall progress: 106 / 107 defects fixed (99%)**
 
 | Step | Fixed | Progress |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 6 — Accurate statistics | 10 / 10 | ██████████ |
 | Step 7 — Exact DJ features | 19 / 19 | ██████████ |
 | Step 8 — Robust frontend | 17 / 17 | ██████████ |
-| Step 9 — Hygiene and tooling | 13 / 14 | █████████░ |
+| Step 9 — Hygiene and tooling | 14 / 14 | ██████████ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
 | Step 11 — View-by-view compliance | 6 / 7 | █████████░ |
 | Step 12 — Translation | 6 / 6 | ██████████ |
@@ -177,7 +177,7 @@ _Exit criterion: Green CI, clean fmt/lint, cross-platform builds._
 - [x] **Q11** — Files that must not be committed: `SYNTHESE_DISCUSSION.md` (personal paths),… — _Swift script deleted; the summary is archived in `tracking/history/` (private repository); fonts handled with D8_
 - [x] **Q12** — No `CLAUDE.md`: every assistant rediscovers the rules (`desktop` feature, CI clippy flags,…
 - [x] **Q13** — `yarn dev` compiles Rust in `--release`: every change costs several minutes (upstream)
-- [ ] **Q14** — 87 `yarn audit` alerts (61 high) in the transitive tooling; `cargo audit` not installed locally — _partial: `yarn audit` is at 0 (it was 122 advisories, 80 high) after re-resolving the lockfile and moving the exact Vite pin to 7.3.6; `cargo audit` is still not installed and needs the owner's go (CRA-88)_
+- [x] **Q14** — 87 `yarn audit` alerts (61 high) in the transitive tooling; `cargo audit` not installed locally — _JavaScript: 122 advisories → 1 (`braces`, via `lint-staged` › `micromatch`, development hook only, no patched version published). Rust: `cargo audit` installed (owner's go, CRA-88); 7 vulnerabilities + 2 unsound → 0 in the macOS build (7 crates updated within their semver range); the 4 left are `quick-xml` 0.37 and 0.39, pulled only by Windows and Linux crates that are never compiled for macOS; 7 "unmaintained" notices are transitive and informational_
 - [x] **Q15** — No design guard rails for assistants: the strict rules only exist in the register,… — _`DESIGN.md`, `design` agent and 5 skills, `yarn design:scan` (1,220 offending lines at the start); automatic visual verification is now `yarn test:e2e` on the versioned harness (CRA-134)_
 - [x] **B10** — Migration numbering diverging from upstream (15 entries, labelled 7 to 16, 6 skipped) — _labels fixed (6 to 15), order unchanged: the local database has already applied these migrations_
 
@@ -284,3 +284,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-03 | Next / previous / shuffle logic extracted from `createAppSetup` into the pure, unit-tested `shared/utils/playbackQueue.ts` (CRA-167, refactor, no behaviour change) | — |
 | 2026-10-08 | The updater stops trusting upstream (own key and manifests, refusal of a database from a newer build), macOS-only release pipeline with a local release command, text-preserving changelog script, release and rollback runbook (CRA-199) | — |
 | 2026-10-08 | In-app update experience: one-line banner under the toolbar instead of a modal, never relaunching during playback or a job, release notes on request, Settings → About status, last check and channel (CRA-200) | — |
+| 2026-10-08 | Rust dependencies audited for the first time: `cargo audit` installed, 7 vulnerabilities and 2 unsound crates fixed by semver-compatible updates, none left in the macOS build (Q14) | 9 |
