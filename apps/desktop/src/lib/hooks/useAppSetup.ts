@@ -33,7 +33,6 @@ import {
 	displayedReleases,
 	expandedReleaseIds,
 	discoveryStore,
-	updaterStore,
 	previewInfo,
 	standaloneTrack,
 	recentStandaloneTracks,
@@ -49,6 +48,7 @@ import { syncStore } from '$lib/stores/sync'
 import { cloudSyncStore } from '$shared/stores/cloudSync'
 import { toastStore } from '$shared/stores/toast'
 import { exportStore } from '$lib/stores/export'
+import { startUpdaterSchedule } from './updaterSchedule'
 import {
 	buildDiscoveryCandidates,
 	createShuffleSession,
@@ -689,7 +689,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 		let cleanupKeyboard: () => void = () => {}
 		let cleanupMenu: () => void = () => {}
 		let cleanupMediaKeys: () => void = () => {}
-		let updateInterval: ReturnType<typeof setInterval> | null = null
+		let stopUpdaterSchedule: () => void = () => {}
 
 		try {
 			await withTimeout(exportStore.startListening(), 1500, undefined)
@@ -947,8 +947,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 				discoveryStore.loadReleases().catch(() => {})
 			}
 
-			updaterStore.check(true).catch(() => {})
-			updateInterval = setInterval(() => updaterStore.check(true), 60 * 60 * 1000)
+			stopUpdaterSchedule = startUpdaterSchedule()
 
 			cloudSyncStore.load().catch(() => {})
 			cloudSyncStore.startPolling()
@@ -980,7 +979,7 @@ export function createAppSetup(config: AppSetupConfig): AppSetupResult {
 			exportStore.stopListening()
 			cloudSyncStore.stopPolling()
 			cloudSyncStore.stopOverrideListener()
-			if (updateInterval) clearInterval(updateInterval)
+			stopUpdaterSchedule()
 		}
 	}
 
