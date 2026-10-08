@@ -1274,6 +1274,9 @@ const skipNoticeGate = createNoticeGate(5_000)
  * else could start during a manual next / previous; a single error only when playback really stopped (the end of a
  * track). A navigation a newer one took over says nothing, and the same notice is not repeated within a few seconds
  * (key repeat over missing files). Toasts never take the focus, so this never interrupts what the user is doing.
+ *
+ * "Kept" and "stopped" are deduplicated on what they say (the track still playing, or nothing), not on the first
+ * failed track: under shuffle each press draws a different one, and the gate would let every repeat through.
  */
 export function reportSkippedTracks<T>(
 	outcome: NavigationOutcome<T>,
@@ -1283,7 +1286,14 @@ export function reportSkippedTracks<T>(
 	const state = get(playerStore)
 	const loaded = state.currentTrack ?? state.standaloneTrack
 	const notice = skipNotice(outcome, state.playbackState.is_playing && loaded !== null)
-	if (notice === null || !skipNoticeGate(`${notice.kind}:${keyOf(notice.first)}`)) return
+	if (notice === null) return
+	const gateKey =
+		notice.kind === 'skipped'
+			? `skipped:${keyOf(notice.first)}`
+			: notice.kind === 'kept'
+				? `kept:${loaded?.id}`
+				: 'stopped'
+	if (!skipNoticeGate(gateKey)) return
 	const t = get(translate)
 	const fallback = t('player.trackFallback')
 	if (notice.kind === 'stopped') {

@@ -427,5 +427,24 @@ describe('playerStore.play result and skipped-track notices', () => {
 			report(all)
 			expect(messages()).toHaveLength(1)
 		})
+
+		// Shuffle draws a different first failed track on every press: the gate must still see one notice.
+		it('key repeat under shuffle, a different first failure each time, still shows one toast', async () => {
+			await startLibraryTrack()
+			for (let press = 0; press < 3; press++) {
+				const drawn = Array.from({ length: 10 }, (_, i) => titled(`p${press}-${i}`, `T${i}`))
+				report(outcome({ skipped: drawn, gaveUp: true }))
+				await vi.advanceTimersByTimeAsync(300)
+			}
+			expect(messages()).toHaveLength(1)
+		})
+
+		it('nothing playing: repeated "stopped" notices with different failures show one error', async () => {
+			for (let press = 0; press < 3; press++) {
+				report(outcome({ skipped: [titled(`s${press}`, 'Gone')], gaveUp: true }))
+				await vi.advanceTimersByTimeAsync(300)
+			}
+			expect(messages().map((m) => m.type)).toEqual(['error'])
+		})
 	})
 })
