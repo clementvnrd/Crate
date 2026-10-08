@@ -20,7 +20,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { notesFor } from '../changelog.js'
-import { RUST_TARGET, channelOf } from './manifest.mjs'
+import { RUST_TARGET, channelOf, productNameOf } from './manifest.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const KEY_PATH = join(homedir(), '.tauri', 'crate-updater.key')
@@ -57,8 +57,11 @@ try {
 	fail(`CHANGELOG.md has no section for ${version}: run \`${fix}\` first.`)
 }
 
-const args = ['tauri', 'build', '--config', config, '--target', RUST_TARGET, '--', '--features', features]
-console.log(`Crate ${version} (${channel}) — yarn ${args.join(' ')}`)
+// The Tauri CLI is called directly: through `yarn tauri … -- …`, Yarn 1 drops every option written
+// before `--`, and the build silently becomes a production build for the default target.
+const tauri = join(ROOT, 'node_modules', '.bin', 'tauri')
+const args = ['build', '--config', config, '--target', RUST_TARGET, '--features', features]
+console.log(`Crate ${version} (${channel}) — tauri ${args.join(' ')}`)
 if (values['dry-run']) {
 	console.log('--dry-run: nothing built.')
 	process.exit(0)
@@ -75,7 +78,7 @@ try {
 	fail(`Keychain item "${KEYCHAIN_SERVICE}" not found (see docs/RELEASING.md, "Signing key").`)
 }
 
-const build = spawnSync('yarn', args, {
+const build = spawnSync(tauri, args, {
 	cwd: ROOT,
 	stdio: 'inherit',
 	env: {
@@ -89,6 +92,10 @@ if (build.status !== 0) fail(`tauri build exited with ${build.status}.`)
 
 const targetDir = process.env.CARGO_TARGET_DIR || join(ROOT, 'src-tauri', 'target')
 const bundle = join(targetDir, RUST_TARGET, 'release', 'bundle')
+const archive = join(bundle, 'macos', `${productNameOf(channel)}.app.tar.gz`)
+if (!existsSync(archive) || !existsSync(`${archive}.sig`)) {
+	fail(`tauri build succeeded but ${archive} (and its .sig) is missing: the build did not use ${config}.`)
+}
 console.log(`\n✓ Built ${version}: ${bundle}`)
 
 if (values.publish) {

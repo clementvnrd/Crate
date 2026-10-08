@@ -132,30 +132,26 @@ function updateVersion(bumpType, channel = null) {
 	const parsed = parseVersion(newVersion)
 	const baseVersion = formatVersion({ ...parsed, channel: null, prerelease: null })
 
-	// Update tauri.conf.json with base version only (no prerelease)
+	// Update tauri.conf.json with base version only (no prerelease). Only the version line is
+	// rewritten, so the file keeps its hand-made formatting (compact arrays) and the diff stays one line.
 	const tauriConfPath = join(ROOT, 'src-tauri', 'tauri.conf.json')
-	const tauriConf = JSON.parse(readFileSync(tauriConfPath, 'utf-8'))
-	tauriConf.version = baseVersion
-	writeFileSync(tauriConfPath, JSON.stringify(tauriConf, null, '  ') + '\n')
+	const tauriConfText = readFileSync(tauriConfPath, 'utf-8')
+	const versionLine = /^(\s*"version":\s*")[^"]*(")/m
+	if (!versionLine.test(tauriConfText)) throw new Error('No "version" line in src-tauri/tauri.conf.json')
+	writeFileSync(tauriConfPath, tauriConfText.replace(versionLine, `$1${baseVersion}$2`))
 	console.log(`Updated src-tauri/tauri.conf.json: -> ${baseVersion}`)
 
 	// Update tauri.staging.conf.json with full version
 	const stagingConfPath = join(ROOT, 'src-tauri', 'tauri.staging.conf.json')
 	const stagingConf = JSON.parse(readFileSync(stagingConfPath, 'utf-8'))
 	if (parsed.prerelease !== null) {
-		// Staging: set full version + MSI-compatible WiX version
+		// Staging: the full version (the fork ships macOS only, so no Windows/WiX override).
 		stagingConf.version = newVersion
-		if (!stagingConf.bundle) stagingConf.bundle = {}
-		if (!stagingConf.bundle.windows) stagingConf.bundle.windows = {}
-		if (!stagingConf.bundle.windows.wix) stagingConf.bundle.windows.wix = {}
-		stagingConf.bundle.windows.wix.version = `${baseVersion}.${parsed.prerelease}`
 	} else {
-		// Stable: remove staging version + clean up WiX override
+		// Stable: the staging app inherits the base version.
 		delete stagingConf.version
-		if (stagingConf.bundle?.windows) {
-			delete stagingConf.bundle.windows
-		}
 	}
+	if (stagingConf.bundle?.windows) delete stagingConf.bundle.windows
 	writeFileSync(stagingConfPath, JSON.stringify(stagingConf, null, '\t') + '\n')
 	console.log(
 		`Updated src-tauri/tauri.staging.conf.json: -> ${parsed.prerelease !== null ? newVersion : '(inherited)'}`
