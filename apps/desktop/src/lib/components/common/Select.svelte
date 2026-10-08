@@ -142,6 +142,8 @@
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
+		// The arrows move through the options: the global arrow shortcuts (seek, volume) must not also run.
+		if (e.key === 'ArrowDown' || (open && e.key === 'ArrowUp')) e.stopPropagation()
 		if (!open) {
 			if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
 				e.preventDefault()

@@ -99,9 +99,13 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent, index: number) {
+		// A modified arrow is a global shortcut (Shift+→ next track, Cmd+→ fine seek), not a move in the group.
+		if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
 		const next = indexForKey(event.key, active >= 0 ? active : index, options.length)
 		if (next === null) return
 		event.preventDefault()
+		// The key belongs to the control: the global arrow shortcuts (seek, volume) must not also run.
+		event.stopPropagation()
 		select(next)
 		// A scrollable control brings the option into view itself, clear of the arrows (see `revealSelected`).
 		buttons[next]?.focus({ preventScroll: isScrollable })

@@ -144,3 +144,45 @@ describe('SegmentedControl, scrollable', () => {
 		expect(selected.getAttribute('tabindex')).toBe('0')
 	})
 })
+
+// CRA-196: the global shortcuts listen on `window` (arrows seek and change the volume). A focused control keeps the
+// keys it handles: they move the selection and never reach `window`; any other key still does.
+describe('SegmentedControl, keys stay in the control', () => {
+	const reachedWindow: string[] = []
+	const onWindowKeydown = (event: KeyboardEvent) => reachedWindow.push(event.key)
+
+	beforeEach(() => {
+		reachedWindow.length = 0
+		window.addEventListener('keydown', onWindowKeydown)
+	})
+
+	afterEach(() => {
+		window.removeEventListener('keydown', onWindowKeydown)
+	})
+
+	for (const scrollable of [false, true]) {
+		it(`arrows, Home and End change the selection only${scrollable ? ' (scrollable)' : ''}`, async () => {
+			const onchange = vi.fn()
+			renderControl({ value: '7d', onchange, scrollable })
+			const radio = screen.getByRole('radio', { name: '7d' })
+			radio.focus()
+			for (const key of ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'Home', 'End']) {
+				await fireEvent.keyDown(radio, { key })
+			}
+			expect(onchange.mock.calls.map(([value]) => value)).toEqual(['30d', 'today', 'today', '30d', 'today', 'all'])
+			expect(reachedWindow).toEqual([])
+		})
+	}
+
+	it('lets the keys it does not handle, and modified arrows, through to the global shortcuts', async () => {
+		const onchange = vi.fn()
+		renderControl({ value: '7d', onchange, scrollable: false })
+		const radio = screen.getByRole('radio', { name: '7d' })
+		radio.focus()
+		await fireEvent.keyDown(radio, { key: 'm' })
+		await fireEvent.keyDown(radio, { key: 'ArrowRight', shiftKey: true }) // next track
+		await fireEvent.keyDown(radio, { key: 'ArrowLeft', metaKey: true }) // fine seek
+		expect(reachedWindow).toEqual(['m', 'ArrowRight', 'ArrowLeft'])
+		expect(onchange).not.toHaveBeenCalled()
+	})
+})

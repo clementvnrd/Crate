@@ -15,7 +15,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 4 — Safe Upgrader | 9 / 9 | ██████████ |
 | Step 5 — Clean Mixed In Key | 8 / 8 | ██████████ |
 | Step 6 — Accurate statistics | 10 / 10 | ██████████ |
-| Step 7 — Exact DJ features | 19 / 19 | ██████████ |
+| Step 7 — Exact DJ features | 20 / 20 | ██████████ |
 | Step 8 — Robust frontend | 17 / 17 | ██████████ |
 | Step 9 — Hygiene and tooling | 14 / 14 | ██████████ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
@@ -139,6 +139,7 @@ _Exit criterion: Key 3 = cue 3, search for "You'll", valid XML._
 - [x] **F2** — Space in the Player view starts a recent track instead of pausing the preview; duplicated logic
 - [x] **F3** — Space or Enter on a focused row triggers playback and the global shortcut
 - [x] **F11** — Cues and waveform never loaded for an external file: a UUID is sent to `get_track_cues`
+- [x] **F16** — Arrow keys, Home and End on a focused segmented control (or an open select) also trigger the global seek and volume shortcuts — _the control stops the keys it handles, modified arrows (Shift / Cmd) stay global shortcuts; the global arrows also ignore a key a focused widget already used; checked the other roving-focus widgets (waveform, recents list, heatmap, resize handle already stopped theirs; the select did not); found after the audit (CRA-196)_
 
 ### Step 8 — Robust frontend
 
@@ -288,3 +289,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-08 | Rust dependencies audited for the first time: `cargo audit` installed, 7 vulnerabilities and 2 unsound crates fixed by semver-compatible updates, none left in the macOS build (Q14) | 9 |
 | 2026-10-08 | Discovery titles readable at 1000 px in French: the track count shows only when the title column has room (L1 follow-up, CRA-103; e2e crushed columns 10 to 5) | 12 |
 | 2026-10-08 | D3 finished: energy badge light text, toolbar count badges, Mixed In Key label and icon, upstream red danger and like classes on `--danger-*` tokens; dark theme unchanged (CRA-96) | 11 |
+| 2026-10-08 | Arrow keys on a focused segmented control or open select no longer also seek or change the volume (F16, CRA-196) | 7 |
