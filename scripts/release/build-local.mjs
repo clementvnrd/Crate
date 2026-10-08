@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Build a signed Crate release on this Mac (Apple Silicon), then optionally publish it.
- * This is the default way to release (decision CRA-198): free, about 8 minutes, and the updater
+ * This is the recommended way to release (CRA-198): free, about 8 minutes, and the updater
  * signing key never leaves the Mac. The release workflow on GitHub Actions is the backup.
  *
  * Usage (from the repository root):
@@ -53,7 +53,8 @@ if (dirty && !values['allow-dirty']) fail('The working tree has uncommitted chan
 try {
 	notesFor(readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf-8'), version)
 } catch {
-	fail(`CHANGELOG.md has no section for ${version}: run \`yarn changelog:prepare ${version}\` first.`)
+	const fix = channel === 'staging' ? `yarn changelog:prepare ${version}` : `yarn changelog:graduate ${version}`
+	fail(`CHANGELOG.md has no section for ${version}: run \`${fix}\` first.`)
 }
 
 const args = ['tauri', 'build', '--config', config, '--target', RUST_TARGET, '--', '--features', features]

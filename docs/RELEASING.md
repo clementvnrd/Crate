@@ -1,7 +1,10 @@
 # Releasing Crate
 
 How a version of Crate reaches the Mac, how the app updates itself, and how to undo a bad release.
-Decisions behind it: CRA-198 (where releases live), CRA-199 (own signing key, macOS-only pipeline).
+Behind it: CRA-199 (own signing key, macOS-only pipeline) and CRA-198 (where releases live:
+the public `clementvnrd/crate-releases` repository is the recommended option, **pending the owner's
+answer**; if another option is chosen, only `RELEASES_REPO` in `scripts/release/manifest.mjs` and the two
+`endpoints` in the Tauri configs change).
 
 ## In one minute
 
@@ -35,8 +38,9 @@ without printing it.
 - **Key lost** (no backup): installed copies can never verify an update again. Generate a new pair
   (`yarn tauri signer generate -w ~/.tauri/crate-updater.key`), put the new public key in
   `tauri.conf.json`, release, and reinstall every copy **once by hand** from the new `.dmg`.
-- **Key leaked**: rotate at once. Release N+1 is signed with the *old* key but carries the *new* public
-  key; from N+2 on, sign with the new key only. Installed copies follow the rotation by themselves.
+- **Key leaked**: rotate at once. Release N+1 carries the *new* public key in `tauri.conf.json` but is
+  signed with the *old* key, published with `yarn release:publish --version <N+1> --allow-key <old key ID>`;
+  from N+2 on, sign with the new key only. Installed copies follow the rotation by themselves.
 
 ## Release a version (default: on this Mac)
 
@@ -53,8 +57,9 @@ Releases are built on the Mac with one command: it is free (no runner minutes), 
    change log" section included); `node scripts/changelog.js notes <version>` prints what users will read.
 3. Commit (`chore(release): 0.3.0-staging.1`), open the pull request, and wait for the owner's merge.
 4. After the merge, on `develop`: `yarn release:local --dry-run` (checks), then
-   `yarn release:local --publish`. The script refuses a dirty tree, a missing changelog section,
-   or an update signed with a key the app does not trust.
+   `yarn release:local --publish`. Nothing is uploaded unless the tree is clean, the changelog has the
+   version's section, the archive really contains that version (read from its `Info.plist`), and its
+   signature verifies against the public key the installed apps trust.
 5. Check the channel: `curl -s https://raw.githubusercontent.com/clementvnrd/crate-releases/main/channels/staging/latest.json`
    (GitHub may serve the previous file for up to 5 minutes).
 
@@ -96,8 +101,8 @@ installed copies forward to a good one.
 | --- | --- |
 | A bad version is published but not installed yet | Re-point the channel to the previous good version: `yarn release:publish --version <good> --repoint`. Then mark the bad release on GitHub as withdrawn: `gh release edit v<bad> --repo clementvnrd/crate-releases --prerelease --notes "Withdrawn: <reason>"`. |
 | A bad version is installed and the app works | Fix forward: revert the faulty change on `develop`, bump, release. The app updates itself to the fixed version. |
-| A bad version is installed and the app does not start | Download the previous good `.dmg` from the releases page and install it by hand over the bad one. |
-| The bad version migrated the database | An older build **refuses** to open a library migrated by a newer one (message "last opened by a newer version of Crate"), so nothing is corrupted. Either install a fixed newer build, or quit Crate and restore the copy of `~/Library/Application Support/com.bbx-audio.crate/` (`crate.db` **and** `db.key` together) taken before the update. |
+| A bad version is installed and the app does not start | Download the previous good `.dmg` from the releases page and install it by hand over the bad one. If the bad version had migrated the database, the previous build will refuse it (next row). |
+| The bad version migrated the database | An older build **refuses** to open a library migrated by a newer one: a "Crate could not start" alert says the library "was last opened by a newer version of Crate", and nothing is touched. Either install a fixed newer build, or quit Crate and restore the copy of `~/Library/Application Support/com.bbx-audio.crate/` (`crate.db` **and** `db.key` together) taken before the update. |
 
 Before installing a stable update that changes the database, keep a copy of that folder: an
 automatic pre-migration snapshot is planned (roadmap, *Reliable core*) but not built yet.

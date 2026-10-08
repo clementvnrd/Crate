@@ -137,17 +137,16 @@ yarn build:staging
 
 Output binaries are placed in `src-tauri/target/release/bundle/`.
 
-Platform targets:
-- **macOS** - `.dmg`, `.app`
-- **Windows** - `.msi`, `.exe`
+Platform target: **macOS** (`.dmg`, `.app`). The fork is used on one Mac only (CRA-122); the upstream Windows build is not maintained here.
 
 ### Releases and updates
 
-The fork is released for Apple Silicon Macs only, as signed builds published in the public repository [`clementvnrd/crate-releases`](https://github.com/clementvnrd/crate-releases) (the code stays private). The app checks that repository for updates and installs only builds signed with the fork's own key. From the repository root:
+The fork is released for Apple Silicon Macs only, as signed builds published in the public repository [`clementvnrd/crate-releases`](https://github.com/clementvnrd/crate-releases) (the code stays private; this location is the recommended option of CRA-198, pending the owner's answer). The app checks that repository for updates and installs only builds signed with the fork's own key. From the repository root:
 
 ```bash
 yarn bump minor staging                   # 0.2.9 -> 0.3.0-staging.1
 yarn changelog:prepare 0.3.0-staging.1    # moves the [Unreleased] notes under the version
+# commit, open the pull request, and once it is merged, on develop:
 yarn release:local --publish              # build, sign and publish from this Mac
 ```
 

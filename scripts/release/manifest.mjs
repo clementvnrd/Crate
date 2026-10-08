@@ -1,3 +1,5 @@
+import { createHash, createPublicKey, verify } from 'node:crypto'
+
 /**
  * Pure helpers shared by the release scripts and the release workflow: where releases live, how
  * assets are named, how `latest.json` is built, and which signing key a file was signed with.
@@ -7,7 +9,7 @@
  * rollback is a revert. The binaries themselves are GitHub release assets of that repository.
  */
 
-/** Public repository that holds only built apps and update manifests (decision CRA-198). */
+/** Public repository that holds only built apps and update manifests (recommended in CRA-198, pending). */
 export const RELEASES_REPO = 'clementvnrd/crate-releases'
 
 /** Key ID of upstream's updater key: a fork build must never trust it again (CRA-199). */
@@ -20,6 +22,9 @@ export const RUST_TARGET = 'aarch64-apple-darwin'
 
 /** Release notes shown inside the app are capped; the release page keeps the full text. */
 export const MAX_MANIFEST_NOTES = 4000
+
+/** GitHub refuses a release body over 125,000 characters; keep a margin. */
+export const MAX_RELEASE_NOTES = 120_000
 
 const SEMVER = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/
 
@@ -93,12 +98,60 @@ export function keyIdOfSignature(signatureB64) {
 	return keyIdFromPayload(lines[1])
 }
 
+/** Cut `text` at a line boundary so that, with `suffix` appended, it fits in `max` characters. */
+export function capText(text, max, suffix) {
+	const value = String(text ?? '').trim()
+	if (value.length <= max) return value
+	const cut = value.slice(0, max - suffix.length)
+	return cut.slice(0, Math.max(cut.lastIndexOf('\n'), 0) || cut.length).trimEnd() + suffix
+}
+
 export function trimNotes(notes, version, repo = RELEASES_REPO) {
-	const text = String(notes ?? '').trim()
-	if (text.length <= MAX_MANIFEST_NOTES) return text
-	const more = `\n\n… Full release notes: ${releasePageUrl(version, repo)}`
-	const cut = text.slice(0, MAX_MANIFEST_NOTES - more.length)
-	return cut.slice(0, Math.max(cut.lastIndexOf('\n'), 0) || cut.length).trimEnd() + more
+	return capText(notes, MAX_MANIFEST_NOTES, `\n\n… Full release notes: ${releasePageUrl(version, repo)}`)
+}
+
+/** Release-page body: the whole changelog section, capped under GitHub's limit. */
+export function releaseBody(notes, commit) {
+	const footer = `\n\n---\nBuilt from commit \`${String(commit).slice(0, 12)}\`.`
+	const capped = capText(
+		notes,
+		MAX_RELEASE_NOTES - footer.length,
+		'\n\n… (truncated: see CHANGELOG.md for the full log)'
+	)
+	return `${capped}${footer}\n`
+}
+
+const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex')
+
+/**
+ * Verify a Tauri updater signature (minisign, Ed25519) over `fileBytes` with a Tauri public key,
+ * exactly like the updater will: the file signature (raw or BLAKE2b-512 prehashed) and the
+ * global signature over the trusted comment. Returns false on any mismatch.
+ */
+export function verifySignature(fileBytes, signatureB64, pubkeyB64) {
+	try {
+		const keyPayload = Buffer.from(decodeBase64(pubkeyB64).split('\n')[1].trim(), 'base64')
+		const [, sigLine, trustedLine, globalLine] = decodeBase64(signatureB64).split('\n')
+		const sigPayload = Buffer.from(sigLine.trim(), 'base64')
+		if (keyPayload.length !== 42 || sigPayload.length !== 74) return false
+		if (!keyPayload.subarray(2, 10).equals(sigPayload.subarray(2, 10))) return false
+
+		const key = createPublicKey({
+			key: Buffer.concat([ED25519_SPKI_PREFIX, keyPayload.subarray(10)]),
+			format: 'der',
+			type: 'spki',
+		})
+		const algorithm = sigPayload.subarray(0, 2).toString('latin1')
+		const message = algorithm === 'ED' ? createHash('blake2b512').update(fileBytes).digest() : Buffer.from(fileBytes)
+		const signature = sigPayload.subarray(10)
+		if (!verify(null, message, key, signature)) return false
+
+		const trusted = trustedLine.replace(/^trusted comment: /, '')
+		const global = Buffer.from(globalLine.trim(), 'base64')
+		return verify(null, Buffer.concat([signature, Buffer.from(trusted, 'utf-8')]), key, global)
+	} catch {
+		return false
+	}
 }
 
 /** The `latest.json` served to the updater (Tauri v2 static JSON format), Apple Silicon only. */

@@ -14,7 +14,9 @@ import {
 	keyIdOfSignature,
 	manifestUrl,
 	productNameOf,
+	releaseBody,
 	trimNotes,
+	verifySignature,
 } from './manifest.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
@@ -23,7 +25,7 @@ const readConf = (name: string) => JSON.parse(readFileSync(path.join(root, 'src-
 // Upstream's public key (as it was in tauri.conf.json until CRA-199) and a signature it produced.
 const UPSTREAM_PUBKEY =
 	'dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVFMzJFNEM1OTQ3MEI5N0QKUldSOXVYQ1V4ZVF5WGh2NXpGc04rTmRWQW1RcVliM2MxazJzUzczOHpCcGZsNlE2TEpyN0dzZ1YK'
-// A real signature made with the fork's key (key ID B84B4C7F52EE0B2E) over a probe file.
+// A real signature made with the fork's key (key ID B84B4C7F52EE0B2E) over a probe file holding "hello\n".
 const FORK_SIGNATURE =
 	'dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdUMrNVNmMHhMdUIwVkJSSEViYTFEVE1UZXhxMFduVlNWbTV0ekdrZDZ6bWhVbTM4bWNwTXRhZmlmdVVlQUExQnEySEZGOUFJRk9CZ2JkbVdHTWFxcUhsQTNZV3RKMEFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxNDg3MDA2CWZpbGU6cHJvYmUudHh0ClM0WDQzWXRyRDB5V296aXdTODFsWTZxQUt1T1NXS2h0eVh1NENPZFlUQ0tHWExpd3FzdVRQNlhFaWtEQUIzQTJFYVIvRHYyTGVwYk9pMkRNVFIxV0JRPT0K'
 
@@ -60,6 +62,31 @@ describe('minisign key IDs', () => {
 
 	it('refuses something that is not a minisign key', () => {
 		expect(() => keyIdOfPubkey(Buffer.from('hello').toString('base64'))).toThrow(/Not a minisign public key/)
+	})
+})
+
+describe('verifySignature', () => {
+	const forkPubkey = () => readConf('tauri.conf.json').plugins.updater.pubkey
+
+	it('accepts the exact file the fork key signed', () => {
+		expect(verifySignature(Buffer.from('hello\n'), FORK_SIGNATURE, forkPubkey())).toBe(true)
+	})
+
+	it('refuses a modified file and a signature checked against another key', () => {
+		expect(verifySignature(Buffer.from('hello!\n'), FORK_SIGNATURE, forkPubkey())).toBe(false)
+		expect(verifySignature(Buffer.from('hello\n'), FORK_SIGNATURE, UPSTREAM_PUBKEY)).toBe(false)
+		expect(verifySignature(Buffer.from('hello\n'), 'garbage', forkPubkey())).toBe(false)
+	})
+})
+
+describe('releaseBody', () => {
+	it('names the source commit and stays under GitHub release body limit', () => {
+		expect(releaseBody('Notes', 'abcdef0123456789')).toBe('Notes\n\n---\nBuilt from commit `abcdef012345`.\n')
+		const huge = Array.from({ length: 20_000 }, (_, i) => `- entry ${i} with some words`).join('\n')
+		const body = releaseBody(huge, 'abcdef0123456789')
+		expect(body.length).toBeLessThanOrEqual(120_000)
+		expect(body).toContain('… (truncated: see CHANGELOG.md for the full log)')
+		expect(body).toMatch(/Built from commit `abcdef012345`\.\n$/)
 	})
 })
 

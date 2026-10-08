@@ -7,13 +7,16 @@
  * Usage (from the repository root):
  *   node scripts/release/publish.mjs --version 0.3.0-staging.1 [--bundle-dir <dir>] [--dry-run]
  *   node scripts/release/publish.mjs --version 0.3.0 --repoint [--dry-run]
+ *   ... [--allow-key <KEY ID>]   # key rotation only, see docs/RELEASING.md
  *
- * `--repoint` re-points the channel manifest to a release that is already published: this is the
- * rollback path (see docs/RELEASING.md). A published version is never replaced: bump instead.
+ * Before anything is uploaded, the bundle must be the version being published (read from the
+ * app's Info.plist inside the archive) and its signature must verify against the public key the
+ * installed apps trust. `--repoint` re-points the channel manifest to a release that is already
+ * published: this is the rollback path. A published version is never replaced: bump instead.
  */
 
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -30,11 +33,19 @@ import {
 	keyIdOfSignature,
 	manifestPath,
 	productNameOf,
+	releaseBody,
 	releasePageUrl,
 	tagOf,
+	verifySignature,
 } from './manifest.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
+const DEFAULT_BUNDLE_DIR = join(
+	process.env.CARGO_TARGET_DIR || join(ROOT, 'src-tauri', 'target'),
+	RUST_TARGET,
+	'release',
+	'bundle'
+)
 
 function fail(message) {
 	console.error(`\n✗ ${message}`)
@@ -56,6 +67,25 @@ function ghSucceeds(args) {
 
 function readJson(path) {
 	return JSON.parse(readFileSync(path, 'utf-8'))
+}
+
+/** The public key the next build ships with (tauri.conf.json). */
+function configuredPubkey() {
+	return readJson(join(ROOT, 'src-tauri', 'tauri.conf.json')).plugins.updater.pubkey
+}
+
+/**
+ * The signature must come from the key the installed apps trust. Normally that is the configured
+ * key; during a key rotation the transition release is signed with the old key (`--allow-key`).
+ */
+function checkSigningKey(signature, allowKey) {
+	const configured = keyIdOfPubkey(configuredPubkey())
+	const signedWith = keyIdOfSignature(signature)
+	const accepted = allowKey ? allowKey.toUpperCase() : configured
+	if (signedWith !== accepted) {
+		fail(`The update was signed with key ${signedWith}, but installed apps trust ${accepted}. Refusing to publish.`)
+	}
+	return signedWith
 }
 
 /** Current content and blob sha of the channel manifest in the releases repository, if any. */
@@ -84,17 +114,31 @@ function putManifest(repo, channel, manifest, message) {
 	console.log(`✓ ${path}: ${previous?.version ?? '(none)'} → ${manifest.version}`)
 }
 
-function findBundle(bundleDir, productName) {
-	const tarball = join(bundleDir, 'macos', `${productName}.app.tar.gz`)
-	const signature = `${tarball}.sig`
-	const dmgDir = join(bundleDir, 'dmg')
-	const dmg = existsSync(dmgDir) ? readdirSync(dmgDir).find((f) => f.endsWith('.dmg')) : undefined
-	for (const file of [tarball, signature]) if (!existsSync(file)) fail(`Missing build output: ${file}`)
-	if (!dmg) fail(`Missing .dmg in ${dmgDir}`)
-	return { tarball, signature, dmg: join(dmgDir, dmg) }
+/** Version of the app inside the updater archive, read from its Info.plist. */
+function bundledVersion(tarball, productName) {
+	const plist = execFileSync('tar', ['-xzOf', tarball, `${productName}.app/Contents/Info.plist`], {
+		encoding: 'utf-8',
+		maxBuffer: 16 * 1024 * 1024,
+	})
+	const read = (key) => plist.match(new RegExp(`<key>${key}</key>\\s*<string>([^<]+)</string>`))?.[1]
+	return { short: read('CFBundleShortVersionString'), build: read('CFBundleVersion') }
 }
 
-function publish({ version, bundleDir, repo, dryRun }) {
+/** The three build outputs of *this* version, or a clear failure. */
+function findBundle(bundleDir, productName, version) {
+	const tarball = join(bundleDir, 'macos', `${productName}.app.tar.gz`)
+	const signature = `${tarball}.sig`
+	const dmg = join(bundleDir, 'dmg', `${productName}_${version}_aarch64.dmg`)
+	for (const file of [tarball, signature, dmg]) if (!existsSync(file)) fail(`Missing build output: ${file}`)
+
+	const { short, build } = bundledVersion(tarball, productName)
+	if (short !== version && build !== version) {
+		fail(`${tarball} contains version ${short ?? build ?? '?'}, not ${version}: rebuild with \`yarn release:local\`.`)
+	}
+	return { tarball, signature, dmg }
+}
+
+function publish({ version, bundleDir, repo, dryRun, allowKey }) {
 	const channel = channelOf(version)
 	const productName = productNameOf(channel)
 	const tag = tagOf(version)
@@ -102,12 +146,12 @@ function publish({ version, bundleDir, repo, dryRun }) {
 	const packageVersion = readJson(join(ROOT, 'package.json')).version
 	if (packageVersion !== version) fail(`package.json is at ${packageVersion}, not ${version}: run \`yarn bump\` first.`)
 
-	const files = findBundle(bundleDir, productName)
+	const files = findBundle(bundleDir, productName, version)
 	const signature = readFileSync(files.signature, 'utf-8').trim()
-	const expectedKey = keyIdOfPubkey(readJson(join(ROOT, 'src-tauri', 'tauri.conf.json')).plugins.updater.pubkey)
-	const signedWith = keyIdOfSignature(signature)
-	if (signedWith !== expectedKey) {
-		fail(`The update was signed with key ${signedWith}, but the app trusts ${expectedKey}. Refusing to publish.`)
+	const signedWith = checkSigningKey(signature, allowKey)
+	const trustedKey = allowKey ? null : configuredPubkey()
+	if (trustedKey && !verifySignature(readFileSync(files.tarball), signature, trustedKey)) {
+		fail(`The signature of ${files.tarball} does not verify: the archive changed after signing. Rebuild.`)
 	}
 
 	const notes = notesFor(readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf-8'), version)
@@ -123,7 +167,7 @@ function publish({ version, bundleDir, repo, dryRun }) {
 	// The release page names the source commit (the code itself stays in the private repository).
 	const commit =
 		process.env.GITHUB_SHA ?? execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf-8' }).trim()
-	writeFileSync(join(stage, 'notes.md'), `${notes}\n\n---\nBuilt from commit \`${commit.slice(0, 12)}\`.\n`)
+	writeFileSync(join(stage, 'notes.md'), releaseBody(notes, commit))
 
 	const manifest = buildManifest({
 		version,
@@ -134,7 +178,9 @@ function publish({ version, bundleDir, repo, dryRun }) {
 	})
 
 	console.log(`Release ${tag} (${channel}) → ${repo}`)
-	console.log(`  signed with key ${signedWith} ✓`)
+	console.log(
+		`  bundle version ${version} ✓, signed with key ${signedWith} ✓${trustedKey ? ', signature verified ✓' : ''}`
+	)
 	for (const name of Object.values(names)) console.log(`  asset ${name}`)
 	if (dryRun) {
 		console.log('\n--dry-run: nothing published. Manifest that would be served:\n')
@@ -143,7 +189,10 @@ function publish({ version, bundleDir, repo, dryRun }) {
 	}
 
 	if (ghSucceeds(['release', 'view', tag, '--repo', repo])) {
-		fail(`${tag} is already published in ${repo}. Published builds are never replaced: bump the version.`)
+		fail(
+			`${tag} is already published in ${repo}. Published builds are never replaced: bump the version. ` +
+				`If only the manifest update failed last time, run: yarn release:publish --version ${version} --repoint`
+		)
 	}
 	gh(
 		[
@@ -168,7 +217,7 @@ function publish({ version, bundleDir, repo, dryRun }) {
 }
 
 /** Rollback: serve an already published release again (installed copies never downgrade by themselves). */
-function repoint({ version, repo, dryRun }) {
+function repoint({ version, repo, dryRun, allowKey }) {
 	const channel = channelOf(version)
 	const productName = productNameOf(channel)
 	const tag = tagOf(version)
@@ -177,12 +226,14 @@ function repoint({ version, repo, dryRun }) {
 	const stage = mkdtempSync(join(tmpdir(), 'crate-repoint-'))
 	const sigName = assetName(productName, version, '.app.tar.gz.sig')
 	gh(['release', 'download', tag, '--repo', repo, '--pattern', sigName, '--dir', stage])
+	const signature = readFileSync(join(stage, sigName), 'utf-8').trim()
+	checkSigningKey(signature, allowKey)
 	const notes = JSON.parse(gh(['release', 'view', tag, '--repo', repo, '--json', 'body'])).body
 	const manifest = buildManifest({
 		version,
 		notes,
 		pubDate: new Date(),
-		signature: readFileSync(join(stage, sigName), 'utf-8').trim(),
+		signature,
 		url: assetUrl(version, assetName(productName, version, '.app.tar.gz'), repo),
 	})
 
@@ -197,9 +248,10 @@ function repoint({ version, repo, dryRun }) {
 const { values } = parseArgs({
 	options: {
 		version: { type: 'string' },
-		'bundle-dir': { type: 'string', default: join(ROOT, 'src-tauri', 'target', RUST_TARGET, 'release', 'bundle') },
+		'bundle-dir': { type: 'string', default: DEFAULT_BUNDLE_DIR },
 		repo: { type: 'string', default: RELEASES_REPO },
 		repoint: { type: 'boolean', default: false },
+		'allow-key': { type: 'string' },
 		'dry-run': { type: 'boolean', default: false },
 	},
 })
@@ -213,6 +265,7 @@ try {
 		bundleDir: values['bundle-dir'],
 		repo: values.repo,
 		dryRun: values['dry-run'],
+		allowKey: values['allow-key'],
 	}
 	if (values.repoint) repoint(options)
 	else publish(options)
