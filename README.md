@@ -100,6 +100,13 @@ cd src-tauri && cargo test --features desktop   # Rust
 
 The tests only use temporary databases: they never touch the real library.
 
+Dependency audits (`cargo install cargo-audit --locked` once):
+
+```bash
+yarn audit --summary                        # JavaScript (tooling only)
+cd src-tauri && cargo audit                 # Rust; advisories in Windows- or Linux-only crates do not reach the macOS build
+```
+
 ```bash
 yarn design:scan                            # deviations from the DESIGN.md rules (tokens, radii, a11y, i18n…)
 yarn design:scan apps/desktop/src/lib/components/stats --details
