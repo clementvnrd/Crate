@@ -196,8 +196,8 @@
 		<button
 			type="button"
 			class="flex h-6 w-6 cursor-pointer items-center justify-center rounded transition-colors hover:bg-surface-3 {isFavorite
-				? 'font-bold text-red-500'
-				: 'text-text-tertiary hover:text-red-400'}"
+				? 'font-bold text-danger-text-muted'
+				: 'text-text-tertiary hover:text-danger-text'}"
 			onclick={toggleFav}
 			title={$translate(isFavorite ? 'beatport.track.removeFavorite' : 'beatport.track.addFavorite')}
 		>

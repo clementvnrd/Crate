@@ -80,7 +80,7 @@
 					<button
 						type="button"
 						onclick={handleLogout}
-						class="cursor-pointer text-xs text-text-tertiary transition-colors hover:text-red-500"
+						class="cursor-pointer text-xs text-text-tertiary transition-colors hover:text-danger-text-muted"
 					>
 						{$translate('settings.beatport.signOut')}
 					</button>

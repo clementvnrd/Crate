@@ -22,7 +22,7 @@
 	)
 
 	const progressColor = $derived.by(() => {
-		if (usagePercentage >= 90) return 'bg-red-500'
+		if (usagePercentage >= 90) return 'bg-danger-tint'
 		if (usagePercentage >= 75) return 'bg-amber-500'
 		return 'bg-brand-primary'
 	})

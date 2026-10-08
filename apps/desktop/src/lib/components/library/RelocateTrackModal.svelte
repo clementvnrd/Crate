@@ -193,8 +193,8 @@
 			</div>
 		{:else if !isCloudSynced && validationResult}
 			{#if !validationResult.format_valid}
-				<div class="flex gap-2 rounded-md border border-red-500/20 bg-red-500/10 p-3">
-					<Icon name="close" class="h-5 w-5 flex-shrink-0 text-red-500" />
+				<div class="flex gap-2 rounded-md border border-danger-tint/20 bg-danger-tint/10 p-3">
+					<Icon name="close" class="h-5 w-5 flex-shrink-0 text-danger-text-muted" />
 					<Text color="danger">{$translate('modals.relocate.unsupportedFormat')}</Text>
 				</div>
 			{:else if validationResult.matches}
@@ -228,8 +228,8 @@
 
 		<!-- Error Message -->
 		{#if error}
-			<div class="flex gap-2 rounded-md border border-red-500/20 bg-red-500/10 p-3">
-				<Icon name="close" class="h-5 w-5 flex-shrink-0 text-red-500" />
+			<div class="flex gap-2 rounded-md border border-danger-tint/20 bg-danger-tint/10 p-3">
+				<Icon name="close" class="h-5 w-5 flex-shrink-0 text-danger-text-muted" />
 				<Text color="danger">{error}</Text>
 			</div>
 		{/if}

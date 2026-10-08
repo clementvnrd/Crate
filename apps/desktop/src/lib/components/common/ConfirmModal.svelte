@@ -72,7 +72,7 @@
 		<Button variant="ghost" onclick={onCancel}>{cancelLabel || $translate('common.cancel')}</Button>
 		<Button
 			variant={destructive ? 'primary' : 'primary'}
-			fill={destructive ? 'bg-red-600 text-white hover:bg-red-700' : undefined}
+			fill={destructive ? 'bg-danger-fill text-white hover:bg-danger-fill-hover' : undefined}
 			onclick={handleConfirm}
 		>
 			{confirmLabel || $translate('common.confirm')}

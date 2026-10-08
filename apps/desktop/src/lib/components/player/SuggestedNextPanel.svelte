@@ -138,7 +138,7 @@
 		{:else if $suggestionsError}
 			<div class="flex flex-col items-center justify-center py-12 text-center">
 				<div
-					class="mb-2.5 flex h-12 w-12 items-center justify-center rounded-2xl border border-stroke-subtle bg-surface-2 text-red-500 shadow-inner"
+					class="mb-2.5 flex h-12 w-12 items-center justify-center rounded-2xl border border-stroke-subtle bg-surface-2 text-danger-text-muted shadow-inner"
 				>
 					<Icon name="alert-triangle" class="h-6 w-6" />
 				</div>

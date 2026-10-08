@@ -822,7 +822,7 @@
 				{#if $recentStandaloneTracks.length > 0}
 					<button
 						type="button"
-						class="flex flex-shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-stroke-subtle bg-surface-2 px-2.5 py-0.5 text-[11px] font-medium text-text-tertiary transition-all hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-500 active:scale-95 dark:hover:text-red-400"
+						class="flex flex-shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-stroke-subtle bg-surface-2 px-2.5 py-0.5 text-[11px] font-medium text-text-tertiary transition-all hover:border-danger-tint/30 hover:bg-danger-tint/10 hover:text-danger-text active:scale-95"
 						onclick={handleClearRecent}
 					>
 						<Icon name="trash" class="h-3 w-3" />
@@ -973,7 +973,7 @@
 									<Tooltip text={$translate('player.recent.remove')} position="top">
 										<button
 											type="button"
-											class="cursor-pointer rounded-full p-1 text-text-tertiary transition-colors hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400"
+											class="cursor-pointer rounded-full p-1 text-text-tertiary transition-colors hover:bg-danger-tint/10 hover:text-danger-text"
 											aria-label={$translate('player.recent.remove')}
 											onclick={(e) => handleRemoveRecent(e, track.id)}
 										>

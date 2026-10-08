@@ -119,7 +119,7 @@
 	<Tooltip text={$translate('nav.toolbar.mikSync')} position="bottom" delay={250}>
 		<button
 			type="button"
-			class="group flex items-center gap-2 rounded-lg border border-sky-500/30 bg-surface-2/80 px-2.5 py-1 text-xs shadow-sm transition-all hover:cursor-pointer hover:border-sky-400/60 hover:bg-sky-950/40 active:scale-95"
+			class="group flex items-center gap-2 rounded-lg border border-source-mik-tint/30 bg-surface-2/80 px-2.5 py-1 text-xs shadow-sm transition-all hover:cursor-pointer hover:border-source-mik-bright/60 hover:bg-source-mik-hover-wash/40 active:scale-95"
 			onclick={handleSyncMik}
 			disabled={syncingMik}
 		>
@@ -131,9 +131,12 @@
 			</span>
 			<div class="h-3 w-px bg-stroke"></div>
 			{#if syncingMik}
-				<Spinner icon="refresh-cw" color="current" class="h-3 w-3 text-sky-400" />
+				<Spinner icon="refresh-cw" color="current" class="h-3 w-3 text-source-mik-logo-text" />
 			{:else}
-				<Icon name="refresh-cw" class="h-3 w-3 text-sky-400 transition-transform duration-300 group-hover:rotate-180" />
+				<Icon
+					name="refresh-cw"
+					class="h-3 w-3 text-source-mik-logo-text transition-transform duration-300 group-hover:rotate-180"
+				/>
 			{/if}
 		</button>
 	</Tooltip>
@@ -160,7 +163,7 @@
 			<Icon name="clone" class="h-4 w-4 {$duplicateGroupCount > 0 ? 'text-warning-text' : 'text-text-secondary'}" />
 			{#if $duplicateGroupCount > 0}
 				<span
-					class="absolute -right-1 -bottom-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-surface-0 bg-red-500 px-1 font-mono text-[10px] font-bold text-white shadow-md"
+					class="absolute -right-1 -bottom-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-surface-0 bg-danger-badge px-1 font-mono text-[10px] font-bold text-white shadow-md"
 				>
 					{$duplicateGroupCount}
 				</span>
@@ -185,7 +188,7 @@
 			<Icon name="sparkles" class="h-4 w-4 text-text-secondary" />
 			{#if $upgraderMatchCount > 0}
 				<span
-					class="absolute -right-1 -bottom-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-surface-0 bg-beatport-tint px-1 font-mono text-[10px] font-bold text-white shadow-md"
+					class="absolute -right-1 -bottom-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-surface-0 bg-beatport-badge px-1 font-mono text-[10px] font-bold text-white shadow-md"
 				>
 					{$upgraderMatchCount}
 				</span>

@@ -128,6 +128,7 @@
 	--color-beatport-body-text-strong: var(--beatport-body-text-strong);
 	--color-beatport-bright: var(--beatport-bright);
 	--color-beatport-status-text: var(--beatport-status-text);
+	--color-beatport-badge: var(--beatport-badge);
 
 	/* Source colours (DESIGN.md, "Source colours"): identify where a listen comes from */
 	--color-source-spotify: var(--source-spotify);
@@ -140,6 +141,10 @@
 	--color-source-mik: var(--source-mik);
 	--color-source-mik-text: var(--source-mik-text);
 	--color-source-mik-wash: var(--source-mik-wash);
+	--color-source-mik-tint: var(--source-mik-tint);
+	--color-source-mik-bright: var(--source-mik-bright);
+	--color-source-mik-hover-wash: var(--source-mik-hover-wash);
+	--color-source-mik-logo-text: var(--source-mik-logo-text);
 	--color-source-rekordbox: var(--source-rekordbox);
 	--color-source-rekordbox-hover: var(--source-rekordbox-hover);
 	--color-source-rekordbox-text: var(--source-rekordbox-text);
@@ -156,6 +161,10 @@
 	--color-warning-text-soft: var(--warning-text-soft);
 	--color-danger-tint: var(--danger-tint);
 	--color-danger-text: var(--danger-text);
+	--color-danger-text-muted: var(--danger-text-muted);
+	--color-danger-fill: var(--danger-fill);
+	--color-danger-fill-hover: var(--danger-fill-hover);
+	--color-danger-badge: var(--danger-badge);
 
 	/* Library tools: the roles shared by Duplicate Killer and the Upgrader */
 	--color-tool-match: var(--tool-match);
@@ -300,6 +309,7 @@
 	--beatport-body-text-strong: var(--color-neutral-200); /* emphasis inside that copy, tab hover */
 	--beatport-bright: var(--color-emerald-400); /* hover of the cart's download button, Upgrader arrow */
 	--beatport-status-text: var(--color-emerald-500); /* "Connected" in the Beatport sidebar */
+	--beatport-badge: var(--color-emerald-500); /* the Upgrader's count badge in the toolbar (white text) */
 
 	/* Source colours: official colours of the services a listen comes from */
 	--source-spotify: #1db954;
@@ -312,6 +322,10 @@
 	--source-mik: #00d2ff;
 	--source-mik-text: #00d2ff;
 	--source-mik-wash: #0c1a24;
+	--source-mik-tint: var(--color-sky-500); /* the toolbar's Mixed In Key sync button: border (/30) */
+	--source-mik-bright: var(--color-sky-400); /* its hover border (/60) */
+	--source-mik-hover-wash: var(--color-sky-950); /* its hover background (/40) */
+	--source-mik-logo-text: var(--color-sky-400); /* the logo's "IN KEY" label and the sync icon */
 	--source-rekordbox: var(--color-red-500);
 	--source-rekordbox-hover: var(--color-red-600);
 	--source-rekordbox-text: var(--color-red-400);
@@ -327,9 +341,13 @@
 	--warning-text-strong: var(--color-amber-300); /* title of a warning banner */
 	--warning-text-soft: var(--color-amber-200); /* code inside a warning */
 
-	/* Danger on a tinted control (Spotify's "Disconnect") */
-	--danger-tint: var(--color-red-500);
-	--danger-text: var(--color-red-400);
+	/* Danger and like (upstream red): destructive items and buttons, errors, the favourite heart */
+	--danger-tint: var(--color-red-500); /* tints (/5 to /30), the storage bar when nearly full */
+	--danger-text: var(--color-red-400); /* Spotify's "Disconnect", red hovers, the favourite heart */
+	--danger-text-muted: var(--color-red-500); /* danger menu items and buttons, error text and icons */
+	--danger-fill: var(--color-red-600); /* a confirmed destructive action (white text) */
+	--danger-fill-hover: var(--color-red-700);
+	--danger-badge: var(--color-red-500); /* the Duplicate Killer's count badge in the toolbar (white text) */
 
 	/* Library tools: Duplicate Killer and the Upgrader */
 	--tool-match: var(--color-emerald-500); /* identical audio, lossless file, nothing to clean */
@@ -397,6 +415,7 @@
 	--beatport-body-text-strong: var(--color-zinc-800);
 	--beatport-bright: var(--color-emerald-400);
 	--beatport-status-text: var(--color-emerald-700); /* emerald-500 is 2.5:1 on a light surface */
+	--beatport-badge: var(--color-emerald-700); /* white on emerald-500 is 2.5:1, on emerald-700 5.4:1 */
 
 	--source-spotify: #1db954;
 	--source-spotify-hover: #1ed760;
@@ -408,6 +427,10 @@
 	--source-mik: #00d2ff;
 	--source-mik-text: var(--color-cyan-700);
 	--source-mik-wash: var(--surface-1);
+	--source-mik-tint: var(--color-sky-500);
+	--source-mik-bright: var(--color-sky-400);
+	--source-mik-hover-wash: var(--color-sky-100); /* sky-950 made a dark smudge under the label (1.1:1) */
+	--source-mik-logo-text: var(--color-sky-700); /* sky-500 is 2.5:1 on the light toolbar */
 	--source-rekordbox: var(--color-red-500);
 	--source-rekordbox-hover: var(--color-red-600);
 	--source-rekordbox-text: var(--color-red-700);
@@ -424,6 +447,10 @@
 
 	--danger-tint: var(--color-red-500);
 	--danger-text: var(--color-red-700);
+	--danger-text-muted: var(--color-red-700); /* red-500 is 3.6:1 on a light surface */
+	--danger-fill: var(--color-red-600);
+	--danger-fill-hover: var(--color-red-700);
+	--danger-badge: var(--color-red-700); /* white on red-500 is 3.8:1, on red-700 6.4:1 */
 
 	--tool-match: var(--color-emerald-500);
 	--tool-match-text: var(--color-emerald-800); /* -700 is 4.3:1 on its own tint */

@@ -119,7 +119,7 @@
 		secondary: 'bg-surface-2 text-text-primary hover:brightness-95',
 		ghost: 'bg-transparent text-text-secondary hover:bg-surface-2 hover:text-text-primary',
 		danger: 'bg-danger text-white hover:bg-danger/90',
-		'ghost-danger': 'bg-transparent text-red-500 hover:bg-red-500/10',
+		'ghost-danger': 'bg-transparent text-danger-text-muted hover:bg-danger-tint/10',
 		outline: 'bg-surface-2 border border-stroke text-text-primary hover:brightness-95',
 	}
 

@@ -109,7 +109,7 @@
 
 					<button
 						type="button"
-						class="cursor-pointer rounded-lg p-1.5 text-text-tertiary transition-colors hover:bg-red-500/10 hover:text-red-400"
+						class="cursor-pointer rounded-lg p-1.5 text-text-tertiary transition-colors hover:bg-danger-tint/10 hover:text-danger-text"
 						onclick={() => beatportStore.removeFromCart(track.id)}
 						title={$translate('beatport.cart.remove')}
 					>

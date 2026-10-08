@@ -58,7 +58,7 @@
 
 		<button
 			type="button"
-			class="flex cursor-pointer items-center gap-1.5 rounded-xl border border-stroke-subtle bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-tertiary transition-all hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-500 active:scale-95 dark:hover:text-red-400"
+			class="flex cursor-pointer items-center gap-1.5 rounded-xl border border-stroke-subtle bg-surface-1 px-3 py-1.5 text-xs font-medium text-text-tertiary transition-all hover:border-danger-tint/30 hover:bg-danger-tint/10 hover:text-danger-text active:scale-95"
 			onclick={() => (confirmingRemoval = true)}
 		>
 			<Icon name="trash" class="h-3.5 w-3.5" />

@@ -170,7 +170,7 @@
 						{item.disabled
 						? 'cursor-not-allowed text-text-tertiary'
 						: item.variant === 'danger'
-							? `text-red-500 hover:cursor-pointer hover:bg-red-500/10 ${item.submenu && isSubmenuActive(item.id, depth) ? 'bg-red-500/10' : ''}`
+							? `text-danger-text-muted hover:cursor-pointer hover:bg-danger-tint/10 ${item.submenu && isSubmenuActive(item.id, depth) ? 'bg-danger-tint/10' : ''}`
 							: `text-text-primary hover:cursor-pointer hover:bg-surface-2 ${item.submenu && isSubmenuActive(item.id, depth) ? 'bg-surface-2' : ''}`}"
 					onclick={() => handleItemClick(item)}
 					disabled={item.disabled}

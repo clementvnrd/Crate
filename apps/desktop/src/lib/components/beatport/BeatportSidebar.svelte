@@ -87,7 +87,7 @@
 				onclick={() => handleNav('favorites')}
 			>
 				<div class="flex items-center gap-2">
-					<Icon name="heart" class="h-3.5 w-3.5 text-red-400" />
+					<Icon name="heart" class="h-3.5 w-3.5 text-danger-text" />
 					<span>{$translate('beatport.nav.favorites')}</span>
 				</div>
 				<span class="py-0.2 rounded border border-stroke bg-surface-2 px-1.5 font-mono text-[10px] text-beatport-text">
