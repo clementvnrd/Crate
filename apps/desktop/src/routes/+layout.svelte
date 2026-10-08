@@ -15,7 +15,7 @@
 	import { splashVisible } from '$lib/stores/splash'
 	import { useGlobalErrorHandler, hasAudioDrag } from '$lib/hooks'
 	import { initializeI18n, translate } from '$shared/i18n'
-	import { Sidebar, Toolbar } from '$lib/components/layout'
+	import { Sidebar, Toolbar, UpdateBanner } from '$lib/components/layout'
 	import { Player } from '$lib/components/player'
 	import { ResizeHandle, Text, SegmentedControl, type SegmentOption } from '$lib/components/common'
 	import {
@@ -456,6 +456,9 @@
 					onOpenUpgrader={() => $pageActions?.getModalOrchestrator()?.openBeatportUpgraderModal()}
 				/>
 			</div>
+
+			<!-- Update strip: in the flow under the toolbar, only while an update is offered or running (CRA-200) -->
+			<UpdateBanner />
 
 			<div class="relative flex flex-1 overflow-hidden bg-surface-1">
 				{#if $activeView !== 'beatport' && $activeView !== 'player' && $activeView !== 'stats'}

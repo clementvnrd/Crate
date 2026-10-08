@@ -27,8 +27,6 @@
 		dragPosition,
 		analysisStore,
 		discoveryStore,
-		updaterStore,
-		updateAvailable,
 		expandedReleaseIds,
 	} from '$lib/stores'
 	import { toastStore } from '$shared/stores/toast'
@@ -40,7 +38,7 @@
 	import * as playlistsApi from '$shared/api/playlists'
 	import * as libraryApi from '$shared/api/library'
 
-	import { ContextMenuOrchestrator, ModalOrchestrator, DragPreview, UpdateModal } from '$lib/components/common'
+	import { ContextMenuOrchestrator, ModalOrchestrator, DragPreview } from '$lib/components/common'
 	import { AddReleaseModal, MergeReleasesModal, PurchaseReleaseModal } from '$lib/components/discovery'
 
 	import type { TagController } from '$lib/controllers/tagController'
@@ -557,11 +555,6 @@
 		onClose={() => (purchaseRelease = null)}
 		onComplete={handlePurchaseComplete}
 	/>
-{/if}
-
-<!-- Update Modal -->
-{#if $updateAvailable}
-	<UpdateModal open={true} onClose={() => updaterStore.dismiss()} />
 {/if}
 
 <!-- Drag Preview -->

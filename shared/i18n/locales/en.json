@@ -242,7 +242,16 @@
 			"updates": "Updates",
 			"checkForUpdates": "Check for Updates",
 			"upToDate": "Up to date",
-			"updateAvailable": "{version} available"
+			"updateAvailable": "{version} available",
+			"checking": "Checking for updates…",
+			"checkFailed": "Couldn't reach the update server. Check your connection and try again.",
+			"lastChecked": "Last checked {time}",
+			"lastCheckedJustNow": "Last checked just now",
+			"neverChecked": "Not checked yet",
+			"channel": "Update channel",
+			"channelStable": "Stable",
+			"channelStaging": "Staging",
+			"channelDevelopment": "Development"
 		},
 		"beatport": {
 			"account": "Beatport account",
@@ -1882,6 +1891,36 @@
 			"suggestFailed": "Could not suggest an order for this set",
 			"exportSuccess": "Set exported to Rekordbox XML: {count, plural, one {# track} other {# tracks}}",
 			"exportFailed": "Set export failed: {error}"
+		}
+	},
+	"appUpdate": {
+		"banner": {
+			"available": "Crate {version} is available",
+			"downloading": "Downloading Crate {version}…",
+			"installing": "Installing Crate {version}…",
+			"scheduled": "Crate {version} will open next time you launch Crate.",
+			"downloadFailed": "Couldn't download Crate {version}. Check your connection, then retry.",
+			"installFailed": "Crate {version} couldn't be installed. Your current version still works."
+		},
+		"actions": {
+			"updateNow": "Update now",
+			"installOnQuit": "Install when I quit",
+			"later": "Later",
+			"seeWhatsNew": "See what's new",
+			"skipVersion": "Skip this version",
+			"restartNow": "Restart now",
+			"retry": "Retry",
+			"details": "Details",
+			"hide": "Hide this message"
+		},
+		"progress": "Download progress",
+		"restartConfirm": {
+			"title": "Restart Crate now?",
+			"message": "Restarting stops playback and any task in progress."
+		},
+		"notes": {
+			"title": "What's new in Crate {version}",
+			"empty": "No release notes were published for this version."
 		}
 	}
 }

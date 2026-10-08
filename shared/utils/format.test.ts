@@ -12,6 +12,7 @@ import {
 	formatDate,
 	daysUntilRelease,
 	formatRelativeDate,
+	formatTimeAgo,
 	getTrackDisplayName,
 	getTrackDisplayArtist,
 } from './format'
@@ -321,6 +322,25 @@ describe('format utils', () => {
 		it('returns "Unknown Artist" when artist is null or empty', () => {
 			expect(getTrackDisplayArtist({ artist: null })).toBe('Unknown Artist')
 			expect(getTrackDisplayArtist({ artist: '' })).toBe('Unknown Artist')
+		})
+	})
+
+	describe('formatTimeAgo', () => {
+		const now = Date.parse('2026-10-08T12:00:00Z')
+		const ago = (ms: number) => now - ms
+
+		it('returns null under a minute and for a moment in the future', () => {
+			expect(formatTimeAgo(ago(0), now, 'en')).toBeNull()
+			expect(formatTimeAgo(ago(59_000), now, 'en')).toBeNull()
+			expect(formatTimeAgo(now + 5_000, now, 'en')).toBeNull()
+		})
+
+		it('uses the largest whole unit, in the given language', () => {
+			expect(formatTimeAgo(ago(5 * 60_000), now, 'en')).toBe('5 minutes ago')
+			expect(formatTimeAgo(ago(3 * 3_600_000 + 10 * 60_000), now, 'en')).toBe('3 hours ago')
+			expect(formatTimeAgo(ago(26 * 3_600_000), now, 'en')).toBe('yesterday')
+			expect(formatTimeAgo(ago(3 * 86_400_000), now, 'en')).toBe('3 days ago')
+			expect(formatTimeAgo(ago(5 * 60_000), now, 'fr')).toBe('il y a 5 minutes')
 		})
 	})
 })

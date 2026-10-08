@@ -283,3 +283,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-02 | CRA-96 follow-up: black text on accent badges and the check mark, lighter accent hover for five accents, the last listed palette classes on tokens (D3, partial) | 11 |
 | 2026-10-03 | Next / previous / shuffle logic extracted from `createAppSetup` into the pure, unit-tested `shared/utils/playbackQueue.ts` (CRA-167, refactor, no behaviour change) | — |
 | 2026-10-08 | The updater stops trusting upstream (own key and manifests, refusal of a database from a newer build), macOS-only release pipeline with a local release command, text-preserving changelog script, release and rollback runbook (CRA-199) | — |
+| 2026-10-08 | In-app update experience: one-line banner under the toolbar instead of a modal, never relaunching during playback or a job, release notes on request, Settings → About status, last check and channel (CRA-200) | — |
