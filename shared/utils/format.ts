@@ -280,6 +280,22 @@ export function formatRelativeDate(dateStr: string, t: TranslateFn): string {
 }
 
 /**
+ * "5 minutes ago", « il y a 5 minutes »: how long ago `then` was, in the largest whole unit (minutes, hours,
+ * days), through `Intl.RelativeTimeFormat` in the interface language. Returns `null` under a minute (and for a
+ * moment in the future, e.g. a clock that moved back), so the caller can say "just now" in its own words.
+ */
+export function formatTimeAgo(thenMs: number, nowMs: number, locale?: string): string | null {
+	const seconds = Math.floor((nowMs - thenMs) / 1000)
+	if (seconds < 60) return null
+	const format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+	const minutes = Math.floor(seconds / 60)
+	if (minutes < 60) return format.format(-minutes, 'minute')
+	const hours = Math.floor(minutes / 60)
+	if (hours < 24) return format.format(-hours, 'hour')
+	return format.format(-Math.floor(hours / 24), 'day')
+}
+
+/**
  * Get display name for a track (title or filename)
  */
 export function getTrackDisplayName(track: { title: string | null; file_path: string }): string {

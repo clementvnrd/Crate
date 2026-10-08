@@ -3,7 +3,7 @@
 /** Parameters of an `invoke` call, normalised to a plain object (camelCase keys, as the app sends them). */
 export type Args = Record<string, unknown>
 
-/** A fake backend command: receives the arguments, returns the value the real command would resolve with. */
+/** A fake backend command: receives the arguments, returns (or resolves with) what the real command resolves with. */
 export type Handler = (args: Args) => unknown
 
 /** Commands by name. A handler may throw a string to simulate a backend rejection. */
@@ -25,7 +25,15 @@ export interface HarnessParams {
 	playingTrackId: string | null
 	/** `?discrepancyReport=fail` makes `get_discrepancy_report` reject (the report's error state). */
 	discrepancyReportFails: boolean
+	/**
+	 * `?update=available` makes the update check find Crate 0.4.0 (download and install succeed); `download-fails`
+	 * and `install-fails` make that step reject, `check-fails` makes the check itself reject (offline). Default
+	 * `none`: never an update.
+	 */
+	update: HarnessUpdate
 }
+
+export type HarnessUpdate = 'none' | 'available' | 'download-fails' | 'install-fails' | 'check-fails'
 
 /** One recorded `invoke` call, kept in `window.__harness.calls` (most recent 300). */
 export interface CallRecord {

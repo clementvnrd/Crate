@@ -31,6 +31,7 @@ The app starts on the library with 16 tracks, in the dark theme, in English, log
 | `dev` | `1` | Report a development build (DEV badge, developer tools button). |
 | `latency` | milliseconds, e.g. `400` | Delay every command: loading states. |
 | `discrepancyReport` | `fail` | Make `get_discrepancy_report` reject (the discrepancy report's error state). |
+| `update` | `available`, `download-fails`, `install-fails`, `check-fails` | The update check finds Crate 0.4.0 with release notes. `available`: the download reports progress for about three seconds, then installs; `download-fails` and `install-fails` make that step reject (the update banner's error states); `check-fails` makes the check itself reject (offline, Settings → About). Relaunching does nothing. Default: never an update. |
 
 Example: `http://localhost:1430/?theme=light&lang=fr&accent=amber&playing=trk-03`.
 
@@ -69,7 +70,7 @@ In the browser console, `window.__harness` exposes:
 | `calls` | The last 300 calls (`command`, `args`, `mocked`). |
 | `emit(event, payload)` | Send a backend event to the app, e.g. `__harness.emit('devices-changed', [])` raises the "CDJ-STICK disconnected" toast. |
 
-Native dialogs (open, save, ask) always answer "cancelled", the clipboard and the opener do nothing, there is never an update available.
+Native dialogs (open, save, ask) always answer "cancelled", the clipboard and the opener do nothing, there is no update available unless `?update=…` asks for one.
 
 ## Fixtures
 
@@ -84,6 +85,7 @@ Typed with the real types of `shared/types`, deterministic (no `Math.random`, no
 | `fixtures/stats.ts` | Pulse: summary, top tracks and artists, harmonic and BPM stats, heatmap, recent listens, 3 Rekordbox sessions, scaled by the selected time range; the week and year recap (any offset), the timeline of each set, the history export count. |
 | `fixtures/maintenance.ts` | Duplicate Killer: two groups (exact hash, metadata match). Discrepancy report: 2 missing files (one `missing`, one `volume_unmounted`), a Mixed In Key comparison with a key/tempo difference and both "missing from" lists, a Rekordbox comparison once an XML path is given. |
 | `fixtures/system.ts` | Settings (appearance read from localStorage), app info, audio devices, diagnostics, cloud sync (signed out), Mixed In Key status, backup info. |
+| `fixtures/updater.ts` | The update offered by `?update=…`: Crate 0.4.0, its release notes and bundle size. |
 
 ## Add a fixture or a handler
 

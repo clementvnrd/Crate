@@ -35,7 +35,7 @@ export function createBackend(params: HarnessParams): Backend {
 	const state = createState(params)
 	const handlers: HandlerMap = {
 		...noopHandlers(),
-		...pluginHandlers(),
+		...pluginHandlers(params),
 		...libraryHandlers(state),
 		...organiseHandlers(state),
 		...playerHandlers(state),
@@ -56,7 +56,8 @@ export function createBackend(params: HarnessParams): Backend {
 
 		if (params.latencyMs > 0) await new Promise((resolve) => setTimeout(resolve, params.latencyMs))
 
-		if (handler) return clone(handler(args))
+		// A handler may be async (the updater's download reports progress over time).
+		if (handler) return clone(await handler(args))
 
 		if (!unmocked.has(command)) {
 			unmocked.add(command)

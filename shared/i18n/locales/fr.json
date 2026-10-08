@@ -242,7 +242,16 @@
 			"updates": "Mises à jour",
 			"checkForUpdates": "Vérifier les mises à jour",
 			"upToDate": "À jour",
-			"updateAvailable": "{version} disponible"
+			"updateAvailable": "{version} disponible",
+			"checking": "Recherche de mises à jour…",
+			"checkFailed": "Impossible de joindre le serveur de mises à jour. Vérifiez votre connexion, puis réessayez.",
+			"lastChecked": "Dernière vérification {time}",
+			"lastCheckedJustNow": "Dernière vérification à l'instant",
+			"neverChecked": "Pas encore vérifié",
+			"channel": "Canal de mise à jour",
+			"channelStable": "Stable",
+			"channelStaging": "Staging",
+			"channelDevelopment": "Développement"
 		},
 		"beatport": {
 			"account": "Compte Beatport",
@@ -1882,6 +1891,36 @@
 			"suggestFailed": "Impossible de suggérer un ordre pour ce set",
 			"exportSuccess": "Set exporté en XML Rekordbox : {count, plural, one {# morceau} other {# morceaux}}",
 			"exportFailed": "Échec de l'export du set : {error}"
+		}
+	},
+	"appUpdate": {
+		"banner": {
+			"available": "Crate {version} est disponible",
+			"downloading": "Téléchargement de Crate {version}…",
+			"installing": "Installation de Crate {version}…",
+			"scheduled": "Crate {version} s'ouvrira au prochain lancement de Crate.",
+			"downloadFailed": "Impossible de télécharger Crate {version}. Vérifiez votre connexion, puis réessayez.",
+			"installFailed": "Crate {version} n'a pas pu être installé. Votre version actuelle fonctionne toujours."
+		},
+		"actions": {
+			"updateNow": "Mettre à jour",
+			"installOnQuit": "Installer à la fermeture",
+			"later": "Plus tard",
+			"seeWhatsNew": "Voir les nouveautés",
+			"skipVersion": "Ignorer cette version",
+			"restartNow": "Redémarrer maintenant",
+			"retry": "Réessayer",
+			"details": "Détails",
+			"hide": "Masquer ce message"
+		},
+		"progress": "Progression du téléchargement",
+		"restartConfirm": {
+			"title": "Redémarrer Crate maintenant ?",
+			"message": "Le redémarrage arrête la lecture et toute tâche en cours."
+		},
+		"notes": {
+			"title": "Nouveautés de Crate {version}",
+			"empty": "Aucune note de version n'a été publiée pour cette version."
 		}
 	}
 }

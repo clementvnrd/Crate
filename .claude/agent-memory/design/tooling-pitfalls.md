@@ -26,4 +26,7 @@ metadata:
 - A closed `<dialog>` still counts as a child for `space-y-*`: moving the Spotify panel onto `Modal` made it the last child of Pulse's stack and added 24 px under the grid. Place modals inside a grid/gap container or outside the spaced stack.
 - Dark identity proof that works: a Playwright script capturing every harness scene (screenshot plus computed styles per element path), a PIL pixel diff and a style diff before/after; it pins every change to an element and class. A finished `yarn test:e2e` run stops `yarn harness`: restart it before capturing again.
 
+- A `Modal` rendered inside another open `Modal`'s DOM (e.g. from a Settings tab) gets every Tab handled twice: both dialogs' `onkeydown` run `trapFocus` (only Escape stops propagation). Render the second modal outside (layout level) and open it through a small writable flag (CRA-200 `releaseNotesOpen`).
+- To measure one component's contrast, the whole-page `ui-audit.js` is useless (lists capped at 40, oklch skipped). A Node script importing `node_modules/playwright/index.mjs` that composites `backgroundColor` of the ancestor chain and the text colour on a 1×1 canvas handles `color-mix`/oklab tints (`bg-brand-primary/10`) correctly; scope it with a root selector.
+
 Related: [[charter-contrast-method]].
