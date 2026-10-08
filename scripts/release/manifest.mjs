@@ -4,13 +4,17 @@ import { createHash, createPublicKey, verify } from 'node:crypto'
  * Pure helpers shared by the release scripts and the release workflow: where releases live, how
  * assets are named, how `latest.json` is built, and which signing key a file was signed with.
  *
- * The updater manifest of each channel is a file committed to the public releases repository
- * (`channels/<channel>/latest.json`), so every change of what the app is offered is a commit and a
- * rollback is a revert. The binaries themselves are GitHub release assets of that repository.
+ * The updater manifest of each channel is a file committed to a branch of its own in the public
+ * repository (`channels/<channel>/latest.json` on `MANIFEST_BRANCH`), so every change of what the app
+ * is offered is a commit and a rollback is a revert. The binaries themselves are GitHub release
+ * assets of the same repository.
  */
 
-/** Public repository that holds only built apps and update manifests (recommended in CRA-198, pending). */
-export const RELEASES_REPO = 'clementvnrd/crate-releases'
+/** The public repository that holds the code, its releases and the update manifests (CRA-198 Q1 = a). */
+export const RELEASES_REPO = 'clementvnrd/Crate'
+
+/** Branch that holds only the channel manifests: no code, never merged, ignored by the CI. */
+export const MANIFEST_BRANCH = 'update-channels'
 
 /** Key ID of upstream's updater key: a fork build must never trust it again (CRA-199). */
 export const UPSTREAM_KEY_ID = '5E32E4C59470B97D'
@@ -57,7 +61,7 @@ export function manifestPath(channel) {
 }
 
 export function manifestUrl(channel, repo = RELEASES_REPO) {
-	return `https://raw.githubusercontent.com/${repo}/main/${manifestPath(channel)}`
+	return `https://raw.githubusercontent.com/${repo}/${MANIFEST_BRANCH}/${manifestPath(channel)}`
 }
 
 /** GitHub rewrites spaces in asset names, so assets get explicit, URL-safe names. */

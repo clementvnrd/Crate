@@ -1,6 +1,6 @@
 name: Build
 
-# Personal fork: manual trigger only (costly builds on a private repository). See ci.fork.yml.
+# Personal fork: manual trigger only (upstream's heavier pipeline; the fork's checks run in ci.fork.yml).
 on:
   workflow_dispatch:
 

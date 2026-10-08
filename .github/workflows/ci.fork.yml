@@ -6,6 +6,8 @@ on:
   push:
     branches:
       - '**'
+      # Holds only the updater's channel manifests (no code), committed by scripts/release/publish.mjs.
+      - '!update-channels'
   workflow_dispatch:
 
 jobs:

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
- * Publish a built Crate release to the public releases repository, then point the update manifest
- * of its channel at it. Runs on the Mac (`yarn release:publish`, after `yarn release:local`) and in
- * the release workflow. Needs the GitHub CLI, authenticated (or `GH_TOKEN` set in CI).
+ * Publish a built Crate release as a GitHub release of the public repository, then point the update
+ * manifest of its channel at it. Runs in the release workflow (default) and on the Mac
+ * (`yarn release:publish`, after `yarn release:local`). Needs the GitHub CLI, authenticated (or
+ * `GH_TOKEN` set in CI). The release's tag must already be on GitHub, on the commit that was built.
  *
  * Usage (from the repository root):
  *   node scripts/release/publish.mjs --version 1.0.0-staging.1 [--bundle-dir <dir>] [--dry-run]
@@ -23,6 +24,7 @@ import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { notesFor } from '../changelog.js'
 import {
+	MANIFEST_BRANCH,
 	RELEASES_REPO,
 	RUST_TARGET,
 	assetName,
@@ -88,10 +90,80 @@ function checkSigningKey(signature, allowKey) {
 	return signedWith
 }
 
-/** Current content and blob sha of the channel manifest in the releases repository, if any. */
+/** Commit a GitHub tag points to (lightweight or annotated), or null when the tag is not on GitHub. */
+function taggedCommit(repo, tag) {
+	try {
+		const target = JSON.parse(gh(['api', `repos/${repo}/git/ref/tags/${tag}`])).object
+		if (target.type === 'commit') return target.sha
+		return JSON.parse(gh(['api', `repos/${repo}/git/tags/${target.sha}`])).object.sha
+	} catch {
+		return null
+	}
+}
+
+/**
+ * A release is the build of its tag. The tag also starts the release workflow, so it must be pushed
+ * before anything is published, and it must name the commit this build comes from.
+ */
+function checkTag(repo, tag, commit, dryRun) {
+	const tagged = taggedCommit(repo, tag)
+	const problem =
+		tagged === null
+			? `Tag ${tag} is not on GitHub: push it first (\`git push origin ${tag}\`, see docs/RELEASING.md).`
+			: tagged !== commit
+				? `Tag ${tag} points to ${tagged.slice(0, 12)}, but this build comes from ${commit.slice(0, 12)}.`
+				: null
+	if (problem === null) {
+		console.log(`  tag ${tag} on ${commit.slice(0, 12)} ✓`)
+		return
+	}
+	if (dryRun) console.log(`  ⚠ ${problem}`)
+	else fail(`${problem} Refusing to publish.`)
+}
+
+/**
+ * The app downloads the manifest and the archive without credentials: from a private repository both
+ * answer 404, so a release published there would never reach an installed copy.
+ */
+function checkPublic(repo, dryRun) {
+	let isPrivate
+	try {
+		isPrivate = gh(['api', `repos/${repo}`, '--jq', '.private']).trim() === 'true'
+	} catch {
+		fail(`Cannot read the visibility of ${repo}: is the GitHub CLI signed in?`)
+	}
+	if (!isPrivate) return
+	const problem = `${repo} is still private: the app could not download this release. Make it public first (CRA-198).`
+	if (dryRun) console.log(`  ⚠ ${problem}`)
+	else fail(problem)
+}
+
+/**
+ * The channel manifests live on a branch of their own, with no code. The first publish creates it
+ * with a single README commit (no parent), so it shares no history with `develop`.
+ */
+function ensureManifestBranch(repo, dryRun) {
+	if (ghSucceeds(['api', `repos/${repo}/branches/${MANIFEST_BRANCH}`])) return
+	if (dryRun) {
+		console.log(`  branch ${MANIFEST_BRANCH} does not exist yet: publishing creates it`)
+		return
+	}
+	const readme =
+		"# Update channels\n\nCrate's in-app updater reads `channels/<channel>/latest.json` on this branch. " +
+		'It holds no code and is never merged. Only `scripts/release/publish.mjs` changes it ' +
+		'(see `docs/RELEASING.md` on `develop`).\n'
+	const post = (path, body) =>
+		JSON.parse(gh(['api', '-X', 'POST', `repos/${repo}/${path}`, '--input', '-'], { input: JSON.stringify(body) }))
+	const tree = post('git/trees', { tree: [{ path: 'README.md', mode: '100644', type: 'blob', content: readme }] })
+	const commit = post('git/commits', { message: 'Start the update channels branch', tree: tree.sha, parents: [] })
+	post('git/refs', { ref: `refs/heads/${MANIFEST_BRANCH}`, sha: commit.sha })
+	console.log(`✓ branch ${MANIFEST_BRANCH} created`)
+}
+
+/** Current content and blob sha of the channel manifest on the manifest branch, if any. */
 function currentManifest(repo, path) {
 	try {
-		const raw = JSON.parse(gh(['api', `repos/${repo}/contents/${path}?ref=main`]))
+		const raw = JSON.parse(gh(['api', `repos/${repo}/contents/${path}?ref=${MANIFEST_BRANCH}`]))
 		return { sha: raw.sha, json: JSON.parse(Buffer.from(raw.content, 'base64').toString('utf-8')) }
 	} catch {
 		return { sha: null, json: null }
@@ -103,7 +175,7 @@ function putManifest(repo, channel, manifest, message) {
 	const { sha, json: previous } = currentManifest(repo, path)
 	const body = {
 		message,
-		branch: 'main',
+		branch: MANIFEST_BRANCH,
 		content: Buffer.from(JSON.stringify(manifest, null, 2) + '\n').toString('base64'),
 		...(sha ? { sha } : {}),
 	}
@@ -164,7 +236,7 @@ function publish({ version, bundleDir, repo, dryRun, allowKey }) {
 	copyFileSync(files.tarball, join(stage, names.tarball))
 	copyFileSync(files.signature, join(stage, names.signature))
 	copyFileSync(files.dmg, join(stage, names.dmg))
-	// The release page names the source commit (the code itself stays in the private repository).
+	// The commit this build comes from: the release page names it, and the tag must point to it.
 	const commit =
 		process.env.GITHUB_SHA ?? execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf-8' }).trim()
 	writeFileSync(join(stage, 'notes.md'), releaseBody(notes, commit))
@@ -182,6 +254,9 @@ function publish({ version, bundleDir, repo, dryRun, allowKey }) {
 		`  bundle version ${version} ✓, signed with key ${signedWith} ✓${trustedKey ? ', signature verified ✓' : ''}`
 	)
 	for (const name of Object.values(names)) console.log(`  asset ${name}`)
+	checkPublic(repo, dryRun)
+	checkTag(repo, tag, commit, dryRun)
+	ensureManifestBranch(repo, dryRun)
 	if (dryRun) {
 		console.log('\n--dry-run: nothing published. Manifest that would be served:\n')
 		console.log(JSON.stringify({ ...manifest, notes: `${manifest.notes.slice(0, 120)}…` }, null, 2))
@@ -205,6 +280,8 @@ function publish({ version, bundleDir, repo, dryRun, allowKey }) {
 			`${productName} ${version}`,
 			'--notes-file',
 			join(stage, 'notes.md'),
+			// Never let GitHub create the tag: a new tag would start the release workflow again.
+			'--verify-tag',
 			...(channel === 'staging' ? ['--prerelease', '--latest=false'] : ['--latest']),
 			join(stage, names.tarball),
 			join(stage, names.signature),
