@@ -5,8 +5,8 @@
  * the release workflow. Needs the GitHub CLI, authenticated (or `GH_TOKEN` set in CI).
  *
  * Usage (from the repository root):
- *   node scripts/release/publish.mjs --version 0.3.0-staging.1 [--bundle-dir <dir>] [--dry-run]
- *   node scripts/release/publish.mjs --version 0.3.0 --repoint [--dry-run]
+ *   node scripts/release/publish.mjs --version 1.0.0-staging.1 [--bundle-dir <dir>] [--dry-run]
+ *   node scripts/release/publish.mjs --version 1.0.0 --repoint [--dry-run]
  *   ... [--allow-key <KEY ID>]   # key rotation only, see docs/RELEASING.md
  *
  * Before anything is uploaded, the bundle must be the version being published (read from the
