@@ -14,7 +14,7 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -62,6 +62,11 @@ try {
 const tauri = join(ROOT, 'node_modules', '.bin', 'tauri')
 const args = ['build', '--config', config, '--target', RUST_TARGET, '--features', features]
 console.log(`Crate ${version} (${channel}) — tauri ${args.join(' ')}`)
+if (!existsSync(tauri)) fail(`Tauri CLI not found at ${tauri}: run \`yarn install\` from the repository root.`)
+
+const targetDir = process.env.CARGO_TARGET_DIR || join(ROOT, 'src-tauri', 'target')
+const bundle = join(targetDir, RUST_TARGET, 'release', 'bundle')
+const archive = join(bundle, 'macos', `${productNameOf(channel)}.app.tar.gz`)
 if (values['dry-run']) {
 	console.log('--dry-run: nothing built.')
 	process.exit(0)
@@ -78,6 +83,10 @@ try {
 	fail(`Keychain item "${KEYCHAIN_SERVICE}" not found (see docs/RELEASING.md, "Signing key").`)
 }
 
+// An archive left by an earlier build must not pass for this one.
+rmSync(archive, { force: true })
+rmSync(`${archive}.sig`, { force: true })
+
 const build = spawnSync(tauri, args, {
 	cwd: ROOT,
 	stdio: 'inherit',
@@ -88,14 +97,11 @@ const build = spawnSync(tauri, args, {
 		TAURI_SIGNING_PRIVATE_KEY_PASSWORD: password,
 	},
 })
+if (build.error) fail(`Could not run the Tauri CLI: ${build.error.message}`)
 if (build.status !== 0) fail(`tauri build exited with ${build.status}.`)
 
-const targetDir = process.env.CARGO_TARGET_DIR || join(ROOT, 'src-tauri', 'target')
-const bundle = join(targetDir, RUST_TARGET, 'release', 'bundle')
-const archive = join(bundle, 'macos', `${productNameOf(channel)}.app.tar.gz`)
-if (!existsSync(archive) || !existsSync(`${archive}.sig`)) {
-	fail(`tauri build succeeded but ${archive} (and its .sig) is missing: the build did not use ${config}.`)
-}
+if (!existsSync(archive)) fail(`tauri build succeeded but ${archive} is missing: the build did not use ${config}.`)
+if (!existsSync(`${archive}.sig`)) fail(`${archive}.sig is missing: the update archive was not signed.`)
 console.log(`\n✓ Built ${version}: ${bundle}`)
 
 if (values.publish) {

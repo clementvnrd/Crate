@@ -138,7 +138,12 @@ function updateVersion(bumpType, channel = null) {
 	const tauriConfText = readFileSync(tauriConfPath, 'utf-8')
 	const versionLine = /^(\s*"version":\s*")[^"]*(")/m
 	if (!versionLine.test(tauriConfText)) throw new Error('No "version" line in src-tauri/tauri.conf.json')
-	writeFileSync(tauriConfPath, tauriConfText.replace(versionLine, `$1${baseVersion}$2`))
+	const updatedTauriConf = tauriConfText.replace(versionLine, (_, before, after) => `${before}${baseVersion}${after}`)
+	// The first "version" line must be the top-level one: refuse to write anything else.
+	if (JSON.parse(updatedTauriConf).version !== baseVersion) {
+		throw new Error('The first "version" line of src-tauri/tauri.conf.json is not the top-level version')
+	}
+	writeFileSync(tauriConfPath, updatedTauriConf)
 	console.log(`Updated src-tauri/tauri.conf.json: -> ${baseVersion}`)
 
 	// Update tauri.staging.conf.json with full version
@@ -152,6 +157,7 @@ function updateVersion(bumpType, channel = null) {
 		delete stagingConf.version
 	}
 	if (stagingConf.bundle?.windows) delete stagingConf.bundle.windows
+	if (stagingConf.bundle && Object.keys(stagingConf.bundle).length === 0) delete stagingConf.bundle
 	writeFileSync(stagingConfPath, JSON.stringify(stagingConf, null, '\t') + '\n')
 	console.log(
 		`Updated src-tauri/tauri.staging.conf.json: -> ${parsed.prerelease !== null ? newVersion : '(inherited)'}`
