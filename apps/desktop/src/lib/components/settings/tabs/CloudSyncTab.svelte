@@ -124,7 +124,7 @@
 				<div
 					class="mt-2 rounded-md px-3 py-2 text-sm {isOffline
 						? 'bg-amber-500/10 text-amber-500'
-						: 'bg-red-500/10 text-red-500'}"
+						: 'bg-danger-tint/10 text-danger-text-muted'}"
 				>
 					{isOffline ? $translate('cloudSync.status.offline') : $translate('cloudSync.status.error')}
 				</div>
@@ -201,7 +201,7 @@
 		<!-- Danger Zone -->
 		<section>
 			<Text variant="header-3" class="mb-2">{$translate('cloudSync.danger.title')}</Text>
-			<div class="flex items-center justify-between gap-4 rounded-lg border border-red-500/30 bg-red-500/5 p-4">
+			<div class="flex items-center justify-between gap-4 rounded-lg border border-danger-tint/30 bg-danger-tint/5 p-4">
 				<div class="min-w-0 flex-1">
 					<Text variant="body-2" class="font-medium">{$translate('cloudSync.danger.deleteVault')}</Text>
 					<Text variant="caption" as="p" class="mt-0.5">{$translate('cloudSync.danger.deleteVaultDescription')}</Text>

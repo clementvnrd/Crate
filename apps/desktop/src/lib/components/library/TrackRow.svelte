@@ -198,14 +198,14 @@
 							<div transition:fade={{ duration: 150 }}>
 								<button
 									type="button"
-									class="flex h-5 w-5 cursor-pointer items-center justify-center rounded transition-colors hover:bg-red-500/20"
+									class="flex h-5 w-5 cursor-pointer items-center justify-center rounded transition-colors hover:bg-danger-tint/20"
 									aria-label={$translate('contextMenu.stopAnalysis')}
 									onclick={(e) => {
 										e.stopPropagation()
 										onCancelAnalysis?.()
 									}}
 								>
-									<Icon name="x" class="h-3 w-3 text-red-500" />
+									<Icon name="x" class="h-3 w-3 text-danger-text-muted" />
 								</button>
 							</div>
 						</Tooltip>
@@ -235,7 +235,7 @@
 			<div class="flex items-center truncate font-medium {playing ? 'text-brand-primary' : 'text-text-primary'}">
 				{#if isMissing}
 					<span class="mr-1.5 flex-shrink-0" title={$translate('library.fileNotFound')}>
-						<Icon name="warning" class="h-3.5 w-3.5 text-red-500" />
+						<Icon name="warning" class="h-3.5 w-3.5 text-danger-text-muted" />
 					</span>
 				{/if}
 				<span class="truncate">{getTrackDisplayName(track)}</span>

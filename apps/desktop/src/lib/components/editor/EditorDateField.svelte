@@ -410,7 +410,7 @@
 						<button
 							type="button"
 							onclick={handleClear}
-							class="w-full cursor-pointer rounded px-2 py-1 text-left text-xs text-red-500 transition-colors hover:bg-red-500/10"
+							class="w-full cursor-pointer rounded px-2 py-1 text-left text-xs text-danger-text-muted transition-colors hover:bg-danger-tint/10"
 						>
 							{$translate('common.remove')}
 						</button>

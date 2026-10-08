@@ -34,7 +34,7 @@
 			case 'offline':
 				return 'text-amber-500'
 			case 'error':
-				return 'text-red-500'
+				return 'text-danger-text-muted'
 			default:
 				return 'text-text-primary'
 		}

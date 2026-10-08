@@ -128,10 +128,23 @@ describe('colour family tokens', () => {
 		}
 	})
 
+	// Dark values frozen by the owner's decision (CRA-141: the dark theme does not change) that stay under 4.5:1 on
+	// `surface-2`, listed in DESIGN.md "Known gaps". They must still pass on the surfaces they sit on most.
+	const darkSurface2Gaps: Record<string, number> = {
+		'--danger-text-muted': 3.85, // 3.90:1, upstream red-500 text (danger menu items, ghost-danger buttons, error text)
+	}
+
 	it.each(textTokens)('%s reads at 4.5:1 or more on the dark surfaces', (token) => {
 		const colour = resolve(darkFamilies[token], { ...darkNeutrals, ...darkFamilies })
 		for (const surface of ['--surface-0', '--surface-1', '--surface-2']) {
-			expect(contrast(colour, hexToRgb(darkNeutrals[surface]))).toBeGreaterThanOrEqual(4.5)
+			const floor = surface === '--surface-2' && token in darkSurface2Gaps ? darkSurface2Gaps[token] : 4.5
+			expect(contrast(colour, hexToRgb(darkNeutrals[surface]))).toBeGreaterThanOrEqual(floor)
 		}
+	})
+
+	// Toolbar count badges keep white text in both themes; the light theme darkens their fill instead (D3).
+	it.each(['--danger-badge', '--beatport-badge'])('white text reads at 4.5:1 or more on the light %s', (token) => {
+		const fill = resolve(lightFamilies[token], { ...lightNeutrals, ...lightFamilies })
+		expect(contrast(fill, WHITE)).toBeGreaterThanOrEqual(4.5)
 	})
 })

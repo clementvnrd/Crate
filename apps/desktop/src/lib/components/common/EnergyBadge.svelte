@@ -21,12 +21,15 @@
 	const info = $derived(getEnergyInfo(energy))
 	// The descriptor shown in tooltips comes from i18n (`badges.energy.levels.N`), not from `info.descriptor`.
 	const descriptor = $derived(info ? $translate(`badges.energy.levels.${info.level}`) : '')
+	// The text takes the palette's light shade in the light theme: `light-dark()` follows `color-scheme`, which each
+	// `[data-theme]` block sets, so a badge inside a panel that stays dark (Modal theme="dark") keeps the dark shade.
+	const textColor = $derived(info ? `light-dark(${info.lightColor}, ${info.color})` : '')
 </script>
 
 {#if info && variant === 'pill'}
 	<span
 		class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold shadow-xs {className}"
-		style="background-color: {info.bg}; color: {info.color}; border-color: {info.border};"
+		style="background-color: {info.bg}; color: {textColor}; border-color: {info.border};"
 		title={$translate('badges.energy.titlePlayer', { values: { descriptor, level: energy } })}
 	>
 		<span aria-hidden="true">⚡</span>
@@ -38,7 +41,7 @@
 		'sm'
 			? 'px-1.5 py-0.5 text-[10px]'
 			: 'min-w-[46px] px-2 py-0.5 text-[11px]'} {className}"
-		style="background-color: {info.bg}; color: {info.color}; border-color: {info.border}; box-shadow: {info.glow};"
+		style="background-color: {info.bg}; color: {textColor}; border-color: {info.border}; box-shadow: {info.glow};"
 		title={$translate('badges.energy.title', { values: { level: info.level, descriptor } })}
 	>
 		<span class="text-xs leading-none" aria-hidden="true">{info.symbol}</span>

@@ -46,14 +46,14 @@
 	{#if device}
 		<div class="space-y-4">
 			<!-- Data Loss Warning -->
-			<div class="rounded-md border border-red-500/20 bg-red-500/10 p-3">
+			<div class="rounded-md border border-danger-tint/20 bg-danger-tint/10 p-3">
 				<div class="flex gap-2">
-					<Icon name="warning" class="h-5 w-5 flex-shrink-0 text-red-500" />
+					<Icon name="warning" class="h-5 w-5 flex-shrink-0 text-danger-text-muted" />
 					<div class="space-y-1">
-						<Text variant="body-2" class="font-medium text-red-500">
+						<Text variant="body-2" class="font-medium text-danger-text-muted">
 							{$translate('devices.reformat.warning')}
 						</Text>
-						<Text variant="body-2" class="text-red-400">
+						<Text variant="body-2" class="text-danger-text">
 							{$translate('devices.reformat.warningDetails', { values: { deviceName: device.name } })}
 						</Text>
 					</div>
@@ -76,7 +76,7 @@
 				/>
 				<div class="flex justify-between text-xs text-text-tertiary">
 					<span>{$translate('devices.reformat.fat32Hint')}</span>
-					<span class:text-red-500={charCount > maxLength}>{charCount}/{maxLength}</span>
+					<span class:text-danger-text-muted={charCount > maxLength}>{charCount}/{maxLength}</span>
 				</div>
 			</div>
 		</div>
@@ -84,7 +84,12 @@
 
 	{#snippet footer()}
 		<Button variant="secondary" onclick={handleClose}>{$translate('common.cancel')}</Button>
-		<Button variant="primary" fill="bg-red-600 text-white hover:bg-red-700" onclick={handleSubmit} disabled={!isValid}>
+		<Button
+			variant="primary"
+			fill="bg-danger-fill text-white hover:bg-danger-fill-hover"
+			onclick={handleSubmit}
+			disabled={!isValid}
+		>
 			{$translate('devices.reformat.confirm')}
 		</Button>
 	{/snippet}

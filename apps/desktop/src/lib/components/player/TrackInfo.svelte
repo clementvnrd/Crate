@@ -149,7 +149,7 @@
 	{#if playbackSource === 'beatport' && beatportTrack}
 		<button
 			type="button"
-			class="flex-shrink-0 cursor-pointer text-text-tertiary transition-colors hover:text-red-400"
+			class="flex-shrink-0 cursor-pointer text-text-tertiary transition-colors hover:text-danger-text"
 			onclick={() => beatportStore.toggleFavorite(beatportTrack)}
 			title={$translate('player.trackInfo.beatportFavorite')}
 		>

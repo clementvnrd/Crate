@@ -44,12 +44,12 @@ colors:
     info: "#3b82f6"
   data:                    # DATA palettes, centralised, never copied into a component
     camelot: "shared/utils/camelot.ts (CAMELOT_COLORS, getCamelotColor) — Mixed In Key 11 wheel"
-    energy: "shared/utils/energy.ts (getEnergyInfo) — levels 1 to 10"
+    energy: "shared/utils/energy.ts (getEnergyInfo) — levels 1 to 10; `color` is the dark text, `lightColor` (-800/-900 shade of the same hue) the light text, picked with light-dark()"
   sources:                 # third-party service colours: identify a source, nothing else (see "Graphic charter")
                            # tokens --source-<name> (fill), -text (readable text, darker in light), -wash (card gradient top)
     spotify: "#1DB954 (--source-spotify; light text green-800)"
     beatport: "#00FF96 (--beatport)"
-    mixed-in-key: "#00D2FF (--source-mik; light text cyan-700)"
+    mixed-in-key: "#00D2FF (--source-mik; light text cyan-700); toolbar sync button --source-mik-tint sky-500, --source-mik-bright sky-400, --source-mik-hover-wash sky-950 / sky-100; logo label and sync icon --source-mik-logo-text sky-400 / sky-700"
     rekordbox: "red-500 (--source-rekordbox; dark text red-400, light text red-700)"
     crate-local: "violet-500 (--source-crate; dark text violet-400, light text violet-700)"
   families:                # scoped colour families (see "Graphic charter"); tokens in style.css, section "Colour families"
@@ -71,12 +71,13 @@ colors:
       neon: "--beatport #00FF96 (fills with black text), --beatport-hover #00e687"
       text: "--beatport-text emerald-400 / emerald-800; --beatport-text-strong #00FF96 / emerald-700; --beatport-status-text emerald-500 / emerald-700 (\"Connected\")"
       bright: "--beatport-bright emerald-400 (cart download hover, Upgrader arrow)"
+      badge: "--beatport-badge emerald-500 / emerald-700 (the Upgrader count badge in the toolbar, white text)"
       body-text: "--beatport-body-text neutral-300 / zinc-700; --beatport-body-text-strong neutral-200 / zinc-800"
       tints: "--beatport-tint emerald-500, --beatport-deep emerald-600, --beatport-wash emerald-950 / emerald-100"
     warning:               # the Duplicate Killer toolbar alert, the Beatport session banner
       tokens: "--warning-tint amber-500, --warning-text amber-400 / amber-700, --warning-text-strong amber-300 / amber-800, --warning-text-soft amber-200 / amber-800, --warning-wash amber-950 / amber-100"
-    danger:                # a destructive control on a tint (Spotify's Disconnect)
-      tokens: "--danger-tint red-500, --danger-text red-400 / red-700"
+    danger:                # upstream red: destructive items and buttons, errors, the favourite heart
+      tokens: "--danger-tint red-500 (tints), --danger-text red-400 / red-700 (hovers, heart), --danger-text-muted red-500 / red-700 (menu items, ghost-danger, error text and icons), --danger-fill red-600 and --danger-fill-hover red-700 (confirmed destructive action, white text), --danger-badge red-500 / red-700 (Duplicate Killer count badge, white text)"
     tools:                 # Duplicate Killer and the Upgrader: --tool-<role> (fill, both themes) and --tool-<role>-text
       match: "emerald-500, text emerald-400 / emerald-800 (identical audio, lossless file, nothing to clean)"
       fuzzy: "sky-500, text sky-400 / sky-800 (metadata match)"
@@ -154,7 +155,7 @@ components:
   Icon: { source: "common/Icon.svelte (internal set); a Vitest test fails on an unknown name" }
   track-row: { layout: "grid, items-center, gap-2, px-3 py-1.5, text-sm", selected: "bg-brand-muted", playing: "title in text-brand-primary" }
   key-badge: { component: "common/KeyBadge.svelte", variants: "one per view, reproducing today's look (cell, cell-compact, chip, chip-plain, tag, tag-wide, pill, pill-xs)", colors: "getCamelotColor(key), through keyBadge.ts only", neutral: "border-stroke bg-surface-3 when the key is not a Mixed In Key analysis (library)" }
-  energy-badge: { component: "common/EnergyBadge.svelte", colors: "getEnergyInfo(level)", variants: "badge (library: level symbol, glow), pill (Player hero: fixed ⚡)" }
+  energy-badge: { component: "common/EnergyBadge.svelte", colors: "getEnergyInfo(level); text light-dark(lightColor, color)", variants: "badge (library: level symbol, glow), pill (Player hero: fixed ⚡)" }
 ---
 
 # Crate — design system
@@ -200,7 +201,7 @@ The Camelot key colours (Mixed In Key 11 wheel) and energy colours encode inform
 
 1. They live **only** in `shared/utils/camelot.ts` and `shared/utils/energy.ts`; a component obtains them through `getCamelotColor()` / `getEnergyInfo()` and applies them with `style=`.
 2. They colour the **badge**, not its surroundings (no fully tinted row, no glow).
-3. The badge text keeps a contrast of at least 4.5:1 against its background (already provided by the `bg`/`text` pairs), in both themes.
+3. The badge text keeps a contrast of at least 4.5:1 against its background, in both themes. The energy palette gives each level a dark text colour (`color`) and a light one (`lightColor`, the `-800` or `-900` shade of the same hue), and `EnergyBadge` picks between them with `light-dark()`, which follows the `color-scheme` each `[data-theme]` block sets (so a badge inside a panel that stays dark keeps its dark shade). Light theme, worst case over `surface-0` to `surface-3` and a selected row with any accent: 4.64 to 5.85:1.
 
 ### Source colours
 
@@ -290,7 +291,8 @@ Listening time and gold use the `-800` shade in the light theme because their te
 | --- | --- | --- | --- |
 | Primary action fill (log in, buy, add to cart, play) | `#00FF96`, hover `#00e687` | same | `--beatport`, `--beatport-hover` |
 | Text on the fill | black (15.74:1) | black | — |
-| Tints, borders, count badge | `emerald-500` (`emerald-600` for the Upgrader's replace buttons) | same | `--beatport-tint`, `--beatport-deep` |
+| Tints, borders | `emerald-500` (`emerald-600` for the Upgrader's replace buttons) | same | `--beatport-tint`, `--beatport-deep` |
+| Upgrader count badge in the toolbar (white text) | `emerald-500` | `emerald-700` (white 5.36:1) | `--beatport-badge` |
 | Washes: now-playing row, header, progress | `emerald-950` | `emerald-100` | `--beatport-wash` |
 | Active navigation, secondary text, counters | `emerald-400` | `emerald-800` (on its own `/15` tint `-700` gives 4.3:1) | `--beatport-text` |
 | "Connected" status in the sidebar | `emerald-500` | `emerald-700` | `--beatport-status-text` |
@@ -374,6 +376,16 @@ WCAG 2.x ratios computed from the token and palette values in the code (2026-09-
 
 What the table says: **the dark theme holds for every family**, except `text-tertiary` (3.67:1) and white text on accent and danger fills; **the light theme fails for every family hue used as text**. The table records the palette values as they were before [D3]; the family tokens now carry a light text value for every role (`-700` shades, `-800` where the text sits on its own tint, `green-800` for Spotify), and `apps/desktop/src/theme.test.ts` checks every `-text` token at 4.5:1 or more on `surface-0`, `surface-1` and `surface-2` in both themes, and `--brand-on` on every accent.
 
+The last [D3] pairs, measured on the harness in the light theme (2026-10-08) with a canvas that composites every layer, before and after; the dark values did not change:
+
+| Element | Light before | Light after |
+| --- | --- | --- |
+| Energy badge text on its tint, ten levels (library, Player hero) | 1.34 ✗ to 2.88 ✗ | 5.74 to 7.34 (worst case with a selected row: 4.64) |
+| Mixed In Key "IN KEY" label and sync icon on the toolbar button | 2.48 ✗ / 2.00 ✗ (hover 1.12 ✗) | 5.37 (hover 5.40) |
+| White on the Duplicate Killer / Upgrader count badges | 3.81 ✗ / 2.47 ✗ | 6.42 / 5.36 |
+| Danger menu items, Beatport favourite heart (active) | 3.65 ✗ | 6.15 |
+| Beatport sidebar favourites heart (UI) | 2.39 ✗ to 2.89 ✗ | 5.32 to 6.42 |
+
 ### How a new view stays inside the charter
 
 1. Decide which family the view belongs to. By default it is **Accent**; joining Deck, Pulse or Beatport means its purpose matches the family's purpose. A new family is an owner decision.
@@ -435,7 +447,7 @@ A common component is on the accent by default. When a family view needs its own
 - **Modal**: the common `Modal` (`<dialog>`, Escape, focus trap). Height bounded by the window, internal scrolling, fixed footer. A destructive action goes through `ConfirmModal`. A family panel (the Spotify connection) keeps its look through `size="none"`, `panelClass`, `backdropClass` and `theme="dark"`. A closed `<dialog>` still counts as a child for `space-y-*`: place a modal where it does not become the last child of a spaced stack.
 - **Track row**: dense grid, `border-b border-stroke-subtle`, selection as `bg-brand-muted`, the playing track signalled by its title in `text-brand-primary` (in the Player and Beatport views, by the family's now-playing role).
 - **Key badge**: always `KeyBadge`, colours from `getCamelotColor()` through `keyBadge.ts`, with the `variant` of its view (library `cell` with `analysis="mik" | "other"`, Beatport `cell-compact`, Duplicate Killer `chip`, Upgrader `chip-plain`, Pulse `tag` and `tag-wide`, Player `pill` and `pill-xs`). The variants keep today's sizes (9 to 12 px); bringing them to the 12 px minimum is suspended with the charter (CRA-141). A Vitest guard fails when a component calls `getCamelotColor()` or `getEnergyInfo()` outside the badges without a stated reason.
-- **Energy badge**: always `EnergyBadge`, colours from `getEnergyInfo()`: `badge` in the library, `pill` in the Player hero.
+- **Energy badge**: always `EnergyBadge`, colours from `getEnergyInfo()`: `badge` in the library, `pill` in the Player hero; the text takes the level's `lightColor` in the light theme.
 
 ## Interface states
 
@@ -497,8 +509,8 @@ Crate is a desktop app: no mobile breakpoints in the desktop app (the mobile app
 ## Known gaps
 
 - **State colours not adapted to the light theme**: as text on `surface-1`, `warning` gives 2.06:1, `success` 2.18:1, `danger` 3.61:1, `info` 3.52:1. Only the Duplicate Killer toolbar alert has `--warning-text` so far; the other state texts still need per-theme `-text` variants (linked to D3).
-- **Count badges of the toolbar**: the Duplicate Killer (`red`) and Upgrader (`beatport-tint`) count badges keep white text, 3.8 and 2.5:1; they are not accent fills, and black text on them would change the dark toolbar.
-- **State colours elsewhere**: the remaining `red-*` classes (Beatport's favourite heart and remove hovers, the sign-out hover, library and sync errors) are the upstream danger and like patterns; they move to `--danger-*` when those views are reworked.
+- **Count badges of the toolbar, dark theme**: the Duplicate Killer (`--danger-badge`) and Upgrader (`--beatport-badge`) count badges keep white text on `red-500` and `emerald-500` in the dark theme, 3.8 and 2.5:1, because the dark look is frozen (CRA-141). The light theme darkens the fill instead (`red-700` 6.42:1, `emerald-700` 5.36:1, D3).
+- **Upstream red (danger and like)**: on the `--danger-*` tokens since D3 (2026-10-08), so the light theme reads `red-700`. Two places keep palette classes on purpose: the remove button of a Player album card (`hover:text-red-400` on a `bg-black/60` overlay, dark in both themes) and the error toast (`bg-red-600/40` under `text-primary`, like the green, amber and blue toasts). In the dark theme `--danger-text-muted` stays the upstream `red-500`, 3.90:1 on `surface-2` (frozen dark look, allowed by `theme.test.ts`).
 - **The e2e audit does not read `oklch()` colours**: `ui-audit.js` parses `rgb()` and `rgba()` only, and counts the rest as unmeasured, so its `lowContrast` count misses every Tailwind palette colour (Tailwind 4 writes them in `oklch`). Family tokens resolve to the same `oklch` values; contrast of family text is checked by `theme.test.ts` and by a canvas-based measurement, not by the ratchet.
 - **`text-tertiary` in the dark theme**: 3.67:1 on `surface-1` and 3.08:1 on `surface-2`, under 4.5:1 for the labels and empty values it carries; a lighter value (for example `#8a8a93`: 5.18 and 4.35:1) would need checking against `text-secondary` so the two stay distinct.
 - **Debt measured** by `yarn design:scan apps/desktop/src` (see the register, defects D3, D7, D10, D11; `yarn design:scan` gives today's counts). After the family tokens (2026-10-01) the palette classes and hex values left are debt, not family roles.
@@ -512,8 +524,8 @@ Where the code breaks the charter today; each one is tracked in the register and
 
 | Deviation | Where | Register |
 | --- | --- | --- |
-| `text-white` and `bg-black/40–70` inside the Spotify connection modal (a panel that is dark in both themes) and on the Upgrader's artwork overlay; the harmonic wheel's `#3b82f6` fallback for a key without a colour | Pulse, Upgrader | D3 |
-| Glass, glow, halos, gradients and `rounded-2xl`/`3xl` beyond the recipe (glow on Beatport buttons, `rounded-2xl`/`3xl` on Beatport and Spotify panels, glass tooltip inside a glass card) | Pulse, Beatport, Upgrader, Duplicate Killer | D3, D11 |
-| Family colours outside their scope: sky switch in `ToggleSwitch`, sky Mixed In Key badge in the toolbar, purple harmonic-match chip in the Player | common, toolbar, Player | D11 |
+| `text-white` and `bg-black/40–70` inside the Spotify connection modal (a panel that is dark in both themes) and on the Upgrader's artwork overlay; the harmonic wheel's `#3b82f6` fallback for a key without a colour (legible in both themes: token debt, not a contrast defect) | Pulse, Upgrader | D11 |
+| Glass, glow, halos, gradients and `rounded-2xl`/`3xl` beyond the recipe (glow on Beatport buttons, `rounded-2xl`/`3xl` on Beatport and Spotify panels, glass tooltip inside a glass card) | Pulse, Beatport, Upgrader, Duplicate Killer | D11 |
+| Family colours outside their scope: sky switch in `ToggleSwitch` (also 2.5 to 2.7:1 as a fill on the light surfaces), purple harmonic-match chip in the Player | common, Player | D11 |
 | Family borders replacing the accent focus outline; infinite animations without reduced motion | Beatport, Player, Pulse | D10 |
 | Beatport table columns without `minmax(0, …)` | Beatport | D7 |

@@ -19,7 +19,7 @@ Legend: `[x]` fixed and verified · `[ ]` to do · _italic note_ = clarification
 | Step 8 — Robust frontend | 17 / 17 | ██████████ |
 | Step 9 — Hygiene and tooling | 14 / 14 | ██████████ |
 | Step 10 — Visual foundations | 5 / 5 | ██████████ |
-| Step 11 — View-by-view compliance | 6 / 7 | █████████░ |
+| Step 11 — View-by-view compliance | 7 / 7 | ██████████ |
 | Step 12 — Translation | 6 / 6 | ██████████ |
 <!-- progress:end -->
 
@@ -195,7 +195,7 @@ _Exit criterion: No invisible element in light or dark._
 
 _Exit criterion: Strict design rules respected._
 
-- [ ] **D3** — Broken light theme: Pulse integration cards dark at the top and light at the bottom; header badges… — _partial: family colour tokens with light text values, `--brand-on` on every accent fill (buttons, count badges, check mark) and on hover, Beatport follows the theme, the four CRA-141 touches, the last listed palette classes on tokens; dark theme unchanged otherwise; left: the energy badge in light (data palette), the toolbar count badges and the Mixed In Key logo label, the upstream red danger/like classes_
+- [x] **D3** — Broken light theme: Pulse integration cards dark at the top and light at the bottom; header badges… — _family colour tokens with light text values, `--brand-on` on every accent fill (buttons, count badges, check mark) and on hover, Beatport follows the theme, the four CRA-141 touches, the listed palette classes on tokens; finished 2026-10-08: the energy badge's light text (`lightColor` per level, 4.64 to 7.34:1), the toolbar count badges (darker fill in light, 6.42 and 5.36:1), the Mixed In Key label and sync icon (5.37:1), the upstream red danger and like classes on `--danger-*` tokens (red-700 in light, 6.15:1); dark theme unchanged (pixel and style diff of 10 scenes). Left as known gaps in DESIGN.md: the state colours as text (`text-danger`, `text-warning`…), the dark count badges frozen by CRA-141_
 - [x] **D4** — Header at minimum width (1000 px): the icons overlap the segmented control… — _verified by measurement in the harness at 1000, 1280, 1440 and 1600 px: no overlap, all tools visible_
 - [x] **D5** — Player hero with a fixed height (`h-[225px]` for about 260 px of content): at 1000×640 the transport is… — _transport never covered (verified at 1000×640); at that size the recents list keeps ~2 rows_
 - [x] **D7** — Beatport table at 1000 px: the title column shrinks to one character — _title column 52 to 288 px at 1000 px; date and genre hide below 832 and 720 px; identical from a 1400 px window; the Player recents overflow is fixed too_
@@ -286,3 +286,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-08 | In-app update experience: one-line banner under the toolbar instead of a modal, never relaunching during playback or a job, release notes on request, Settings → About status, last check and channel (CRA-200) | — |
 | 2026-10-08 | Rust dependencies audited for the first time: `cargo audit` installed, 7 vulnerabilities and 2 unsound crates fixed by semver-compatible updates, none left in the macOS build (Q14) | 9 |
 | 2026-10-08 | Discovery titles readable at 1000 px in French: the track count shows only when the title column has room (L1 follow-up, CRA-103; e2e crushed columns 10 to 5) | 12 |
+| 2026-10-08 | D3 finished: energy badge light text, toolbar count badges, Mixed In Key label and icon, upstream red danger and like classes on `--danger-*` tokens; dark theme unchanged (CRA-96) | 11 |

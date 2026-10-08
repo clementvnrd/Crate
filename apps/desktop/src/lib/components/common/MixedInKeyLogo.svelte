@@ -63,7 +63,7 @@
 					MIXED
 				</span>
 				<span
-					class="font-extrabold tracking-wider text-sky-500 dark:text-sky-400 {sizeClasses[size].text}"
+					class="font-extrabold tracking-wider text-source-mik-logo-text {sizeClasses[size].text}"
 					style="font-family: 'Jost', var(--font-family), sans-serif;"
 				>
 					IN KEY
