@@ -1402,6 +1402,28 @@ mod history_export_tests {
     }
 
     #[test]
+    fn a_rolling_period_export_selects_its_window() {
+        let (conn, recorder) = setup_test_db();
+        let at = |days: i64, id: &str| {
+            let when = (chrono::Utc::now() - chrono::Duration::days(days))
+                .format("%Y-%m-%dT%H:%M:%SZ")
+                .to_string();
+            insert_raw(&conn, id, &when, id, None);
+        };
+        at(10, "old");
+        for day in 1..=5 {
+            at(day, &format!("recent{day}"));
+        }
+        let file = TempFile::new("rolling", "csv");
+        let n = recorder
+            .export_listen_history_in_range(HistoryExportFormat::Csv, &file.0, "7d")
+            .unwrap();
+        assert_eq!(n, 5);
+        let text = std::fs::read_to_string(&file.0).unwrap();
+        assert!(!text.contains("old"));
+    }
+
+    #[test]
     fn an_unknown_period_fails_before_writing_anything() {
         let (conn, recorder) = setup_test_db();
         insert_raw(&conn, "a", "2025-03-01T10:00:00Z", "One", None);

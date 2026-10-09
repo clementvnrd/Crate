@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
+use super::range::StatsRange;
 use super::StatsRecorderService;
 use crate::error::{CrateError, Result};
 
@@ -185,8 +186,11 @@ impl StatsRecorderService {
         dest: &Path,
         time_range: &str,
     ) -> Result<usize> {
-        // Computed once, so a rolling period does not move between two chunks of the same export.
-        let condition = Self::time_range_condition(time_range, "played_at")?;
+        // Every bound is a fixed instant, computed once: the export reads in chunks, and a period
+        // relative to SQLite's 'now' would move between two of them.
+        let condition = time_range
+            .parse::<StatsRange>()?
+            .fixed_sql_condition_at("played_at", &chrono::Local::now())?;
         self.export_listen_history_in_chunks(format, dest, condition.as_deref(), CHUNK_ROWS)
     }
 

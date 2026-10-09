@@ -3,11 +3,17 @@
 //! A year is listed when the `year:<YYYY>` range itself finds something in it: a listen or a
 //! Rekordbox set (the two tables the Pulse summary reads). The check reuses the range's own SQL
 //! condition, so a listed year can never open on an empty Pulse, whatever the time zone.
+//!
+//! It runs on every Pulse load, under the shared database lock, so every query uses the index on
+//! the time column (`idx_listen_events_played_at`, `idx_rekordbox_sessions_started`): the writers
+//! store ISO 8601 text that starts with `YYYY-MM-DD`, so the text order is the date order. The
+//! exact condition (`datetime()`, which no index can serve) only ever reads the few rows the
+//! index prefilter lets through.
 
 use std::collections::BTreeSet;
 
-use chrono::{DateTime, Local, TimeZone};
-use rusqlite::Connection;
+use chrono::{DateTime, Datelike, Local, TimeZone};
+use rusqlite::{Connection, OptionalExtension};
 
 use super::range::{StatsRange, MAX_YEAR, MIN_YEAR};
 use super::StatsRecorderService;
@@ -20,7 +26,8 @@ const SOURCES: [(&str, &str); 2] = [
 ];
 
 impl StatsRecorderService {
-    /// The local calendar years with at least one listen or Rekordbox set, newest first.
+    /// The local calendar years with at least one listen or Rekordbox set, newest first, up to
+    /// the current year.
     pub fn get_listening_years(&self) -> Result<Vec<i32>> {
         self.listening_years_at(&Local::now())
     }
@@ -29,14 +36,18 @@ impl StatsRecorderService {
     pub(super) fn listening_years_at<Tz: TimeZone>(&self, now: &DateTime<Tz>) -> Result<Vec<i32>> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
-        // One pass per table gives the UTC years present. A local year starts and ends less than a
-        // day away from the UTC one, so its data always sits in the UTC year of the same number or
-        // a neighbour: those are the only candidates worth checking.
+        // The years written at the start of the stored timestamps. A local year starts and ends
+        // less than a day away from the UTC one (and an offset written in the text moves the date
+        // by less than a day too), so its data always sits in the written year of the same number
+        // or a neighbour: those are the only candidates worth checking. A year after the current
+        // one cannot be offered (the bar ends with "This year"), and checking it would cost a
+        // search for nothing.
+        let last = now.year().min(MAX_YEAR);
         let mut candidates = BTreeSet::new();
         for (table, field) in SOURCES {
-            for year in utc_years(&conn, table, field)? {
+            for year in written_years(&conn, table, field)? {
                 for candidate in [year - 1, year, year + 1] {
-                    if (MIN_YEAR..=MAX_YEAR).contains(&candidate) {
+                    if (MIN_YEAR..=last).contains(&candidate) {
                         candidates.insert(candidate);
                     }
                 }
@@ -48,7 +59,14 @@ impl StatsRecorderService {
             let range = StatsRange::CalendarYear(year);
             let mut found = false;
             for (table, field) in SOURCES {
-                if has_rows(&conn, table, &range.sql_condition_at(field, now)?)? {
+                let Some(exact) = range.sql_condition_at(field, now)? else {
+                    continue;
+                };
+                if has_rows(
+                    &conn,
+                    table,
+                    &format!("{} AND ({exact})", prefilter(field, year)),
+                )? {
                     found = true;
                     break;
                 }
@@ -61,27 +79,52 @@ impl StatsRecorderService {
     }
 }
 
-/// The distinct UTC years of `field` in `table` (unparseable timestamps are skipped).
-fn utc_years(conn: &Connection, table: &str, field: &str) -> Result<Vec<i32>> {
-    let sql = format!(
-        "SELECT DISTINCT CAST(strftime('%Y', {field}) AS INTEGER) FROM {table} WHERE strftime('%Y', {field}) IS NOT NULL"
-    );
-    let mut stmt = conn.prepare(&sql).map_err(CrateError::Database)?;
-    let rows = stmt
-        .query_map([], |row| row.get::<_, i32>(0))
-        .map_err(CrateError::Database)?;
-    rows.collect::<std::result::Result<Vec<_>, _>>()
-        .map_err(CrateError::Database)
+/// An index-usable text window around the local year `year`: from 30 December of the year before
+/// to 3 January of the year after (a day of margin beyond the widest time zone, on each side).
+/// Every row the exact condition accepts is inside it; it only lets the index skip the rest.
+fn prefilter(field: &str, year: i32) -> String {
+    format!(
+        "{field} >= '{:04}-12-30' AND {field} < '{:04}-01-03'",
+        year - 1,
+        year + 1
+    )
 }
 
-/// Whether `table` has a row matching `condition` (`None`: no limit).
-fn has_rows(conn: &Connection, table: &str, condition: &Option<String>) -> Result<bool> {
-    let where_clause = condition
-        .as_deref()
-        .map(|cond| format!("WHERE {cond}"))
-        .unwrap_or_default();
+/// The distinct years written at the start of `field` in `table`, oldest first, read by skipping
+/// through the index one year at a time (a search per year, never a scan of every row). Rows
+/// that do not start with a four-digit year are left out: no period can select them either.
+fn written_years(conn: &Connection, table: &str, field: &str) -> Result<Vec<i32>> {
+    let sql = format!("SELECT MIN({field}) FROM {table} WHERE {field} >= ?1");
+    let mut stmt = conn.prepare(&sql).map_err(CrateError::Database)?;
+    let mut years = Vec::new();
+    // Digits sort before letters, so the first value from "0" on is the earliest dated row.
+    let mut from = "0".to_string();
+    while let Some(value) = stmt
+        .query_row([&from], |row| row.get::<_, Option<String>>(0))
+        .optional()
+        .map_err(CrateError::Database)?
+        .flatten()
+    {
+        let Some(year) = value
+            .get(..4)
+            .filter(|prefix| prefix.bytes().all(|b| b.is_ascii_digit()))
+            .and_then(|prefix| prefix.parse::<i32>().ok())
+        else {
+            break;
+        };
+        years.push(year);
+        if year >= 9999 {
+            break;
+        }
+        from = format!("{:04}", year + 1);
+    }
+    Ok(years)
+}
+
+/// Whether `table` has a row matching `condition`.
+fn has_rows(conn: &Connection, table: &str, condition: &str) -> Result<bool> {
     conn.query_row(
-        &format!("SELECT EXISTS(SELECT 1 FROM {table} {where_clause})"),
+        &format!("SELECT EXISTS(SELECT 1 FROM {table} WHERE {condition})"),
         [],
         |row| row.get(0),
     )
@@ -207,5 +250,69 @@ mod tests {
             service.listening_years_at(&utc_now()).unwrap(),
             vec![2025, 2019]
         );
+    }
+
+    #[test]
+    fn a_year_after_the_current_one_is_never_offered() {
+        let service = service();
+        // A clock set wrong once wrote a listen in the future.
+        add_listen(&service, "future", "2027-05-01T12:00:00Z");
+        add_listen(&service, "now", "2026-02-01T12:00:00Z");
+        assert_eq!(service.listening_years_at(&utc_now()).unwrap(), vec![2026]);
+    }
+
+    #[test]
+    fn a_listen_written_with_an_offset_still_counts_in_its_local_year() {
+        let service = service();
+        // 00:30 in Paris on 1 January 2026 is 23:30 UTC on 31 December 2025.
+        add_listen(&service, "a", "2026-01-01T00:30:00+01:00");
+        let new_york = FixedOffset::west_opt(5 * 3600).unwrap();
+        let new_york_now = new_york.from_utc_datetime(&utc_now().naive_utc());
+        assert_eq!(
+            service.listening_years_at(&new_york_now).unwrap(),
+            vec![2025]
+        );
+        let paris_now = EUROPE.from_utc_datetime(&utc_now().naive_utc());
+        assert_eq!(service.listening_years_at(&paris_now).unwrap(), vec![2026]);
+    }
+
+    #[test]
+    fn the_written_years_skip_the_gaps_and_stop_at_text_that_is_not_a_date() {
+        let service = service();
+        add_listen(&service, "a", "2019-03-01T10:00:00Z");
+        add_listen(&service, "b", "2019-09-01 10:00:00");
+        add_listen(&service, "c", "2023-01-01T00:00:00Z");
+        add_listen(&service, "d", "unknown");
+        let conn = service.conn.lock().unwrap();
+        assert_eq!(
+            written_years(&conn, "listen_events", "played_at").unwrap(),
+            vec![2019, 2023]
+        );
+        assert_eq!(
+            written_years(&conn, "rekordbox_sessions", "started_at").unwrap(),
+            Vec::<i32>::new()
+        );
+    }
+
+    #[test]
+    fn every_query_searches_the_time_index_instead_of_scanning_the_table() {
+        let service = service();
+        let conn = service.conn.lock().unwrap();
+        let plan = |sql: &str| -> String {
+            let mut stmt = conn.prepare(&format!("EXPLAIN QUERY PLAN {sql}")).unwrap();
+            let rows = stmt.query_map([], |row| row.get::<_, String>(3)).unwrap();
+            rows.map(|r| r.unwrap()).collect::<Vec<_>>().join(" | ")
+        };
+        for (table, field) in SOURCES {
+            let seek = plan(&format!(
+                "SELECT MIN({field}) FROM {table} WHERE {field} >= '2026'"
+            ));
+            assert!(seek.contains("USING COVERING INDEX"), "{table}: {seek}");
+            let exists = plan(&format!(
+                "SELECT EXISTS(SELECT 1 FROM {table} WHERE {} AND datetime({field}) IS NOT NULL)",
+                prefilter(field, 2025)
+            ));
+            assert!(exists.contains("USING COVERING INDEX"), "{table}: {exists}");
+        }
     }
 }
