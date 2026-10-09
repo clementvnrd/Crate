@@ -1066,7 +1066,12 @@ mod history_export_tests {
         let rows = parse_csv(&std::fs::read_to_string(&file.0).unwrap());
         assert_eq!(rows.len(), 3, "header + 2 rows");
         assert_eq!(rows[0][0], "played_at");
-        assert_eq!(rows[0].len(), 15);
+        assert_eq!(rows[0].len(), 16);
+        assert_eq!(
+            rows[0].last().map(String::as_str),
+            Some("artwork_url"),
+            "new columns are appended, the previous ones keep their position"
+        );
         let title_col = rows[0].iter().position(|c| c == "title").unwrap();
         assert_eq!(rows[1][title_col], awkward);
         assert_eq!(rows[2][title_col], "Plain");
@@ -1178,6 +1183,159 @@ mod history_export_tests {
         let at_col = rows[0].iter().position(|c| c == "played_at").unwrap();
         let times: Vec<&str> = rows[1..].iter().map(|r| r[at_col].as_str()).collect();
         assert!(times.windows(2).all(|w| w[0] <= w[1]), "oldest first");
+    }
+
+    /// Every column of `listen_events`, read straight from the table with `SELECT *` and rendered
+    /// as JSON (`None` = SQL NULL), keyed by row id. Because the column list comes from the table,
+    /// a column added by a later migration but left out of the export fails the round-trips below:
+    /// the export is the only backup of the history, so it must never drop a column silently.
+    fn stored_rows(
+        conn: &Arc<Mutex<Connection>>,
+    ) -> Vec<(String, Vec<(String, serde_json::Value)>)> {
+        let conn = conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare("SELECT * FROM listen_events ORDER BY played_at, id")
+            .unwrap();
+        let names: Vec<String> = stmt.column_names().iter().map(|c| c.to_string()).collect();
+        stmt.query_map([], |r| {
+            let mut fields = Vec::new();
+            for (i, name) in names.iter().enumerate() {
+                let value = match r.get_ref(i)? {
+                    rusqlite::types::ValueRef::Null => serde_json::Value::Null,
+                    rusqlite::types::ValueRef::Integer(n) => serde_json::json!(n),
+                    rusqlite::types::ValueRef::Real(f) => serde_json::json!(f),
+                    rusqlite::types::ValueRef::Text(t) => {
+                        serde_json::json!(String::from_utf8_lossy(t).into_owned())
+                    }
+                    rusqlite::types::ValueRef::Blob(_) => {
+                        panic!("{name} is a blob column: decide how the history export writes it")
+                    }
+                };
+                fields.push((name.clone(), value));
+            }
+            Ok((r.get::<_, String>("id")?, fields))
+        })
+        .unwrap()
+        .collect::<std::result::Result<Vec<_>, _>>()
+        .unwrap()
+    }
+
+    /// Two full rows: one with every optional column set (cover URL included), one with every
+    /// optional column NULL.
+    fn insert_full_and_sparse(conn: &Arc<Mutex<Connection>>) {
+        let conn = conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO listen_events (id, source, track_id, title, artist, album, duration_ms,
+                 played_ms, bpm, key, energy, format, artwork_url, played_at, session_id,
+                 metadata_json)
+             VALUES ('full', 'spotify', 'spotify:track:abc', 'Full, \"quoted\"', 'Artist',
+                 'Album', 200000, 180000, 124.5, '8A', 7, 'FLAC',
+                 'https://i.scdn.co/image/ab67616d0000b273cover?size=640,640',
+                 '2026-01-01T10:00:00Z', 'session-1', '{\"uri\":\"x\"}')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO listen_events (id, source, title, artist, duration_ms, played_ms,
+                 played_at)
+             VALUES ('sparse', 'rekordbox', 'Sparse', 'Artist', 1000, 500,
+                 '2026-01-02T10:00:00Z')",
+            [],
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn json_round_trips_every_column_including_artwork_and_null_artwork() {
+        let (conn, recorder) = setup_test_db();
+        insert_full_and_sparse(&conn);
+
+        let file = TempFile::new("roundtrip", "json");
+        assert_eq!(
+            recorder
+                .export_listen_history(HistoryExportFormat::Json, &file.0)
+                .unwrap(),
+            2
+        );
+        let value: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&file.0).unwrap()).unwrap();
+        let items = value.as_array().unwrap();
+
+        let stored = stored_rows(&conn);
+        assert_eq!(items.len(), stored.len());
+        for ((id, fields), item) in stored.iter().zip(items) {
+            assert_eq!(item["id"], id.as_str());
+            for (name, stored) in fields {
+                assert!(
+                    item.as_object().unwrap().contains_key(name),
+                    "the export has no `{name}` key"
+                );
+                let exported = &item[name];
+                if name == "metadata_json" {
+                    // Valid metadata is exported as real JSON: compare it re-serialised.
+                    let back = (!exported.is_null()).then(|| exported.to_string());
+                    let stored = stored.as_str().map(|raw| {
+                        serde_json::from_str::<serde_json::Value>(raw)
+                            .unwrap()
+                            .to_string()
+                    });
+                    assert_eq!(back, stored, "{id}.{name}");
+                } else {
+                    assert_eq!(exported, stored, "{id}.{name}");
+                }
+            }
+        }
+        assert_eq!(
+            items[0]["artwork_url"],
+            "https://i.scdn.co/image/ab67616d0000b273cover?size=640,640"
+        );
+        assert_eq!(items[0]["track_id"], "spotify:track:abc");
+        assert!(
+            items[1]["artwork_url"].is_null(),
+            "a missing cover stays null"
+        );
+        assert!(items[1]["track_id"].is_null());
+    }
+
+    #[test]
+    fn csv_round_trips_every_column_including_artwork_and_null_artwork() {
+        let (conn, recorder) = setup_test_db();
+        insert_full_and_sparse(&conn);
+
+        let file = TempFile::new("roundtrip", "csv");
+        assert_eq!(
+            recorder
+                .export_listen_history(HistoryExportFormat::Csv, &file.0)
+                .unwrap(),
+            2
+        );
+        let rows = parse_csv(&std::fs::read_to_string(&file.0).unwrap());
+        let header = &rows[0];
+
+        let stored = stored_rows(&conn);
+        assert_eq!(rows.len() - 1, stored.len());
+        for ((id, fields), row) in stored.iter().zip(&rows[1..]) {
+            assert_eq!(row.len(), header.len());
+            for (name, stored) in fields {
+                let col = header
+                    .iter()
+                    .position(|c| c == name)
+                    .unwrap_or_else(|| panic!("the export has no `{name}` column"));
+                // CSV has no types: NULL is an empty field, numbers and text are their text.
+                let expected = match stored {
+                    serde_json::Value::Null => String::new(),
+                    serde_json::Value::String(s) => s.clone(),
+                    other => other.to_string(),
+                };
+                assert_eq!(row[col], expected, "{id}.{name}");
+            }
+        }
+        let art_col = header.iter().position(|c| c == "artwork_url").unwrap();
+        assert_eq!(
+            rows[1][art_col],
+            "https://i.scdn.co/image/ab67616d0000b273cover?size=640,640"
+        );
+        assert_eq!(rows[2][art_col], "", "a missing cover is an empty field");
     }
 
     #[test]
@@ -2315,6 +2473,40 @@ mod spotify_reset_tests {
         assert!(items
             .iter()
             .any(|i| i["id"] == "rb1" && i["source"] == "rekordbox"));
+    }
+
+    #[test]
+    fn the_backup_keeps_track_id_and_artwork_url_of_the_deleted_rows() {
+        let (conn, recorder) = setup_test_db();
+        conn.lock()
+            .unwrap()
+            .execute(
+                "INSERT INTO listen_events (id, source, track_id, title, artist, duration_ms,
+                     played_ms, artwork_url, played_at)
+                 VALUES ('sp1', 'spotify', 'spotify:track:abc', 'Covered', 'Artist', 200000,
+                     180000, 'https://i.scdn.co/image/cover', '2026-01-01T10:00:00Z')",
+                [],
+            )
+            .unwrap();
+        insert_raw(&conn, "sp2", "spotify", "2026-01-02T10:00:00Z");
+
+        let file = TempFile::new("artwork");
+        let result = recorder.reset_spotify_history(&file.0).unwrap();
+        assert_eq!(result.deleted_count, 2);
+        assert_eq!(count_sources(&conn), (0, 0));
+
+        let value: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&file.0).unwrap()).unwrap();
+        let items = value.as_array().unwrap();
+        let covered = items.iter().find(|i| i["id"] == "sp1").unwrap();
+        assert_eq!(covered["track_id"], "spotify:track:abc");
+        assert_eq!(
+            covered["artwork_url"], "https://i.scdn.co/image/cover",
+            "the cover URL survives the deletion in the backup"
+        );
+        let bare = items.iter().find(|i| i["id"] == "sp2").unwrap();
+        assert!(bare["artwork_url"].is_null());
+        assert!(bare["track_id"].is_null());
     }
 
     #[test]
