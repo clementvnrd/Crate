@@ -24,5 +24,6 @@
 				"https://raw.githubusercontent.com/clementvnrd/Crate/update-channels/channels/staging/latest.json"
 			]
 		}
-	}
+	},
+	"version": "1.0.0-staging.1"
 }
