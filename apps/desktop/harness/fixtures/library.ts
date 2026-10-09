@@ -1,4 +1,4 @@
-import type { Cue, Playlist, Tag, TagCategory, Track, TrackColor, UsbDevice } from '$shared/types'
+import type { Cue, Playlist, Tag, TagCategory, Track, TrackBeatGrid, TrackColor, UsbDevice } from '$shared/types'
 import { artworkDataUrl } from './artwork'
 import { isoAgo } from './reference'
 
@@ -465,6 +465,15 @@ export function waveformFor(track: Track): number[] {
 		const grain = 0.5 + 0.5 * Math.sin(i * 0.9 + phase * 1.7)
 		return Math.round(Math.max(4, Math.min(100, 100 * envelope * (0.45 + 0.55 * grain))))
 	})
+}
+
+/** A steady grid at the track's BPM, with a first beat that varies per track; null without a BPM
+ * (the real backend answers null for every track Crate has not analysed). */
+export function beatGridFor(track: Track): TrackBeatGrid | null {
+	if (track.bpm === null) return null
+	const phase = Number(track.id.replace(/\D/g, '')) || 1
+	const beatMs = 60_000 / track.bpm
+	return { first_beat_ms: Math.round(((phase * 37) % beatMs) * 10) / 10, bpm: track.bpm, tempo_changes: null }
 }
 
 // =============================================================================

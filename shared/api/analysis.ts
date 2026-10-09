@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
-import type { Track } from '../types'
+import type { Track, TrackBeatGrid } from '../types'
 
 /**
  * Analyze tracks for BPM and key detection
@@ -29,4 +29,20 @@ export async function cancelAnalysis(): Promise<void> {
  */
 export async function getAnalyzedTracks(trackIds: string[]): Promise<Track[]> {
 	return invoke<Track[]>('get_analyzed_tracks', { trackIds })
+}
+
+/**
+ * Stored beat grid of a track, or null when it has none (never analysed by Crate, analysed by
+ * Mixed In Key only, or no detectable pulse)
+ */
+export async function getTrackBeatgrid(trackId: string): Promise<TrackBeatGrid | null> {
+	return invoke<TrackBeatGrid | null>('get_track_beatgrid', { trackId })
+}
+
+/**
+ * Recompute only the beat grid of a track from its audio file. BPM, key, energy and analysis
+ * source are left untouched, so it is safe for tracks analysed by Mixed In Key.
+ */
+export async function analyzeTrackBeatgrid(trackId: string): Promise<TrackBeatGrid | null> {
+	return invoke<TrackBeatGrid | null>('analyze_track_beatgrid', { trackId })
 }

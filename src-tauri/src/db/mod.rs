@@ -272,6 +272,60 @@ mod tests {
     }
 
     #[test]
+    fn beat_grid_migration_keeps_existing_tracks_and_leaves_their_grid_empty() {
+        // Migration 19 adds the beat grid columns (CRA-177). Build a populated library at the
+        // schema just before it, then upgrade.
+        const BEFORE_BEAT_GRID: usize = 18;
+        let conn = open_mem();
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)",
+            [],
+        )
+        .unwrap();
+        for (idx, sql) in schema::get_migrations()
+            .iter()
+            .take(BEFORE_BEAT_GRID)
+            .enumerate()
+        {
+            conn.execute_batch(sql).unwrap();
+            conn.execute(
+                "INSERT INTO schema_version (version) VALUES (?1)",
+                [(idx as i32) + 1],
+            )
+            .unwrap();
+        }
+        assert!(!column_exists(&conn, "tracks", "beatgrid_bpm"));
+        for i in 0..3 {
+            conn.execute(
+                "INSERT INTO tracks (id, file_path, duration_ms, bpm, key, energy, analysis_source, \
+                 date_added, date_modified) \
+                 VALUES (?1, ?2, 300000, 124.0, '8A', 6, 'mixed_in_key', '2020-01-01', '2020-01-01')",
+                rusqlite::params![format!("t{i}"), format!("/music/{i}.mp3")],
+            )
+            .unwrap();
+        }
+
+        run_migrations(&conn).unwrap();
+
+        for col in [
+            "beatgrid_first_beat_ms",
+            "beatgrid_bpm",
+            "beatgrid_tempo_changes",
+        ] {
+            assert!(column_exists(&conn, "tracks", col), "missing {col}");
+        }
+        let (count, with_grid, bpm_sum): (i64, i64, f64) = conn
+            .query_row(
+                "SELECT COUNT(*), COUNT(beatgrid_bpm), SUM(bpm) FROM tracks \
+                 WHERE key = '8A' AND energy = 6 AND analysis_source = 'mixed_in_key'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!((count, with_grid, bpm_sum), (3, 0, 372.0));
+    }
+
+    #[test]
     fn database_from_a_newer_build_is_refused_untouched() {
         let conn = open_mem();
         run_migrations(&conn).unwrap();
