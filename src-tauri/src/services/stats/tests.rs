@@ -1185,18 +1185,16 @@ mod history_export_tests {
         assert!(times.windows(2).all(|w| w[0] <= w[1]), "oldest first");
     }
 
-    /// Every column of `listen_events` the exporter writes, read straight from the table and
-    /// rendered as JSON (`None` = SQL NULL), keyed by row id.
+    /// Every column of `listen_events`, read straight from the table with `SELECT *` and rendered
+    /// as JSON (`None` = SQL NULL), keyed by row id. Because the column list comes from the table,
+    /// a column added by a later migration but left out of the export fails the round-trips below:
+    /// the export is the only backup of the history, so it must never drop a column silently.
     fn stored_rows(
         conn: &Arc<Mutex<Connection>>,
     ) -> Vec<(String, Vec<(String, serde_json::Value)>)> {
         let conn = conn.lock().unwrap();
         let mut stmt = conn
-            .prepare(
-                "SELECT id, played_at, source, title, artist, album, duration_ms, played_ms, bpm,
-                        key, energy, format, track_id, session_id, metadata_json, artwork_url
-                 FROM listen_events ORDER BY played_at, id",
-            )
+            .prepare("SELECT * FROM listen_events ORDER BY played_at, id")
             .unwrap();
         let names: Vec<String> = stmt.column_names().iter().map(|c| c.to_string()).collect();
         stmt.query_map([], |r| {
@@ -1209,11 +1207,13 @@ mod history_export_tests {
                     rusqlite::types::ValueRef::Text(t) => {
                         serde_json::json!(String::from_utf8_lossy(t).into_owned())
                     }
-                    rusqlite::types::ValueRef::Blob(_) => unreachable!("no blob column"),
+                    rusqlite::types::ValueRef::Blob(_) => {
+                        panic!("{name} is a blob column: decide how the history export writes it")
+                    }
                 };
                 fields.push((name.clone(), value));
             }
-            Ok((r.get::<_, String>(0)?, fields))
+            Ok((r.get::<_, String>("id")?, fields))
         })
         .unwrap()
         .collect::<std::result::Result<Vec<_>, _>>()
@@ -1261,9 +1261,15 @@ mod history_export_tests {
             serde_json::from_str(&std::fs::read_to_string(&file.0).unwrap()).unwrap();
         let items = value.as_array().unwrap();
 
-        for ((id, fields), item) in stored_rows(&conn).iter().zip(items) {
+        let stored = stored_rows(&conn);
+        assert_eq!(items.len(), stored.len());
+        for ((id, fields), item) in stored.iter().zip(items) {
             assert_eq!(item["id"], id.as_str());
             for (name, stored) in fields {
+                assert!(
+                    item.as_object().unwrap().contains_key(name),
+                    "the export has no `{name}` key"
+                );
                 let exported = &item[name];
                 if name == "metadata_json" {
                     // Valid metadata is exported as real JSON: compare it re-serialised.
@@ -1306,10 +1312,15 @@ mod history_export_tests {
         let rows = parse_csv(&std::fs::read_to_string(&file.0).unwrap());
         let header = &rows[0];
 
-        for ((id, fields), row) in stored_rows(&conn).iter().zip(&rows[1..]) {
+        let stored = stored_rows(&conn);
+        assert_eq!(rows.len() - 1, stored.len());
+        for ((id, fields), row) in stored.iter().zip(&rows[1..]) {
             assert_eq!(row.len(), header.len());
             for (name, stored) in fields {
-                let col = header.iter().position(|c| c == name).unwrap();
+                let col = header
+                    .iter()
+                    .position(|c| c == name)
+                    .unwrap_or_else(|| panic!("the export has no `{name}` column"));
                 // CSV has no types: NULL is an empty field, numbers and text are their text.
                 let expected = match stored {
                     serde_json::Value::Null => String::new(),

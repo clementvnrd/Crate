@@ -17,9 +17,10 @@ use crate::error::{CrateError, Result};
 /// blocks the rest of the app while it writes to disk.
 const CHUNK_ROWS: usize = 2_000;
 
-/// Column order of the CSV file and key order of the JSON objects (chronological first).
+/// Column order of the CSV file (chronological first). JSON objects carry the same keys, in
+/// alphabetical order, so JSON readers look them up by name.
 ///
-/// New columns are only ever appended at the end, so a file written by an older version keeps
+/// New columns are only ever appended at the end, so a CSV file written by an older version keeps
 /// the same leading columns and any reader that ignores unknown trailing columns still works.
 /// `track_id` and `artwork_url` matter beyond reading: this export is the only backup of the
 /// history (the reset in `spotify_reset.rs` writes it before deleting), and the stored cover URL
