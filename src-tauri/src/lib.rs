@@ -407,6 +407,10 @@ pub fn run() {
             commands::analysis::cancel_analysis,
             #[cfg(feature = "desktop")]
             commands::analysis::get_analyzed_tracks,
+            #[cfg(feature = "desktop")]
+            commands::analysis::get_track_beatgrid,
+            #[cfg(feature = "desktop")]
+            commands::analysis::analyze_track_beatgrid,
             // Discovery commands
             commands::discovery::toggle_discovery_track_liked,
             commands::discovery::get_discovery_funnel,

@@ -2,6 +2,7 @@ use tauri::{AppHandle, State};
 
 use crate::error::Result;
 use crate::models::Track;
+use crate::services::beatgrid::TrackBeatGrid;
 use crate::services::AnalysisService;
 
 /// Analyze tracks for BPM and key detection with per-track events
@@ -41,4 +42,24 @@ pub async fn get_analyzed_tracks(
         tracks.push(track);
     }
     Ok(tracks)
+}
+
+/// Stored beat grid of a track (first beat, BPM with decimals, tempo changes); `None` when the
+/// track has none.
+#[tauri::command]
+pub async fn get_track_beatgrid(
+    track_id: String,
+    analysis: State<'_, AnalysisService>,
+) -> Result<Option<TrackBeatGrid>> {
+    analysis.get_beat_grid(&track_id)
+}
+
+/// Recompute only the beat grid of a track, leaving its BPM, key, energy and analysis source
+/// untouched (safe for tracks analysed by Mixed In Key).
+#[tauri::command]
+pub async fn analyze_track_beatgrid(
+    track_id: String,
+    analysis: State<'_, AnalysisService>,
+) -> Result<Option<TrackBeatGrid>> {
+    analysis.analyze_beat_grid(track_id).await
 }

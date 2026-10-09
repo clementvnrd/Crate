@@ -440,7 +440,9 @@ impl LibraryService {
     }
 }
 
-/// Updates the file columns of track `id` in place, within one transaction.
+/// Updates the file columns of track `id` in place, within one transaction. The beat grid of the
+/// old file is cleared: the new file can start at another offset (encoder delay, other master),
+/// so the track shows no grid until it is analysed again.
 pub(crate) fn replace_track_file_in(
     conn: &rusqlite::Connection,
     id: &str,
@@ -456,7 +458,8 @@ pub(crate) fn replace_track_file_in(
         "UPDATE tracks SET file_path = ?1, format = ?2,
             duration_ms = CASE WHEN ?3 > 0 THEN ?3 ELSE duration_ms END,
             bitrate = ?4, sample_rate = ?5, file_hash = ?6, date_modified = ?7, _hlc = ?8,
-            library_root_id = ?9, relative_path = ?10
+            library_root_id = ?9, relative_path = ?10,
+            beatgrid_first_beat_ms = NULL, beatgrid_bpm = NULL, beatgrid_tempo_changes = NULL
          WHERE id = ?11",
         rusqlite::params![
             new_path,
@@ -535,6 +538,34 @@ mod replace_file_tests {
                 .unwrap();
             assert_eq!(n, 1, "{table} must survive the upgrade");
         }
+    }
+
+    #[test]
+    fn test_replace_track_file_clears_the_old_beat_grid() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        conn.execute(
+            "INSERT INTO tracks (id, file_path, format, duration_ms, bpm, date_added, date_modified, \
+             beatgrid_first_beat_ms, beatgrid_bpm) \
+             VALUES ('t1', '/music/song.mp3', 'mp3', 300000, 124.0, '2026-01-01', '2026-01-01', 48.5, 123.98)",
+            [],
+        )
+        .unwrap();
+        replace_track_file_in(
+            &conn,
+            "t1",
+            "/music/song.flac",
+            &ReplacementAudio::default(),
+        )
+        .unwrap();
+        assert_eq!(
+            crate::services::beatgrid::load_beat_grid(&conn, "t1").unwrap(),
+            None
+        );
+        let bpm: f64 = conn
+            .query_row("SELECT bpm FROM tracks WHERE id = 't1'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(bpm, 124.0);
     }
 
     #[test]

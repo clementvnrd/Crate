@@ -9,7 +9,7 @@ import type {
 } from '$shared/types'
 import type { HandlerMap } from '../types'
 import type { HarnessState } from '../state'
-import { DEVICES, cuesFor, waveformFor } from '../fixtures/library'
+import { DEVICES, beatGridFor, cuesFor, waveformFor } from '../fixtures/library'
 
 const ENERGY_JUMP = 3
 
@@ -244,6 +244,11 @@ export function libraryHandlers(state: HarnessState): HandlerMap {
 		search_tracks: ({ query }) => state.tracks.filter((track) => matchesSearch(track, String(query ?? ''))),
 		get_analyzed_tracks: ({ trackIds }) => state.tracks.filter((track) => (trackIds as string[]).includes(track.id)),
 		get_track_waveform: ({ trackId }) => waveformFor(requireTrack(state, trackId)),
+		get_track_beatgrid: ({ trackId }) => {
+			const track = state.tracks.find((candidate) => candidate.id === trackId)
+			return track ? beatGridFor(track) : null
+		},
+		analyze_track_beatgrid: ({ trackId }) => beatGridFor(requireTrack(state, trackId)),
 		get_track_cues: ({ trackId }) => cuesFor(requireTrack(state, trackId)),
 		check_file_exists: ({ trackId }) => !state.params.missingTrackIds.includes(String(trackId)),
 

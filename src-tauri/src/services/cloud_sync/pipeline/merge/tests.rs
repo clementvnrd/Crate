@@ -480,3 +480,58 @@ fn no_override_when_local_value_authored_elsewhere() {
     assert_eq!(tc_name(&conn, "c1").as_deref(), Some("Techno"));
     assert!(overrides.is_empty());
 }
+
+// --- tracks: local-only analysis columns ------------------------------------
+
+#[test]
+fn beat_grid_is_neither_pushed_nor_overwritten_by_a_pull() {
+    use crate::services::cloud_sync::pipeline::buckets::shard_for_track_id;
+    use crate::services::cloud_sync::pipeline::rows::serialize_bucket;
+
+    let conn = mem();
+    conn.execute(
+        "INSERT INTO tracks (id, file_path, duration_ms, title, bpm, date_added, date_modified, _hlc, \
+         beatgrid_first_beat_ms, beatgrid_bpm, beatgrid_tempo_changes) \
+         VALUES ('t1', '/music/a.mp3', 1000, 'Old', 124.0, '2020', '2020', '0005', \
+         12.5, 123.98, '[[61000.0,130.0]]')",
+        [],
+    )
+    .unwrap();
+    let bucket = Bucket::Tracks(shard_for_track_id("t1"));
+
+    // Pushed rows carry no grid: the manifest of a device is unchanged by an analysis grid.
+    let blob = String::from_utf8(serialize_bucket(&conn, &bucket).unwrap()).unwrap();
+    assert!(blob.contains("\"Old\""), "{blob}");
+    assert!(!blob.contains("beatgrid"), "{blob}");
+
+    // A newer remote edit of the same track replaces synced fields only.
+    let remote = parsed(json!({
+        "id": "t1", "file_path": "/music/a.mp3", "file_hash": null, "title": "New",
+        "artist": null, "album": null, "year": null, "genre": null, "label": null,
+        "catalog_number": null, "duration_ms": 1000, "bpm": 125.0, "key": null, "bitrate": null,
+        "sample_rate": null, "format": null, "rating": 0, "play_count": 0, "date_added": "2020",
+        "date_modified": "2021", "last_played": null, "rekordbox_id": null, "artwork_path": null,
+        "artwork_source": null, "color": null, "energy": null,
+        "_hlc": "0009", "_deleted": false
+    }));
+    merge_bucket(&conn, &bucket, &[remote]).unwrap();
+
+    let row: (String, f64, f64, f64, String) = conn
+        .query_row(
+            "SELECT title, bpm, beatgrid_first_beat_ms, beatgrid_bpm, beatgrid_tempo_changes \
+             FROM tracks WHERE id = 't1'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
+        )
+        .unwrap();
+    assert_eq!(
+        row,
+        (
+            "New".to_string(),
+            125.0,
+            12.5,
+            123.98,
+            "[[61000.0,130.0]]".to_string()
+        )
+    );
+}

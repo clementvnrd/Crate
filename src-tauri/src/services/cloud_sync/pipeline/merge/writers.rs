@@ -3,8 +3,9 @@
 //!
 //! Two invariants live here:
 //! - **UPSERTs write ONLY synced columns.** The track UPSERT never touches
-//!   `analysis_source`, `waveform_data`, `library_root_id`, or `relative_path`, so a
-//!   peer that analyzed a track keeps its waveform when it pulls a metadata edit.
+//!   `analysis_source`, `waveform_data`, the `beatgrid_*` columns, `library_root_id`, or
+//!   `relative_path`, so a peer that analyzed a track keeps its waveform and beat grid when it
+//!   pulls a metadata edit.
 //! - **Entity upserts run inside a per-row SAVEPOINT** and skip (rather than abort
 //!   the whole bucket) on a secondary `UNIQUE` collision — two devices that
 //!   independently created e.g. a tag category named "House" must not wedge sync.

@@ -145,6 +145,25 @@ export interface Track {
 	tags: Tag[]
 }
 
+/**
+ * Beat grid kept from Crate's own analysis (`get_track_beatgrid`). Grid lines fall every
+ * `60000 / bpm` ms from `first_beat_ms`, and from each tempo change onwards at that change's BPM.
+ * `bpm` has decimals and is for drawing the grid only: the displayed BPM stays `Track.bpm`.
+ */
+export interface TrackBeatGrid {
+	/** First grid line at or after the start of the file, in ms (below one beat). */
+	first_beat_ms: number
+	bpm: number
+	/** `null` for a constant tempo; otherwise the later sections of the grid, in time order. */
+	tempo_changes: TempoChange[] | null
+}
+
+/** A grid line where the tempo changes: the grid restarts from `position_ms` at `bpm`. */
+export interface TempoChange {
+	position_ms: number
+	bpm: number
+}
+
 export interface TrackFilter {
 	search?: string
 	tag_ids?: string[]

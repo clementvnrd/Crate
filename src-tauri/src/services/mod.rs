@@ -6,6 +6,8 @@ pub mod artwork;
 #[cfg(feature = "desktop")]
 pub mod audio;
 pub mod backup;
+#[cfg(feature = "desktop")]
+pub mod beatgrid;
 pub mod beatport;
 pub mod cloud_sync;
 #[cfg(feature = "desktop")]

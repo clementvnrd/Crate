@@ -8,7 +8,7 @@ use tauri::{AppHandle, Emitter};
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use tokio_util::sync::CancellationToken;
 
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use stratum_dsp::{analyze_audio, AnalysisConfig};
 use symphonia::core::audio::SampleBuffer;
@@ -20,6 +20,7 @@ use symphonia::core::probe::Hint;
 
 use crate::error::{CrateError, Result};
 use crate::models::{Tag, Track};
+use crate::services::beatgrid::{self, TrackBeatGrid};
 use crate::services::cloud_sync::pipeline::{buckets, dirty};
 
 /// Result of analyzing a single track
@@ -30,6 +31,13 @@ pub struct AnalysisResult {
     pub key: Option<String>,
     pub success: bool,
     pub error: Option<String>,
+}
+
+/// What one stratum-dsp pass yields for a track.
+struct AudioAnalysis {
+    bpm: Option<f64>,
+    key: Option<String>,
+    grid: Option<TrackBeatGrid>,
 }
 
 /// Status of an analysis operation
@@ -366,14 +374,20 @@ impl AnalysisService {
 
         // Analyze the audio file with cancellation checks
         match Self::analyze_audio_file_with_cancellation(file_path, cancel_token) {
-            Ok((bpm, key)) => {
+            Ok(AudioAnalysis { bpm, key, grid }) => {
                 // Check cancellation before saving
                 if cancel_token.is_cancelled() {
                     return Err(CrateError::Analysis("Cancelled".to_string()));
                 }
 
                 // Update the database
-                Self::update_track_analysis_static(conn, track_id, bpm, key.as_deref())?;
+                Self::update_track_analysis_static(
+                    conn,
+                    track_id,
+                    bpm,
+                    key.as_deref(),
+                    grid.as_ref(),
+                )?;
 
                 // Get updated track
                 let updated_track = Self::get_track_static(conn, track_id).ok();
@@ -405,11 +419,11 @@ impl AnalysisService {
         }
     }
 
-    /// Analyze an audio file for BPM and key with cancellation support
+    /// Analyze an audio file for BPM, key and beat grid with cancellation support
     fn analyze_audio_file_with_cancellation(
         path: &Path,
         cancel_token: &CancellationToken,
-    ) -> Result<(Option<f64>, Option<String>)> {
+    ) -> Result<AudioAnalysis> {
         // Decode audio to mono f32 samples with cancellation checks
         let (samples, sample_rate) = Self::decode_audio_with_cancellation(path, cancel_token)?;
 
@@ -422,15 +436,25 @@ impl AnalysisService {
             return Err(CrateError::Analysis("Cancelled".to_string()));
         }
 
-        // Analyze using stratum-dsp
-        let result = analyze_audio(&samples, sample_rate, AnalysisConfig::default())
+        Self::analyze_samples(&samples, sample_rate)
+    }
+
+    /// BPM, key and beat grid of decoded mono samples, in one analysis pass.
+    fn analyze_samples(samples: &[f32], sample_rate: u32) -> Result<AudioAnalysis> {
+        let result = analyze_audio(samples, sample_rate, AnalysisConfig::default())
             .map_err(|e| CrateError::Analysis(format!("Analysis failed: {e}")))?;
 
-        // Round BPM to nearest integer (most tracks are produced at whole BPMs)
-        let bpm = Some((result.bpm as f64).round());
-        let key = Some(result.key.name().to_string());
+        // The grid is found on the same samples, near the tempo this pass estimated (stratum-dsp's
+        // own beat list is laid at its rounded tempo, so it cannot give the grid).
+        let grid = beatgrid::detect_beat_grid(samples, sample_rate, result.bpm as f64);
 
-        Ok((bpm, key))
+        Ok(AudioAnalysis {
+            // Round BPM to nearest integer (most tracks are produced at whole BPMs). The grid keeps
+            // its own BPM with decimals; this one is the displayed and exported value.
+            bpm: Some((result.bpm as f64).round()),
+            key: Some(result.key.name().to_string()),
+            grid,
+        })
     }
 
     /// Decode audio file to mono f32 samples with cancellation checks
@@ -529,21 +553,89 @@ impl AnalysisService {
         Ok((samples, sample_rate))
     }
 
-    /// Static version of update_track_analysis for use in blocking context
+    /// Recomputes only the beat grid of a track from its audio file, for tracks whose regular
+    /// analysis is skipped (Mixed In Key) or predates the grid. Nothing else is written: BPM, key,
+    /// energy and `analysis_source` stay as they are, and Mixed In Key's database is never opened.
+    /// The grid runs at the track's stored (displayed) BPM, searched within 4% of it, so the grid
+    /// always matches the BPM shown: a stored BPM an octave off the audio gives a grid at that
+    /// octave (a line on every other beat, or between beats), and one unrelated to the audio
+    /// usually gives no grid. Only a track without a BPM runs stratum-dsp, for the tempo.
+    /// Waits for a free analysis slot like a regular analysis.
+    pub async fn analyze_beat_grid(&self, track_id: String) -> Result<Option<TrackBeatGrid>> {
+        let cancel_token = CancellationToken::new();
+        let _permit = self
+            .limiter
+            .acquire(&cancel_token)
+            .await
+            .ok_or_else(|| CrateError::Analysis("Cancelled".to_string()))?;
+        let conn = self.conn.clone();
+        tokio::task::spawn_blocking(move || {
+            Self::analyze_beat_grid_blocking(&conn, &track_id, &cancel_token)
+        })
+        .await
+        .map_err(|e| CrateError::Analysis(format!("Task panicked: {e}")))?
+    }
+
+    fn analyze_beat_grid_blocking(
+        conn: &Arc<Mutex<Connection>>,
+        track_id: &str,
+        cancel_token: &CancellationToken,
+    ) -> Result<Option<TrackBeatGrid>> {
+        let (file_path, stored_bpm): (String, Option<f64>) = {
+            let conn = conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+            conn.query_row(
+                "SELECT file_path, bpm FROM tracks WHERE id = ?1",
+                [track_id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .optional()?
+            .ok_or_else(|| CrateError::TrackNotFound(track_id.to_string()))?
+        };
+        let path = Path::new(&file_path);
+        if !path.exists() {
+            return Err(CrateError::Analysis(format!("File not found: {file_path}")));
+        }
+        let grid = match stored_bpm.filter(|bpm| bpm.is_finite() && *bpm > 0.0) {
+            Some(bpm) => {
+                let (samples, sample_rate) =
+                    Self::decode_audio_with_cancellation(path, cancel_token)?;
+                if cancel_token.is_cancelled() {
+                    return Err(CrateError::Analysis("Cancelled".to_string()));
+                }
+                beatgrid::detect_beat_grid(&samples, sample_rate, bpm)
+            }
+            None => Self::analyze_audio_file_with_cancellation(path, cancel_token)?.grid,
+        };
+        let conn = conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        beatgrid::store_beat_grid(&conn, track_id, grid.as_ref())?;
+        Ok(grid)
+    }
+
+    /// The stored beat grid of a track; `None` when it has none.
+    pub fn get_beat_grid(&self, track_id: &str) -> Result<Option<TrackBeatGrid>> {
+        let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
+        beatgrid::load_beat_grid(&conn, track_id)
+    }
+
+    /// Static version of update_track_analysis for use in blocking context. The beat grid is
+    /// written in the same statement (cleared when the track has no pulse) but is not synced.
     fn update_track_analysis_static(
         conn: &Arc<Mutex<Connection>>,
         track_id: &str,
         bpm: Option<f64>,
         key: Option<&str>,
+        grid: Option<&TrackBeatGrid>,
     ) -> Result<()> {
         let conn = conn.lock().map_err(|_| CrateError::LockPoisoned)?;
 
         let now = chrono::Utc::now().to_rfc3339();
         let hlc = dirty::next_hlc(&conn)?;
+        let (first_beat_ms, grid_bpm, tempo_changes) = beatgrid::grid_columns(grid)?;
 
         conn.execute(
-            "UPDATE tracks SET bpm = ?1, key = ?2, analysis_source = 'crate', date_modified = ?3, _hlc = ?4 WHERE id = ?5",
-            rusqlite::params![bpm, key, now, hlc, track_id],
+            "UPDATE tracks SET bpm = ?1, key = ?2, analysis_source = 'crate', date_modified = ?3, _hlc = ?4, \
+             beatgrid_first_beat_ms = ?5, beatgrid_bpm = ?6, beatgrid_tempo_changes = ?7 WHERE id = ?8",
+            rusqlite::params![bpm, key, now, hlc, first_beat_ms, grid_bpm, tempo_changes, track_id],
         )?;
         dirty::mark_dirty(&conn, &buckets::bucket_for_track_id(track_id))?;
 
@@ -851,5 +943,195 @@ mod limiter_tests {
         .await
         .expect("the freed slot is reused");
         assert!(second.is_some());
+    }
+}
+
+#[cfg(test)]
+mod beat_grid_tests {
+    use super::*;
+
+    const RATE: u32 = 44_100;
+
+    /// 16-bit mono PCM WAV.
+    fn write_wav(path: &Path, samples: &[f32]) {
+        let data: Vec<u8> = samples
+            .iter()
+            .flat_map(|s| ((s.clamp(-1.0, 1.0) * 32_767.0) as i16).to_le_bytes())
+            .collect();
+        let mut wav = Vec::new();
+        wav.extend(b"RIFF");
+        wav.extend((36 + data.len() as u32).to_le_bytes());
+        wav.extend(b"WAVEfmt ");
+        wav.extend(16u32.to_le_bytes());
+        wav.extend(1u16.to_le_bytes()); // PCM
+        wav.extend(1u16.to_le_bytes()); // mono
+        wav.extend(RATE.to_le_bytes());
+        wav.extend((RATE * 2).to_le_bytes());
+        wav.extend(2u16.to_le_bytes());
+        wav.extend(16u16.to_le_bytes());
+        wav.extend(b"data");
+        wav.extend((data.len() as u32).to_le_bytes());
+        wav.extend(data);
+        std::fs::write(path, wav).unwrap();
+    }
+
+    fn library_with(track_id: &str, path: &Path) -> Arc<Mutex<Connection>> {
+        let conn = Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&conn).unwrap();
+        conn.execute(
+            "INSERT INTO tracks (id, file_path, duration_ms, format, date_added, date_modified) \
+             VALUES (?1, ?2, 30000, 'wav', '2020-01-01', '2020-01-01')",
+            rusqlite::params![track_id, path.to_string_lossy()],
+        )
+        .unwrap();
+        Arc::new(Mutex::new(conn))
+    }
+
+    #[test]
+    fn the_analysis_pass_stores_the_grid_of_a_click_track() {
+        // 123.7 BPM, first beat 350 ms in, after leading silence that stratum-dsp trims.
+        let (bpm, first_beat_ms) = (123.7, 350.0);
+        let path = std::env::temp_dir().join(format!(
+            "crate_beatgrid_{}_{:?}.wav",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        write_wav(
+            &path,
+            &beatgrid::tests::click_track(RATE, bpm, first_beat_ms / 1000.0, 30.0),
+        );
+        let conn = library_with("t1", &path);
+
+        let started = std::time::Instant::now();
+        let (result, _) = AnalysisService::analyze_track_with_cancellation(
+            &conn,
+            "t1",
+            &CancellationToken::new(),
+        )
+        .unwrap();
+        let elapsed = started.elapsed();
+        let _ = std::fs::remove_file(&path);
+        assert!(result.success, "{result:?}");
+
+        let conn = conn.lock().unwrap();
+        let grid = beatgrid::load_beat_grid(&conn, "t1")
+            .unwrap()
+            .expect("a grid is stored");
+        eprintln!("grid {grid:?} in {elapsed:?}");
+        // stratum-dsp rounds this tempo to 124; the grid keeps the decimals.
+        assert!((grid.bpm - bpm).abs() < 0.01, "{grid:?}");
+        assert!((grid.first_beat_ms - first_beat_ms).abs() < 3.0, "{grid:?}");
+        assert_eq!(grid.tempo_changes, None);
+
+        // The displayed BPM is still the rounded one, and the track is marked analysed by Crate.
+        let (stored_bpm, source): (f64, String) = conn
+            .query_row(
+                "SELECT bpm, analysis_source FROM tracks WHERE id = 't1'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(stored_bpm, 124.0);
+        assert_eq!(source, "crate");
+    }
+
+    #[test]
+    fn a_grid_only_analysis_leaves_mixed_in_key_values_alone() {
+        let path = std::env::temp_dir().join(format!(
+            "crate_beatgrid_mik_{}_{:?}.wav",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        write_wav(&path, &beatgrid::tests::click_track(RATE, 128.0, 0.2, 20.0));
+        let conn = library_with("t1", &path);
+        let set_mik_values = |bpm: f64| {
+            conn.lock()
+                .unwrap()
+                .execute(
+                    "UPDATE tracks SET bpm = ?1, key = '8A', energy = 6, \
+                     analysis_source = 'mixed_in_key', _hlc = 'h1' WHERE id = 't1'",
+                    [bpm],
+                )
+                .unwrap();
+        };
+        let grid_only = || {
+            AnalysisService::analyze_beat_grid_blocking(&conn, "t1", &CancellationToken::new())
+                .unwrap()
+                .expect("a grid")
+        };
+
+        // The grid runs at the stored BPM.
+        set_mik_values(128.0);
+        let grid = grid_only();
+        assert!((grid.bpm - 128.0).abs() < 0.01, "{grid:?}");
+        assert!((grid.first_beat_ms - 200.0).abs() < 3.0, "{grid:?}");
+
+        // A stored BPM an octave below the audio keeps its octave: a line on every other click.
+        set_mik_values(64.0);
+        let half = grid_only();
+        let _ = std::fs::remove_file(&path);
+        assert!((half.bpm - 64.0).abs() < 0.01, "{half:?}");
+        let click_ms = 60_000.0 / 128.0;
+        let from_first_click = (half.first_beat_ms - 200.0) / click_ms;
+        assert!(
+            (from_first_click - from_first_click.round()).abs() * click_ms < 3.0,
+            "{half:?}"
+        );
+
+        let conn = conn.lock().unwrap();
+        assert_eq!(beatgrid::load_beat_grid(&conn, "t1").unwrap(), Some(half));
+        let row: (f64, String, i32, String, String) = conn
+            .query_row(
+                "SELECT bpm, key, energy, analysis_source, _hlc FROM tracks WHERE id = 't1'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
+            )
+            .unwrap();
+        assert_eq!(
+            row,
+            (
+                64.0,
+                "8A".to_string(),
+                6,
+                "mixed_in_key".to_string(),
+                "h1".to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn a_grid_only_analysis_without_a_stored_bpm_takes_the_analysed_tempo() {
+        let path = std::env::temp_dir().join(format!(
+            "crate_beatgrid_nobpm_{}_{:?}.wav",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        write_wav(&path, &beatgrid::tests::click_track(RATE, 126.0, 0.3, 20.0));
+        let conn = library_with("t1", &path);
+        let grid =
+            AnalysisService::analyze_beat_grid_blocking(&conn, "t1", &CancellationToken::new())
+                .unwrap()
+                .expect("a grid");
+        let _ = std::fs::remove_file(&path);
+        assert!((grid.bpm - 126.0).abs() < 0.01, "{grid:?}");
+        let bpm: Option<f64> = conn
+            .lock()
+            .unwrap()
+            .query_row("SELECT bpm FROM tracks WHERE id = 't1'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(bpm, None, "a grid-only analysis never writes the BPM");
+    }
+
+    #[test]
+    fn a_failed_grid_only_analysis_reports_a_missing_track() {
+        let conn = library_with("t1", Path::new("/nonexistent/crate-test.wav"));
+        let err =
+            AnalysisService::analyze_beat_grid_blocking(&conn, "nope", &CancellationToken::new())
+                .unwrap_err();
+        assert!(matches!(err, CrateError::TrackNotFound(_)), "{err}");
+        let err =
+            AnalysisService::analyze_beat_grid_blocking(&conn, "t1", &CancellationToken::new())
+                .unwrap_err();
+        assert!(err.to_string().contains("File not found"), "{err}");
     }
 }
