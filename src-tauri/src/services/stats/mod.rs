@@ -7,6 +7,7 @@ pub mod rekordbox;
 pub mod session_timeline;
 pub mod spotify;
 pub mod spotify_reset;
+pub mod years;
 
 #[cfg(test)]
 mod tests;

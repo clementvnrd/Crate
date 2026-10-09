@@ -51,6 +51,14 @@ export async function getListeningHeatmap(timeRange: TimeRange = '7d'): Promise<
 	return invoke<HeatmapCell[]>('get_listening_heatmap', { timeRange })
 }
 
+/**
+ * The local calendar years that hold listening data (a listen or a Rekordbox set), newest first. Each one is a
+ * `yearRange()` the Pulse can offer without ever opening on an empty year.
+ */
+export async function getListeningYears(): Promise<number[]> {
+	return invoke<number[]>('get_listening_years')
+}
+
 export async function getRecentListens(limit: number = 50): Promise<ListenEvent[]> {
 	return invoke<ListenEvent[]>('get_recent_listens', { limit })
 }
@@ -177,12 +185,17 @@ export async function getRecap(period: RecapPeriod, offset: number = 0): Promise
 }
 
 /**
- * Writes the whole listening history, oldest first, to `path` and resolves to how many listens
- * were written. The path comes from the native save dialog and must end in `.csv` or `.json`
- * according to `format`.
+ * Writes the listening history, oldest first, to `path` and resolves to how many listens were
+ * written. The path comes from the native save dialog and must end in `.csv` or `.json` according
+ * to `format`. `timeRange` (the Pulse's selected period) limits the export to that period; without
+ * it, or with `all`, the whole history is written.
  */
-export async function exportListeningHistory(format: HistoryExportFormat, path: string): Promise<number> {
-	return invoke<number>('export_listening_history', { format, path })
+export async function exportListeningHistory(
+	format: HistoryExportFormat,
+	path: string,
+	timeRange: TimeRange = 'all'
+): Promise<number> {
+	return invoke<number>('export_listening_history', { format, path, timeRange })
 }
 
 /** The tracks of one Rekordbox set in order, with how every transition mixes. */

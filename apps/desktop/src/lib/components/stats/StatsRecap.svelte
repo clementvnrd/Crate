@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { Recap, RecapPeriod } from '$shared/types'
+	import { untrack } from 'svelte'
+	import type { Recap, RecapPeriod, TimeRange } from '$shared/types'
 	import { getRecap } from '$shared/api/stats'
 	import { translate } from '$shared/i18n'
 	import { language } from '$lib/stores'
@@ -7,14 +8,16 @@
 	import { toErrorMessage } from '$shared/utils/errors'
 	import { Button, IconButton, KeyBadge, SegmentedControl, type SegmentOption } from '$lib/components/common'
 	import StatsCard from './StatsCard.svelte'
-	import { formatChange, formatHour, formatWeekday, splitMinutes } from './format'
+	import { formatChange, formatHour, formatWeekday, recapYearOffset, splitMinutes } from './format'
 
 	type Props = {
+		/** The Pulse period: picking "This year" or a previous year opens the recap of that calendar year. */
+		range?: TimeRange
 		/** Bumped by the Pulse refresh button: reloads the recap. */
 		refreshKey?: number
 	}
 
-	let { refreshKey = 0 }: Props = $props()
+	let { range, refreshKey = 0 }: Props = $props()
 
 	let period = $state<RecapPeriod>('week')
 	let offset = $state(0)
@@ -41,6 +44,17 @@
 			if (current === request) loading = false
 		}
 	}
+
+	// Follows the Pulse period when it names a calendar year; the other periods leave the recap where the owner put it.
+	$effect(() => {
+		if (!range) return
+		const back = recapYearOffset(range)
+		if (back === null) return
+		untrack(() => {
+			period = 'year'
+			offset = back
+		})
+	})
 
 	$effect(() => {
 		void refreshKey

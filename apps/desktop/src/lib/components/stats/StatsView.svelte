@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte'
-	import type { TimeRange } from '$shared/types'
+	import type { PresetTimeRange, TimeRange } from '$shared/types'
 	import {
 		statsStore,
 		statsSummary,
@@ -14,6 +14,7 @@
 		rekordboxDetected,
 		rekordboxSessions,
 		mikDetected,
+		statsListeningYears,
 		statsSelectedRange,
 		isStatsLoading,
 	} from '$shared/stores/stats'
@@ -23,6 +24,9 @@
 	import { exportListeningHistory } from '$shared/api/stats'
 	import { toastStore } from '$shared/stores/toast'
 	import { withNativeDialog } from '$shared/utils'
+	import { formatYear } from '$shared/utils/format'
+	import { yearRange } from '$shared/utils/statsRange'
+	import { language } from '$lib/stores'
 	import { toErrorMessage } from '$shared/utils/errors'
 	import StatsKpiCards from './StatsKpiCards.svelte'
 	import StatsSourceBar from './StatsSourceBar.svelte'
@@ -35,13 +39,21 @@
 	import StatsRecap from './StatsRecap.svelte'
 	import StatsFunnel from './StatsFunnel.svelte'
 	import StatsSets from './StatsSets.svelte'
-	import { historyExportTarget } from './historyExport'
+	import { historyExportName, historyExportTarget } from './historyExport'
+	import { previousYears } from './format'
 
-	const TIME_RANGES: TimeRange[] = ['today', '7d', '30d', 'year', 'all']
+	// From the shortest window to the longest: the rolling ones, this year, then each previous year that holds data
+	// (newest first, so an empty year is never offered), and all time last.
+	const RECENT_RANGES: PresetTimeRange[] = ['today', '7d', '30d', '3m', '6m', 'year']
 
-	const rangeOptions: SegmentOption<TimeRange>[] = $derived(
-		TIME_RANGES.map((range) => ({ value: range, label: $translate(`stats.range.${range}`) }))
-	)
+	const rangeOptions: SegmentOption<TimeRange>[] = $derived([
+		...RECENT_RANGES.map((range) => ({ value: range, label: $translate(`stats.range.${range}`) })),
+		...previousYears($statsListeningYears).map((year) => ({
+			value: yearRange(year),
+			label: formatYear(year, $language),
+		})),
+		{ value: 'all', label: $translate('stats.range.all') },
+	])
 
 	let refreshTimer: NodeJS.Timeout | null = null
 
@@ -73,9 +85,11 @@
 	let exportingHistory = $state(false)
 	async function handleExportHistory() {
 		if (exportingHistory) return
+		// The export follows the Pulse period picked when the button was pressed (CRA-184).
+		const range = $statsSelectedRange
 		const path = await withNativeDialog(() =>
 			save({
-				defaultPath: 'crate-listening-history.csv',
+				defaultPath: historyExportName(range),
 				filters: [
 					{ name: 'CSV', extensions: ['csv'] },
 					{ name: 'JSON', extensions: ['json'] },
@@ -86,7 +100,7 @@
 		const target = historyExportTarget(path)
 		exportingHistory = true
 		try {
-			const count = await exportListeningHistory(target.format, target.path)
+			const count = await exportListeningHistory(target.format, target.path, range)
 			toastStore.success($translate('stats.export.success', { values: { count } }))
 		} catch (err) {
 			const message = toErrorMessage(err, $translate('common.unknownError'))
@@ -143,6 +157,7 @@
 			     not fit, arrows and edge fades reveal the rest (DESIGN.md "Scroll affordance"). -->
 			<SegmentedControl
 				variant="boxed"
+				unselectedTone="secondary"
 				scrollable
 				ariaLabel={$translate('stats.range.label')}
 				options={rangeOptions}
@@ -150,9 +165,13 @@
 				onchange={handleRangeChange}
 			/>
 
-			<!-- Export the whole listening history (CSV or JSON). Icon only below 1280 px, so the header keeps one line at
-			     1000 px as it did before the button existed. -->
-			<Tooltip text={$translate('stats.export.hint')} position="bottom" wrapperClass="inline-flex shrink-0">
+			<!-- Export the listening history of the selected period (CSV or JSON). Icon only below 1280 px, so the header keeps
+			     one line at 1000 px as it did before the button existed. -->
+			<Tooltip
+				text={$translate($statsSelectedRange === 'all' ? 'stats.export.hint' : 'stats.export.hintPeriod')}
+				position="bottom"
+				wrapperClass="inline-flex shrink-0"
+			>
 				<Button
 					variant="secondary"
 					size="sm"
@@ -211,7 +230,7 @@
 		<StatsHeatmap heatmap={$listeningHeatmap} isLoading={$isStatsLoading} />
 
 		<!-- 6. Recap of a week or a year -->
-		<StatsRecap {refreshKey} />
+		<StatsRecap range={$statsSelectedRange} {refreshKey} />
 
 		<!-- 7. Rekordbox sets (timeline of each) and the discovery funnel -->
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">

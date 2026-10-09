@@ -302,3 +302,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-09 | Device free space shows TB instead of "undefined" above 1 TB (sidebar and device info), seen after installing 1.0.0 on the real library (CRA-203) | — |
 | 2026-10-09 | Beat grid kept after analysis: first beat, BPM with decimals and tempo changes, detected by Crate in the same pass (schema version 20, `get_track_beatgrid`, `analyze_track_beatgrid`) (CRA-177) | — |
 | 2026-10-09 | Version 1.0.0-staging.2 prepared (`yarn bump prerelease`, changelog section moved verbatim): the second pre-release, which Crate Staging 1.0.0-staging.1 must install by itself to prove the in-app update (CRA-201) | — |
+| 2026-10-09 | Pulse period bar: 3 months, 6 months and each previous year with data (`get_listening_years`), the export follows the period, unselected labels at 4.5:1, audit overlaps measured on the visible part (baseline down in 54 cases) (CRA-184) | — |

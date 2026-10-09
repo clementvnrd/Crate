@@ -5,9 +5,11 @@ vi.mock('@tauri-apps/api/core', () => ({ invoke: (...args: unknown[]) => invoke(
 
 import { customRange, yearRange } from '../utils/statsRange'
 import {
+	exportListeningHistory,
 	getBpmStats,
 	getHarmonicStats,
 	getListeningHeatmap,
+	getListeningYears,
 	getStatsSummary,
 	getTopArtists,
 	getTopTracks,
@@ -50,5 +52,34 @@ describe('the Pulse queries and the typed range', () => {
 			(error: unknown) => error
 		)
 		expect(rejection).toBe(message)
+	})
+})
+
+describe('the years with listening data', () => {
+	beforeEach(() => invoke.mockReset())
+
+	it('asks the backend without arguments and returns its list as is', async () => {
+		invoke.mockResolvedValueOnce([2026, 2024, 2022])
+		await expect(getListeningYears()).resolves.toEqual([2026, 2024, 2022])
+		expect(invoke).toHaveBeenCalledWith('get_listening_years')
+	})
+})
+
+describe('the history export', () => {
+	beforeEach(() => invoke.mockReset().mockResolvedValue(3))
+
+	it('sends the selected period as `timeRange`, the whole history by default', async () => {
+		await exportListeningHistory('csv', '/Music/history.csv', yearRange(2025))
+		expect(invoke).toHaveBeenCalledWith('export_listening_history', {
+			format: 'csv',
+			path: '/Music/history.csv',
+			timeRange: 'year:2025',
+		})
+		await exportListeningHistory('json', '/Music/history.json')
+		expect(invoke).toHaveBeenLastCalledWith('export_listening_history', {
+			format: 'json',
+			path: '/Music/history.json',
+			timeRange: 'all',
+		})
 	})
 })

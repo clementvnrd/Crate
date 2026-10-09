@@ -26,7 +26,7 @@
 			"smallText": 157,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 4,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -36,7 +36,7 @@
 			"smallText": 157,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 4,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -66,7 +66,7 @@
 			"smallText": 157,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 4,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -76,7 +76,7 @@
 			"smallText": 157,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 4,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -86,7 +86,7 @@
 			"smallText": 3,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 5,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 5,
 			"pageOverflowX": 0
@@ -96,7 +96,7 @@
 			"smallText": 3,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 5,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 5,
 			"pageOverflowX": 0
@@ -106,7 +106,7 @@
 			"smallText": 5,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 5,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -116,7 +116,7 @@
 			"smallText": 5,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 5,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -126,7 +126,7 @@
 			"smallText": 3,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 5,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 5,
 			"pageOverflowX": 0
@@ -136,7 +136,7 @@
 			"smallText": 3,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 5,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 5,
 			"pageOverflowX": 0
@@ -146,7 +146,7 @@
 			"smallText": 5,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 5,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -156,7 +156,7 @@
 			"smallText": 5,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 5,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -166,7 +166,7 @@
 			"smallText": 50,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 39,
+			"overlaps": 12,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -176,7 +176,7 @@
 			"smallText": 50,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 39,
+			"overlaps": 12,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -206,7 +206,7 @@
 			"smallText": 50,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 39,
+			"overlaps": 12,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -216,7 +216,7 @@
 			"smallText": 50,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 39,
+			"overlaps": 12,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -246,7 +246,7 @@
 			"smallText": 82,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 88,
+			"overlaps": 27,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -256,7 +256,7 @@
 			"smallText": 82,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 89,
+			"overlaps": 27,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -266,7 +266,7 @@
 			"smallText": 84,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 69,
+			"overlaps": 43,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -276,7 +276,7 @@
 			"smallText": 84,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 67,
+			"overlaps": 43,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -286,7 +286,7 @@
 			"smallText": 82,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 88,
+			"overlaps": 27,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -296,7 +296,7 @@
 			"smallText": 82,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 89,
+			"overlaps": 27,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -306,7 +306,7 @@
 			"smallText": 84,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 69,
+			"overlaps": 43,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -316,7 +316,7 @@
 			"smallText": 84,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 67,
+			"overlaps": 43,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -326,7 +326,7 @@
 			"smallText": 48,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 34,
+			"overlaps": 10,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -336,7 +336,7 @@
 			"smallText": 48,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 34,
+			"overlaps": 10,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -366,7 +366,7 @@
 			"smallText": 48,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 34,
+			"overlaps": 10,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -376,7 +376,7 @@
 			"smallText": 48,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 34,
+			"overlaps": 10,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -406,7 +406,7 @@
 			"smallText": 65,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 2,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -416,7 +416,7 @@
 			"smallText": 65,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 2,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -446,7 +446,7 @@
 			"smallText": 65,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 2,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -456,7 +456,7 @@
 			"smallText": 65,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 2,
+			"overlaps": 0,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -482,7 +482,7 @@
 			"pageOverflowX": 0
 		},
 		"pulse-dark-1000-en": {
-			"lowContrast": 163,
+			"lowContrast": 159,
 			"smallText": 253,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
@@ -492,7 +492,7 @@
 			"pageOverflowX": 0
 		},
 		"pulse-dark-1000-fr": {
-			"lowContrast": 163,
+			"lowContrast": 159,
 			"smallText": 253,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
@@ -502,7 +502,7 @@
 			"pageOverflowX": 0
 		},
 		"pulse-dark-1400-en": {
-			"lowContrast": 163,
+			"lowContrast": 159,
 			"smallText": 255,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
@@ -512,7 +512,7 @@
 			"pageOverflowX": 0
 		},
 		"pulse-dark-1400-fr": {
-			"lowContrast": 163,
+			"lowContrast": 159,
 			"smallText": 255,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
@@ -522,7 +522,7 @@
 			"pageOverflowX": 0
 		},
 		"pulse-light-1000-en": {
-			"lowContrast": 11,
+			"lowContrast": 7,
 			"smallText": 253,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
@@ -532,7 +532,7 @@
 			"pageOverflowX": 0
 		},
 		"pulse-light-1000-fr": {
-			"lowContrast": 11,
+			"lowContrast": 7,
 			"smallText": 253,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
@@ -542,7 +542,7 @@
 			"pageOverflowX": 0
 		},
 		"pulse-light-1400-en": {
-			"lowContrast": 11,
+			"lowContrast": 7,
 			"smallText": 255,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
@@ -552,7 +552,7 @@
 			"pageOverflowX": 0
 		},
 		"pulse-light-1400-fr": {
-			"lowContrast": 11,
+			"lowContrast": 7,
 			"smallText": 255,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
@@ -566,7 +566,7 @@
 			"smallText": 48,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 99,
+			"overlaps": 56,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -576,7 +576,7 @@
 			"smallText": 48,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 109,
+			"overlaps": 54,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -596,7 +596,7 @@
 			"smallText": 50,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 46,
+			"overlaps": 43,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -606,7 +606,7 @@
 			"smallText": 48,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 99,
+			"overlaps": 56,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -616,7 +616,7 @@
 			"smallText": 48,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 109,
+			"overlaps": 54,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -636,7 +636,7 @@
 			"smallText": 50,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 46,
+			"overlaps": 43,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -646,7 +646,7 @@
 			"smallText": 96,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 53,
+			"overlaps": 19,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -656,7 +656,7 @@
 			"smallText": 96,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 54,
+			"overlaps": 20,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -666,7 +666,7 @@
 			"smallText": 98,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 37,
+			"overlaps": 28,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -676,7 +676,7 @@
 			"smallText": 98,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 37,
+			"overlaps": 28,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -686,7 +686,7 @@
 			"smallText": 96,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 53,
+			"overlaps": 19,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -696,7 +696,7 @@
 			"smallText": 96,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 54,
+			"overlaps": 20,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -706,7 +706,7 @@
 			"smallText": 98,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 37,
+			"overlaps": 28,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0
@@ -716,7 +716,7 @@
 			"smallText": 98,
 			"unnamedControls": 0,
 			"pointerOnly": 0,
-			"overlaps": 37,
+			"overlaps": 28,
 			"outOfWindow": 0,
 			"crushedColumns": 0,
 			"pageOverflowX": 0

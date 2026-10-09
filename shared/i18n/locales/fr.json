@@ -1216,6 +1216,8 @@
 			"today": "Aujourd'hui",
 			"7d": "7 jours",
 			"30d": "30 jours",
+			"3m": "3 mois",
+			"6m": "6 mois",
 			"year": "Cette année",
 			"all": "Tout"
 		},
@@ -1400,6 +1402,7 @@
 			"subtitle": "Ce que sont devenues vos découvertes",
 			"scopeRange": "Sorties ajoutées sur la période choisie",
 			"scopeAll": "Toutes les sorties trouvées",
+			"scopeNotLimited": "Toutes les sorties trouvées, pas encore limitées à {period}",
 			"stage": {
 				"discovered": "Découvertes",
 				"inLibrary": "Dans la bibliothèque",
@@ -1453,6 +1456,7 @@
 		"export": {
 			"button": "Exporter l'historique",
 			"hint": "Exporter tout l'historique d'écoute en CSV ou JSON",
+			"hintPeriod": "Exporter les écoutes de la période choisie en CSV ou JSON",
 			"success": "{count, plural, one {# écoute exportée} other {# écoutes exportées}}",
 			"failed": "Impossible d'exporter l'historique : {error}"
 		}

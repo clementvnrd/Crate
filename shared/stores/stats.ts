@@ -34,6 +34,8 @@ export interface StatsState {
 	rekordboxDetected: boolean
 	rekordboxSessions: RekordboxSession[]
 	mikDetected: boolean
+	/** Local calendar years with listening data, newest first (the Pulse bar's "previous years"). */
+	listeningYears: number[]
 	selectedRange: TimeRange
 	isLoading: boolean
 	isSyncingRekordbox: boolean
@@ -55,12 +57,18 @@ const initialState: StatsState = {
 	rekordboxDetected: false,
 	rekordboxSessions: [],
 	mikDetected: false,
+	listeningYears: [],
 	selectedRange: '7d',
 	isLoading: false,
 	isSyncingRekordbox: false,
 	isImportingSpotify: false,
 	isResettingSpotifyHistory: false,
 	error: null,
+}
+
+/** The year of a `year:YYYY` range; null for every other range. */
+function calendarYearOf(range: TimeRange): number | null {
+	return range.startsWith('year:') ? Number(range.slice('year:'.length)) : null
 }
 
 function createStatsStore() {
@@ -93,6 +101,7 @@ function createStatsStore() {
 			rekordboxDetectedRes,
 			rekordboxSessionsRes,
 			mikDetectedRes,
+			yearsRes,
 		] = await Promise.allSettled([
 			statsApi.getStatsSummary(currentRange),
 			statsApi.getTopTracks(currentRange, 50),
@@ -106,6 +115,8 @@ function createStatsStore() {
 			statsApi.getRekordboxDetectStatus(),
 			statsApi.getRekordboxSessions(),
 			statsApi.getMikDetectStatus(),
+			// Read again on every load, so a year that an import fills (or a reset empties) shows up at once.
+			statsApi.getListeningYears(),
 		])
 
 		// A newer load (or a reset) started while this one was waiting: drop this answer, and leave
@@ -136,8 +147,20 @@ function createStatsStore() {
 			rekordboxDetected: rekordboxDetectedRes.status === 'fulfilled' ? rekordboxDetectedRes.value : s.rekordboxDetected,
 			rekordboxSessions: rekordboxSessionsRes.status === 'fulfilled' ? rekordboxSessionsRes.value : s.rekordboxSessions,
 			mikDetected: mikDetectedRes.status === 'fulfilled' ? mikDetectedRes.value : s.mikDetected,
+			listeningYears:
+				yearsRes.status === 'fulfilled' && Array.isArray(yearsRes.value) ? yearsRes.value : s.listeningYears,
 		}))
 		if (errorMsg) toastStore.error(errorMsg)
+
+		// A past year that no longer holds any data (its listens were just reset) is not offered any more: rather than
+		// keep showing an empty year that the bar cannot select, fall back to all time.
+		if (yearsRes.status === 'fulfilled' && Array.isArray(yearsRes.value)) {
+			const year = calendarYearOf(currentRange)
+			if (year !== null && !yearsRes.value.includes(year)) {
+				update((s) => ({ ...s, selectedRange: 'all' }))
+				await reload()
+			}
+		}
 	}
 
 	/**
@@ -352,6 +375,7 @@ export const spotifyNowPlaying = derived(statsStore, ($s) => $s.spotifyNowPlayin
 export const rekordboxDetected = derived(statsStore, ($s) => $s.rekordboxDetected)
 export const rekordboxSessions = derived(statsStore, ($s) => $s.rekordboxSessions)
 export const mikDetected = derived(statsStore, ($s) => $s.mikDetected)
+export const statsListeningYears = derived(statsStore, ($s) => $s.listeningYears)
 export const statsSelectedRange = derived(statsStore, ($s) => $s.selectedRange)
 export const isStatsLoading = derived(statsStore, ($s) => $s.isLoading)
 export const isSyncingRekordbox = derived(statsStore, ($s) => $s.isSyncingRekordbox)

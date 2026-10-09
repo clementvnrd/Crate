@@ -66,9 +66,18 @@ export function discoverySourceName(source: string): string | null {
 	return names[source] ?? null
 }
 
+/** `date` moved back `months` calendar months, the day clamped to the end of a shorter month (31 August - 6 months is
+ *  28 or 29 February), like the backend's rolling `3m` and `6m` ranges. */
+function monthsBefore(date: Date, months: number): Date {
+	const target = new Date(date.getFullYear(), date.getMonth() - months, 1)
+	const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate()
+	target.setDate(Math.min(date.getDate(), lastDay))
+	return target
+}
+
 /** Local day `YYYY-MM-DD` from which the funnel counts, for a Pulse period; undefined for all time. */
 export function funnelSince(range: string, now: Date = new Date()): string | undefined {
-	const day = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+	let day = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 	switch (range) {
 		case 'today':
 			break
@@ -77,6 +86,12 @@ export function funnelSince(range: string, now: Date = new Date()): string | und
 			break
 		case '30d':
 			day.setDate(day.getDate() - 30)
+			break
+		case '3m':
+			day = monthsBefore(day, 3)
+			break
+		case '6m':
+			day = monthsBefore(day, 6)
 			break
 		case 'year':
 			day.setMonth(0, 1)
@@ -87,4 +102,31 @@ export function funnelSince(range: string, now: Date = new Date()): string | und
 	const month = String(day.getMonth() + 1).padStart(2, '0')
 	const date = String(day.getDate()).padStart(2, '0')
 	return `${day.getFullYear()}-${month}-${date}`
+}
+
+/**
+ * Whether the funnel can count exactly the Pulse period. It only takes a start day for now (CRA-186 adds the end), so
+ * a calendar year or a custom window, which end before today, cannot be followed: the funnel then counts all time and
+ * says so.
+ */
+export function funnelFollowsRange(range: string): boolean {
+	return !range.startsWith('year:') && !range.startsWith('custom:')
+}
+
+/**
+ * The recap of the calendar year a Pulse period names, as the number of years back from `now`: 0 for "this year",
+ * 1 for last year's `year:YYYY`… Null for every other period (the recap then keeps its own choice).
+ */
+export function recapYearOffset(range: string, now: Date = new Date()): number | null {
+	if (range === 'year') return 0
+	if (!range.startsWith('year:')) return null
+	const back = now.getFullYear() - Number(range.slice('year:'.length))
+	return Number.isInteger(back) && back >= 0 ? back : null
+}
+
+/** The years with data that come before the current one, newest first: the "previous years" of the period bar (the
+ *  current year already has its own "This year" preset). */
+export function previousYears(years: readonly number[], now: Date = new Date()): number[] {
+	const current = now.getFullYear()
+	return [...new Set(years.filter((year) => Number.isInteger(year) && year < current))].sort((a, b) => b - a)
 }

@@ -1,4 +1,13 @@
-import type { HistoryExportFormat } from '$shared/types'
+import type { HistoryExportFormat, TimeRange } from '$shared/types'
+
+/**
+ * File name the save dialog proposes for an export of `range`: the whole history keeps its usual name, a period adds
+ * itself so two exports do not overwrite each other (`crate-listening-history-year-2025.csv`).
+ */
+export function historyExportName(range: TimeRange): string {
+	if (range === 'all') return 'crate-listening-history.csv'
+	return `crate-listening-history-${range.replace(/[:,]/g, '-')}.csv`
+}
 
 /**
  * Format and final path of a listening-history export, from the path the native save dialog answered. The

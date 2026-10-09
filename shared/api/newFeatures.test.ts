@@ -38,9 +38,13 @@ describe('the listening-history commands', () => {
 		expect(invoke).toHaveBeenNthCalledWith(2, 'get_recap', { period: 'year', offset: 2 })
 	})
 
-	it('exports with a format and a path', async () => {
+	it('exports with a format and a path, the whole history by default', async () => {
 		await exportListeningHistory('csv', '/tmp/history.csv')
-		expect(invoke).toHaveBeenCalledWith('export_listening_history', { format: 'csv', path: '/tmp/history.csv' })
+		expect(invoke).toHaveBeenCalledWith('export_listening_history', {
+			format: 'csv',
+			path: '/tmp/history.csv',
+			timeRange: 'all',
+		})
 	})
 
 	it('reads the timeline of one set', async () => {

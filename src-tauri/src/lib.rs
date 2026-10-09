@@ -516,6 +516,7 @@ pub fn run() {
             commands::upgrader::execute_upgrade_replacements,
             // Stats, Spotify & Rekordbox commands
             commands::stats::get_stats_summary,
+            commands::stats::get_listening_years,
             commands::stats::get_top_tracks,
             commands::stats::get_top_artists,
             commands::stats::get_harmonic_stats,

@@ -1,4 +1,5 @@
-//! Export of the whole listening history to a CSV or JSON file.
+//! Export of the listening history to a CSV or JSON file: the whole of it, or the listens of
+//! one statistics period (the Pulse's selected period, CRA-184).
 //!
 //! The history belongs to the user: this gives an independent copy, readable outside Crate
 //! (a spreadsheet, a script), that does not depend on the database or its encryption key.
@@ -172,7 +173,21 @@ pub fn validate_destination(format: HistoryExportFormat, dest: &Path) -> Result<
 impl StatsRecorderService {
     /// Writes every listen, oldest first, to `dest` and returns how many were written.
     pub fn export_listen_history(&self, format: HistoryExportFormat, dest: &Path) -> Result<usize> {
-        self.export_listen_history_in_chunks(format, dest, CHUNK_ROWS)
+        self.export_listen_history_in_chunks(format, dest, None, CHUNK_ROWS)
+    }
+
+    /// Writes the listens of `time_range` (the grammar of [`super::range::StatsRange`]), oldest
+    /// first, to `dest` and returns how many were written. An unknown or malformed range is an
+    /// error before any file is touched; `all` exports the whole history.
+    pub fn export_listen_history_in_range(
+        &self,
+        format: HistoryExportFormat,
+        dest: &Path,
+        time_range: &str,
+    ) -> Result<usize> {
+        // Computed once, so a rolling period does not move between two chunks of the same export.
+        let condition = Self::time_range_condition(time_range, "played_at")?;
+        self.export_listen_history_in_chunks(format, dest, condition.as_deref(), CHUNK_ROWS)
     }
 
     /// The same, with an explicit chunk size (tests use tiny chunks to cross the boundaries).
@@ -183,11 +198,12 @@ impl StatsRecorderService {
         &self,
         format: HistoryExportFormat,
         dest: &Path,
+        condition: Option<&str>,
         chunk_rows: usize,
     ) -> Result<usize> {
         validate_destination(format, dest)?;
         let partial = partial_path(dest);
-        match self.write_history(format, &partial, chunk_rows) {
+        match self.write_history(format, &partial, condition, chunk_rows) {
             Ok(count) => {
                 fs::rename(&partial, dest)?;
                 Ok(count)
@@ -203,6 +219,7 @@ impl StatsRecorderService {
         &self,
         format: HistoryExportFormat,
         path: &Path,
+        condition: Option<&str>,
         chunk_rows: usize,
     ) -> Result<usize> {
         let mut out = BufWriter::new(File::create(path)?);
@@ -217,7 +234,7 @@ impl StatsRecorderService {
         // Keyset pagination on (played_at, id): stable even when several listens share a time.
         let mut after: Option<(String, String)> = None;
         loop {
-            let rows = self.read_chunk(after.as_ref(), chunk_rows)?;
+            let rows = self.read_chunk(after.as_ref(), condition, chunk_rows)?;
             let Some(last) = rows.last() else { break };
             after = Some((last.played_at.clone(), last.id.clone()));
             let full = rows.len() == chunk_rows.max(1);
@@ -247,23 +264,33 @@ impl StatsRecorderService {
         Ok(written)
     }
 
-    /// The next `limit` rows after `after`, oldest first. Holds the lock for this query only.
-    fn read_chunk(&self, after: Option<&(String, String)>, limit: usize) -> Result<Vec<Row>> {
+    /// The next `limit` rows after `after` that match `condition` (an SQL condition built by
+    /// [`super::range::StatsRange`], never user text), oldest first. Holds the lock for this query
+    /// only.
+    fn read_chunk(
+        &self,
+        after: Option<&(String, String)>,
+        condition: Option<&str>,
+        limit: usize,
+    ) -> Result<Vec<Row>> {
         let conn = self.conn.lock().map_err(|_| CrateError::LockPoisoned)?;
         let (after_at, after_id) = after
             .map(|(a, i)| (a.as_str(), i.as_str()))
             .unwrap_or(("", ""));
+        let period = condition
+            .map(|cond| format!("AND ({cond})"))
+            .unwrap_or_default();
         let mut stmt = conn
-            .prepare(
+            .prepare(&format!(
                 r#"
                 SELECT played_at, source, title, artist, album, duration_ms, played_ms, bpm, key,
                        energy, format, track_id, session_id, id, metadata_json, artwork_url
                 FROM listen_events
-                WHERE (played_at, id) > (?1, ?2)
+                WHERE (played_at, id) > (?1, ?2) {period}
                 ORDER BY played_at ASC, id ASC
                 LIMIT ?3
-                "#,
-            )
+                "#
+            ))
             .map_err(CrateError::Database)?;
         let rows = stmt
             .query_map(
@@ -309,5 +336,5 @@ pub(super) fn export_in_chunks_for_test(
     dest: &Path,
     chunk_rows: usize,
 ) -> Result<usize> {
-    service.export_listen_history_in_chunks(format, dest, chunk_rows)
+    service.export_listen_history_in_chunks(format, dest, None, chunk_rows)
 }

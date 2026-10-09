@@ -97,6 +97,7 @@ export {
 	spotifyNowPlaying,
 	rekordboxDetected,
 	rekordboxSessions,
+	statsListeningYears,
 	statsSelectedRange,
 	isStatsLoading,
 	isSyncingRekordbox,

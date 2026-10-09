@@ -186,6 +186,11 @@ export function formatBytes(bytes: number | null | undefined): string {
 	return formatSize(bytes, 2)
 }
 
+/** A calendar year in the language's calendar ("2025"), through `Intl` rather than a number format ("2 025"). */
+export function formatYear(year: number, locale?: string): string {
+	return new Intl.DateTimeFormat(locale, { year: 'numeric' }).format(new Date(year, 6, 1))
+}
+
 /**
  * Format date string to localized display based on format preference.
  * Uses UTC getters for date-only strings (YYYY-MM-DD) to avoid timezone day-shift.

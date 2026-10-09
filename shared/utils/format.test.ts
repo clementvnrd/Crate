@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
 	formatDuration,
+	formatYear,
 	formatDurationCompact,
 	formatBpm,
 	formatKey,
@@ -214,6 +215,13 @@ describe('format utils', () => {
 			expect(formatBytes(1024 ** 5 * 2)).toBe('2048 TB')
 			expect(formatBytes(0.5)).toBe('0.5 B')
 			for (const bad of [-1, NaN, Infinity]) expect(formatBytes(bad)).toBe('-')
+		})
+	})
+
+	describe('formatYear', () => {
+		it('writes a year without digit grouping, in both languages', () => {
+			expect(formatYear(2025, 'en')).toBe('2025')
+			expect(formatYear(2025, 'fr')).toBe('2025')
 		})
 	})
 

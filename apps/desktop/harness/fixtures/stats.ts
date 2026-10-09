@@ -38,6 +38,13 @@ function scale(range: TimeRange | string): number {
 	return RANGE_SCALE[range] ?? 1
 }
 
+/** Years with listening data, newest first: the reference year and the two before it (none for an empty library). */
+export function listeningYears(empty: boolean): number[] {
+	if (empty) return []
+	const year = new Date(REFERENCE_NOW).getUTCFullYear()
+	return [year, year - 1, year - 2]
+}
+
 export function statsSummary(range: TimeRange | string): StatsSummary {
 	const factor = scale(range)
 	return {

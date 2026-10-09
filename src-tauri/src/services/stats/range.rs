@@ -31,8 +31,8 @@ use crate::error::{CrateError, Result};
 const SQL_DATETIME: &str = "%Y-%m-%d %H:%M:%S";
 /// First and last year accepted in a calendar year, a custom day or a window. Nothing was
 /// recorded before 1970, and keeping the upper bound low keeps every formatted date at 4 digits.
-const MIN_YEAR: i32 = 1970;
-const MAX_YEAR: i32 = 2999;
+pub(super) const MIN_YEAR: i32 = 1970;
+pub(super) const MAX_YEAR: i32 = 2999;
 
 /// A validated statistics period. See the module documentation for the accepted strings.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
