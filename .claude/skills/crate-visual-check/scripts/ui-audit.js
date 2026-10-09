@@ -137,30 +137,68 @@ async (page) => {
 		// list, the scrollable period bar). A scroll-affordance scroller also hides the arrow's strip at an edge that
 		// shows a fade (style.css `.scroll-affordance[data-fade-*]`: the mask is transparent there). Options scrolled
 		// out of view are then not reported as overlapping whatever sits beside the scroller.
+		// Only the ancestors that really clip are counted, following the containing blocks as CSS does: an
+		// `absolute` box escapes every ancestor below its nearest positioned one, a `fixed` box every ancestor below
+		// one with a transform, filter or containment (the viewport otherwise), and a modal dialog or an open popover
+		// sits in the top layer, out of reach of all its ancestors.
 		const rootFont = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
 		const length = (value) => {
 			const v = String(value).trim()
 			return v.endsWith('rem') ? parseFloat(v) * rootFont : parseFloat(v) || 0
 		}
+		const holdsFixed = (s) =>
+			s.transform !== 'none' ||
+			s.perspective !== 'none' ||
+			s.filter !== 'none' ||
+			(s.backdropFilter && s.backdropFilter !== 'none') ||
+			/paint|layout|strict|content/.test(s.contain || '') ||
+			/transform|perspective|filter/.test(s.willChange || '')
+		const topLayer = (n) => {
+			try {
+				return n.matches(':modal') || n.matches(':popover-open')
+			} catch {
+				return n.matches('dialog[open]')
+			}
+		}
+		const placement = (s) => (s.position === 'fixed' || s.position === 'absolute' ? s.position : 'flow')
 		const shownRect = (el) => {
 			const r = el.getBoundingClientRect()
 			let { left, top, right, bottom } = r
+			if (topLayer(el)) return { left, top, right, bottom }
+			// How the box last reached is placed: decides which of the next ancestors can clip it.
+			let mode = placement(getComputedStyle(el))
 			for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) {
 				const s = getComputedStyle(n)
-				if (s.overflowX === 'visible' && s.overflowY === 'visible') continue
-				const c = n.getBoundingClientRect()
-				let [cl, cr] = [c.left, c.right]
-				if (n.classList.contains('scroll-affordance')) {
-					const arrow = length(s.getPropertyValue('--scroll-arrow'))
-					if (n.hasAttribute('data-fade-start')) cl += arrow
-					if (n.hasAttribute('data-fade-end')) cr -= arrow
+				if (mode === 'fixed' && !holdsFixed(s)) continue
+				if (mode === 'absolute' && s.position === 'static' && !holdsFixed(s)) continue
+				if (s.overflowX !== 'visible' || s.overflowY !== 'visible') {
+					const c = n.getBoundingClientRect()
+					let [cl, cr] = [c.left, c.right]
+					if (n.classList.contains('scroll-affordance')) {
+						const arrow = length(s.getPropertyValue('--scroll-arrow'))
+						if (n.hasAttribute('data-fade-start')) cl += arrow
+						if (n.hasAttribute('data-fade-end')) cr -= arrow
+					}
+					if (s.overflowX !== 'visible') [left, right] = [Math.max(left, cl), Math.min(right, cr)]
+					if (s.overflowY !== 'visible') [top, bottom] = [Math.max(top, c.top), Math.min(bottom, c.bottom)]
 				}
-				if (s.overflowX !== 'visible') [left, right] = [Math.max(left, cl), Math.min(right, cr)]
-				if (s.overflowY !== 'visible') [top, bottom] = [Math.max(top, c.top), Math.min(bottom, c.bottom)]
+				if (topLayer(n)) break
+				mode = placement(s)
 			}
 			return { left, top, right, bottom }
 		}
+		// A modal dialog (`showModal()`) makes the rest of the page inert and covers it with its backdrop: only the
+		// controls it holds can collide, so overlaps are counted among them alone. A popover is not modal (the page
+		// behind stays live), so it does not narrow the count.
+		const modal = [...document.querySelectorAll('dialog[open]')].find((d) => {
+			try {
+				return d.matches(':modal')
+			} catch {
+				return false
+			}
+		})
 		const boxes = controls
+			.filter((el) => !modal || modal.contains(el))
 			.slice(0, 400)
 			.map((el) => ({ el, r: shownRect(el) }))
 			.filter(({ r }) => r.right - r.left > 2 && r.bottom - r.top > 2)
