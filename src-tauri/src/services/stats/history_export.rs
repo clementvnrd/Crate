@@ -18,7 +18,13 @@ use crate::error::{CrateError, Result};
 const CHUNK_ROWS: usize = 2_000;
 
 /// Column order of the CSV file and key order of the JSON objects (chronological first).
-const COLUMNS: [&str; 15] = [
+///
+/// New columns are only ever appended at the end, so a file written by an older version keeps
+/// the same leading columns and any reader that ignores unknown trailing columns still works.
+/// `track_id` and `artwork_url` matter beyond reading: this export is the only backup of the
+/// history (the reset in `spotify_reset.rs` writes it before deleting), and the stored cover URL
+/// cannot be recovered once its row is gone.
+const COLUMNS: [&str; 16] = [
     "played_at",
     "source",
     "title",
@@ -34,6 +40,7 @@ const COLUMNS: [&str; 15] = [
     "session_id",
     "id",
     "metadata_json",
+    "artwork_url",
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -69,10 +76,11 @@ struct Row {
     session_id: Option<String>,
     id: String,
     metadata_json: Option<String>,
+    artwork_url: Option<String>,
 }
 
 impl Row {
-    fn csv_fields(&self) -> [String; 15] {
+    fn csv_fields(&self) -> [String; 16] {
         let text = |v: &Option<String>| v.clone().unwrap_or_default();
         [
             self.played_at.clone(),
@@ -90,6 +98,7 @@ impl Row {
             text(&self.session_id),
             self.id.clone(),
             text(&self.metadata_json),
+            text(&self.artwork_url),
         ]
     }
 
@@ -115,6 +124,7 @@ impl Row {
             "session_id": self.session_id,
             "id": self.id,
             "metadata_json": metadata,
+            "artwork_url": self.artwork_url,
         })
     }
 }
@@ -246,7 +256,7 @@ impl StatsRecorderService {
             .prepare(
                 r#"
                 SELECT played_at, source, title, artist, album, duration_ms, played_ms, bpm, key,
-                       energy, format, track_id, session_id, id, metadata_json
+                       energy, format, track_id, session_id, id, metadata_json, artwork_url
                 FROM listen_events
                 WHERE (played_at, id) > (?1, ?2)
                 ORDER BY played_at ASC, id ASC
@@ -274,6 +284,7 @@ impl StatsRecorderService {
                         session_id: r.get(12)?,
                         id: r.get(13)?,
                         metadata_json: r.get(14)?,
+                        artwork_url: r.get(15)?,
                     })
                 },
             )
