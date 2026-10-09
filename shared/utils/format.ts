@@ -159,16 +159,23 @@ export function formatBitrate(bitrate: number | null | undefined, format?: strin
 	return `${kbps} kbps`
 }
 
+const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB']
+
+/** Shared by `formatFileSize` and `formatBytes`, which differ only in decimals and null handling. */
+function formatSize(bytes: number, decimals: number): string {
+	// A size is never negative or infinite: show a dash rather than "NaN undefined".
+	if (!Number.isFinite(bytes) || bytes < 0) return '-'
+	if (bytes === 0) return '0 B'
+	// Clamped so a size past the last unit (or below one byte) still prints a real unit.
+	const i = Math.min(Math.max(Math.floor(Math.log(bytes) / Math.log(1024)), 0), SIZE_UNITS.length - 1)
+	return `${parseFloat((bytes / Math.pow(1024, i)).toFixed(decimals))} ${SIZE_UNITS[i]}`
+}
+
 /**
  * Format file size in bytes to human-readable string
  */
 export function formatFileSize(bytes: number): string {
-	if (bytes === 0) return '0 B'
-	const k = 1024
-	const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-	// Clamped so a size past the last unit (or below one byte) still prints a real unit, never `undefined`.
-	const i = Math.min(Math.max(Math.floor(Math.log(bytes) / Math.log(k)), 0), sizes.length - 1)
-	return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
+	return formatSize(bytes, 1)
 }
 
 /**
@@ -176,11 +183,7 @@ export function formatFileSize(bytes: number): string {
  */
 export function formatBytes(bytes: number | null | undefined): string {
 	if (bytes === null || bytes === undefined) return '-'
-	if (bytes === 0) return '0 B'
-	const k = 1024
-	const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-	const i = Math.floor(Math.log(bytes) / Math.log(k))
-	return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
+	return formatSize(bytes, 2)
 }
 
 /**

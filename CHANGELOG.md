@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 #### Fixed — frontend
 
-- **Device free space no longer reads "1.6 undefined" above 1 TB (CRA-203).** `formatFileSize` knew only B, KB, MB and GB, so from 1024 GB the unit was missing: the sidebar showed "SSD externe — 1.6 undefined libre", and the device info modal had the same flaw for used, free and total space. `TB` is added and the unit index is clamped, so a size past the last unit, or below one byte, still prints a real unit. Boundary tests: 1023 B, 1023 GB, exactly 1 TB, 1.6 TB, 2048 TB and half a byte. Refs CRA-203.
+- **Device free space no longer reads "1.6 undefined" above 1 TB (CRA-203).** `formatFileSize` knew only B, KB, MB and GB, so from 1024 GB the unit was missing: the sidebar showed "SSD externe — 1.6 undefined libre", and the device info modal had the same flaw for used, free and total space. `TB` is added and the unit index is clamped, so a size past the last unit, or below one byte, still prints a real unit; a negative or non-finite value shows a dash. `formatBytes` (export modal, diagnostics), which had the same flaw past 1024 TB, now shares the same code and differs only in decimals. Boundary tests: 1023 B, 1023 GB, exactly 1 TB, 1.6 TB, 2048 TB, half a byte, and negative, NaN and infinite values. Refs CRA-203.
 
 ## [1.0.0-staging.1] - 2026-10-09
 
