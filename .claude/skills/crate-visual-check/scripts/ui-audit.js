@@ -133,7 +133,37 @@ async (page) => {
 			report.pointerOnly.push(label(el))
 		}
 
-		const boxes = controls.slice(0, 400).map((el) => ({ el, r: el.getBoundingClientRect() }))
+		// The part of a control that can be seen: its box cut by every ancestor that clips its overflow (a scrolled
+		// list, the scrollable period bar). A scroll-affordance scroller also hides the arrow's strip at an edge that
+		// shows a fade (style.css `.scroll-affordance[data-fade-*]`: the mask is transparent there). Options scrolled
+		// out of view are then not reported as overlapping whatever sits beside the scroller.
+		const rootFont = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+		const length = (value) => {
+			const v = String(value).trim()
+			return v.endsWith('rem') ? parseFloat(v) * rootFont : parseFloat(v) || 0
+		}
+		const shownRect = (el) => {
+			const r = el.getBoundingClientRect()
+			let { left, top, right, bottom } = r
+			for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) {
+				const s = getComputedStyle(n)
+				if (s.overflowX === 'visible' && s.overflowY === 'visible') continue
+				const c = n.getBoundingClientRect()
+				let [cl, cr] = [c.left, c.right]
+				if (n.classList.contains('scroll-affordance')) {
+					const arrow = length(s.getPropertyValue('--scroll-arrow'))
+					if (n.hasAttribute('data-fade-start')) cl += arrow
+					if (n.hasAttribute('data-fade-end')) cr -= arrow
+				}
+				if (s.overflowX !== 'visible') [left, right] = [Math.max(left, cl), Math.min(right, cr)]
+				if (s.overflowY !== 'visible') [top, bottom] = [Math.max(top, c.top), Math.min(bottom, c.bottom)]
+			}
+			return { left, top, right, bottom }
+		}
+		const boxes = controls
+			.slice(0, 400)
+			.map((el) => ({ el, r: shownRect(el) }))
+			.filter(({ r }) => r.right - r.left > 2 && r.bottom - r.top > 2)
 		for (let i = 0; i < boxes.length && report.overlaps.length < MAX; i++) {
 			for (let j = i + 1; j < boxes.length; j++) {
 				const a = boxes[i]

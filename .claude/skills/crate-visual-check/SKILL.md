@@ -87,7 +87,7 @@ The script runs in the page and returns a JSON report:
 | `smallText` | Text under 12 px | rule 4 |
 | `unnamedControls` | Button, link or field without an accessible name | D10 |
 | `pointerOnly` | Element with a "hand" cursor that is neither a button nor a link (clickable `div`) | D10 |
-| `overlaps` | Overlapping controls (toolbar at 1000 px) | D4 |
+| `overlaps` | Overlapping controls (toolbar at 1000 px), measured on the part of each control that can be seen: boxes are cut by every ancestor that clips its overflow, and by the arrow strip of a `.scroll-affordance` edge that shows a fade | D4 |
 | `outOfWindow` | Modal, menu or tooltip that extends outside the window | D6 |
 | `crushedColumns` | Text truncated in less than 48 px (crushed column) | D7 |
 | `pageOverflowX` | Horizontal scrolling of the page | rule 10 |
