@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - **The listening-history export and the Spotify-reset backup keep each listen's cover URL (CRA-171).** The CSV and JSON export (CRA-128), which is also the backup written by "Reset Spotify history" (CRA-144) and the only backup of the history, now writes `artwork_url` too: a 16th CSV column after the 15 existing ones, and one more key in each JSON object; `track_id` was already exported. Before, a reset permanently lost the cover URLs already stored for listens (the Spotify "recently played" sync and Mixed In Key fill them), and the covers fetched for the history (CRA-149) would have been lost the same way. The change is additive: the first 15 CSV columns keep their name and position, so a reader of the previous format still works. Three tests on an in-memory database: JSON and CSV round-trips compare every column of the table (read with `SELECT *`, so a column added later but left out of the export fails them) with the exported row, for a listen with every field set and one with every optional field empty (a missing cover stays `null` in JSON, an empty field in CSV); the reset backup keeps `track_id` and `artwork_url` of the deleted rows. Refs CRA-171.
 
+#### Fixed — frontend
+
+- **Device free space no longer reads "1.6 undefined" above 1 TB (CRA-203).** `formatFileSize` knew only B, KB, MB and GB, so from 1024 GB the unit was missing: the sidebar showed "SSD externe — 1.6 undefined libre", and the device info modal had the same flaw for used, free and total space. `TB` is added and the unit index is clamped, so a size past the last unit, or below one byte, still prints a real unit; a negative or non-finite value shows a dash. `formatBytes` (export modal, diagnostics), which had the same flaw past 1024 TB, now shares the same code and differs only in decimals. Boundary tests: 1023 B, 1023 GB, exactly 1 TB, 1.6 TB, 2048 TB, half a byte, and negative, NaN and infinite values. Refs CRA-203.
+
 ## [1.0.0-staging.1] - 2026-10-09
 
 ### Personal fork — change log
