@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Version bump script for Crate
- * Synchronizes version across package.json, Cargo.toml, tauri.conf.json, and tauri.staging.conf.json
+ * Synchronizes version across package.json, Cargo.toml, Cargo.lock (the app's own entry), tauri.conf.json,
+ * tauri.staging.conf.json and tauri.dev.conf.json
  *
  * Production tauri.conf.json gets base version only (no prerelease).
  * Staging tauri.staging.conf.json gets the full semver version.
@@ -116,17 +117,35 @@ function updateVersion(bumpType, channel = null) {
 	const oldVersion = packageJson.version
 	const newVersion = bumpVersion(oldVersion, bumpType, channel)
 
+	// Cargo.lock records the app's own version too: left behind, the next cargo command rewrites it
+	// and the release commit would not match what was built. Checked before anything is written, so a
+	// failure never leaves a half-bumped tree.
+	const cargoTomlPath = join(ROOT, 'src-tauri', 'Cargo.toml')
+	let cargoToml = readFileSync(cargoTomlPath, 'utf-8')
+	const crateName = cargoToml.match(/^name = "([^"]+)"$/m)?.[1]
+	const cargoLockPath = join(ROOT, 'src-tauri', 'Cargo.lock')
+	const cargoLock = readFileSync(cargoLockPath, 'utf-8')
+	const lockEntry = new RegExp(`(\\[\\[package\\]\\]\\nname = "${crateName}"\\nversion = ")[^"]+(")`)
+	if (!crateName || !lockEntry.test(cargoLock)) {
+		console.error(`Could not find the "${crateName}" entry in src-tauri/Cargo.lock: nothing was changed.`)
+		process.exit(1)
+	}
+
 	// Update package.json
 	packageJson.version = newVersion
 	writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, '\t') + '\n')
 	console.log(`Updated package.json: ${oldVersion} -> ${newVersion}`)
 
 	// Update Cargo.toml (regex handles optional prerelease suffix)
-	const cargoTomlPath = join(ROOT, 'src-tauri', 'Cargo.toml')
-	let cargoToml = readFileSync(cargoTomlPath, 'utf-8')
 	cargoToml = cargoToml.replace(/^version = "[\d.]+(?:-[a-zA-Z]+\.\d+)?"$/m, `version = "${newVersion}"`)
 	writeFileSync(cargoTomlPath, cargoToml)
 	console.log(`Updated src-tauri/Cargo.toml: ${oldVersion} -> ${newVersion}`)
+
+	writeFileSync(
+		cargoLockPath,
+		cargoLock.replace(lockEntry, (_, before, after) => `${before}${newVersion}${after}`)
+	)
+	console.log(`Updated src-tauri/Cargo.lock (${crateName}): -> ${newVersion}`)
 
 	// Compute base version (no prerelease) for production tauri.conf.json
 	const parsed = parseVersion(newVersion)
