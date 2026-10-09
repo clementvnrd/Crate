@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Personal fork — change log
 
+## [1.0.0-staging.2] - 2026-10-09
+
+### Personal fork — change log
+
 #### Added — Polish & Unify 0.4 (scenario B)
 
 - **Beat grid kept after analysis (CRA-177).** Crate's analysis computed a beat grid and threw it away, keeping only a BPM rounded to an integer, so a waveform grid built from that BPM would start in the wrong place and drift. The analysis pass now also detects the grid on the samples it has already decoded (no second decode, no extra import step) and stores the first beat in milliseconds, a BPM with decimals and, when the tempo is not constant, the tempo changes. Crate's own detector is used because stratum-dsp places its beats at its rounded tempo: every 16 beats it searches the local tempo within ±4% of the detected BPM and the phase where the beats line up best, snaps each beat to the nearest onset, numbers each beat from the previous one so a small error never adds up, and fits the grid by least squares. Tempo changes are found with running sums (linear time, at most 64 per track, so a 2-hour mix takes well under a second instead of half a minute), a cut is kept when it removes at least 4 off-grid beats and neighbouring sections one steady grid covers are merged back, and a track where fewer than 65% of beats sit on the grid gets no grid rather than a wrong one. A new migration (schema version 20) adds three nullable columns to `tracks` (`beatgrid_first_beat_ms`, `beatgrid_bpm`, `beatgrid_tempo_changes`), about 16 to 18 bytes per analysed track; the displayed and exported BPM is unchanged. Like the waveform, the grid is local: not synced, not backed up, and cleared when the Upgrader replaces a track's file. New commands `get_track_beatgrid` and `analyze_track_beatgrid` (the latter recomputes only the grid, for Mixed In Key tracks the normal pass skips: it uses the track's stored BPM as the tempo, so the grid always runs at the displayed BPM, and it never touches the BPM, key or energy nor opens the Mixed In Key database), with their TypeScript types, `shared/api` wrappers and harness handlers. Tests build click tracks: through the real analysis pass a 123.7 BPM track with its first click at 350 ms gives 123.7005 BPM and 348.9 ms (tolerance ±0.01 BPM, ±3 ms) while the displayed BPM stays 124; off-beat hats louder than the kick do not move the grid; a 120 to 126 BPM track gives exactly one tempo change; a 2-hour mix with 20 tempo steps and a 2-hour ramp finish within 3 s; silence and noise give no grid; the migration keeps existing tracks intact with no grid. No screen draws the grid yet. Refs CRA-177.
@@ -418,7 +422,8 @@ Committed as is in a single snapshot so as not to risk losing it again (**[C1]**
 - Waveform display with cue point management
 - Search and filter across entire collection
 
-[Unreleased]: https://github.com/clementvnrd/Crate/compare/v1.0.0-staging.1...HEAD
+[Unreleased]: https://github.com/clementvnrd/Crate/compare/v1.0.0-staging.2...HEAD
+[1.0.0-staging.2]: https://github.com/clementvnrd/Crate/compare/v1.0.0-staging.1...v1.0.0-staging.2
 [1.0.0-staging.1]: https://github.com/clementvnrd/Crate/releases/tag/v1.0.0-staging.1
 [0.2.9]: https://github.com/blackboxaudio/crate/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/blackboxaudio/crate/compare/v0.2.7...v0.2.8
