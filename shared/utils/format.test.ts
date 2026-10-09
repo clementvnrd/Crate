@@ -172,6 +172,19 @@ describe('format utils', () => {
 			expect(formatFileSize(1048576 * 15.5)).toBe('15.5 MB')
 			expect(formatFileSize(1073741824)).toBe('1 GB')
 		})
+
+		it('formats terabytes: a 1.6 TB free SSD no longer reads "1.6 undefined"', () => {
+			const TB = 1024 ** 4
+			expect(formatFileSize(1023)).toBe('1023 B')
+			expect(formatFileSize(1024 ** 3 * 1023)).toBe('1023 GB')
+			expect(formatFileSize(TB)).toBe('1 TB')
+			expect(formatFileSize(TB * 1.6)).toBe('1.6 TB')
+		})
+
+		it('keeps the last unit past it and bytes below one byte, never undefined', () => {
+			expect(formatFileSize(1024 ** 5 * 2)).toBe('2048 TB')
+			expect(formatFileSize(0.5)).toBe('0.5 B')
+		})
 	})
 
 	describe('formatBytes', () => {
