@@ -68,6 +68,52 @@ test.describe('Pulse history screens', () => {
 		expect(errors).toEqual([])
 	})
 
+	test('the period bar offers 3 and 6 months and each previous year with data (CRA-184)', async ({ page }) => {
+		const errors = await openPulse(page)
+		const bar = page.getByRole('radiogroup', { name: 'Period', exact: true })
+		const summaryRanges = async () =>
+			(await calls(page)).filter((call) => call.command === 'get_stats_summary').map((call) => call.args.timeRange)
+
+		// The rolling months travel as the backend's `3m` and `6m` (CRA-172).
+		await bar.getByRole('radio', { name: '3 months' }).click()
+		await expect(bar.getByRole('radio', { name: '3 months' })).toHaveAttribute('aria-checked', 'true')
+		await expect.poll(summaryRanges).toContain('3m')
+		await bar.getByRole('radio', { name: '6 months' }).click()
+		await expect.poll(summaryRanges).toContain('6m')
+
+		// The harness has data in its reference year (2026) and the two before; only the years before the current one
+		// are offered, newest first, between "This year" and "All time".
+		expect((await calls(page)).map((call) => call.command)).toContain('get_listening_years')
+		const current = new Date().getFullYear()
+		const years = [2026, 2025, 2024].filter((year) => year < current).map(String)
+		const labels = (await bar.getByRole('radio').allTextContents()).map((label) => label.trim())
+		expect(labels).toEqual(['Today', '7 days', '30 days', '3 months', '6 months', 'This year', ...years, 'All time'])
+
+		// A previous year sends the whole calendar year; the recap opens that year, and the funnel, which cannot end a
+		// period yet (CRA-186), counts all time and says so.
+		await bar.getByRole('radio', { name: '2025', exact: true }).click()
+		await expect.poll(summaryRanges).toContain('year:2025')
+		await expect(page.getByRole('region', { name: 'Your year' })).toBeVisible()
+		expect(await calls(page)).toContainEqual(
+			expect.objectContaining({ command: 'get_recap', args: { period: 'year', offset: current - 2025 } })
+		)
+		const funnel = page.getByRole('region', { name: 'Crate to booth' })
+		await expect(funnel.getByText('Every release found, not limited to 2025 yet')).toBeVisible()
+		expect((await calls(page)).filter((call) => call.command === 'get_discovery_funnel').at(-1)?.args).toEqual({
+			since: null,
+		})
+
+		// The export follows the period too: the save dialog proposes a file named after it.
+		await page.getByRole('button', { name: 'Export history' }).click()
+		await expect
+			.poll(async () =>
+				JSON.stringify((await calls(page)).filter((call) => call.command === 'plugin:dialog|save').at(-1)?.args)
+			)
+			.toContain('crate-listening-history-year-2025.csv')
+		expect(errors).toEqual([])
+		expect(await unmockedCommands(page)).toEqual([])
+	})
+
 	test('a set opens its timeline in a modal that names every control and fits the window', async ({ page }) => {
 		const errors = await openPulse(page)
 		await page.getByRole('button', { name: 'Open the timeline of Friday warehouse' }).click()
@@ -111,6 +157,10 @@ test.describe('Pulse history screens, empty and in French', () => {
 		const errors = await openPulse(page, { params: { library: 'empty' } })
 		await expect(page.getByText('No plays in this period.')).toBeVisible()
 		await expect(page.getByText(/^No discoveries in this period\./)).toBeVisible()
+		// No listening data: no previous year is offered.
+		await expect(
+			page.getByRole('radiogroup', { name: 'Period', exact: true }).getByRole('radio', { name: /^\d{4}$/ })
+		).toHaveCount(0)
 		expect(errors).toEqual([])
 	})
 
@@ -131,7 +181,8 @@ test.describe('Pulse history screens, empty and in French', () => {
 })
 
 // The period bar scrolls instead of wrapping (CRA-173): arrows and edge fades show hidden presets, the selected one
-// is always in view. With today's five presets it fits at 1000 px, so the scrolling is checked in a narrowed box.
+// is always in view. Since CRA-184 (3 and 6 months, previous years) it may not fit at 1000 px; the arrows are checked
+// in a narrowed box, where they always show.
 test.describe('Pulse period bar', () => {
 	test.use({ viewport: { width: 1000, height: 600 } })
 
@@ -140,7 +191,7 @@ test.describe('Pulse period bar', () => {
 	const nextArrow = (page: Page) => page.getByRole('button', { name: 'Show more options' })
 
 	for (const lang of ['en', 'fr']) {
-		test(`stays on one line beside the title at 1000×600, without arrows (${lang})`, async ({ page }) => {
+		test(`stays on one line beside the title at 1000×600 (${lang})`, async ({ page }) => {
 			const errors = await openPulse(page, { lang })
 			const bar = await periodBar(page).boundingBox()
 			const title = await page.getByRole('heading', { name: 'Crate Pulse & Stats' }).boundingBox()
@@ -159,7 +210,13 @@ test.describe('Pulse period bar', () => {
 					})
 				)
 			expect(new Set(middles).size).toBe(1)
-			await expect(page.getByRole('button', { name: /^(Show|Afficher)/ })).toHaveCount(0)
+			// The selected period is in view inside the bar, whatever scrolls behind the arrows.
+			const [box, selected] = [
+				await periodBar(page).boundingBox(),
+				await periodBar(page).getByRole('radio', { checked: true }).boundingBox(),
+			]
+			expect(selected!.x).toBeGreaterThanOrEqual(box!.x)
+			expect(selected!.x + selected!.width).toBeLessThanOrEqual(box!.x + box!.width)
 			expect((await runAudit(page)).pageOverflowX).toBe(false)
 			expect(errors).toEqual([])
 		})
@@ -191,7 +248,7 @@ test.describe('Pulse period bar', () => {
 		expect(await inside()).toBe(true)
 
 		// The arrows only scroll: the selection does not change and returning to the start hides the left arrow.
-		for (let press = 0; press < 6 && (await previousArrow(page).count()) > 0; press++) {
+		for (let press = 0; press < 12 && (await previousArrow(page).count()) > 0; press++) {
 			await previousArrow(page).click()
 			await settle(page)
 		}

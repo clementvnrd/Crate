@@ -6,7 +6,10 @@ import {
 	formatShare,
 	formatTempoDelta,
 	formatWeekday,
+	funnelFollowsRange,
 	funnelSince,
+	previousYears,
+	recapYearOffset,
 	splitMinutes,
 } from './format'
 
@@ -53,5 +56,40 @@ describe('Pulse formatting', () => {
 		expect(funnelSince('30d', now)).toBe('2026-08-29')
 		expect(funnelSince('year', now)).toBe('2026-01-01')
 		expect(funnelSince('all', now)).toBeUndefined()
+	})
+
+	it('counts the rolling months from the same day, clamped to the end of a shorter month', () => {
+		const now = new Date(2026, 8, 28, 18, 30)
+		expect(funnelSince('3m', now)).toBe('2026-06-28')
+		expect(funnelSince('6m', now)).toBe('2026-03-28')
+		expect(funnelSince('3m', new Date(2026, 4, 31, 9))).toBe('2026-02-28')
+		expect(funnelSince('6m', new Date(2028, 7, 31, 9))).toBe('2028-02-29')
+		expect(funnelSince('3m', new Date(2026, 1, 15, 9))).toBe('2025-11-15')
+	})
+
+	it('counts all time for a past calendar year, and says it cannot follow it', () => {
+		expect(funnelSince('year:2025')).toBeUndefined()
+		expect(funnelFollowsRange('year:2025')).toBe(false)
+		expect(funnelFollowsRange('custom:2026-01-01,2026-01-31')).toBe(false)
+		for (const range of ['today', '7d', '30d', '3m', '6m', 'year', 'all']) expect(funnelFollowsRange(range)).toBe(true)
+	})
+
+	it('points the recap at the calendar year the period names, and nowhere for the other periods', () => {
+		const now = new Date(2026, 8, 28, 18, 30)
+		expect(recapYearOffset('year', now)).toBe(0)
+		expect(recapYearOffset('year:2026', now)).toBe(0)
+		expect(recapYearOffset('year:2024', now)).toBe(2)
+		expect(recapYearOffset('year:2027', now)).toBeNull()
+		for (const range of ['today', '7d', '30d', '3m', '6m', 'all', 'custom:2026-01-01,2026-01-31']) {
+			expect(recapYearOffset(range, now)).toBeNull()
+		}
+	})
+
+	it('offers the years with data before the current one, newest first', () => {
+		const now = new Date(2026, 8, 28, 18, 30)
+		expect(previousYears([2026, 2024, 2025, 2021], now)).toEqual([2025, 2024, 2021])
+		expect(previousYears([2026], now)).toEqual([])
+		expect(previousYears([], now)).toEqual([])
+		expect(previousYears([2027, 2025, 2025], now)).toEqual([2025])
 	})
 })

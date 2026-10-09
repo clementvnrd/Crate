@@ -8,6 +8,7 @@ import {
 	bpmStats,
 	harmonicStats,
 	listeningHeatmap,
+	listeningYears,
 	recap,
 	recentListens,
 	sessionTimeline,
@@ -35,6 +36,7 @@ export function statsHandlers(state: HarnessState): HandlerMap {
 		get_bpm_stats: ({ timeRange }) => bpmStats(range(timeRange)),
 		get_listening_heatmap: ({ timeRange }) => listeningHeatmap(range(timeRange)),
 		get_recent_listens: ({ limit: max }) => recentListens(limit(max, 50)),
+		get_listening_years: () => listeningYears(state.params.libraryEmpty),
 
 		// Integrations: Spotify disconnected, Rekordbox and Mixed In Key detected.
 		spotify_get_auth_state: () => ({ is_connected: false, user_id: null, user_name: null, expires_at: null }),

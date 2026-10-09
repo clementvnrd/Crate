@@ -3,11 +3,11 @@
 	import { getDiscoveryFunnel } from '$shared/api/discovery'
 	import { translate } from '$shared/i18n'
 	import { language } from '$lib/stores'
-	import { formatNumber } from '$shared/utils/format'
+	import { formatDate, formatNumber, formatYear } from '$shared/utils/format'
 	import { toErrorMessage } from '$shared/utils/errors'
 	import { Button } from '$lib/components/common'
 	import StatsCard from './StatsCard.svelte'
-	import { discoverySourceName, formatShare, funnelSince } from './format'
+	import { discoverySourceName, formatShare, funnelFollowsRange, funnelSince } from './format'
 
 	type Props = {
 		/** The Pulse period: the funnel counts the releases added in it. */
@@ -50,7 +50,22 @@
 	])
 
 	const total = $derived(funnel?.total ?? { discovered: 0, in_library: 0, played_in_set: 0 })
-	const subtitle = $derived($translate(range === 'all' ? 'stats.funnel.scopeAll' : 'stats.funnel.scopeRange'))
+	/** The period as the owner picked it, for the scope line of a period the funnel cannot follow yet. */
+	function periodName(value: TimeRange): string {
+		if (value.startsWith('year:')) return formatYear(Number(value.slice('year:'.length)), $language)
+		const [from, to] = value.slice('custom:'.length).split(',')
+		return $translate('stats.recap.range', {
+			values: { start: formatDate(from, 'locale', $language), end: formatDate(to, 'locale', $language) },
+		})
+	}
+
+	// A past year (or a custom window) ends before today, and the funnel only takes a start day for now (CRA-186): it
+	// counts every release then, and the scope line says so instead of passing all time off as that period.
+	const subtitle = $derived(
+		!funnelFollowsRange(range)
+			? $translate('stats.funnel.scopeNotLimited', { values: { period: periodName(range) } })
+			: $translate(range === 'all' ? 'stats.funnel.scopeAll' : 'stats.funnel.scopeRange')
+	)
 
 	function sourceLabel(source: string): string {
 		return discoverySourceName(source) ?? $translate('discovery.sourceOther')

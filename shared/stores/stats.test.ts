@@ -9,6 +9,7 @@ import {
 	bpmStats,
 	listeningHeatmap,
 	statsSelectedRange,
+	statsListeningYears,
 	spotifyAuth,
 	spotifyNowPlaying,
 } from './stats'
@@ -32,6 +33,7 @@ vi.mock('../api/stats', () => ({
 	getBpmStats: vi.fn(),
 	getListeningHeatmap: vi.fn(),
 	getRecentListens: vi.fn(),
+	getListeningYears: vi.fn(),
 	getSpotifyAuthState: vi.fn(),
 	getSpotifyNowPlaying: vi.fn(),
 	getSpotifyAuthUrl: vi.fn(),
@@ -355,6 +357,7 @@ function mockEveryCall(auth: SpotifyAuthState = mockSpotifyAuth) {
 	vi.mocked(statsApi.getRekordboxSessions).mockResolvedValue([])
 	vi.mocked(statsApi.getMikDetectStatus).mockResolvedValue(true)
 	vi.mocked(statsApi.syncSpotifyRecentlyPlayed).mockResolvedValue(0)
+	vi.mocked(statsApi.getListeningYears).mockResolvedValue([2026, 2025])
 }
 
 function summaryOf(totalMinutes: number): StatsSummary {
@@ -511,6 +514,54 @@ describe('statsStore request ordering and network use', () => {
 		await statsStore.setRange('30d')
 
 		expect(get(spotifyAuth)?.is_connected).toBe(true)
+		expect(get(statsStore).error).toBeNull()
+	})
+})
+
+describe('statsStore years with data', () => {
+	beforeEach(() => {
+		vi.resetAllMocks()
+		statsStore.reset()
+	})
+
+	it('loads the years with data on every load, so an import that fills a year shows it at once', async () => {
+		mockEveryCall()
+		await statsStore.refreshAll()
+		expect(get(statsListeningYears)).toEqual([2026, 2025])
+
+		vi.mocked(statsApi.getListeningYears).mockResolvedValue([2026, 2025, 2019])
+		vi.mocked(statsApi.importSpotifyHistoryJson).mockResolvedValueOnce({
+			imported_count: 12,
+			skipped_count: 0,
+			total_minutes: 40,
+		})
+		await statsStore.importSpotifyJson('[]')
+		expect(get(statsListeningYears)).toEqual([2026, 2025, 2019])
+	})
+
+	it('sends a previous year as a whole calendar year', async () => {
+		mockEveryCall()
+		await statsStore.setRange('year:2025')
+		expect(statsApi.getStatsSummary).toHaveBeenCalledWith('year:2025')
+		expect(statsApi.getTopTracks).toHaveBeenCalledWith('year:2025', 50)
+		expect(get(statsSelectedRange)).toBe('year:2025')
+	})
+
+	it('falls back to all time when the selected year no longer holds any data', async () => {
+		mockEveryCall()
+		await statsStore.setRange('year:2025')
+		vi.mocked(statsApi.getListeningYears).mockResolvedValue([2026])
+		await statsStore.reload()
+		expect(get(statsSelectedRange)).toBe('all')
+		expect(statsApi.getStatsSummary).toHaveBeenLastCalledWith('all')
+	})
+
+	it('keeps the years it had when that request fails', async () => {
+		mockEveryCall()
+		await statsStore.reload()
+		vi.mocked(statsApi.getListeningYears).mockRejectedValue('database is locked')
+		await statsStore.setRange('30d')
+		expect(get(statsListeningYears)).toEqual([2026, 2025])
 		expect(get(statsStore).error).toBeNull()
 	})
 })

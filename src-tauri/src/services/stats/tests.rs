@@ -1374,6 +1374,65 @@ mod history_export_tests {
             .is_err());
         assert!(!bad.exists());
     }
+
+    #[test]
+    fn a_period_export_writes_only_the_listens_of_that_period() {
+        let (conn, recorder) = setup_test_db();
+        // Mid-year times, far from any time zone's new year.
+        insert_raw(&conn, "a", "2024-06-01T10:00:00Z", "Before", None);
+        insert_raw(&conn, "b", "2025-03-01T10:00:00Z", "First", None);
+        insert_raw(&conn, "c", "2025-09-01 10:00:00", "Second", None);
+        insert_raw(&conn, "d", "2026-06-01T10:00:00Z", "After", None);
+
+        let file = TempFile::new("period", "csv");
+        let n = recorder
+            .export_listen_history_in_range(HistoryExportFormat::Csv, &file.0, "year:2025")
+            .unwrap();
+        assert_eq!(n, 2);
+        let rows = parse_csv(&std::fs::read_to_string(&file.0).unwrap());
+        let title_col = rows[0].iter().position(|c| c == "title").unwrap();
+        let titles: Vec<&str> = rows[1..].iter().map(|r| r[title_col].as_str()).collect();
+        assert_eq!(titles, vec!["First", "Second"]);
+
+        // `all` is the whole history, like the export without a period.
+        let n = recorder
+            .export_listen_history_in_range(HistoryExportFormat::Csv, &file.0, "all")
+            .unwrap();
+        assert_eq!(n, 4);
+    }
+
+    #[test]
+    fn a_rolling_period_export_selects_its_window() {
+        let (conn, recorder) = setup_test_db();
+        let at = |days: i64, id: &str| {
+            let when = (chrono::Utc::now() - chrono::Duration::days(days))
+                .format("%Y-%m-%dT%H:%M:%SZ")
+                .to_string();
+            insert_raw(&conn, id, &when, id, None);
+        };
+        at(10, "old");
+        for day in 1..=5 {
+            at(day, &format!("recent{day}"));
+        }
+        let file = TempFile::new("rolling", "csv");
+        let n = recorder
+            .export_listen_history_in_range(HistoryExportFormat::Csv, &file.0, "7d")
+            .unwrap();
+        assert_eq!(n, 5);
+        let text = std::fs::read_to_string(&file.0).unwrap();
+        assert!(!text.contains("old"));
+    }
+
+    #[test]
+    fn an_unknown_period_fails_before_writing_anything() {
+        let (conn, recorder) = setup_test_db();
+        insert_raw(&conn, "a", "2025-03-01T10:00:00Z", "One", None);
+        let file = TempFile::new("bad_period", "json");
+        assert!(recorder
+            .export_listen_history_in_range(HistoryExportFormat::Json, &file.0, "year:abc")
+            .is_err());
+        assert!(!file.0.exists());
+    }
 }
 
 // ==========================================

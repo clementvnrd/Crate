@@ -31,8 +31,8 @@ use crate::error::{CrateError, Result};
 const SQL_DATETIME: &str = "%Y-%m-%d %H:%M:%S";
 /// First and last year accepted in a calendar year, a custom day or a window. Nothing was
 /// recorded before 1970, and keeping the upper bound low keeps every formatted date at 4 digits.
-const MIN_YEAR: i32 = 1970;
-const MAX_YEAR: i32 = 2999;
+pub(super) const MIN_YEAR: i32 = 1970;
+pub(super) const MAX_YEAR: i32 = 2999;
 
 /// A validated statistics period. See the module documentation for the accepted strings.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -237,6 +237,31 @@ impl StatsRange {
             }
         };
         Ok(Some(condition))
+    }
+
+    /// The same period as [`Self::sql_condition_at`], with every bound written as a fixed UTC
+    /// instant computed from `now`: `today`, `7d`, `30d` and `year` otherwise ask SQLite for
+    /// `'now'` each time the condition runs. A query run several times for one result (the
+    /// history export reads in chunks) then selects one stable period from start to end.
+    pub fn fixed_sql_condition_at<Tz: TimeZone>(
+        &self,
+        field: &str,
+        now: &DateTime<Tz>,
+    ) -> Result<Option<String>> {
+        let tz = now.timezone();
+        let now_utc = now.with_timezone(&Utc).naive_utc();
+        let local_day = now.naive_local().date();
+        let start = match *self {
+            Self::Today => local_midnight_utc(&tz, local_day),
+            Self::Days7 => now_utc - Duration::days(7),
+            Self::Days30 => now_utc - Duration::days(30),
+            Self::YearToDate => local_midnight_utc(
+                &tz,
+                NaiveDate::from_ymd_opt(local_day.year(), 1, 1).ok_or_else(out_of_calendar)?,
+            ),
+            _ => return self.sql_condition_at(field, now),
+        };
+        Ok(Some(since(field, start)))
     }
 }
 
@@ -557,6 +582,46 @@ mod tests {
         // The day before ends where this one starts: no instant is lost or counted twice.
         let (_, previous_end) = window(MIDNIGHT_GAP, "custom:2026-03-28,2026-03-28");
         assert_eq!(previous_end, start);
+    }
+
+    fn fixed(zone: DstZone, text: &str, now: &str) -> String {
+        range(text)
+            .fixed_sql_condition_at("played_at", &local(zone, now))
+            .unwrap()
+            .unwrap()
+    }
+
+    #[test]
+    fn the_fixed_form_writes_the_relative_presets_as_utc_instants() {
+        // 10 July 2026 14:30 in Paris (UTC+2) is 12:30 UTC.
+        let now = "2026-07-10 14:30:00";
+        assert_eq!(
+            fixed(EUROPE, "today", now),
+            "datetime(played_at) >= datetime('2026-07-09 22:00:00')"
+        );
+        assert_eq!(
+            fixed(EUROPE, "7d", now),
+            "datetime(played_at) >= datetime('2026-07-03 12:30:00')"
+        );
+        assert_eq!(
+            fixed(EUROPE, "30d", now),
+            "datetime(played_at) >= datetime('2026-06-10 12:30:00')"
+        );
+        // 1 January is in winter time (UTC+1).
+        assert_eq!(
+            fixed(EUROPE, "year", now),
+            "datetime(played_at) >= datetime('2025-12-31 23:00:00')"
+        );
+        // The other periods are already fixed: same text as the plain condition.
+        for text in ["3m", "6m", "year:2025", "custom:2026-03-01,2026-03-31"] {
+            assert_eq!(fixed(EUROPE, text, now), condition(EUROPE, text, now));
+        }
+        assert_eq!(
+            range("all")
+                .fixed_sql_condition_at("played_at", &local(EUROPE, now))
+                .unwrap(),
+            None
+        );
     }
 
     #[test]

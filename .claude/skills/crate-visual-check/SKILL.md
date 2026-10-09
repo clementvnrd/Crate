@@ -1,7 +1,7 @@
 ---
 name: crate-visual-check
 description: Visual check of Crate's interface with Playwright CLI — screenshots in light and dark themes, several accents, window sizes 1000×600 / 1400×900 / 1920×1080, French and English, reduced motion; in-page measured audit (WCAG contrast, unnamed buttons, overlaps, modals outside the window, crushed columns, text under 12 px); annotation session with the owner. Use before declaring interface work done, for an audit, or to compare with a mockup.
-argument-hint: "[view] [light|dark|all]"
+argument-hint: '[view] [light|dark|all]'
 allowed-tools: Bash(playwright-cli:*) Bash(npx playwright:*) Bash(yarn harness) Bash(yarn test:e2e:*)
 ---
 
@@ -30,22 +30,22 @@ Screenshots and snapshots go into `.playwright-cli/` (ignored by git).
 
 The app reads these keys on load (`app.html`); set them, then reload:
 
-| Key | Values |
-| --- | --- |
-| `crate-theme` | `dark`, `light`, `system` |
-| `crate-accent` | `blue`, `indigo`, `violet`, `purple`, `pink`, `rose`, `orange`, `amber`, `emerald`, `teal` |
-| `crate-font` | `open-sans`, `jost`, `dm-sans`, `inter`, `nunito`, `fira-code`, `ibm-plex-mono`, `source-code-pro` |
-| `crate-language` | `en`, `fr` (and the other locales) |
+| Key              | Values                                                                                             |
+| ---------------- | -------------------------------------------------------------------------------------------------- |
+| `crate-theme`    | `dark`, `light`, `system`                                                                          |
+| `crate-accent`   | `blue`, `indigo`, `violet`, `purple`, `pink`, `rose`, `orange`, `amber`, `emerald`, `teal`         |
+| `crate-font`     | `open-sans`, `jost`, `dm-sans`, `inter`, `nunito`, `fira-code`, `ibm-plex-mono`, `source-code-pro` |
+| `crate-language` | `en`, `fr` (and the other locales)                                                                 |
 
 ## Minimum matrix before "done"
 
-| # | Theme | Accent | Window | Language |
-| --- | --- | --- | --- | --- |
-| 1 | dark | blue | 1400×900 | fr |
-| 2 | light | blue | 1400×900 | fr |
-| 3 | dark | orange | 1000×600 | en |
-| 4 | light | amber | 1000×600 | en |
-| 5 | dark | blue | 1920×1080 | fr |
+| #   | Theme | Accent | Window    | Language |
+| --- | ----- | ------ | --------- | -------- |
+| 1   | dark  | blue   | 1400×900  | fr       |
+| 2   | light | blue   | 1400×900  | fr       |
+| 3   | dark  | orange | 1000×600  | en       |
+| 4   | light | amber  | 1000×600  | en       |
+| 5   | dark  | blue   | 1920×1080 | fr       |
 
 Add `set-reduced-motion reduce` on one of the rows when animations are involved, and a monospace font (`fira-code`) when column widths are involved.
 
@@ -80,17 +80,17 @@ Name screenshots `<view>-<theme>-<accent>-<width>[-<state>].png` so that before/
 
 The script runs in the page and returns a JSON report:
 
-| Field | Meaning | Register defect |
-| --- | --- | --- |
-| `lowContrast` | Text under 4.5:1 (3:1 for large text), actual background computed through the transparent layers | D3 |
-| `unmeasuredContrast` | Text placed on an image or a gradient: to be looked at on the screenshot | D3 |
-| `smallText` | Text under 12 px | rule 4 |
-| `unnamedControls` | Button, link or field without an accessible name | D10 |
-| `pointerOnly` | Element with a "hand" cursor that is neither a button nor a link (clickable `div`) | D10 |
-| `overlaps` | Overlapping controls (toolbar at 1000 px) | D4 |
-| `outOfWindow` | Modal, menu or tooltip that extends outside the window | D6 |
-| `crushedColumns` | Text truncated in less than 48 px (crushed column) | D7 |
-| `pageOverflowX` | Horizontal scrolling of the page | rule 10 |
+| Field                | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Register defect |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| `lowContrast`        | Text under 4.5:1 (3:1 for large text), actual background computed through the transparent layers                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | D3              |
+| `unmeasuredContrast` | Text placed on an image or a gradient: to be looked at on the screenshot                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | D3              |
+| `smallText`          | Text under 12 px                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | rule 4          |
+| `unnamedControls`    | Button, link or field without an accessible name                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | D10             |
+| `pointerOnly`        | Element with a "hand" cursor that is neither a button nor a link (clickable `div`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | D10             |
+| `overlaps`           | Overlapping controls (toolbar at 1000 px), measured on the part of each control that can be seen: boxes are cut by every ancestor that clips its overflow, following the containing blocks (an `absolute` box escapes ancestors below its positioned one, a `fixed` box all of them unless one has a transform, filter or containment, a modal dialog sits in the top layer), and by the arrow strip of a `.scroll-affordance` edge that shows a fade. While a modal `<dialog>` is open, only the controls inside it are compared: the rest of the page is inert and covered | D4              |
+| `outOfWindow`        | Modal, menu or tooltip that extends outside the window                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | D6              |
+| `crushedColumns`     | Text truncated in less than 48 px (crushed column)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | D7              |
+| `pageOverflowX`      | Horizontal scrolling of the page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | rule 10         |
 
 The lists stop at 40 entries each (`const MAX = 40`); `yarn test:e2e` lifts that cap in memory so it counts every finding, which is what makes its baseline a real ratchet.
 

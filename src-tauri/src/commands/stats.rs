@@ -25,6 +25,13 @@ pub async fn get_stats_summary(
     stats.get_stats_summary(&time_range)
 }
 
+/// The local calendar years with listening data (listens or Rekordbox sets), newest first: the
+/// "previous years" the Pulse period bar offers.
+#[tauri::command]
+pub async fn get_listening_years(stats: State<'_, StatsRecorderService>) -> Result<Vec<i32>> {
+    stats.get_listening_years()
+}
+
 #[tauri::command]
 pub async fn get_top_tracks(
     time_range: String,
@@ -75,18 +82,24 @@ pub async fn get_recent_listens(
     stats.get_recent_listens(limit.unwrap_or(50))
 }
 
-/// Writes the whole listening history, oldest first, to `path` as CSV or JSON and returns how
-/// many listens were exported. The path comes from the native save dialog and must end in
-/// `.csv` or `.json` according to `format`.
+/// Writes the listening history, oldest first, to `path` as CSV or JSON and returns how many
+/// listens were exported. The path comes from the native save dialog and must end in `.csv` or
+/// `.json` according to `format`. `time_range` (the Pulse's selected period) limits the export to
+/// that period; without it, the whole history is written.
 #[tauri::command]
 pub async fn export_listening_history(
     app: tauri::AppHandle,
     format: HistoryExportFormat,
     path: String,
+    time_range: Option<String>,
 ) -> Result<usize> {
     run_blocking(move || {
         app.state::<StatsRecorderService>()
-            .export_listen_history(format, std::path::Path::new(&path))
+            .export_listen_history_in_range(
+                format,
+                std::path::Path::new(&path),
+                time_range.as_deref().unwrap_or("all"),
+            )
     })
     .await
 }

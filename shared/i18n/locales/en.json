@@ -1216,6 +1216,8 @@
 			"today": "Today",
 			"7d": "7 days",
 			"30d": "30 days",
+			"3m": "3 months",
+			"6m": "6 months",
 			"year": "This year",
 			"all": "All time"
 		},
@@ -1400,6 +1402,7 @@
 			"subtitle": "What your discoveries became",
 			"scopeRange": "Releases added in the selected period",
 			"scopeAll": "Every release found",
+			"scopeNotLimited": "Every release found, not limited to {period} yet",
 			"stage": {
 				"discovered": "Discovered",
 				"inLibrary": "In the library",
@@ -1453,6 +1456,7 @@
 		"export": {
 			"button": "Export history",
 			"hint": "Export the whole listening history as CSV or JSON",
+			"hintPeriod": "Export the plays of the selected period as CSV or JSON",
 			"success": "{count, plural, one {# play exported} other {# plays exported}}",
 			"failed": "Could not export the history: {error}"
 		}
