@@ -300,4 +300,4 @@ _Exit criterion: App in English: no French string._
 | 2026-10-09 | Version 1.0.0-staging.1 prepared: `yarn bump major staging`, changelog section moved verbatim, `yarn bump` now also updates the app's entry in `Cargo.lock` (CRA-201) | — |
 | 2026-10-09 | The history export and the Spotify-reset backup keep `artwork_url` as a 16th column, appended so the previous format still reads (CRA-171) | — |
 | 2026-10-09 | Device free space shows TB instead of "undefined" above 1 TB (sidebar and device info), seen after installing 1.0.0 on the real library (CRA-203) | — |
-| 2026-10-09 | Beat grid kept after analysis: first beat, BPM with decimals and tempo changes, detected by Crate in the same pass (migration 19, `get_track_beatgrid`, `analyze_track_beatgrid`) (CRA-177) | — |
+| 2026-10-09 | Beat grid kept after analysis: first beat, BPM with decimals and tempo changes, detected by Crate in the same pass (schema version 20, `get_track_beatgrid`, `analyze_track_beatgrid`) (CRA-177) | — |

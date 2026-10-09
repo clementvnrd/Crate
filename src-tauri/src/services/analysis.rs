@@ -556,6 +556,10 @@ impl AnalysisService {
     /// Recomputes only the beat grid of a track from its audio file, for tracks whose regular
     /// analysis is skipped (Mixed In Key) or predates the grid. Nothing else is written: BPM, key,
     /// energy and `analysis_source` stay as they are, and Mixed In Key's database is never opened.
+    /// The grid runs at the track's stored (displayed) BPM, searched within 4% of it, so the grid
+    /// always matches the BPM shown: a stored BPM an octave off the audio gives a grid at that
+    /// octave (a line on every other beat, or between beats), and one unrelated to the audio
+    /// usually gives no grid. Only a track without a BPM runs stratum-dsp, for the tempo.
     /// Waits for a free analysis slot like a regular analysis.
     pub async fn analyze_beat_grid(&self, track_id: String) -> Result<Option<TrackBeatGrid>> {
         let cancel_token = CancellationToken::new();
@@ -577,12 +581,12 @@ impl AnalysisService {
         track_id: &str,
         cancel_token: &CancellationToken,
     ) -> Result<Option<TrackBeatGrid>> {
-        let file_path: String = {
+        let (file_path, stored_bpm): (String, Option<f64>) = {
             let conn = conn.lock().map_err(|_| CrateError::LockPoisoned)?;
             conn.query_row(
-                "SELECT file_path FROM tracks WHERE id = ?1",
+                "SELECT file_path, bpm FROM tracks WHERE id = ?1",
                 [track_id],
-                |r| r.get(0),
+                |r| Ok((r.get(0)?, r.get(1)?)),
             )
             .optional()?
             .ok_or_else(|| CrateError::TrackNotFound(track_id.to_string()))?
@@ -591,10 +595,20 @@ impl AnalysisService {
         if !path.exists() {
             return Err(CrateError::Analysis(format!("File not found: {file_path}")));
         }
-        let analysis = Self::analyze_audio_file_with_cancellation(path, cancel_token)?;
+        let grid = match stored_bpm.filter(|bpm| bpm.is_finite() && *bpm > 0.0) {
+            Some(bpm) => {
+                let (samples, sample_rate) =
+                    Self::decode_audio_with_cancellation(path, cancel_token)?;
+                if cancel_token.is_cancelled() {
+                    return Err(CrateError::Analysis("Cancelled".to_string()));
+                }
+                beatgrid::detect_beat_grid(&samples, sample_rate, bpm)
+            }
+            None => Self::analyze_audio_file_with_cancellation(path, cancel_token)?.grid,
+        };
         let conn = conn.lock().map_err(|_| CrateError::LockPoisoned)?;
-        beatgrid::store_beat_grid(&conn, track_id, analysis.grid.as_ref())?;
-        Ok(analysis.grid)
+        beatgrid::store_beat_grid(&conn, track_id, grid.as_ref())?;
+        Ok(grid)
     }
 
     /// The stored beat grid of a track; `None` when it has none.
@@ -1030,24 +1044,42 @@ mod beat_grid_tests {
         ));
         write_wav(&path, &beatgrid::tests::click_track(RATE, 128.0, 0.2, 20.0));
         let conn = library_with("t1", &path);
-        conn.lock()
-            .unwrap()
-            .execute(
-                "UPDATE tracks SET bpm = 64.0, key = '8A', energy = 6, \
-                 analysis_source = 'mixed_in_key', _hlc = 'h1' WHERE id = 't1'",
-                [],
-            )
-            .unwrap();
-
-        let grid =
+        let set_mik_values = |bpm: f64| {
+            conn.lock()
+                .unwrap()
+                .execute(
+                    "UPDATE tracks SET bpm = ?1, key = '8A', energy = 6, \
+                     analysis_source = 'mixed_in_key', _hlc = 'h1' WHERE id = 't1'",
+                    [bpm],
+                )
+                .unwrap();
+        };
+        let grid_only = || {
             AnalysisService::analyze_beat_grid_blocking(&conn, "t1", &CancellationToken::new())
                 .unwrap()
-                .expect("a grid");
+                .expect("a grid")
+        };
+
+        // The grid runs at the stored BPM.
+        set_mik_values(128.0);
+        let grid = grid_only();
+        assert!((grid.bpm - 128.0).abs() < 0.01, "{grid:?}");
+        assert!((grid.first_beat_ms - 200.0).abs() < 3.0, "{grid:?}");
+
+        // A stored BPM an octave below the audio keeps its octave: a line on every other click.
+        set_mik_values(64.0);
+        let half = grid_only();
         let _ = std::fs::remove_file(&path);
-        assert!((grid.bpm - 128.0).abs() < 0.05, "{grid:?}");
+        assert!((half.bpm - 64.0).abs() < 0.01, "{half:?}");
+        let click_ms = 60_000.0 / 128.0;
+        let from_first_click = (half.first_beat_ms - 200.0) / click_ms;
+        assert!(
+            (from_first_click - from_first_click.round()).abs() * click_ms < 3.0,
+            "{half:?}"
+        );
 
         let conn = conn.lock().unwrap();
-        assert_eq!(beatgrid::load_beat_grid(&conn, "t1").unwrap(), Some(grid));
+        assert_eq!(beatgrid::load_beat_grid(&conn, "t1").unwrap(), Some(half));
         let row: (f64, String, i32, String, String) = conn
             .query_row(
                 "SELECT bpm, key, energy, analysis_source, _hlc FROM tracks WHERE id = 't1'",
@@ -1065,6 +1097,29 @@ mod beat_grid_tests {
                 "h1".to_string()
             )
         );
+    }
+
+    #[test]
+    fn a_grid_only_analysis_without_a_stored_bpm_takes_the_analysed_tempo() {
+        let path = std::env::temp_dir().join(format!(
+            "crate_beatgrid_nobpm_{}_{:?}.wav",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        write_wav(&path, &beatgrid::tests::click_track(RATE, 126.0, 0.3, 20.0));
+        let conn = library_with("t1", &path);
+        let grid =
+            AnalysisService::analyze_beat_grid_blocking(&conn, "t1", &CancellationToken::new())
+                .unwrap()
+                .expect("a grid");
+        let _ = std::fs::remove_file(&path);
+        assert!((grid.bpm - 126.0).abs() < 0.01, "{grid:?}");
+        let bpm: Option<f64> = conn
+            .lock()
+            .unwrap()
+            .query_row("SELECT bpm FROM tracks WHERE id = 't1'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(bpm, None, "a grid-only analysis never writes the BPM");
     }
 
     #[test]

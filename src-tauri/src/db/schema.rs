@@ -596,11 +596,11 @@ CREATE TABLE organisation_journal (
 );
 CREATE INDEX idx_organisation_journal_batch ON organisation_journal(batch_id);
 "#,
-        // Migration 19 (fork): beat grid kept from Crate's own analysis (CRA-177): the first beat
-        // (ms) and a BPM with decimals, plus the tempo changes as a JSON array of
-        // `[position_ms, bpm]` pairs when the tempo is not constant. NULL until a track is analysed
-        // by Crate. Local analysis data like `waveform_data` (not synced, not backed up); the
-        // displayed and exported BPM stays in `bpm`.
+        // Migration (schema version 20, fork): beat grid kept from Crate's own analysis
+        // (CRA-177): the first beat (ms) and a BPM with decimals, plus the tempo changes as a JSON
+        // array of `[position_ms, bpm]` pairs when the tempo is not constant. NULL until a track is
+        // analysed by Crate. Local analysis data like `waveform_data` (not synced, not backed up);
+        // the displayed and exported BPM stays in `bpm`.
         r#"
 ALTER TABLE tracks ADD COLUMN beatgrid_first_beat_ms REAL;
 ALTER TABLE tracks ADD COLUMN beatgrid_bpm REAL;

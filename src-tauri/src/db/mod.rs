@@ -273,9 +273,9 @@ mod tests {
 
     #[test]
     fn beat_grid_migration_keeps_existing_tracks_and_leaves_their_grid_empty() {
-        // Migration 19 adds the beat grid columns (CRA-177). Build a populated library at the
-        // schema just before it, then upgrade.
-        const BEFORE_BEAT_GRID: usize = 18;
+        // The last migration (schema version 20) adds the beat grid columns (CRA-177). Build a
+        // populated library at the schema just before it, then upgrade.
+        let before_beat_grid = schema::get_migrations().len() - 1;
         let conn = open_mem();
         conn.execute(
             "CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)",
@@ -284,7 +284,7 @@ mod tests {
         .unwrap();
         for (idx, sql) in schema::get_migrations()
             .iter()
-            .take(BEFORE_BEAT_GRID)
+            .take(before_beat_grid)
             .enumerate()
         {
             conn.execute_batch(sql).unwrap();

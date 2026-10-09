@@ -8,9 +8,9 @@
 //! for the whole track, plus a short list of tempo changes only when the tempo actually moves. A
 //! constant-tempo track costs two numbers.
 //!
-//! The grid lives in three local columns of `tracks` (migration 19). It is an analysis artefact
-//! like `waveform_data`: it is neither synced nor backed up, and it never touches the BPM that is
-//! displayed and exported (`tracks.bpm`).
+//! The grid lives in three local columns of `tracks` (schema version 20). It is an analysis
+//! artefact like `waveform_data`: it is neither synced nor backed up, and it never touches the BPM
+//! that is displayed and exported (`tracks.bpm`).
 
 use rusqlite::{Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -51,6 +51,8 @@ const MAX_TEMPO_GAP: f64 = 0.10;
 /// (in beats) is off the grid: an off-beat or a stray onset.
 const MAX_BEAT_FRACTION: f64 = 0.25;
 
+/// A grid keeps at most this many tempo changes (a two-hour tempo ramp needs about 40).
+const MAX_TEMPO_CHANGES: usize = 64;
 /// At least this share of the beats must sit on the grid, or the "grid" is fitted to noise.
 const MIN_ON_GRID_SHARE: f64 = 0.65;
 
@@ -218,7 +220,9 @@ pub fn fit_beat_grid(beats_s: &[f64], bpm_hint: f64) -> Option<TrackBeatGrid> {
     }
 
     let mut sections = Vec::new();
-    split_sections(&points, 0, &mut sections);
+    let mut cuts_left = MAX_TEMPO_CHANGES;
+    split_sections(&points, 0, &mut cuts_left, &mut sections);
+    let sections = merge_steady_neighbours(&points, sections);
     let off: usize = sections
         .iter()
         .enumerate()
@@ -231,7 +235,7 @@ pub fn fit_beat_grid(beats_s: &[f64], bpm_hint: f64) -> Option<TrackBeatGrid> {
         return None;
     }
     let (_, first) = *sections.first()?;
-    let first_beat_ms = first.origin.rem_euclid(first.period);
+    let bpm = round_to(60_000.0 / first.period, 10_000.0);
     let tempo_changes = (sections.len() > 1).then(|| {
         sections[1..]
             .iter()
@@ -242,8 +246,8 @@ pub fn fit_beat_grid(beats_s: &[f64], bpm_hint: f64) -> Option<TrackBeatGrid> {
             .collect()
     });
     Some(TrackBeatGrid {
-        first_beat_ms: round_to(first_beat_ms, 10.0),
-        bpm: round_to(60_000.0 / first.period, 10_000.0),
+        first_beat_ms: first_beat_in_file(first.origin, bpm),
+        bpm,
         tempo_changes,
     })
 }
@@ -371,44 +375,122 @@ fn drifts(points: &[(f64, f64)], fit: &LineFit) -> bool {
     false
 }
 
-/// Binary segmentation: a section whose beats drift off its own grid is cut where two grids fit
-/// best, as long as the cut at least halves the beats left off the grid (a real tempo or phase
-/// change, not a noisy passage). Only drifting tracks pay for the search. `offset` is the index
-/// of `points[0]` in the whole track.
-fn split_sections(points: &[(f64, f64)], offset: usize, out: &mut Vec<(usize, LineFit)>) {
+/// Running sums of numbered beats, so the least-squares error of any range is O(1) and the
+/// search for a cut stays linear even on a two-hour mix.
+struct PrefixSums(Vec<[f64; 5]>);
+
+impl PrefixSums {
+    /// Beat numbers and times are taken relative to the first point to keep the sums small.
+    fn new(points: &[(f64, f64)]) -> Self {
+        let (n0, t0) = points.first().copied().unwrap_or_default();
+        let mut sums = Vec::with_capacity(points.len() + 1);
+        let mut acc = [0.0; 5];
+        sums.push(acc);
+        for (n, t) in points {
+            let (n, t) = (n - n0, t - t0);
+            acc[0] += n;
+            acc[1] += t;
+            acc[2] += n * n;
+            acc[3] += n * t;
+            acc[4] += t * t;
+            sums.push(acc);
+        }
+        Self(sums)
+    }
+
+    /// Sum of squared residuals of the least-squares line through `points[start..end]`.
+    fn squared_error(&self, start: usize, end: usize) -> f64 {
+        let count = (end - start) as f64;
+        if count < 2.0 {
+            return f64::INFINITY;
+        }
+        let [n, t, nn, nt, tt] = std::array::from_fn(|i| self.0[end][i] - self.0[start][i]);
+        let var_n = nn - n * n / count;
+        if var_n <= 0.0 {
+            return f64::INFINITY;
+        }
+        let cov = nt - n * t / count;
+        (tt - t * t / count - cov * cov / var_n).max(0.0)
+    }
+}
+
+/// Binary segmentation: a section whose beats drift off its own grid is cut where two straight
+/// grids fit best (least squares, in linear time), as long as the cut removes at least a quarter
+/// of the beats left off the grid (a real tempo or phase change, not a noisy passage). Only
+/// drifting tracks pay for the search, and at most `MAX_TEMPO_CHANGES` cuts are made. `offset`
+/// is the index of `points[0]` in the whole track.
+fn split_sections(
+    points: &[(f64, f64)],
+    offset: usize,
+    cuts_left: &mut usize,
+    out: &mut Vec<(usize, LineFit)>,
+) {
     let Some(fit) = fit_section(points) else {
         return;
     };
-    if points.len() < 2 * MIN_SECTION_BEATS || !drifts(points, &fit) {
+    if *cuts_left == 0 || points.len() < 2 * MIN_SECTION_BEATS || !drifts(points, &fit) {
         out.push((offset, fit));
         return;
     }
-    // Truncated squares: a stray onset weighs no more than any other off-grid beat.
-    let cost = |range: &[(f64, f64)]| -> f64 {
-        fit_section(range)
-            .map(|f| {
-                range
-                    .iter()
-                    .map(|p| f.residual(*p).abs().min(OFF_GRID_MS).powi(2))
-                    .sum()
-            })
-            .unwrap_or(f64::INFINITY)
-    };
-    let best = (MIN_SECTION_BEATS..=points.len() - MIN_SECTION_BEATS)
-        .map(|cut| (cut, cost(&points[..cut]) + cost(&points[cut..])))
+    let sums = PrefixSums::new(points);
+    let len = points.len();
+    let best = (MIN_SECTION_BEATS..=len - MIN_SECTION_BEATS)
+        .map(|cut| {
+            (
+                cut,
+                sums.squared_error(0, cut) + sums.squared_error(cut, len),
+            )
+        })
         .min_by(|a, b| a.1.total_cmp(&b.1))
         .map(|(cut, _)| cut);
     let improves = best.is_some_and(|cut| {
         let left = fit_section(&points[..cut]).map(|f| off_grid(&points[..cut], &f));
         let right = fit_section(&points[cut..]).map(|f| off_grid(&points[cut..], &f));
-        matches!((left, right), (Some(l), Some(r)) if 2 * (l + r) <= off_grid(points, &fit))
+        let before = off_grid(points, &fit);
+        matches!((left, right), (Some(l), Some(r))
+            if l + r + DRIFT_RUN <= before)
     });
     match best.filter(|_| improves) {
         Some(cut) => {
-            split_sections(&points[..cut], offset, out);
-            split_sections(&points[cut..], offset + cut, out);
+            *cuts_left -= 1;
+            split_sections(&points[..cut], offset, cuts_left, out);
+            split_sections(&points[cut..], offset + cut, cuts_left, out);
         }
         None => out.push((offset, fit)),
+    }
+}
+
+/// The grid line through `origin_ms` that falls in the first beat of the file, to 0.1 ms, kept
+/// strictly below one beat at the stored `bpm` even when rounding lands on the beat length.
+/// Joins neighbouring sections that one steady grid covers: a cut that is the best single cut
+/// of a range holding several tempo changes can fall inside a steady passage.
+fn merge_steady_neighbours(
+    points: &[(f64, f64)],
+    mut sections: Vec<(usize, LineFit)>,
+) -> Vec<(usize, LineFit)> {
+    let mut i = 0;
+    while i + 1 < sections.len() {
+        let start = sections[i].0;
+        let end = sections.get(i + 2).map_or(points.len(), |(next, _)| *next);
+        let range = &points[start..end];
+        match fit_section(range).filter(|fit| !drifts(range, fit)) {
+            Some(fit) => {
+                sections[i].1 = fit;
+                sections.remove(i + 1);
+            }
+            None => i += 1,
+        }
+    }
+    sections
+}
+
+fn first_beat_in_file(origin_ms: f64, bpm: f64) -> f64 {
+    let beat = 60_000.0 / bpm;
+    let first = round_to(origin_ms.rem_euclid(beat), 10.0);
+    if first >= beat {
+        round_to(first - beat, 10.0).max(0.0)
+    } else {
+        first
     }
 }
 
@@ -583,6 +665,76 @@ pub(crate) mod tests {
         assert_eq!(changes.len(), 1, "{changes:?}");
         assert!((changes[0].bpm - 126.0).abs() < 0.01, "{changes:?}");
         assert_change_lands_on(changes[0].position_ms, change_at * 1000.0, 126.0);
+    }
+
+    /// Two hours of beats in 21 steady sections, each 0.5 BPM above or below the previous one.
+    fn two_hour_mix() -> Vec<f64> {
+        let mut beats = Vec::new();
+        let mut t = 0.3;
+        for step in 0..21 {
+            let bpm = 124.0 + if step % 2 == 0 { 0.0 } else { 0.5 };
+            let end = (step + 1) as f64 * 7200.0 / 21.0;
+            while t < end {
+                beats.push(t);
+                t += 60.0 / bpm;
+            }
+        }
+        beats
+    }
+
+    #[test]
+    fn a_two_hour_mix_with_tempo_steps_is_fitted_quickly() {
+        let beats = two_hour_mix();
+        let started = std::time::Instant::now();
+        let grid = fit_beat_grid(&beats, 124.0);
+        let elapsed = started.elapsed();
+        eprintln!("two-hour mix: {} beats in {elapsed:?}", beats.len());
+        assert!(elapsed < std::time::Duration::from_secs(3), "{elapsed:?}");
+        let grid = grid.expect("a grid");
+        assert!((grid.bpm - 124.0).abs() < 0.01, "{grid:?}");
+        let changes = grid.tempo_changes.expect("tempo changes");
+        assert_eq!(changes.len(), 20, "{changes:?}");
+        for (i, change) in changes.iter().enumerate() {
+            let bpm = if i % 2 == 0 { 124.5 } else { 124.0 };
+            assert!((change.bpm - bpm).abs() < 0.01, "{change:?}");
+            let boundary_ms = (i + 1) as f64 * 7_200_000.0 / 21.0;
+            assert!(
+                (change.position_ms - boundary_ms).abs() < 1_000.0,
+                "{change:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_two_hour_tempo_ramp_is_fitted_quickly() {
+        // 120 to 130 BPM, sped up a little on every beat.
+        let mut beats = Vec::new();
+        let mut t = 0.3;
+        while t < 7200.0 {
+            beats.push(t);
+            t += 60.0 / (120.0 + 10.0 * t / 7200.0);
+        }
+        let started = std::time::Instant::now();
+        let grid = fit_beat_grid(&beats, 125.0);
+        let elapsed = started.elapsed();
+        eprintln!("two-hour ramp: {} beats in {elapsed:?}", beats.len());
+        assert!(elapsed < std::time::Duration::from_secs(3), "{elapsed:?}");
+        // The ramp is followed in steps, up to the cap on tempo changes.
+        let grid = grid.expect("a grid");
+        assert!((grid.bpm - 120.0).abs() < 0.2, "{grid:?}");
+        let changes = grid.tempo_changes.expect("tempo changes");
+        assert!(changes.len() <= MAX_TEMPO_CHANGES, "{}", changes.len());
+    }
+
+    #[test]
+    fn the_first_beat_stays_below_one_beat_after_rounding() {
+        // 120 BPM: a beat is 500 ms, and 499.97 ms rounds to 500.0.
+        assert_eq!(first_beat_in_file(499.97, 120.0), 0.0);
+        assert_eq!(first_beat_in_file(1_499.97, 120.0), 0.0);
+        assert_eq!(first_beat_in_file(-0.02, 120.0), 0.0);
+        assert_eq!(first_beat_in_file(1_234.56, 120.0), 234.6);
+        let grid = fit_beat_grid(&steady(30.49999, 120.0, 100), 120.0).unwrap();
+        assert!(grid.first_beat_ms < 60_000.0 / grid.bpm, "{grid:?}");
     }
 
     #[test]
